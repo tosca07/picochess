@@ -111,7 +111,7 @@ class AlternativeMover:
     def book(self, bookreader, game_copy: chess.Board):
         """Get a BookMove or None from game position."""
         try:
-            choice = bookreader.weighted_choice(game_copy, self.excludemoves)
+            choice = bookreader.weighted_choice(game_copy, exclude_moves=self.excludemoves)
         except IndexError:
             return None
 
