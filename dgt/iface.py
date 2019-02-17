@@ -105,7 +105,7 @@ class DgtIface(DisplayDgt, Thread):
             else:
                 return text
 
-        bit_board = Board(message.fen, message.uci960)
+        bit_board = Board(message.fen, chess960=message.uci960)
         if bit_board.is_legal(message.move):
             if message.long:
                 move_text = message.move.uci()
