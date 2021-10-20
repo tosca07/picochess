@@ -30,9 +30,7 @@ from logging.handlers import RotatingFileHandler
 import time
 import queue
 import configargparse
-from platform import machine
 import paramiko
-import copy
 import math
 from typing import Set
 
@@ -60,8 +58,9 @@ from dgt.board import DgtBoard
 from dgt.translate import DgtTranslate
 from dgt.menu import DgtMenu
 
-from picotutor import PicoTutor ## molli
-from pathlib import Path ##molli
+from picotutor import PicoTutor
+from pathlib import Path
+
 
 class AlternativeMover:
 
