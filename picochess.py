@@ -118,6 +118,7 @@ class AlternativeMover:
         """Reset the exclude move list."""
         self._excludedmoves.clear()
 
+
 flag_startup = False
 online_prefix = 'Online'
 seeking_flag = False
@@ -126,9 +127,9 @@ position_mode = False
 start_time_cmove_done = 0
 reset_auto = False
 
+
 def main():
     """Main function."""
-    ## molli: new config params
     flag_flexible_ponder = False
     flag_premove = False
     book_in_use = ''
@@ -155,7 +156,7 @@ def main():
     global fen_error_occured
     global position_mode
     global start_time_cmove_done
-    
+
     def check_ssh(host, username, password):
         l_ssh = True
         try:
@@ -165,7 +166,7 @@ def main():
             s.close()
         except:
             l_ssh = False
-        
+
         return(l_ssh)
 
     ####################################################
@@ -178,7 +179,7 @@ def main():
         nonlocal no_guess_black
         nonlocal max_guess
         nonlocal pgn_book_test
-        
+
         logging.debug('molli pgn: pgn_book_test: %s', str(pgn_book_test))
         logging.debug('molli pgn: game turn: %s', game.turn)
         logging.debug('molli pgn: max_guess_white: %s', max_guess)
@@ -186,7 +187,7 @@ def main():
         logging.debug('molli pgn: max_guess_black: %s', max_guess_black)
         logging.debug('molli pgn: no_guess_white: %s', no_guess_white)
         logging.debug('molli pgn: no_guess_black: %s', no_guess_black)
-    
+
     def det_pgn_guess_tctrl():
         nonlocal max_guess_white
         nonlocal max_guess_black
@@ -197,21 +198,21 @@ def main():
         max_guess_black = 0
 
         logging.debug('molli pgn: determine pgn guess')
-        
+
         uci_options = engine.get_pgn_options()
-        
+
         logging.debug('molli pgn: uci_options %s', str(uci_options))
-        
+
         if "max_guess" in uci_options:
             max_guess = int(uci_options["max_guess"])
         else:
             max_guess = 0
-        
+
         if "think_time" in uci_options:
             think_time = int(uci_options["think_time"])
         else:
             think_time = 0
-        
+
         if "pgn_game_file" in uci_options:
             logging.debug('molli pgn: pgn_game_file; %s', str(uci_options["pgn_game_file"]))
             if 'book_test' in str(uci_options["pgn_game_file"]):
@@ -223,17 +224,17 @@ def main():
         else:
             logging.debug('molli pgn: pgn_book_test not found => False')
             pgn_book_test = False
-        
-        
+
+
         max_guess_white = max_guess
         max_guess_black = 0
-        
+
         tc_init = time_control.get_parameters()
         tc_init['mode']  = TimeMode.FIXED
         tc_init['fixed'] = think_time
         tc_init['blitz'] = 0
         tc_init['fischer'] = 0
-        
+
         tc_init['blitz2'] = 0
         tc_init['moves_to_go'] = 0
         tc_init['depth'] = 0
@@ -244,24 +245,24 @@ def main():
         Observable.fire(Event.SET_TIME_CONTROL(tc_init=tc_init, time_text=text, show_ok=True))
         stop_clock()
         DisplayMsg.show(Message.EXIT_MENU())
-        
+
     def set_online_tctrl(game_time, fischer_inc):
         nonlocal time_control
         l_game_time   = 0
         l_fischer_inc = 0
-        
+
         ## TC must be determined in newgame event (switch_online)
-        
+
         logging.debug('molli online set_online_tctrl input %s %s', game_time, fischer_inc)
         l_game_time = int(game_time)
         l_fischer_inc = int(fischer_inc)
         ##logging.debug('molli online set_online_tctr output %s %s', game_time, fischer_inc)
         stop_clock()
         time_control.stop_internal(log=False)
-        
+
         time_control = TimeControl()
         tc_init  = time_control.get_parameters()
-        
+
         if l_fischer_inc == 0:
             tc_init['mode']  = TimeMode.BLITZ
             tc_init['blitz'] = l_game_time
@@ -270,20 +271,20 @@ def main():
             tc_init['mode']    = TimeMode.FISCHER
             tc_init['blitz']   = l_game_time
             tc_init['fischer'] = l_fischer_inc
-        
+
         tc_init['blitz2'] = 0
         tc_init['moves_to_go'] = 0
 
         lt_white = l_game_time * 60 + l_fischer_inc
         lt_black = l_game_time * 60 + l_fischer_inc
         tc_init['internal_time'] = {chess.WHITE: lt_white, chess.BLACK: lt_black}
-        
+
         time_control = TimeControl(**tc_init)
         text = dgttranslate.text('N00_oktime')
         msg = Message.TIME_CONTROL(time_text=text, show_ok=True, tc_init=tc_init)
         DisplayMsg.show(msg)
         stop_fen_timer()
-        
+
     def set_online_tctrl2(game_time, fischer_inc):
         nonlocal online_decrement
         nonlocal time_control
@@ -303,26 +304,26 @@ def main():
         text = dgttranslate.text('N00_oktime')
         Observable.fire(Event.SET_TIME_CONTROL(tc_init=tc_init, time_text=text, show_ok=True))
         stop_fen_timer()
-        
+
     def set_emulation_tctrl():
         nonlocal time_control
         logging.debug('molli: set_emulation_tctrl')
         if emulation_mode():
             pico_depth = 0
             pico_tctrl_str = ''
-            
+
             stop_clock()
             time_control.stop_internal(log=False)
-            
+
             uci_options = engine.get_pgn_options()
             pico_tctrl_str = ''
-            
+
             try:
                 if "PicoTimeControl" in uci_options:
                     pico_tctrl_str = str(uci_options["PicoTimeControl"])
             except:
                 pico_tctrl_str = ''
-            
+
             try:
                 if "PicoDepth" in uci_options:
                     pico_depth = int(uci_options["PicoDepth"])
@@ -342,14 +343,14 @@ def main():
         pgn_game_name = ''
         pgn_result = ''
         pgn_problem = ''
-            
+
         try:
             log_p = open('pgn_game_info.txt', 'r')
         except:
             log_p = ''
             logging.error('Could not read pgn_game_info file')
             return
-            
+
         if log_p:
             lines = log_p.readlines()
             i = 0
@@ -400,16 +401,16 @@ def main():
             pgn_game_name = 'Game Error'
             pgn_problem = ''
             pgn_result = '*'
-        
+
         log_p.close()
         l_len = len(pgn_game_name) - 1
         l_pgn_game_name = pgn_game_name[:l_len]
         pgn_game_name = l_pgn_game_name.ljust(11,' ')
-        
+
         l_len = len(pgn_problem) - 1
         l_pgn_problem = pgn_problem[:l_len]
         pgn_pgn_problem= l_pgn_problem.ljust(11,' ')
-            
+
         return(pgn_game_name, pgn_problem, pgn_fen, pgn_result, pgn_white, pgn_black)
 
     def set_fen_from_pgn(pgn_fen):
@@ -423,7 +424,7 @@ def main():
         nonlocal pb_move
         nonlocal play_mode ##molli
         nonlocal game_declared
-        
+
         bit_board = chess.Board(pgn_fen)
         bit_board.set_fen(bit_board.fen())
         logging.debug('molli PGN Fen: %s', bit_board.fen())
@@ -450,14 +451,14 @@ def main():
     def picotutor_mode(): ## molli picotutor enabled?
         nonlocal flag_picotutor
         enabled = False
-        
+
         if flag_picotutor and interaction_mode in (Mode.NORMAL, Mode.TRAINING, Mode.BRAIN) and not online_mode() and not pgn_mode() and (dgtmenu.get_picowatcher() or dgtmenu.get_picocoach() or dgtmenu.get_picoexplorer()) and picotutor != None:
             enabled = True
         else:
             enabled = False
-        
+
         return enabled
-    
+
     def get_comment_file():
         comment_path = engine.get_file() + '_comments_' + args.language + '.txt'
         logging.debug('molli comment file: %s', comment_path)
@@ -486,7 +487,7 @@ def main():
         if '(mame' in engine_name or '(mess' in engine_name:
             emulation = True ## molli emulation mode
         return(emulation)
-    
+
     def online_mode():
         online = False
         if len(engine_name) >= 6:
@@ -495,7 +496,7 @@ def main():
             else:
                 online = False
         return(online)
-        
+
     def compare_fen(fen_board_external='',fen_board_internal=''):
         ## <Piece Placement> ::= <rank8>'/'<rank7>'/'<rank6>'/'<rank5>'/'<rank4>'/'<rank3>'/'<rank2>'/'<rank1>
         ## <ranki>       ::= [<digit17>]<piece> {[<digit17>]<piece>} [<digit17>] | '8'
@@ -536,12 +537,12 @@ def main():
         else:
             windows = False
         return(windows)
-    
+
     def display_ip_info():
         nonlocal set_location
         """Fire an IP_INFO message with the IP adr."""
         location, ext_ip, int_ip = get_location()
-        
+
         if set_location == 'auto': ##molli
             pass
         else:
@@ -568,9 +569,9 @@ def main():
         nonlocal game_declared
         nonlocal take_back_locked
         nonlocal dgtmenu
-        
+
         logging.debug('molli: read game from pgn file')
-        
+
         l_filename = 'games' + os.sep + file_name
         try:
             l_file_pgn = open(l_filename)
@@ -578,38 +579,38 @@ def main():
                 return
         except:
             return
-        
+
         l_game_pgn = chess.pgn.read_game(l_file_pgn)
         l_file_pgn.close()
-        
+
         logging.debug('molli: read game filename %s', l_filename)
-        
+
         stop_search_and_clock()
-        
+
         if picotutor_mode():
             picotutor.reset() ##molli picotutor
-        
+
         game = chess.Board()
         l_move = chess.Move.null()
-        
+
         if l_game_pgn.headers['Event']:
             DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers['Event'])))
-            
+
         if l_game_pgn.headers['White']:
             DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers['White'])))
-            
+
         DisplayMsg.show(Message.SHOW_TEXT(text_string='versus'))
-                
+
         if l_game_pgn.headers['Black']:
             DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers['Black'])))
-    
+
         if l_game_pgn.headers['Result']:
             DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers['Result'])))
-    
+
         time.sleep(2)
         DisplayMsg.show(Message.READ_GAME)
         time.sleep(2)
-        
+
         for l_move in l_game_pgn.main_line():
             game.push(l_move)
             valid = picotutor.push_move(l_move)
@@ -617,9 +618,9 @@ def main():
         ## take back last move in order to send it with user_move for web publishing
         if l_move:
             game.pop()
-            
+
         engine.newgame(game.copy())
-        
+
         ## switch temporarly picotutor off
         flag_picotutor = False
 
@@ -627,25 +628,25 @@ def main():
             user_move(l_move, sliding=True) ## publish current position to webserver
 
         flag_picotutor = True ## back to on again
-        
+
         stop_search_and_clock()
         ##engine.newgame(game.copy())
         turn = game.turn
         done_computer_fen = None
         done_move = pb_move = chess.Move.null()
         play_mode = PlayMode.USER_WHITE if turn == chess.WHITE else PlayMode.USER_BLACK
-        
+
         #########################################################
         ## molli: eventually preset remaining game time!
         ## molli TC
         #########################################################
-        
+
         try:
             if l_game_pgn.headers['PicoDepth']:
                 l_pico_depth = int(l_game_pgn.headers['PicoDepth'])
             else:
                 l_pico_depth = 0
-        
+
             if l_game_pgn.headers['PicoTimeControl']:
                 l_pico_tc = str(l_game_pgn.headers['PicoTimeControl'])
                 time_control, time_text = transfer_time(l_pico_tc.split(), depth=l_pico_depth)
@@ -661,7 +662,7 @@ def main():
                 lt_black = 0
         except:
             pass
-        
+
         tc_init       = time_control.get_parameters()
         tc_init_last  = time_control.get_parameters()
 
@@ -676,13 +677,13 @@ def main():
 
         searchmoves.reset()
         game_declared = False
-        
+
         legal_fens = compute_legal_fens(game.copy())
         legal_fens_after_cmove = []
         last_legal_fens = []
         assert engine.is_waiting(), 'molli: read_pgn engine not waiting! thinking status: %s' % engine.is_thinking()
         engine.position(copy.deepcopy(game))
-        
+
         ##set_wait_state(Message.START_NEW_GAME(game=game.copy(), newgame=True))
         game_end = check_game_state(game, play_mode)
         if game_end:
@@ -696,7 +697,7 @@ def main():
             msg = Message.PLAY_MODE(play_mode=play_mode, play_mode_text=dgttranslate.text(text))
             DisplayMsg.show(msg)
             time.sleep(1)
-                
+
         take_back_locked = True ## important otherwise problems for setting up the position
 
     def expired_fen_timer():
@@ -737,16 +738,16 @@ def main():
                 if fen_i == game_fen:
                     logging.debug('molli: reverse the board!')
                     dgtmenu.set_position_reverse_flipboard(True)
-            
+
             if (interaction_mode in (Mode.NORMAL, Mode.TRAINING, Mode.BRAIN) and game_fen != chess.STARTING_BOARD_FEN and flag_startup and dgtmenu.get_game_contlast() and not online_mode() and not pgn_mode() and not emulation_mode()):
                 ## molli: read the pgn of last game and restore correct game status and times
                 flag_startup = False
                 DisplayMsg.show(Message.RESTORE_GAME())
                 time.sleep(2)
-                
+
                 l_pgn_file_name = 'last_game.pgn'
                 read_pgn_file(l_pgn_file_name)
-                        
+
             elif (interaction_mode == Mode.PONDER and game_fen != chess.STARTING_BOARD_FEN and flag_flexible_ponder):
                 ## molli: no error in analysis(ponder) mode => start new game with current fen
                 ## and try to keep same player to play (white or black) but check
@@ -809,7 +810,7 @@ def main():
                         ##DisplayMsg.show(Message.EXIT_MENU())
             else:
                 logging.info('wrong fen %s for 4 secs', error_fen)
-                
+
                 if online_mode():
                     ## show computer opponents move again
                     if seeking_flag:
@@ -821,7 +822,7 @@ def main():
                 internal_fen = game.board_fen()
                 external_fen = error_fen
                 fen_res = compare_fen(external_fen, internal_fen)
-                    
+
                 if not position_mode and fen_res:
                     DisplayMsg.show(Message.WRONG_FEN())
                     time.sleep(2)
@@ -841,9 +842,9 @@ def main():
                         DisplayMsg.show(Message.EXIT_MENU())
                 else:
                     DisplayMsg.show(Message.EXIT_MENU())
-                        
+
                 if interaction_mode in (Mode.NORMAL, Mode.TRAINING, Mode.BRAIN) and game_fen != chess.STARTING_BOARD_FEN and flag_startup:
-                
+
                     if dgtmenu.get_enginename():
                         DisplayMsg.show(Message.ENGINE_NAME(engine_name=engine_text)) ## molli
 
@@ -851,7 +852,7 @@ def main():
                         pgn_white = ''
                         pgn_black = ''
                         pgn_game_name, pgn_problem, pgn_fen, pgn_result, pgn_white, pgn_black = read_pgn_info()
-                        
+
                         if pgn_white:
                             DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_white))
                         if pgn_black:
@@ -878,14 +879,14 @@ def main():
     def read_online_result(): ## molli online
         result_line = ''
         winner = ''
-        
+
         try:
             log_u = open('online_game.txt', 'r')
         except:
             log_u = ''
             logging.error('Could not read online game file')
             return
-        
+
         if log_u:
             i = 0
             lines = log_u.readlines()
@@ -938,7 +939,7 @@ def main():
         logging.debug('Molli in read_result: %s', result_line)
         logging.debug('Molli in read_result: %s', winner)
         return(str(result_line), str(winner))
-    
+
     def read_online_user_info(): ## molli online
         own_user = 'unknown'
         opp_user = 'unknown'
@@ -952,7 +953,7 @@ def main():
             log_u = ''
             logging.error('Could not read online game file')
             return
-        
+
         if log_u:
             lines = log_u.readlines()
             i = 0
@@ -1016,12 +1017,12 @@ def main():
             game_time           = '0'
             fischer_inc         = '0'
             login               = 'failed'
-        
+
         log_u.close()
         logging.debug('online game_time %s fischer_inc: %s', game_time, fischer_inc)
-        
+
         return(login, own_color, own_user, opp_user, game_time, fischer_inc)
-    
+
     def stop_fen_timer():
         """Stop the fen timer cause another fen string been send."""
         nonlocal fen_timer_running
@@ -1037,7 +1038,7 @@ def main():
         nonlocal fen_timer
         global position_mode
         delay = 0
-        
+
         if position_mode:
             delay = 1 ## if a fen error already occured don't wait too long for next check
         else:
@@ -1083,7 +1084,7 @@ def main():
             engine.position(copy.deepcopy(game))
             engine.go(uci_dict)
         automatic_takeback = False
-        
+
     def mame_endgame(game: chess.Board, timec: TimeControl, msg: Message, searchlist=False):
         nonlocal automatic_takeback
         """
@@ -1091,7 +1092,7 @@ def main():
 
         If a move is found in the opening book, fire an event in a few seconds.
         """
-        
+
         while not engine.is_waiting():
             time.sleep(0.05)
             logging.warning('engine is still not waiting')
@@ -1123,7 +1124,7 @@ def main():
 
     def stop_search_and_clock(ponder_hit=False):
         """Depending on the interaction mode stop search and clock."""
-        if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING): 
+        if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
             stop_clock()
             ##if not emulation_mode(): ## molli: not for mame to avoid picochess gets stucked
             if engine.is_waiting():
@@ -1149,11 +1150,11 @@ def main():
 
     def stop_clock():
         """Stop the clock."""
-        if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.OBSERVE, Mode.REMOTE, Mode.TRAINING): 
+        if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.OBSERVE, Mode.REMOTE, Mode.TRAINING):
             time_control.stop_internal()
-            if interaction_mode == Mode.TRAINING: 
-                pass 
-            else: 
+            if interaction_mode == Mode.TRAINING:
+                pass
+            else:
                 DisplayMsg.show(Message.CLOCK_STOP(devs={'ser', 'i2c', 'web'}))
                 time.sleep(0.5)  # @todo give some time to clock to really do it. Find a better solution!
         else:
@@ -1161,17 +1162,17 @@ def main():
 
     def start_clock():
         """Start the clock."""
-        if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.OBSERVE, Mode.REMOTE, Mode.TRAINING): 
+        if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.OBSERVE, Mode.REMOTE, Mode.TRAINING):
             time_control.start_internal(game.turn)
             tc_init = time_control.get_parameters()
-            if interaction_mode == Mode.TRAINING: 
-                pass 
-            else: 
+            if interaction_mode == Mode.TRAINING:
+                pass
+            else:
                 DisplayMsg.show(Message.CLOCK_START(turn=game.turn, tc_init=tc_init, devs={'ser', 'i2c', 'web'}))
                 time.sleep(0.5)  # @todo give some time to clock to really do it. Find a better solution!
         else:
             logging.warning('wrong function call [start]! mode: %s', interaction_mode)
-    
+
     def check_game_state(game: chess.Board, play_mode: PlayMode):
         nonlocal time_control
         """
@@ -1222,14 +1223,14 @@ def main():
         global position_mode
 
         eval_str = ''
-        
+
         take_back_locked = False
 
         logging.info('user move [%s] sliding: %s', move, sliding)
         if move not in game.legal_moves:
             logging.warning('illegal move [%s]', move)
         else:
-            
+
             if interaction_mode == Mode.BRAIN:
                 ponder_hit = (move == pb_move)
                 logging.info('pondering move: [%s] res: Ponder%s', pb_move, 'Hit' if ponder_hit else 'Miss')
@@ -1240,7 +1241,7 @@ def main():
                 ponder_hit = False
 
             stop_search_and_clock(ponder_hit=ponder_hit)
-            if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.OBSERVE, Mode.REMOTE, Mode.TRAINING) and not sliding: 
+            if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.OBSERVE, Mode.REMOTE, Mode.TRAINING) and not sliding:
                 time_control.add_time(game.turn)
                 ## molli new tournament time control
                 if time_control.moves_to_go_orig > 0 and game.fullmove_number == time_control.moves_to_go_orig:
@@ -1253,16 +1254,16 @@ def main():
                     ##online_decrement = 2.0   ## try between 1.5 and 5 if out of sync with server times
                     if online_decrement > 0:
                         time_control.sub_online_time(game.turn, online_decrement)
-                   
+
             game_before = game.copy()
-            
+
             done_computer_fen = None
             done_move = chess.Move.null()
             fen = game.fen()
             turn = game.turn
             game.push(move)
             eval_str = ''
-            
+
             if picotutor_mode() and not position_mode and not takeback_active:
                 l_mate = ''
                 t_hint_move = chess.Move.null()
@@ -1310,23 +1311,23 @@ def main():
                         threat_move = chess.Move.null()
                         t_mate, t_hint_move, t_pv_best_move, t_pv_user_move = picotutor.get_user_move_info()
                         ##print("Pico-Tutor Info: %s" % str(pv_user_move))
-                        
+
                         try:
                             threat_move = t_pv_user_move[1]
                         except:
                             threat_move = chess.Move.null()
-                        
+
                         if threat_move != chess.Move.null():
                             game_tutor = game_before.copy()
                             game_tutor.push(move)
                             san_move = game_tutor.san(threat_move)
                             game_tutor.push(t_pv_user_move[1])  ## for picotalker (last move spoken)
-                            
+
                             tutor_str = 'THREAT' + san_move
                             msg = Message.PICOTUTOR_MSG(eval_str = tutor_str, game = game_tutor.copy())
                             DisplayMsg.show(msg)
                             time.sleep(5)
-        
+
                         if t_hint_move.uci() != chess.Move.null():
                             game_tutor = game_before.copy()
                             san_move = game_tutor.san(t_hint_move)
@@ -1335,12 +1336,12 @@ def main():
                             msg = Message.PICOTUTOR_MSG(eval_str = tutor_str, game = game_tutor.copy())
                             DisplayMsg.show(msg)
                             time.sleep(5)
-            
+
                 if game.fullmove_number < 1:
                     ModeInfo.reset_opening()
-                    
+
             searchmoves.reset()
-            if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING): 
+            if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
                 msg = Message.USER_MOVE_DONE(move=move, fen=fen, turn=turn, game=game.copy())
                 game_end = check_game_state(game, play_mode)
                 if game_end:
@@ -1359,10 +1360,10 @@ def main():
                         DisplayMsg.show(game_end)
                         legal_fens_after_cmove = [] # molli
                 else:
-                    if interaction_mode in (Mode.NORMAL, Mode.TRAINING) or not ponder_hit: 
+                    if interaction_mode in (Mode.NORMAL, Mode.TRAINING) or not ponder_hit:
                         if not check_game_state(game, play_mode):
                             ## molli: automatic takeback of blunder moves for mame engines
-                            if emulation_mode() and eval_str == '??' and last_move != move: 
+                            if emulation_mode() and eval_str == '??' and last_move != move:
                                 ## molli: do not send move to engine
                                 ## wait for take back or lever button in case of no takeback
                                 takeback_active = True
@@ -1402,7 +1403,7 @@ def main():
                     DisplayMsg.show(game_end)
                 else:
                     analyse(game, msg)
-            
+
             if picotutor_mode() and not position_mode and not takeback_active and not automatic_takeback:
                 if dgtmenu.get_picoexplorer():
                     op_name = ''
@@ -1412,7 +1413,7 @@ def main():
                         ModeInfo.set_opening(book_in_use, str(op_name), op_eco)
                         DisplayMsg.show(Message.SHOW_TEXT(text_string=op_name))
                         time.sleep(0.7)
-                
+
                 if dgtmenu.get_picocomment() != PicoComment.COM_OFF and not game_end:
                     game_comment = ''
                     game_comment = picotutor.get_game_comment(pico_comment=dgtmenu.get_picocomment(), com_factor=com_factor)
@@ -1423,7 +1424,7 @@ def main():
 
     def is_not_user_turn(turn):
         """Return if it is users turn (only valid in normal, brain or remote mode)."""
-        assert interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING), 'wrong mode: %s' % interaction_mode 
+        assert interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING), 'wrong mode: %s' % interaction_mode
         condition1 = (play_mode == PlayMode.USER_WHITE and turn == chess.BLACK)
         condition2 = (play_mode == PlayMode.USER_BLACK and turn == chess.WHITE)
         return condition1 or condition2
@@ -1444,7 +1445,7 @@ def main():
         nonlocal flag_picotutor
         nonlocal best_move_posted
         nonlocal best_move_displayed
-        nonlocal book_in_use 
+        nonlocal book_in_use
         nonlocal takeback_active
         nonlocal no_guess_black
         nonlocal no_guess_white
@@ -1453,7 +1454,7 @@ def main():
         nonlocal play_mode
         nonlocal time_control
         nonlocal automatic_takeback
-        
+
         global   flag_startup
         global   fen_error_occured
         global   position_mode
@@ -1476,14 +1477,14 @@ def main():
                     msg = Message.PICOTUTOR_MSG(eval_str = eval_str)
                     DisplayMsg.show(msg)
                     time.sleep(2)
-                    
+
                     t_best_move, t_best_score, t_best_mate, t_pv_best_move, t_alt_best_moves = picotutor.get_pos_analysis()
-                    
+
                     tutor_str = 'POS' + str(t_best_score)
                     msg = Message.PICOTUTOR_MSG(eval_str = tutor_str, score = t_best_score)
                     DisplayMsg.show(msg)
                     time.sleep(5)
-                
+
                     if t_best_mate:
                         l_mate = int(t_best_mate)
                         if t_best_move != chess.Move.null():
@@ -1514,14 +1515,14 @@ def main():
                                 game_tutor = game.copy()
                                 san_move = game_tutor.san(alt_move)
                                 game_tutor.push(alt_move)  ## for picotalker (last move spoken)
-                                
+
                                 tutor_str = 'BEST' + san_move
                                 msg = Message.PICOTUTOR_MSG(eval_str = tutor_str, game = game_tutor.copy())
                                 DisplayMsg.show(msg)
                                 time.sleep(5)
                             else:
                                 break
-    
+
                     start_clock()
             else:
                 if position_mode:
@@ -1534,11 +1535,11 @@ def main():
                     if not done_computer_fen:
                         start_clock()
                     DisplayMsg.show(Message.EXIT_MENU())
-        
+
         # Check if we have to undo a previous move (sliding)
         elif fen in last_legal_fens:
             logging.info('sliding move detected')
-            if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING): 
+            if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
                 if is_not_user_turn(game.turn):
                     stop_search()
                     game.pop()
@@ -1601,20 +1602,20 @@ def main():
             legal_moves = list(game.legal_moves)
             move = legal_moves[last_legal_fens.index(fen)]  # type: chess.Move
             user_move(move, sliding=True)
-            if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING): 
+            if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING):
                 legal_fens = []
             else:
                 legal_fens = compute_legal_fens(game.copy())
-    
+
         ## allow playing/correcting moves for pico's side in TRAINING mode:
         elif fen in legal_fens_pico and interaction_mode == Mode.TRAINING:
             legal_moves = list(game.legal_moves)
             move = legal_moves[legal_fens_pico.index(fen)]  # type: chess.Move
-            
-            if done_computer_fen: 
-                if fen == done_computer_fen: 
-                    pass 
-                else: 
+
+            if done_computer_fen:
+                if fen == done_computer_fen:
+                    pass
+                else:
                     DisplayMsg.show(Message.WRONG_FEN()) # display set pieces/pico's move
                     time.sleep(3) # display set pieces again and accept new players move as pico's move
                     DisplayMsg.show(Message.ALTERNATIVE_MOVE(game=game.copy(), play_mode=play_mode))
@@ -1622,14 +1623,14 @@ def main():
                     DisplayMsg.show(Message.COMPUTER_MOVE(move=move, ponder=False, game=game.copy(), wait=False))
                     time.sleep(2)
             logging.info('user move did a move for pico')
-           
+
             user_move(move, sliding=False)
             last_legal_fens = legal_fens
             if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING):
                 legal_fens = []
             else:
                 legal_fens = compute_legal_fens(game.copy())
-    
+
         # standard legal move
         elif fen in legal_fens:
             logging.info('standard move detected')
@@ -1642,7 +1643,7 @@ def main():
                 legal_fens = []
             else:
                 legal_fens = compute_legal_fens(game.copy())
-    
+
     # molli: allow direct play of an alternative move for pico
         elif fen in legal_fens_pico and not fen in legal_fens and fen != done_computer_fen and done_computer_fen and interaction_mode in (Mode.NORMAL, Mode.BRAIN) and not online_mode() and not emulation_mode() and not pgn_mode() and dgtmenu.get_game_altmove() and not takeback_active:
             legal_moves = list(game.legal_moves)
@@ -1661,7 +1662,7 @@ def main():
             if done_move:
                 DisplayMsg.show(Message.COMPUTER_MOVE(move=done_move, ponder=False, game=game.copy(), wait=False))
                 time.sleep(1.5)
-            
+
             DisplayMsg.show(Message.COMPUTER_MOVE_DONE())
             logging.info('user did a move for pico')
             game.push(done_move)
@@ -1677,7 +1678,7 @@ def main():
                     eval_str = 'ER'
                     picotutor.reset() ##molli picotutor
                     picotutor.set_position(game.fen(), i_turn = game.turn)
-                        
+
             if game_end:
                 legal_fens = []
                 legal_fens_after_cmove = [] # molli
@@ -1689,16 +1690,16 @@ def main():
             else:
                 searchmoves.reset()
                 time_control.add_time(not game.turn)
-                
+
                 ## molli new tournament time control
                 if time_control.moves_to_go_orig > 0 and (game.fullmove_number - 1) == time_control.moves_to_go_orig:
                     time_control.add_game2(not game.turn)
                     t_player = False
                     msg = Message.TIMECONTROL_CHECK(player=t_player, movestogo=time_control.moves_to_go_orig, time1=time_control.game_time, time2=time_control.game_time2)
                     DisplayMsg.show(msg)
-            
+
                 start_clock()
-            
+
                 if interaction_mode == Mode.BRAIN:
                     brain(game, time_control)
 
@@ -1709,15 +1710,15 @@ def main():
         # Player has done the computer or remote move on the board
         elif fen == done_computer_fen:
             logging.info('done move detected')
-            assert interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING), 'wrong mode: %s' % interaction_mode 
+            assert interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING), 'wrong mode: %s' % interaction_mode
             if not pgn_mode():
                 DisplayMsg.show(Message.COMPUTER_MOVE_DONE())       ##molli pgn
-            
+
             best_move_posted = False
             game.push(done_move)
             done_computer_fen = None
             done_move = chess.Move.null()
-            
+
             if online_mode() or emulation_mode():
             ## for online or emulation engine the user time alraedy runs with move announcement
             ## => subtract time between announcement and execution
@@ -1727,7 +1728,7 @@ def main():
                     time_control.sub_online_time(game.turn, cmove_time)
                 cmove_time = 0
                 start_time_cmove_done = 0
-            
+
             game_end = check_game_state(game, play_mode)
             if game_end:
                 legal_fens = []
@@ -1739,27 +1740,27 @@ def main():
                 DisplayMsg.show(game_end)
             else:
                 searchmoves.reset()
-                
+
                 time_control.add_time(not game.turn)
-                
+
                 ## molli new tournament time control
                 if time_control.moves_to_go_orig > 0 and (game.fullmove_number - 1) == time_control.moves_to_go_orig:
                     time_control.add_game2(not game.turn)
                     t_player = False
                     msg = Message.TIMECONTROL_CHECK(player=t_player, movestogo=time_control.moves_to_go_orig, time1=time_control.game_time, time2=time_control.game_time2)
                     DisplayMsg.show(msg)
-                
+
                 if not online_mode() or game.fullmove_number > 1:
                     start_clock()
                 else:
                     DisplayMsg.show(Message.EXIT_MENU()) ## show clock
                     end_time_cmove_done = 0
-            
+
                 if interaction_mode == Mode.BRAIN:
                     brain(game, time_control)
 
                 legal_fens = compute_legal_fens(game.copy())
-                
+
                 if pgn_mode():  ##molli pgn
                     log_pgn()
                     if game.turn == chess.WHITE:
@@ -1778,9 +1779,9 @@ def main():
                         else:
                             last_legal_fens = []
                             get_next_pgn_move()  ##molli pgn
-                    
+
             last_legal_fens = []
-            
+
             if game.fullmove_number < 1:
                 ModeInfo.reset_opening()
             if picotutor_mode() and dgtmenu.get_picoexplorer():
@@ -1789,7 +1790,7 @@ def main():
                     ModeInfo.set_opening(book_in_use, str(op_name), op_eco)
                     DisplayMsg.show(Message.SHOW_TEXT(text_string=op_name))
 
-        # molli: Premove/fast move: Player has done the computer move and his own move in rapid sequence 
+        # molli: Premove/fast move: Player has done the computer move and his own move in rapid sequence
         elif fen in legal_fens_after_cmove and flag_premove and done_move != chess.Move.null(): ## and interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
             logging.info('standard move after computer move detected')
             # time_control.add_inc(game.turn)  # deactivated and moved to user_move() cause tc still running :-(
@@ -1799,7 +1800,7 @@ def main():
             done_move = chess.Move.null()
             best_move_posted = False
             searchmoves.reset()
-           
+
             time_control.add_time(not game.turn)
             ## molli new tournament time control
             if time_control.moves_to_go_orig > 0 and (game.fullmove_number - 1) == time_control.moves_to_go_orig:
@@ -1807,14 +1808,14 @@ def main():
                 t_player = False
                 msg = Message.TIMECONTROL_CHECK(player=t_player, movestogo=time_control.moves_to_go_orig, time1=time_control.game_time, time2=time_control.game_time2 )
                 DisplayMsg.show(msg)
-                    
+
             if interaction_mode == Mode.BRAIN:
                 brain(game, time_control)
 
             last_legal_fens = []
             legal_fens_after_cmove = []
             legal_fens = compute_legal_fens(game.copy()) # molli new legal fance based on cmove
-            
+
             # standard user move handling
             legal_moves = list(game.legal_moves)
             move = legal_moves[legal_fens.index(fen)]  # type: chess.Move
@@ -1841,22 +1842,22 @@ def main():
                         stop_search_and_clock()
                         while len(game_copy.move_stack) < len(game.move_stack):
                             game.pop()
-                            
+
                             if picotutor_mode():
                                 if best_move_posted:   ## molli computer move already sent to tutor!
                                     picotutor.pop_last_move()
                                     best_move_posted = False
                                 picotutor.pop_last_move()
-                            
+
                         # its a complete new pos, delete saved values
                         done_computer_fen = None
                         done_move = pb_move = chess.Move.null()
                         searchmoves.reset()
                         takeback_active = True
                         set_wait_state(Message.TAKE_BACK(game=game.copy()))  # new: force stop no matter if picochess turn
-                        
+
                         break
-        
+
                 if pgn_mode():  ##molli pgn
                     #logging.debug('molli pgn: take back check')
                     log_pgn()
@@ -1868,7 +1869,7 @@ def main():
                         if game.turn == chess.BLACK:
                             if no_guess_black > max_guess_black:
                                 get_next_pgn_move()  ##molli pgn
-    
+
         # doing issue #152
         logging.debug('fen: %s result: %s', fen, handled_fen)
         stop_fen_timer()
@@ -1935,7 +1936,7 @@ def main():
             # Go back to analysing or observing
             if interaction_mode == Mode.BRAIN and not done_computer_fen:
                 brain(game, time_control)
-            if interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.PONDER, Mode.TRAINING): 
+            if interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.PONDER, Mode.TRAINING):
                 analyse(game, msg)
                 return
             if interaction_mode in (Mode.OBSERVE, Mode.REMOTE):
@@ -1963,9 +1964,9 @@ def main():
                 return value
             except ValueError:
                 return 1
-        
+
         i_depth = _num(depth)
-                
+
         if i_depth > 0: ##molli depth support
             fixed = 671
             timec = TimeControl(TimeMode.FIXED, fixed=fixed, depth=i_depth)
@@ -2010,7 +2011,7 @@ def main():
             timec = TimeControl(TimeMode.BLITZ, blitz=5)
             textc = dgttranslate.text('B00_tc_blitz', timec.get_list_text())
         return timec, textc
-    
+
     def get_engine_level_dict(engine_level):
         """Transfer an engine level to its level_dict plus an index."""
         installed_engines = engine.get_installed_engines()
@@ -2029,7 +2030,7 @@ def main():
         ponder_mode = analyse_mode = False
         if False:  # switch-case
             pass
-        elif interaction_mode in (Mode.NORMAL, Mode.REMOTE, Mode.TRAINING): 
+        elif interaction_mode in (Mode.NORMAL, Mode.REMOTE, Mode.TRAINING):
             pass
         elif interaction_mode == Mode.BRAIN:
             ponder_mode = True
@@ -2039,7 +2040,7 @@ def main():
 
     def _dgt_serial_nr():
         DisplayMsg.show(Message.DGT_SERIAL_NR(number='dont_use'))
-    
+
     def switch_online(): ## molli
         nonlocal play_mode
         nonlocal last_legal_fens
@@ -2047,7 +2048,7 @@ def main():
         nonlocal legal_fens_after_cmove
         nonlocal time_control
         color = ''
-        
+
         if online_mode():
             login, own_color, own_user, opp_user, game_time, fischer_inc = read_online_user_info()
             logging.debug('molli own_color in switch_online [%s]', own_color)
@@ -2059,25 +2060,25 @@ def main():
             ModeInfo.set_online_mode(mode=True)
             ModeInfo.set_online_own_user(name=own_user)
             ModeInfo.set_online_opponent(name=opp_user)
-            
+
             if len(own_color) > 1:
                 color = own_color[2]
             else:
                 color = own_color
-            
+
             logging.debug('molli switch_online start timecontrol')
             set_online_tctrl(game_time, fischer_inc) ## online rc
             time_control.reset_start_time()
-            
+
             logging.debug('molli switch_online new_color: %s', color)
             if (color == 'b' or color == 'B') and game.turn == chess.WHITE and play_mode == PlayMode.USER_WHITE and done_move == chess.Move.null():
             ## switch to black color for user and send a 'go' to the engine
                 play_mode = PlayMode.USER_BLACK
                 text = play_mode.value  # type: str
                 msg = Message.PLAY_MODE(play_mode=play_mode, play_mode_text=dgttranslate.text(text))
-                
+
                 stop_search_and_clock()
-                
+
                 last_legal_fens = []
                 legal_fens_after_cmove = [] # molli
                 legal_fens = []
@@ -2094,7 +2095,7 @@ def main():
              ModeInfo.set_pgn_mode(mode=False)
 
     def get_next_pgn_move():
-        
+
         nonlocal play_mode
         nonlocal last_legal_fens
         nonlocal legal_fens
@@ -2107,19 +2108,19 @@ def main():
         nonlocal done_move
         nonlocal best_move_displayed
         nonlocal time_control
-        
+
         log_pgn()
         time.sleep(0.5)
-        
+
         if max_guess_black > 0:
             no_guess_black = 1
         elif max_guess_white > 0:
             no_guess_white = 1
-        
+
         ##Observable.fire(Event.SWITCH_SIDES())
         if not engine.is_waiting():
             stop_search_and_clock()
-                
+
         last_legal_fens = []
         legal_fens_after_cmove = [] # molli
         best_move_displayed = done_computer_fen
@@ -2129,16 +2130,16 @@ def main():
             done_move = pb_move = chess.Move.null()
         else:
             move = chess.Move.null()  # not really needed
-        
+
         ##text = play_mode.value  # type: str
         play_mode = PlayMode.USER_WHITE if play_mode == PlayMode.USER_BLACK else PlayMode.USER_BLACK
         msg = Message.SET_PLAYMODE(play_mode=play_mode)
         DisplayMsg.show(msg) ##molli: only set play_mode, no output message!
         msg = Message.COMPUTER_MOVE_DONE()
-        
+
         if time_control.mode == TimeMode.FIXED:
             time_control.reset()
-        
+
         legal_fens = []
         game_end = check_game_state(game, play_mode)
         if game_end:
@@ -2241,7 +2242,7 @@ def main():
     parser.add_argument('-dtcs', '--def-timectrl', type=str, default='5 0', help='default time control setting when leaving an emulation engine after startup')
     parser.add_argument('-altm', '--alt-move', action='store_true', help='Playing direct alternative move for pico: default is off')
     parser.add_argument('-odec', '--online-decrement', type=float, default=2.0, help='Seconds to be subtracted after each own online move in order to sync with server times')
-    
+
     args, unknown = parser.parse_known_args()
 
     # Enable logging
@@ -2288,7 +2289,7 @@ def main():
                       args.rolling_display_ponder, args.show_engine, dgttranslate) ## molli WD
 
     dgtdispatcher = Dispatcher(dgtmenu)
-    
+
     tutor_engine = args.tutor_engine
     dgtmenu.set_picocoach(args.tutor_coach)
     dgtmenu.set_picowatcher(args.tutor_watcher)
@@ -2305,14 +2306,14 @@ def main():
     dgtmenu.set_game_altmove(args.alt_move)
 
     logging.debug('molli: depth %s', args.depth)
-    
+
     time_control, time_text = transfer_time(args.time.split(), depth=args.depth)
     tc_init_last  = time_control.get_parameters() ## molli for eventual restore after pgn mode
     time_text.beep = False
- 
+
     # The class dgtDisplay fires Event (Observable) & DispatchDgt (Dispatcher)
     DgtDisplay(dgttranslate, dgtmenu, time_control).start()
-    
+
     # Create PicoTalker for speech output
     # molli: add probability factor for game comments args.com_fact
     com_factor =  args.comment_factor
@@ -2348,7 +2349,7 @@ def main():
 
     # The class Dispatcher sends DgtApi messages at the correct (delayed) time out
     dgtdispatcher.start()
-    
+
     # Save to PGN
     emailer = Emailer(email=args.email, mailgun_key=args.mailgun_key)
     emailer.set_smtp(sserver=args.smtp_server, suser=args.smtp_user, spass=args.smtp_pass,
@@ -2366,9 +2367,9 @@ def main():
     # Update
     if args.enable_update:
         update_picochess(args.dgtpi, args.enable_update_reboot, dgttranslate)
-    
+
     #################################################
-    
+
     ip_info_thread = threading.Timer(12, display_ip_info)  # give RaspberyPi 10sec time to startup its network devices
     ip_info_thread.start()
 
@@ -2380,14 +2381,13 @@ def main():
     # try the given engine first and if that fails the first/second from "engines.ini" then crush
     engine_file = args.engine ## molli
 
-    # engine_home = 'engines' + os.sep + machine() ##molli # wd
     engine_home = engine_file # wd
     engine_remote_home = args.engine_remote_home.rstrip(os.sep) ##molli
-    
+
     engine_tries = 0
     engine = engine_name = None
     uci_remote_shell = None
-    
+
     uci_local_shell = UciShell(hostname='', username='', key_file='', password='')
 
     while engine_tries < 2:
@@ -2395,7 +2395,7 @@ def main():
             eng_ini = read_engine_ini(uci_local_shell.get(), engine_home)
             engine_file = eng_ini[engine_tries]['file']
             engine_tries += 1
-            
+
         # Gentlemen, start your engines...
         # engine_file = os.path.basename(engine_file) # wd
         # engine = UciEngine(file=engine_file, uci_shell=uci_local_shell, home=engine_home) # wd
@@ -2412,7 +2412,7 @@ def main():
         DisplayMsg.show(Message.ENGINE_FAIL())
         time.sleep(2)
         sys.exit(-1)
-    
+
     # Startup - internal
     game = chess.Board()  # Create the current game
     fen = game.fen()
@@ -2462,17 +2462,17 @@ def main():
                                      'tc_init': time_control.get_parameters(), 'time_text': time_text}))
     ## Favorites
     dgtmenu.set_favorite_engines(engine.get_installed_engines2())
-                                     
+
     DisplayMsg.show(Message.ENGINE_STARTUP(installed_engines=engine.get_installed_engines(), file=engine.get_file(), level_index=level_index, has_960=engine.has_chess960(), has_ponder=engine.has_ponder()))
-    
+
     ## set timecontrol restore data set for normal engines after leaving emulation mode
     pico_time = args.def_timectrl
-    
+
     if emulation_mode():
         flag_last_engine_emu = True
         time_control_l, time_text_l = transfer_time(pico_time.split(), depth=0)
         tc_init_last = time_control_l.get_parameters()
-        
+
     if pgn_mode():
         ModeInfo.set_pgn_mode(mode=True)
         flag_last_engine_pgn = True
@@ -2507,7 +2507,7 @@ def main():
     text = dgtmenu.enter_eng_name_menu()
     engine_text = str(text.l)
     dgtmenu.exit_menu()
-    
+
     # Event loop
     logging.info('evt_queue ready')
     while True:
@@ -2541,7 +2541,7 @@ def main():
                 stop_fen_timer()
 
             elif isinstance(event, Event.NEW_ENGINE):
-                
+
                 old_file = engine.get_file()
                 old_options = {}
                 raw_options = engine.get_options()
@@ -2562,7 +2562,7 @@ def main():
 
                 logging.debug('molli check_ssh:%s', flag_eng)
                 DisplayMsg.show(Message.ENGINE_SETUP()) ## molli
-                
+
                 if remote_engine_mode(): ##molli
                     if flag_eng:
                         if not uci_remote_shell:
@@ -2595,7 +2595,7 @@ def main():
                         engine_file = old_file
                         help_str    = old_file.rsplit(os.sep, 1)[1]
                         remote_file = engine_remote_home + os.sep + help_str
-        
+
 
                         if remote_engine_mode() and flag_eng(): ##molli
                             engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell)
@@ -2634,7 +2634,7 @@ def main():
                             DisplayMsg.show(Message.ENGINE_FAIL())
 
                     engine.startup(event.options)
-           
+
                     if online_mode():
                         ##stop_search_and_clock()
                         stop_clock()
@@ -2659,7 +2659,7 @@ def main():
                                 engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell)
                             else:
                                 engine = UciEngine(file=old_file, uci_shell=uci_local_shell)
-                            
+
                             try:
                                 engine_name = engine.get_name()
                             except AttributeError:
@@ -2729,7 +2729,7 @@ def main():
                 if pgn_mode():
                     if not flag_last_engine_pgn:
                         tc_init_last  = time_control.get_parameters()
-                   
+
                     det_pgn_guess_tctrl()
 
                     flag_last_engine_pgn = True
@@ -2752,7 +2752,7 @@ def main():
 
                 comment_file = get_comment_file() ## for picotutor game comments like Boris & Sargon
                 picotutor.init_comments(comment_file)
-                
+
                 if pgn_mode() or emulation_mode():
                     ## molli: in these cases we can't continue from current position but
                     ##        have to start a new game
@@ -2770,7 +2770,7 @@ def main():
                             time.sleep(1)
                     pos960 = 518
                     Observable.fire(Event.NEW_GAME(pos960=pos960))
-        
+
                 if online_mode():
                     ModeInfo.set_online_mode(mode=True)
                     logging.debug('online game fen: %s', game.fen())
@@ -2786,11 +2786,11 @@ def main():
                     ModeInfo.set_pgn_mode(mode=True)
                 else:
                     ModeInfo.set_pgn_mode(mode=False)
-                        
+
             elif isinstance(event, Event.SETUP_POSITION):
                 logging.debug('setting up custom fen: %s', event.fen)
                 uci960 = event.uci960
-                
+
                 if game.move_stack:
                     if not (game.is_game_over() or game_declared):
                         result = GameResult.ABORT
@@ -2832,13 +2832,13 @@ def main():
                 position_mode = False
                 fen_error_occured = False
                 newgame = game.move_stack or (game.chess960_pos() != event.pos960)
-                
+
                 if newgame:
                     logging.debug('starting a new game with code: %s', event.pos960)
                     uci960 = event.pos960 != 518
 
                     if not (game.is_game_over() or game_declared):
-                       
+
                         if emulation_mode(): ## force abortion for mame ## molli mame enhance
                             if is_not_user_turn(game.turn):     # 01.10.2018 um die Fehlermeldung zu vermeiden getrennt
                                 # clock must be stopped BEFORE the "book_move" event cause SetNRun resets the clock display
@@ -2848,25 +2848,25 @@ def main():
                                 game_declared = True
                                 stop_fen_timer()
                                 legal_fens_after_cmove = [] # molli
-            
+
                         result = GameResult.ABORT
                         DisplayMsg.show(Message.GAME_ENDS(tc_init = time_control.get_parameters(), result=result, play_mode=play_mode, game=game.copy()))
                         time.sleep(0.3)
-                    
+
                     game = chess.Board()
                     game.turn = chess.WHITE ##molli
                     play_mode = PlayMode.USER_WHITE #molli
                     if uci960:
                         game.set_chess960_pos(event.pos960)
-                
+
                     stop_search_and_clock()
-                
+
                     # see setup_position
                     if engine.has_chess960():
                         engine.option('UCI_Chess960', uci960)
                         engine.send()
 
-                    if interaction_mode == Mode.TRAINING: 
+                    if interaction_mode == Mode.TRAINING:
                         engine.stop()
 
                     if online_mode():
@@ -2877,13 +2877,13 @@ def main():
                         ModeInfo.set_online_mode(mode=True)
                     else:
                         ModeInfo.set_online_mode(mode=False)
-                    
+
                     if emulation_mode():
                         ##engine.stop() ## molli mame enhance
                         DisplayMsg.show(Message.ENGINE_SETUP()) ## molli
 
                     engine.newgame(game.copy())
-                    
+
                     done_computer_fen = None
                     done_move = pb_move = chess.Move.null()
                     time_control.reset()
@@ -2922,29 +2922,29 @@ def main():
                     set_wait_state(Message.START_NEW_GAME(game=game.copy(), newgame=newgame))
                     if not 'no_player' in opp_user and not 'no_user' in own_user:
                         switch_online() ##molli
-                            
+
                 else:
                     if online_mode():
                         logging.debug('starting a new game with code: %s', event.pos960)
                         uci960 = event.pos960 != 518
                         stop_clock()
-                    
+
                         game.turn = chess.WHITE ##molli
                         play_mode = PlayMode.USER_WHITE #molli
                         if uci960:
                             game.set_chess960_pos(event.pos960)
-                    
+
                         # see setup_position
                         stop_search_and_clock()
                         stop_fen_timer()
-                        
+
                         if engine.has_chess960():
                             engine.option('UCI_Chess960', uci960)
                             engine.send()
 
                         time_control.reset()
                         searchmoves.reset()
-                        
+
                         DisplayMsg.show(Message.SEEKING()) ## molli
                         engine.stop()
                         seeking_flag = True
@@ -3004,24 +3004,24 @@ def main():
                         pgn_black = ''
                         time.sleep(1)
                         pgn_game_name, pgn_problem, pgn_fen, pgn_result, pgn_white, pgn_black = read_pgn_info()
-                        
+
                         if not pgn_white:
                             pgn_white = '????'
                         DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_white))
-                        
+
                         DisplayMsg.show(Message.SHOW_TEXT(text_string='versus'))
-                            
+
                         if not pgn_black:
                             pgn_black = '????'
                         DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_black))
-                        
+
                         if pgn_result:
                             DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_result))
                         if 'mate in' in pgn_problem or 'Mate in' in pgn_problem:
                             DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_problem))
                         else:
                             DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_game_name))
-                        
+
                         ##reset pgn guess counters
                         if last_move_no > 1:
                             no_guess_black = 1
@@ -3032,7 +3032,7 @@ def main():
                                 if no_guess_white > max_guess_white:
                                     last_legal_fens = []
                                     get_next_pgn_move()  ##molli pgn
-                        
+
             elif isinstance(event, Event.PAUSE_RESUME):
                 if pgn_mode():
                     ##stop_clock()
@@ -3068,7 +3068,7 @@ def main():
             elif isinstance(event, Event.SWITCH_SIDES):
                 flag_startup = False
                 DisplayMsg.show(Message.EXIT_MENU())
-                
+
                 if interaction_mode == Mode.PONDER:
                     ## molli: allow switching sides in flexble ponder mode
                     fen = game.board_fen()
@@ -3104,7 +3104,7 @@ def main():
                         DisplayMsg.show(Message.WRONG_FEN())
                         DisplayMsg.show(Message.EXIT_MENU())
 
-                elif interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING): 
+                elif interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
                     if not engine.is_waiting():
                         stop_search_and_clock()
                     automatic_takeback = False
@@ -3240,8 +3240,8 @@ def main():
                 take_back_locked = False
                 best_move_posted = False
                 takeback_active= False
-                
-                if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING): 
+
+                if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
                     if is_not_user_turn(game.turn):     # 01.10.2018 um die Fehlermeldung zu vermeiden getrennt
                         # clock must be stopped BEFORE the "book_move" event cause SetNRun resets the clock display
                         stop_clock()
@@ -3254,7 +3254,7 @@ def main():
                             stop_fen_timer()
                             legal_fens_after_cmove = [] # molli
                             game_msg = game.copy()
-                            
+
                             if online_mode():
                                 ##time.sleep(0.7) ## give some time for getting correct online result
                                 winner = ''
@@ -3265,7 +3265,7 @@ def main():
                                 logging.debug('molli winner:%s', winner)
                                 gameresult_tmp = ''
                                 gameresult_tmp2 = ''
-                                
+
                                 if 'Checkmate' in result_str or 'checkmate' in result_str or 'mate' in result_str:
                                     gameresult_tmp = GameResult.MATE
                                 elif 'Game abort' in result_str or 'timeout' in result_str:
@@ -3317,14 +3317,14 @@ def main():
                                             gameresult_tmp2 = GameResult.WIN_WHITE
                                         else:
                                             gameresult_tmp2 = GameResult.WIN_BLACK
-                                    
+
                                 else:
                                     logging.debug('molli unknown result')
                                     gameresult_tmp = GameResult.ABORT
-                                
+
                                 logging.debug('molli result_tmp:%s', gameresult_tmp)
                                 logging.debug('molli result_tmp2:%s', gameresult_tmp2)
-                                
+
                                 if gameresult_tmp2 != '' and not (game.is_game_over() and gameresult_tmp == GameResult.ABORT):
                                     if gameresult_tmp == GameResult.OUT_OF_TIME:
                                         DisplayMsg.show(Message.LOST_ON_TIME())
@@ -3340,7 +3340,7 @@ def main():
                                     else:
                                         DisplayMsg.show(Message.GAME_ENDS(tc_init = time_control.get_parameters(), result = gameresult_tmp, play_mode=play_mode, game=game_msg))
                             else:
-                                
+
                                 if pgn_mode():
                                     ## molli: check if last move of pgn game file
                                     stop_search_and_clock()
@@ -3349,11 +3349,11 @@ def main():
                                         logging.debug('molli pgn: PGN END')
                                         pgn_game_name, pgn_problem, pgn_fen, pgn_result, pgn_white, pgn_black = read_pgn_info()
                                         DisplayMsg.show(Message.PGN_GAME_END(result = pgn_result)) ## game end
-                                    elif pgn_book_test: ## molli 
+                                    elif pgn_book_test: ## molli
                                         l_game_copy = game.copy()
                                         l_game_copy.pop()
                                         l_found = searchmoves.check_book(bookreader, l_game_copy)
-                                        
+
                                         if not l_found:
                                             DisplayMsg.show(Message.PGN_GAME_END(result = '*'))
                                         else:
@@ -3400,13 +3400,13 @@ def main():
                                         set_wait_state(Message.TAKE_BACK(game=game.copy())) ## automatic takeback mode
                                 else:
                                     DisplayMsg.show(Message.GAME_ENDS(tc_init = time_control.get_parameters(), result = GameResult.ABORT, play_mode=play_mode, game=game.copy()))
-                            
+
                             time.sleep(0.5)
                         else:
                             if event.inbook:
                                 DisplayMsg.show(Message.BOOK_MOVE())
                             searchmoves.exclude(event.move)
-                            
+
                             if online_mode() or emulation_mode():
                                 start_time_cmove_done = time.time() ## time should alraedy run for the player
                             DisplayMsg.show(Message.EXIT_MENU())
@@ -3414,7 +3414,7 @@ def main():
                             game_before = game.copy()
                             game_copy = game.copy()
                             game_copy.push(event.move)
-                            
+
                             if picotutor_mode():
                                 if pgn_mode(): ## molli new
                                     t_color = picotutor.get_user_color()
@@ -3422,16 +3422,16 @@ def main():
                                         picotutor.set_user_color(chess.WHITE)
                                     else:
                                         picotutor.set_user_color(chess.BLACK)
-                                        
+
                                 valid = picotutor.push_move(event.move) ## molli picotutor
-                                
+
                                 if not valid:
                                     ## invalid move from tutor side!? Something went wrong
                                     eval_str = 'ER'
                                     ##msg = Message.PICOTUTOR_MSG(eval_str = eval_str)
                                     ##DisplayMsg.show(msg)
                                     picotutor.set_position(game_copy.fen(), i_turn = game_copy.turn)
-                                    
+
                                     if play_mode == PlayMode.USER_BLACK:
                                         picotutor.set_user_color(chess.BLACK)
                                     else:
@@ -3440,14 +3440,14 @@ def main():
                                     if pgn_mode():
                                         l_mate = ''
                                         n_mate = 0
-                                        
+
                             done_computer_fen = game_copy.board_fen()
                             done_move = event.move
-                            
+
                             brain_book = interaction_mode == Mode.BRAIN and event.inbook
                             pb_move = event.ponder if event.ponder and not brain_book else chess.Move.null()
                             legal_fens_after_cmove = compute_legal_fens(game_copy) # molli
-                
+
                             if pgn_mode():
                                 ##molli pgn: reset pgn guess counters
                                 if max_guess_black > 0 and not game.turn == chess.BLACK:
@@ -3478,7 +3478,7 @@ def main():
                         flag_pgn_game_over = True ##molli pgn mode: signal that pgn is at end
                     else:
                         flag_pgn_game_over = False
-                    
+
                     DisplayMsg.show(Message.NEW_SCORE(score=event.score, mate=event.mate, mode=interaction_mode,
                                                       turn=game.turn))
 
@@ -3532,10 +3532,10 @@ def main():
                 if event.pgn_filename:
                     DisplayMsg.show(Message.READ_GAME(pgn_filename=event.pgn_filename))
                     read_pgn_file(event.pgn_filename)
-                                    
+
             elif isinstance(event, Event.CONTLAST):
                 DisplayMsg.show(Message.CONTLAST(contlast=event.contlast))
-                                
+
             elif isinstance(event, Event.ALTMOVES):
                 DisplayMsg.show(Message.ALTMOVES(altmoves=event.altmoves))
 
@@ -3563,15 +3563,15 @@ def main():
                 DisplayMsg.show(Message.PICOWATCHER(picowatcher=event.picowatcher))
 
             elif isinstance(event, Event.PICOCOACH):
-               
+
                 if (dgtmenu.get_picowatcher() or dgtmenu.get_picocoach()):
                     pico_calc = True
                 else:
                     pico_calc = False
-        
+
                 pico_calc = False
                 picotutor.set_status(dgtmenu.get_picowatcher(), dgtmenu.get_picocoach(), dgtmenu.get_picoexplorer(), dgtmenu.get_picocomment())
-                
+
                 if event.picocoach:
                     flag_picotutor = True
                     picotutor.set_position(game.fen(), i_turn = game.turn)
@@ -3613,9 +3613,9 @@ def main():
             elif isinstance(event, Event.SET_TIME_CONTROL):
                 time_control.stop_internal(log=False)
                 tc_init = event.tc_init
-    
+
                 time_control = TimeControl(**tc_init)
-                
+
                 ## molli not for pgn_mode!!!
                 if not pgn_mode() and not online_mode():
                     if tc_init['moves_to_go'] > 0: ## molli tournament time control
@@ -3643,7 +3643,7 @@ def main():
                 if dgtdispatcher.is_prio_device(event.dev, event.connect):  # transfer only the most prio clock's time
                     logging.debug('setting tc clock time - prio: %s w:%s b:%s', event.dev,
                                   hms_time(event.time_white), hms_time(event.time_black))
-                                  
+
                     if time_control.mode != TimeMode.FIXED and (event.time_white == time_control.game_time and event.time_black == time_control.game_time):
                         pass
                     else:
@@ -3665,8 +3665,8 @@ def main():
                     low_time =  False ## molli allow the speech output even for less than 60 seconds
                     dgtboard.low_time = low_time
                     if interaction_mode == Mode.TRAINING or position_mode:
-                        pass 
-                    else: 
+                        pass
+                    else:
                         DisplayMsg.show(Message.CLOCK_TIME(time_white=event.time_white, time_black=event.time_black,
                                                            low_time=low_time))
                 else:
@@ -3684,7 +3684,7 @@ def main():
                 stop_search() ## molli
                 stop_clock()
                 engine.quit() ## molli
-                
+
                 try:
                     if uci_remote_shell:
                         if uci_remote_shell.get():
@@ -3694,7 +3694,7 @@ def main():
                                pass
                 except:
                     pass
-                       
+
                 result = GameResult.ABORT
                 DisplayMsg.show(Message.GAME_ENDS(tc_init = time_control.get_parameters(), result=result, play_mode=play_mode, game=game.copy()))
                 DisplayMsg.show(Message.SYSTEM_SHUTDOWN())
