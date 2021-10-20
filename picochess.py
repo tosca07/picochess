@@ -274,6 +274,7 @@ from platform import machine
 import paramiko
 import copy
 import math
+from typing import Set
 
 from uci.engine import UciShell, UciEngine
 from uci.read import read_engine_ini
@@ -307,11 +308,11 @@ class AlternativeMover:
     """Keep track of alternative moves."""
 
     def __init__(self):
-        self.excludemoves = set()
+        self._excludedmoves = set()
 
-    def all(self, game: chess.Board):
+    def all(self, game: chess.Board) -> Set[chess.Move]:
         """Get all remaining legal moves from game position."""
-        searchmoves = set(game.legal_moves) - self.excludemoves
+        searchmoves = set(game.legal_moves) - self._excludedmoves
         if not searchmoves:
             self.reset()
             return set(game.legal_moves)
@@ -320,12 +321,12 @@ class AlternativeMover:
     def book(self, bookreader, game_copy: chess.Board):
         """Get a BookMove or None from game position."""
         try:
-            choice = bookreader.weighted_choice(game_copy, self.excludemoves)
+            choice = bookreader.weighted_choice(game_copy, self._excludedmoves)
         except IndexError:
             return None
 
         book_move = choice.move()
-        self.add(book_move)
+        self.exclude(book_move)
         game_copy.push(book_move)
         try:
             choice = bookreader.weighted_choice(game_copy)
@@ -334,28 +335,28 @@ class AlternativeMover:
             book_ponder = None
         return chess.uci.BestMove(book_move, book_ponder)
 
-    def check_book(self, bookreader, game_copy: chess.Board):
+    def check_book(self, bookreader, game_copy: chess.Board) -> bool:
         """molli: for PGN Replay/Book Test Check if BookMove exists from game position."""
         l_set = set()
         try:
             choice = bookreader.weighted_choice(game_copy, l_set)
         except IndexError:
             return False
-        
+
         book_move = choice.move()
-        
+
         if book_move:
             return True
         else:
             return False
-                
-    def add(self, move):
-        """Add move to the excluded move list."""
-        self.excludemoves.add(move)
 
-    def reset(self):
+    def exclude(self, move) -> None:
+        """Add move to the excluded move list."""
+        self._excludedmoves.add(move)
+
+    def reset(self) -> None:
         """Reset the exclude move list."""
-        self.excludemoves = set()
+        self._excludedmoves.clear()
 
 flag_startup = False
 online_prefix = 'Online'
@@ -3644,7 +3645,7 @@ def main():
                         else:
                             if event.inbook:
                                 DisplayMsg.show(Message.BOOK_MOVE())
-                            searchmoves.add(event.move)
+                            searchmoves.exclude(event.move)
                             
                             if online_mode() or emulation_mode():
                                 start_time_cmove_done = time.time() ## time should alraedy run for the player
