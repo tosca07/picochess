@@ -95,10 +95,9 @@ class AlternativeMover:
         return chess.uci.BestMove(book_move, book_ponder)
 
     def check_book(self, bookreader, game_copy: chess.Board) -> bool:
-        """molli: for PGN Replay/Book Test Check if BookMove exists from game position."""
-        l_set = set()
+        """Checks if a BookMove exists in current game position."""
         try:
-            choice = bookreader.weighted_choice(game_copy, l_set)
+            choice = bookreader.weighted_choice(game_copy)
         except IndexError:
             return False
 
