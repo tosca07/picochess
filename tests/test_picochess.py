@@ -103,11 +103,3 @@ class TestAlternativeMover(unittest.TestCase):
         bookreader.weighted_choice.side_effect = [book_move]
 
         self.assertFalse(self.testee.check_book(bookreader, self.game))
-
-    def test_check_book_unaffected_by_state(self):
-        bookreader = mock.create_autospec(chess.polyglot.MemoryMappedReader)
-        book_move = chess.polyglot.Entry(1, 796, 0, 1)
-        self.testee.exclude(self.e2e4)
-        bookreader.weighted_choice.side_effect = [book_move]
-
-        self.assertTrue(self.testee.check_book(bookreader, self.game))

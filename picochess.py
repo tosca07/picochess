@@ -2013,8 +2013,7 @@ def main():
     def get_engine_level_dict(engine_level):
         """Transfer an engine level to its level_dict plus an index."""
         installed_engines = engine.get_installed_engines()
-        for index in range(0, len(installed_engines)):
-            eng = installed_engines[index]
+        for eng in installed_engines:
             if eng['file'] == engine.get_file():
                 level_list = sorted(eng['level_dict'])
                 try:
@@ -2026,11 +2025,7 @@ def main():
 
     def engine_mode():
         ponder_mode = analyse_mode = False
-        if False:  # switch-case
-            pass
-        elif interaction_mode in (Mode.NORMAL, Mode.REMOTE, Mode.TRAINING):
-            pass
-        elif interaction_mode == Mode.BRAIN:
+        if interaction_mode == Mode.BRAIN:
             ponder_mode = True
         elif interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
             analyse_mode = True
@@ -2306,7 +2301,7 @@ def main():
     logging.debug('molli: depth %s', args.depth)
 
     time_control, time_text = transfer_time(args.time.split(), depth=args.depth)
-    tc_init_last  = time_control.get_parameters() ## molli for eventual restore after pgn mode
+    tc_init_last = time_control.get_parameters() ## molli for eventual restore after pgn mode
     time_text.beep = False
 
     # The class dgtDisplay fires Event (Observable) & DispatchDgt (Dispatcher)
@@ -2394,9 +2389,6 @@ def main():
             engine_file = eng_ini[engine_tries]['file']
             engine_tries += 1
 
-        # Gentlemen, start your engines...
-        # engine_file = os.path.basename(engine_file) # wd
-        # engine = UciEngine(file=engine_file, uci_shell=uci_local_shell, home=engine_home) # wd
         engine = UciEngine(file=engine_file, uci_shell=uci_local_shell) # wd
         try:
             engine_name = engine.get_name()
