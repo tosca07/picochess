@@ -20,12 +20,11 @@ import queue
 from threading import Thread
 
 from chess import Board
-from utilities import hms_time, DisplayDgt, DispatchDgt
-from dgt.util import ClockIcons, ClockSide
+from utilities import DisplayDgt
+from dgt.util import ClockSide
 from dgt.api import Dgt
-from dgt.translate import DgtTranslate
 from dgt.board import DgtBoard
-from dgt.board import Rev2Info ## molli Rev2
+from dgt.board import Rev2Info
 
 
 class DgtIface(DisplayDgt, Thread):
@@ -56,7 +55,7 @@ class DgtIface(DisplayDgt, Thread):
     def light_squares_on_revelation(self, uci_move):
         """Override this function."""
         raise NotImplementedError()
-        
+
     def light_square_on_revelation(self, square):
         """Override this function."""
         raise NotImplementedError()
@@ -123,12 +122,11 @@ class DgtIface(DisplayDgt, Thread):
             move_text = move_text.format(message.move.uci()[:4])
 
         if message.side == ClockSide.RIGHT:
-            ## move_text = move_text.rjust(6 if is_xl else 8)  
             if Rev2Info.get_new_rev2_mode():
-                move_text = move_text.rjust(5)  ## molli REV2
+                move_text = move_text.rjust(5)
             else:
                 move_text = move_text.rjust(6 if is_xl else 8)
-                    
+
         return bit_board, move(move_text, message.lang, message.capital and not is_xl, not message.long)
 
     def _process_message(self, message):

@@ -24,10 +24,9 @@ from platform import machine
 from utilities import DisplayMsg, hms_time
 from dgt.api import Message
 from dgt.util import ClockIcons, ClockSide
-from dgt.translate import DgtTranslate
 from dgt.board import DgtBoard
 from dgt.iface import DgtIface
-from dgt.board import Rev2Info ## molli Rev2
+from dgt.board import Rev2Info
 
 
 class DgtPi(DgtIface):
@@ -90,7 +89,7 @@ class DgtPi(DgtIface):
                     if ack3 == 0x20:
                         logging.info('(i2c) clock button on/off pressed')
                         self.lib.dgtpicom_configure()  # restart the clock - cause its OFF
-                        DisplayMsg.show(Message.DGT_BUTTON(button=0x20, dev='i2c')) # WD Fehlerbereinigung
+                        DisplayMsg.show(Message.DGT_BUTTON(button=0x20, dev='i2c'))
                     if ack3 == 0x11:
                         logging.info('(i2c) clock button 0+4 pressed')
                         DisplayMsg.show(Message.DGT_BUTTON(button=0x11, dev='i2c'))
@@ -164,9 +163,8 @@ class DgtPi(DgtIface):
     def display_move_on_clock(self, message):
         """Display a move on the dgtpi."""
         bit_board, text = self.get_san(message)
-        ## molli rev2 changes
         if Rev2Info.get_new_rev2_mode():
-            text = '. ' + text ##molli rev2
+            text = '. ' + text
         text = '{:3d}{:s}'.format(bit_board.fullmove_number, text)
         if self.get_name() not in message.devs:
             logging.debug('ignored %s - devs: %s', text, message.devs)
@@ -197,8 +195,8 @@ class DgtPi(DgtIface):
     def light_squares_on_revelation(self, uci_move: str):
         """Handle this by hw.py."""
         return True
-        
-    def light_square_on_revelation(self, square: str): ##molli
+
+    def light_square_on_revelation(self, square: str):
         """Handle this by hw.py."""
         return True
 

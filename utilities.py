@@ -31,14 +31,12 @@ from subprocess import Popen, PIPE
 
 from dgt.translate import DgtTranslate
 from dgt.api import Dgt
-## molli: for switching off the DGT clock display
 from ctypes import cdll
 
 from configobj import ConfigObj, ConfigObjError, DuplicateError
 
 # picochess version
-version = '3' ##molli
-##version_rev2 = '3.0' ##molli
+version = '3'
 
 evt_queue = queue.Queue()
 dispatch_queue = queue.Queue()
@@ -241,9 +239,8 @@ def shutdown(dgtpi: bool, dev: str):
     if platform.system() == 'Windows':
         os.system('shutdown /s')
     elif dgtpi:
-        dgt_functions.dgtpicom_off(1) ## molli: thanks to Lukas & Randy
+        dgt_functions.dgtpicom_off(1)
         os.system('shutdown -h now')
-    ##  os.system('systemctl isolate dgtpistandby.target')
     else:
         os.system('shutdown -h now')
 
@@ -274,7 +271,7 @@ def get_location():
         ext_ip = j['ip'] if 'ip' in j else None
         city = j['city'] + ', ' if 'city' in j else ''
         return (city + country_name + country_code).strip(), ext_ip, int_ip
-    except:
+    except Exception:
         return '?', None, None
 
 

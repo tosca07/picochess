@@ -5,18 +5,17 @@
 # Description: This script will fix problems with bluetooth
 #              connectivity when picochess is running on a
 #              Raspberry Pi 4B.
-#----------------------------------------------------------
 import os
 import subprocess
 import time
 
 ##############################################################
-### Wait a few seconds after sysbem boot before continuing ###
+# Wait a few seconds after sysbem boot before continuing ###
 ##############################################################
 time.sleep(8)
 
 ###############################################################
-### Check to see if bluetooth is running, if not restart it ###
+# Check to see if bluetooth is running, if not restart it ###
 ###############################################################
 status = os.system('systemctl is-active --quiet bluetooth')
 if status != 0:
@@ -26,7 +25,7 @@ else:
     print("Bluetooth Service is running...")
 
 #############################################################
-### Check to see if hciuart is running, if not restart it ###
+# Check to see if hciuart is running, if not restart it ###
 #############################################################
 status = os.system('systemctl is-active --quiet systemctl status hciuart')
 if status != 0:
@@ -36,20 +35,19 @@ else:
     print("hciuart Service is running...")
 
 ##########################################################
-### Loop through all the devices that have been paired ###
-### to the Raspberry Pi.  If they are DGT 00:06:66     ###
-### then check if they are connected, if not remove    ###
+# Loop through all the devices that have been paired ###
+# to the Raspberry Pi.  If they are DGT 00:06:66     ###
+# then check if they are connected, if not remove    ###
 ##########################################################
 paired_devices_cmd = "/bin/echo -e  'paired-devices  \nquit' |  bluetoothctl|grep '00:06:66'|cut -d' ' -f2"
-paired = subprocess.run(paired_devices_cmd,shell=True, check=True, stdout=subprocess.PIPE, universal_newlines=True)
-for bt_device in paired.stdout.splitlines(): 
-    print('Found ',bt_device)
+paired = subprocess.run(paired_devices_cmd, shell=True, check=True, stdout=subprocess.PIPE, universal_newlines=True)
+for bt_device in paired.stdout.splitlines():
+    print('Found ', bt_device)
     info_cmd = "/bin/echo -e  'info " + bt_device + " \nquit' |  bluetoothctl|grep Connected"
-    connected = subprocess.run(info_cmd,shell=True, check=True, stdout=subprocess.PIPE, universal_newlines=True)
+    connected = subprocess.run(info_cmd, shell=True, check=True, stdout=subprocess.PIPE, universal_newlines=True)
     if connected.stdout.find('Connected: no') > 0:
-        print('Device ',bt_device,' is not connected.  Removing...')
-        remove_cmd='/bin/echo -e  "remove ' + bt_device + ' \nquit"|  bluetoothctl'
-        subprocess.run(remove_cmd,shell=True,stdout=subprocess.PIPE)
+        print('Device ', bt_device, ' is not connected.  Removing...')
+        remove_cmd = '/bin/echo -e  "remove ' + bt_device + ' \nquit"|  bluetoothctl'
+        subprocess.run(remove_cmd, shell=True, stdout=subprocess.PIPE)
 
 quit()
-

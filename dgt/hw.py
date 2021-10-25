@@ -20,8 +20,7 @@ from threading import Lock
 
 from utilities import hms_time
 from dgt.iface import DgtIface
-from dgt.util import ClockIcons, ClockSide, DgtClk, DgtCmd
-from dgt.translate import DgtTranslate
+from dgt.util import ClockIcons, ClockSide
 from dgt.board import DgtBoard
 
 
@@ -97,10 +96,9 @@ class DgtHw(DgtIface):
             bit_board, text = self.get_san(message)
             if is_new_rev2:
                 points = '...' if message.side == ClockSide.RIGHT else '.'
-                ## text = '{:3d}{:s}'.format(bit_board.fullmove_number, text) ## orig
                 if len(text) > 5:
                     points = '.'
-                text = '{:3d}{:s}{:s}'.format(bit_board.fullmove_number, points, text) ## REV2 molli
+                text = '{:3d}{:s}{:s}'.format(bit_board.fullmove_number, points, text)
         else:
             text = message.move.uci()
             if message.side == ClockSide.RIGHT:
@@ -143,8 +141,8 @@ class DgtHw(DgtIface):
         """Light the Rev2 leds."""
         self.dgtboard.light_squares_on_revelation(uci_move)
         return True
-        
-    def light_square_on_revelation(self, square: str): ##molli
+
+    def light_square_on_revelation(self, square: str):
         """Light the Rev2 led."""
         self.dgtboard.light_square_on_revelation(square)
         return True

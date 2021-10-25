@@ -24,7 +24,7 @@ import chess
 from timecontrol import TimeControl
 from utilities import Observable, DispatchDgt, get_tags, version, write_picochess_ini
 from dgt.util import TimeMode, TimeModeLoop, Top, TopLoop, Mode, ModeLoop, Language, LanguageLoop, BeepLevel, BeepLoop
-from dgt.util import System, SystemLoop, Display, DisplayLoop, ClockIcons, Voice, VoiceLoop, Info, InfoLoop, PicoTutor, PicoTutorLoop, Game, GameLoop, GameSave, GameSaveLoop, GameRead, GameReadLoop, PicoComment, PicoCommentLoop
+from dgt.util import System, SystemLoop, Display, DisplayLoop, ClockIcons, Voice, VoiceLoop, Info, InfoLoop, PicoTutor, Game, GameLoop, GameSave, GameSaveLoop, GameRead, GameReadLoop, PicoComment, PicoCommentLoop
 from dgt.api import Dgt, Event
 from dgt.translate import DgtTranslate
 
@@ -51,10 +51,10 @@ class MenuState(object):
     TIME_FISCH_CTRL = 421000
     TIME_FIXED = 430000
     TIME_FIXED_CTRL = 431000
-    TIME_TOURN = 440000         ## molli: tournament
-    TIME_TOURN_CTRL = 441000    ## molli: tournament
-    TIME_DEPTH = 450000         ## molli: search depth
-    TIME_DEPTH_CTRL = 451000    ## molli: search depth
+    TIME_TOURN = 440000         # molli: tournament
+    TIME_TOURN_CTRL = 441000    # molli: tournament
+    TIME_DEPTH = 450000         # molli: search depth
+    TIME_DEPTH_CTRL = 451000    # molli: search depth
 
     BOOK = 500000
     BOOK_NAME = 510000
@@ -62,7 +62,7 @@ class MenuState(object):
     ENG = 600000
     ENG_NAME = 610000
     ENG_NAME_LEVEL = 611000
-    
+
     ENG2 = 650000
     ENG_NAME2 = 651000
     ENG_NAME_LEVEL2 = 651100
@@ -88,8 +88,8 @@ class MenuState(object):
     SYS_VOICE_COMP_MUTE_LANG_SPEAK = 752111  # al, christina, ...
     SYS_VOICE_SPEED = 753000  # vspeed
     SYS_VOICE_SPEED_FACTOR = 753100  # 0-7
-    SYS_VOICE_VOLUME = 754000 #WD
-    SYS_VOICE_VOLUME_FACTOR = 754100 #WD
+    SYS_VOICE_VOLUME = 754000
+    SYS_VOICE_VOLUME_FACTOR = 754100
     SYS_DISP = 760000
     SYS_DISP_CONFIRM = 761000
     SYS_DISP_CONFIRM_YESNO = 761100  # yes,no
@@ -99,18 +99,18 @@ class MenuState(object):
     SYS_DISP_CAPTIAL_YESNO = 763100  # yes, no
     SYS_DISP_NOTATION = 764000
     SYS_DISP_NOTATION_MOVE = 764100  # short, long
-    SYS_DISP_ENGINENAME = 765000        ## molli v3
-    SYS_DISP_ENGINENAME_YESNO = 765100 # yes,no ## molli v3
-    
+    SYS_DISP_ENGINENAME = 765000        # molli v3
+    SYS_DISP_ENGINENAME_YESNO = 765100  # yes,no ## molli v3
+
     PICOTUTOR = 800000
     PICOTUTOR_PICOWATCHER = 810000
-    PICOTUTOR_PICOWATCHER_ONOFF = 811000 # on,off
+    PICOTUTOR_PICOWATCHER_ONOFF = 811000  # on,off
     PICOTUTOR_PICOCOACH = 820000
-    PICOTUTOR_PICOCOACH_ONOFF = 821000 # on,off
+    PICOTUTOR_PICOCOACH_ONOFF = 821000  # on,off
     PICOTUTOR_PICOEXPLORER = 830000
-    PICOTUTOR_PICOEXPLORER_ONOFF = 831000 # all, eng, off
+    PICOTUTOR_PICOEXPLORER_ONOFF = 831000  # all, eng, off
     PICOTUTOR_PICOCOMMENT = 840000
-    PICOTUTOR_PICOCOMMENT_OFF    = 841000
+    PICOTUTOR_PICOCOMMENT_OFF = 841000
     PICOTUTOR_PICOCOMMENT_ON_ENG = 842000
     PICOTUTOR_PICOCOMMENT_ON_ALL = 843000
 
@@ -121,13 +121,14 @@ class MenuState(object):
     GAME_GAMESAVE_GAME3 = 913000
     GAME_GAMEREAD = 920000
     GAME_GAMEREAD_GAMELAST = 921000
-    GAME_GAMEREAD_GAME1    = 922000
-    GAME_GAMEREAD_GAME2    = 923000
-    GAME_GAMEREAD_GAME3    = 924000
+    GAME_GAMEREAD_GAME1 = 922000
+    GAME_GAMEREAD_GAME2 = 923000
+    GAME_GAMEREAD_GAME3 = 924000
     GAME_GAMEALTMOVE = 930000
     GAME_GAMEALTMOVE_ONOFF = 931000
     GAME_GAMECONTLAST = 940000
     GAME_GAMECONTLAST_ONOFF = 941000
+
 
 class DgtMenu(object):
 
@@ -135,33 +136,32 @@ class DgtMenu(object):
 
     def __init__(self, disable_confirm: bool, ponder_interval: int,
                  user_voice: str, comp_voice: str, speed_voice: int, enable_capital_letters: bool,
-                 disable_short_move: bool, log_file, engine_server, rol_disp_norm: bool, 
-                 volume_voice: int, #WD
-                 rol_disp_brain: bool, show_enginename:bool, dgttranslate: DgtTranslate):
+                 disable_short_move: bool, log_file, engine_server, rol_disp_norm: bool,
+                 volume_voice: int,
+                 rol_disp_brain: bool, show_enginename: bool, dgttranslate: DgtTranslate):
         super(DgtMenu, self).__init__()
 
         self.current_text = None  # save the current text
-        
-        ## molli
+
         logging.debug('molli: roll.norm %s', str(rol_disp_norm))
         logging.debug('molli: roll.brain %s', str(rol_disp_brain))
-        self.menu_system_display_rolldispnorm  = rol_disp_norm
+        self.menu_system_display_rolldispnorm = rol_disp_norm
         self.menu_system_display_rolldispbrain = rol_disp_brain
-        
-        self.menu_system_display_enginename = show_enginename ## molli v3
-        
-        self.menu_picotutor = PicoTutor.WATCHER ## molli v3
-        self.menu_picotutor_picowatcher = False ## molli v3
-        self.menu_picotutor_picocoach = False ## molli v3
-        self.menu_picotutor_picoexplorer = False ## molli v3
-        self.menu_picotutor_picocomment = PicoComment.COM_OFF ## molli v3
-        
-        self.menu_game = Game.SAVE ## molli v3
+
+        self.menu_system_display_enginename = show_enginename
+
+        self.menu_picotutor = PicoTutor.WATCHER
+        self.menu_picotutor_picowatcher = False
+        self.menu_picotutor_picocoach = False
+        self.menu_picotutor_picoexplorer = False
+        self.menu_picotutor_picocomment = PicoComment.COM_OFF
+
+        self.menu_game = Game.SAVE
         self.menu_game_save = GameSave.GAME1
         self.menu_game_read = GameRead.GAMELAST
-        self.menu_game_altmove  = True ## molli v3
-        self.menu_game_contlast = True ## molli v3
-        
+        self.menu_game_altmove = True
+        self.menu_game_contlast = True
+
         self.menu_system_display_confirm = disable_confirm
         self.menu_system_display_ponderinterval = ponder_interval
         self.menu_system_display_capital = enable_capital_letters
@@ -170,9 +170,9 @@ class DgtMenu(object):
         self.remote_engine = bool(engine_server)
         self.dgttranslate = dgttranslate
         if show_enginename:
-            self.state = MenuState.ENG_NAME ##molli
+            self.state = MenuState.ENG_NAME
         else:
-            self.state = MenuState.TOP ##molli
+            self.state = MenuState.TOP
 
         self.dgt_fen = '8/8/8/8/8/8/8/8'
         self.int_ip = None
@@ -183,7 +183,6 @@ class DgtMenu(object):
         self.menu_position_reverse = False
         self.menu_position_uci960 = False
 
-        ##self.menu_top = Top.MODE ##molli
         if show_enginename:
             self.menu_top = Top.ENGINE
         else:
@@ -193,7 +192,7 @@ class DgtMenu(object):
         self.engine_has_960 = False
         self.engine_has_ponder = False
         self.engine_restart = False
-        
+
         self.menu_engine_name = 0
         self.menu_engine_level = None
         self.installed_engines = []
@@ -229,9 +228,9 @@ class DgtMenu(object):
         except (AttributeError, ValueError):  # None = "not set" throws an AttributeError
             self.menu_system_voice_comp_lang = 0
             self.menu_system_voice_comp_speak = 0
-            
+
         self.menu_system_voice_speedfactor = speed_voice
-        self.menu_system_voice_volumefactor = volume_voice #WD
+        self.menu_system_voice_volumefactor = volume_voice
 
         self.menu_system_display = Display.PONDER
         self.menu_system_info = Info.VERSION
@@ -241,17 +240,15 @@ class DgtMenu(object):
         self.menu_time_fixed = 0
         self.menu_time_blitz = 2  # Default time control: Blitz, 5min
         self.menu_time_fisch = 0
-        self.menu_time_tourn = 0 ## molli: tournament
-        self.menu_time_depth = 0 ## molli: search depth
-        
+        self.menu_time_tourn = 0
+        self.menu_time_depth = 0
+
         self.tc_fixed_list = [' 1', ' 3', ' 5', '10', '15', '30', '60', '90']
         self.tc_blitz_list = [' 1', ' 3', ' 5', '10', '15', '30', '60', '90']
-        self.tc_fisch_list = [' 1  1', ' 3  2', ' 5  3', '10  5', '15 10', '30 15', '60 20', '90 30' ,' 0  5', ' 0 10', ' 0 15', ' 0 20', ' 0 30', ' 0 60', ' 0 90']
-        ## molli tournament
+        self.tc_fisch_list = [' 1  1', ' 3  2', ' 5  3', '10  5', '15 10', '30 15', '60 20', '90 30', ' 0  5', ' 0 10', ' 0 15', ' 0 20', ' 0 30', ' 0 60', ' 0 90']
         self.tc_tourn_list = ['10 10 0 5', '20 15 0 15', '30 40 0 15', '40 120 0 90', '40 60 15 30', '40 60 30 30', '40 90 30 30', '40 90 15 60', '40 90 30 60']
-        ## molli search depth
         self.tc_depth_list = [' 1', ' 2', ' 3', ' 4', '10', '15', '20', '25']
-        
+
         self.tc_fixed_map = OrderedDict([
             ('rnbqkbnr/pppppppp/Q7/8/8/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=1)),
             ('rnbqkbnr/pppppppp/1Q6/8/8/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=3)),
@@ -305,7 +302,7 @@ class DgtMenu(object):
              ('rnbqkbnr/pppppppp/8/8/4Q2q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, depth=15)),
              ('rnbqkbnr/pppppppp/8/8/5Q1q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, depth=20)),
              ('rnbqkbnr/pppppppp/8/8/6Qq/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, depth=25))])
-    
+
         # setup the result vars for api (dgtdisplay)
         self.save_choices()
         # During "picochess" is displayed, some special actions allowed
@@ -318,14 +315,14 @@ class DgtMenu(object):
         self.battery = '-NA'  # standard value: NotAvailable (discharging)
         self.inside_room = False
 
-    def set_state_eng(self):    ##molli
+    def set_state_eng(self):
         self.state = MenuState.ENG_NAME
         self.menu_top = Top.ENGINE
-        
-    def set_state_eng2(self):    ##molli
+
+    def set_state_eng2(self):
         self.state = MenuState.ENG_NAME2
         self.menu_top = Top.ENGINE2
-    
+
     def inside_updt_menu(self):
         """Inside update menu."""
         return self.updt_top
@@ -361,37 +358,33 @@ class DgtMenu(object):
         self.res_time_fixed = self.menu_time_fixed
         self.res_time_blitz = self.menu_time_blitz
         self.res_time_fisch = self.menu_time_fisch
-        self.res_time_tourn = self.menu_time_tourn ## molli tournament v3
-        self.res_time_depth = self.menu_time_depth ## molli depth v3
+        self.res_time_tourn = self.menu_time_tourn
+        self.res_time_depth = self.menu_time_depth
 
         self.res_book_name = self.menu_book
 
         self.res_engine_name = self.menu_engine_name
         self.res_engine_level = self.menu_engine_level
-        
+
         self.res_engine_name2 = self.menu_engine_name2
         self.res_engine_level2 = self.menu_engine_level2
 
         self.res_system_display_confirm = self.menu_system_display_confirm
         self.res_system_display_ponderinterval = self.menu_system_display_ponderinterval
-        ## molli
-        self.res_system_display_rolldispnorm  = self.menu_system_display_rolldispnorm
+        self.res_system_display_rolldispnorm = self.menu_system_display_rolldispnorm
         self.res_system_display_rolldispbrain = self.menu_system_display_rolldispbrain
         self.res_system_display_rolldispbrain = self.menu_system_display_rolldispbrain
-        ## molli v3
         self.res_system_display_enginename = self.menu_system_display_enginename
         self.res_picotutor_picocoach = self.menu_picotutor_picocoach
         self.res_picotutor_picowatcher = self.menu_picotutor_picowatcher
         self.res_picotutor_picoexplorer = self.menu_picotutor_picoexplorer
         self.res_picotutor = self.menu_picotutor
-        
-        ## molli v3
+
         self.res_game_game_save = self.menu_game_save
         self.res_game_game_read = self.menu_game_read
-        self.res_game_altmove  = self.menu_game_altmove
+        self.res_game_altmove = self.menu_game_altmove
         self.res_game_contlast = self.menu_game_contlast
-        
-        ## molli v3
+
         self.res_picotutor_picocomment = self.menu_picotutor_picocomment
 
         self.dgttranslate.set_capital(self.menu_system_display_capital)
@@ -457,11 +450,10 @@ class DgtMenu(object):
     def set_engine_level(self, level: int):
         """Set the flag."""
         self.res_engine_level = self.menu_engine_level = level
-        
-    ## Favorites
+
     def set_favorite_engines(self, fav_engines):
         self.installed_engines2 = fav_engines
-        
+
     def get_engine2(self):
         """Get the flag."""
         return self.installed_engines2[self.res_engine_name2]
@@ -477,52 +469,52 @@ class DgtMenu(object):
     def set_engine_level2(self, level: int):
         """Set the flag."""
         self.res_engine_level2 = self.menu_engine_level2 = level
-    
-    def set_enginename(self, showname: bool):       ## molli v3
+
+    def set_enginename(self, showname: bool):
         """Set the flag."""
         self.res_system_display_enginename = showname
-    
+
     def get_enginename(self):
         """Get the flag."""
         return self.res_system_display_enginename
-    
-    def set_picowatcher(self, picowatcher: bool):       ## molli v3
+
+    def set_picowatcher(self, picowatcher: bool):
         """Set the flag."""
         self.res_picotutor_picowatcher = picowatcher
         self.menu_picotutor_picowatcher = picowatcher
-    
+
     def get_picowatcher(self):
         """Get the flag."""
         return self.res_picotutor_picowatcher
-    
-    def set_picocoach(self, picocoach: bool):       ## molli v3
+
+    def set_picocoach(self, picocoach: bool):
         """Set the flag."""
         self.res_picotutor_picocoach = picocoach
         self.menu_picotutor_picocoach = picocoach
-    
+
     def get_picocoach(self):
         """Get the flag."""
         return self.res_picotutor_picocoach
-    
-    def set_picocomment(self, picocomment: PicoComment):       ## molli v3
+
+    def set_picocomment(self, picocomment: PicoComment):
         """Set the flag."""
         self.res_picotutor_picocomment = picocomment
         self.menu_picotutor_picocomment = picocomment
-    
+
     def get_picocomment(self):
         """Get the flag."""
         return self.res_picotutor_picocomment
-    
-    def set_picoexplorer(self, picoexplorer: bool):       ## molli v3
+
+    def set_picoexplorer(self, picoexplorer: bool):
         """Set the flag."""
         self.res_picotutor_picoexplorer = picoexplorer
         self.menu_picotutor_picoexplorer = picoexplorer
-    
-    def get_picoexplorer(self):                           ## molli v3
+
+    def get_picoexplorer(self):
         """Get the flag."""
         return self.res_picotutor_picoexplorer
 
-    def set_game_altmove(self, altmove: bool):       ## molli v3
+    def set_game_altmove(self, altmove: bool):
         """Set the flag."""
         self.res_game_altmove = altmove
         self.menu_game_altmove = altmove
@@ -530,16 +522,16 @@ class DgtMenu(object):
     def get_game_altmove(self):
         """Get the flag."""
         return self.res_game_altmove
-    
-    def set_game_contlast(self, contlast: bool):       ## molli v3
+
+    def set_game_contlast(self, contlast: bool):
         """Set the flag."""
         self.res_game_contlast = contlast
         self.menu_game_contlast = contlast
-    
+
     def get_game_contlast(self):
         """Get the flag."""
         return self.res_game_contlast
-    
+
     def get_confirm(self):
         """Get the flag."""
         return self.res_system_display_confirm
@@ -579,19 +571,19 @@ class DgtMenu(object):
     def get_time_fisch(self):
         """Get the flag."""
         return self.res_time_fisch
-    
-    def set_time_tourn(self, index: int): ## molli tournament
+
+    def set_time_tourn(self, index: int):
         """Set the flag."""
         self.res_time_tourn = self.menu_time_tourn = index
-    
+
     def get_time_tourn(self):
         """Get the flag."""
         return self.res_time_tourn
-    
-    def set_time_depth(self, index: int): ## molli depth
+
+    def set_time_depth(self, index: int):
         """Set the flag."""
         self.res_time_depth = self.menu_time_depth = index
-    
+
     def get_time_depth(self):
         """Get the flag."""
         return self.res_time_depth
@@ -599,16 +591,15 @@ class DgtMenu(object):
     def set_position_reverse_flipboard(self, flip_board):
         """Set the flag."""
         self.res_position_reverse = self.flip_board = flip_board
-        
-    def get_position_reverse_flipboard(self): ##molli for REV2 LED bug
+
+    def get_position_reverse_flipboard(self):
         """Get the flag."""
         return self.res_position_reverse
 
     def get_ponderinterval(self):
         """Get the flag."""
         return self.res_system_display_ponderinterval
-    
-    ## molli:
+
     def get_rolldispnorm(self):
         """Get the flag."""
         return self.res_system_display_rolldispnorm
@@ -638,176 +629,161 @@ class DgtMenu(object):
         self.state = MenuState.MODE_TYPE
         text = self.dgttranslate.text(self.menu_mode.value)
         return text
-    
-    def enter_picotutor_menu(self):           ## molli v3
+
+    def enter_picotutor_menu(self):
         """Set the picotutor state."""
         self.state = MenuState.PICOTUTOR
         text = self.dgttranslate.text(Top.PICOTUTOR.value)
         return text
-    
-    def enter_picotutor_picowatcher_menu(self): ## molli v3
+
+    def enter_picotutor_picowatcher_menu(self):
         """Set the picowatcher state."""
         self.state = MenuState.PICOTUTOR_PICOWATCHER
         text = self.dgttranslate.text('B00_picowatcher')
         return text
-    
-    def enter_picotutor_picowatcher_onoff_menu(self):   ## molli v3
+
+    def enter_picotutor_picowatcher_onoff_menu(self):
         """Set the menu state."""
         self.state = MenuState.PICOTUTOR_PICOWATCHER_ONOFF
         msg = 'on' if self.menu_picotutor_picowatcher else 'off'
         text = self.dgttranslate.text('B00_picowatcher_' + msg)
         return text
-    
-    def enter_picotutor_picocoach_menu(self):   ## molli v3
+
+    def enter_picotutor_picocoach_menu(self):
         """Set the picowcoach state."""
         self.state = MenuState.PICOTUTOR_PICOCOACH
         text = self.dgttranslate.text('B00_picocoach')
         return text
-    
-    def enter_picotutor_picocoach_onoff_menu(self):   ## molli v3
+
+    def enter_picotutor_picocoach_onoff_menu(self):
         """Set the menu state."""
         self.state = MenuState.PICOTUTOR_PICOCOACH_ONOFF
         msg = 'on' if self.menu_picotutor_picocoach else 'off'
         text = self.dgttranslate.text('B00_picocoach_' + msg)
         return text
-    
-    def enter_picotutor_picoexplorer_menu(self):   ## molli v3
+
+    def enter_picotutor_picoexplorer_menu(self):
         """Set the picoeplorer state."""
         self.state = MenuState.PICOTUTOR_PICOEXPLORER
         text = self.dgttranslate.text('B00_picoexplorer')
         return text
-    
-    def enter_picotutor_picoexplorer_onoff_menu(self):   ## molli v3
+
+    def enter_picotutor_picoexplorer_onoff_menu(self):
         """Set the menu state."""
         self.state = MenuState.PICOTUTOR_PICOEXPLORER_ONOFF
         msg = 'on' if self.menu_picotutor_picoexplorer else 'off'
         text = self.dgttranslate.text('B00_picoexplorer_' + msg)
         return text
-    
-    def enter_picotutor_picocomment_menu(self): ## molli v3
+
+    def enter_picotutor_picocomment_menu(self):
         """Set the picocomment state."""
         self.state = MenuState.PICOTUTOR_PICOCOMMENT
         text = self.dgttranslate.text('B00_picocomment')
         return text
 
-    def enter_picotutor_picocomment_off_menu(self): ## molli v3
+    def enter_picotutor_picocomment_off_menu(self):
         """Set the gamesave state."""
         self.state = MenuState.PICOTUTOR_PICOCOMMENT_OFF
         text = self.dgttranslate.text('B00_picocomment_off')
         return text
-    
-    def enter_picotutor_picocomment_on_eng_menu(self): ## molli v3
+
+    def enter_picotutor_picocomment_on_eng_menu(self):
         """Set the picocomment state."""
         self.state = MenuState.PICOTUTOR_PICOCOMMENT_ON_ENG
         text = self.dgttranslate.text('B00_picocomment_on_eng')
         return text
-    
-    def enter_picotutor_picocomment_on_all_menu(self): ## molli v3
+
+    def enter_picotutor_picocomment_on_all_menu(self):
         """Set the picocomment state."""
         self.state = MenuState.PICOTUTOR_PICOCOMMENT_ON_ALL
         text = self.dgttranslate.text('B00_picocomment_on_all')
         return text
-    
-    ################# game ############################
-    
-    def enter_game_menu(self):           ## molli v3
+
+    def enter_game_menu(self):
         """Set the game state."""
         self.state = MenuState.GAME
         text = self.dgttranslate.text(Top.GAME.value)
         return text
-    
-    def enter_game_gamesave_menu(self): ## molli v3
+
+    def enter_game_gamesave_menu(self):
         """Set the gamesave state."""
         self.state = MenuState.GAME_GAMESAVE
-        ##text = self.dgttranslate.text('B00_game_save_menu')
         text = self.dgttranslate.text(self.menu_game.value)
         return text
-    
-    def enter_game_gamesave_game1_menu(self): ## molli v3
+
+    def enter_game_gamesave_game1_menu(self):
         """Set the gamesave state."""
         self.state = MenuState.GAME_GAMESAVE_GAME1
         text = self.dgttranslate.text('B00_game_save_game1')
-        ##text = self.dgttranslate.text(self.menu_game_save.value)
         return text
-    
-    def enter_game_gamesave_game2_menu(self): ## molli v3
+
+    def enter_game_gamesave_game2_menu(self):
         """Set the gamesave state."""
         self.state = MenuState.GAME_GAMESAVE_GAME2
         text = self.dgttranslate.text('B00_game_save_game2')
-        ##text = self.dgttranslate.text(self.menu_game_save.value)
         return text
-    
-    def enter_game_gamesave_game3_menu(self): ## molli v3
+
+    def enter_game_gamesave_game3_menu(self):
         """Set the gamesave state."""
         self.state = MenuState.GAME_GAMESAVE_GAME3
         text = self.dgttranslate.text('B00_game_save_game3')
-        ##text = self.dgttranslate.text(self.menu_game_save.value)
         return text
-    
-    def enter_game_gameread_menu(self): ## molli v3
+
+    def enter_game_gameread_menu(self):
         """Set the gameread state."""
         self.state = MenuState.GAME_GAMEREAD
         text = self.dgttranslate.text('B00_game_read_menu')
-        ##text = self.dgttranslate.text(self.menu_game.value)
         return text
-    
-    def enter_game_gameread_gamelast_menu(self): ## molli v3
+
+    def enter_game_gameread_gamelast_menu(self):
         """Set the gameread state."""
         self.state = MenuState.GAME_GAMEREAD_GAMELAST
         text = self.dgttranslate.text('B00_game_read_gamelast')
-        ##text = self.dgttranslate.text(self.menu_game_read.value)
         return text
-    
-    def enter_game_gameread_game1_menu(self): ## molli v3
+
+    def enter_game_gameread_game1_menu(self):
         """Set the gameread state."""
         self.state = MenuState.GAME_GAMEREAD_GAME1
         text = self.dgttranslate.text('B00_game_read_game1')
-        ##text = self.dgttranslate.text(self.menu_game_read.value)
         return text
-    
-    def enter_game_gameread_game2_menu(self): ## molli v3
+
+    def enter_game_gameread_game2_menu(self):
         """Set the gameread state."""
         self.state = MenuState.GAME_GAMEREAD_GAME2
         text = self.dgttranslate.text('B00_game_read_game2')
-        ##text = self.dgttranslate.text(self.menu_game_read.value)
         return text
-    
-    def enter_game_gameread_game3_menu(self): ## molli v3
+
+    def enter_game_gameread_game3_menu(self):
         """Set the gameread state."""
         self.state = MenuState.GAME_GAMEREAD_GAME3
         text = self.dgttranslate.text('B00_game_read_game3')
-        ##text = self.dgttranslate.text(self.menu_game_read.value)
         return text
-    
-    def enter_game_contlast_menu(self):   ## molli v3
+
+    def enter_game_contlast_menu(self):
         """Set the CONTLAST state."""
         self.state = MenuState.GAME_GAMECONTLAST
         text = self.dgttranslate.text('B00_game_contlast_menu')
-        ##text = self.dgttranslate.text(self.menu_game.value)
         return text
-    
-    def enter_game_contlast_onoff_menu(self):   ## molli v3
+
+    def enter_game_contlast_onoff_menu(self):
         """Set the menu state."""
         self.state = MenuState.GAME_GAMECONTLAST_ONOFF
         msg = 'on' if self.menu_game_contlast else 'off'
         text = self.dgttranslate.text('B00_game_contlast_' + msg)
         return text
-    
-    def enter_game_altmove_menu(self):   ## molli v3
+
+    def enter_game_altmove_menu(self):
         """Set the ALTMOVE state."""
         self.state = MenuState.GAME_GAMEALTMOVE
         text = self.dgttranslate.text('B00_game_altmove_menu')
-        ##text = self.dgttranslate.text(self.menu_game.value)
         return text
-    
-    def enter_game_altmove_onoff_menu(self):   ## molli v3
+
+    def enter_game_altmove_onoff_menu(self):
         """Set the menu state."""
         self.state = MenuState.GAME_GAMEALTMOVE_ONOFF
         msg = 'on' if self.menu_game_altmove else 'off'
         text = self.dgttranslate.text('B00_game_altmove_' + msg)
         return text
-
-    ################# game ############################
 
     def enter_pos_menu(self):
         """Set the menu state."""
@@ -880,27 +856,25 @@ class DgtMenu(object):
         self.state = MenuState.TIME_FIXED_CTRL
         text = self.dgttranslate.text('B00_tc_fixed', self.tc_fixed_list[self.menu_time_fixed])
         return text
-    
-    ## molli tournament
+
     def enter_time_tourn_menu(self):
         """Set the menu state."""
         self.state = MenuState.TIME_TOURN
         text = self.dgttranslate.text(self.menu_time_mode.value)
         return text
-    
+
     def enter_time_tourn_ctrl_menu(self):
         """Set the menu state."""
         self.state = MenuState.TIME_TOURN_CTRL
         text = self.dgttranslate.text('B00_tc_tourn', self.tc_tourn_list[self.menu_time_tourn])
         return text
-    
-    ## molli search depth
+
     def enter_time_depth_menu(self):
         """Set the menu state."""
         self.state = MenuState.TIME_DEPTH
         text = self.dgttranslate.text(self.menu_time_mode.value)
         return text
-            
+
     def enter_time_depth_ctrl_menu(self):
         """Set the menu state."""
         self.state = MenuState.TIME_DEPTH_CTRL
@@ -928,7 +902,7 @@ class DgtMenu(object):
         self.state = MenuState.ENG
         text = self.dgttranslate.text(Top.ENGINE.value)
         return text
-        
+
     def enter_eng_menu2(self):
         """Set the menu state."""
         self.state = MenuState.ENG2
@@ -939,7 +913,7 @@ class DgtMenu(object):
         text = self.installed_engines[self.menu_engine_name]['text']
         text.beep = self.dgttranslate.bl(BeepLevel.BUTTON)
         return text
-        
+
     def _get_current_engine_name2(self):
         text = self.installed_engines2[self.menu_engine_name2]['text']
         text.beep = self.dgttranslate.bl(BeepLevel.BUTTON)
@@ -949,7 +923,7 @@ class DgtMenu(object):
         """Set the menu state."""
         self.state = MenuState.ENG_NAME
         return self._get_current_engine_name()
-        
+
     def enter_eng_name_menu2(self):
         """Set the menu state."""
         self.state = MenuState.ENG_NAME2
@@ -968,7 +942,7 @@ class DgtMenu(object):
         else:
             text = self.save_choices()
         return text
-        
+
     def enter_eng_name_level_menu2(self):
         """Set the menu state."""
         self.state = MenuState.ENG_NAME_LEVEL2
@@ -1089,7 +1063,7 @@ class DgtMenu(object):
         text = self.dgttranslate.text('B00_language_' + vkey + '_menu')
         return text
 
-    def _get_current_speaker(self, speakers, index:int):
+    def _get_current_speaker(self, speakers, index: int):
         speaker = speakers[list(speakers)[index]]
         text = Dgt.DISPLAY_TEXT(l=speaker['large'], m=speaker['medium'], s=speaker['small'])
         text.beep = self.dgttranslate.bl(BeepLevel.BUTTON)
@@ -1123,27 +1097,23 @@ class DgtMenu(object):
         self.state = MenuState.SYS_VOICE_SPEED_FACTOR
         text = self.dgttranslate.text('B00_voice_speed', str(self.menu_system_voice_speedfactor))
         return text
-    
-    def enter_sys_voice_volume_menu(self): #WD
+
+    def enter_sys_voice_volume_menu(self):
         """Set the menu state."""
         self.state = MenuState.SYS_VOICE_VOLUME
         text = self.dgttranslate.text(Voice.VOLUME.value)
         return text
-    
-    def enter_sys_voice_volume_factor_menu(self): #WD
+
+    def enter_sys_voice_volume_factor_menu(self):
         """Set the menu state."""
         self.state = MenuState.SYS_VOICE_VOLUME_FACTOR
         text = self.dgttranslate.text('B00_voice_volume', str(self.menu_system_voice_volumefactor))
         return text
-    
-    def set_volume_voice(self, volume_factor): #WD
+
+    def set_volume_voice(self, volume_factor):
         """ Set the Volume-Voice."""
-        ##logging.debug('amixer sset PCM ' + str(volume_factor * 5 + 50) + '%')
-        ##logging.debug('amixer sset Headphone ' + str(volume_factor * 5 + 50) + '%')
         logging.debug('amixer sset Headphone ' + str(volume_factor * 5 + 50) + '%')
-        ##os.system('amixer sset PCM ' + str(volume_factor * 5 + 50) + '%')
-        ##os.system('amixer sset Headphone ' + str(volume_factor * 5 + 50) + '%') ## BUSTER Fix
-        os.system('amixer sset Headphone ' + str(volume_factor * 5 + 50) + '%') ## PulseAudio Fix for DGTPi -RR
+        os.system('amixer sset Headphone ' + str(volume_factor * 5 + 50) + '%')  # PulseAudio Fix for DGTPi -RR
         return
 
     def enter_sys_disp_menu(self):
@@ -1164,13 +1134,13 @@ class DgtMenu(object):
         msg = 'off' if self.menu_system_display_confirm else 'on'
         text = self.dgttranslate.text('B00_confirm_' + msg)
         return text
-    
+
     def enter_sys_disp_enginename_menu(self):
         """Set the menu state."""
         self.state = MenuState.SYS_DISP_ENGINENAME
         text = self.dgttranslate.text(Display.ENGINENAME.value)
         return text
-    
+
     def enter_sys_disp_enginename_yesno_menu(self):
         """Set the menu state."""
         self.state = MenuState.SYS_DISP_ENGINENAME_YESNO
@@ -1285,17 +1255,17 @@ class DgtMenu(object):
 
         elif self.state == MenuState.TIME_FIXED_CTRL:
             text = self.enter_time_fixed_menu()
-        
-        elif self.state == MenuState.TIME_TOURN:   ## molli: tournament
+
+        elif self.state == MenuState.TIME_TOURN:
             text = self.enter_time_menu()
 
-        elif self.state == MenuState.TIME_TOURN_CTRL: ## molli: tournament
+        elif self.state == MenuState.TIME_TOURN_CTRL:
             text = self.enter_time_tourn_menu()
-        
-        elif self.state == MenuState.TIME_DEPTH:   ## molli: search depth
+
+        elif self.state == MenuState.TIME_DEPTH:
             text = self.enter_time_menu()
-        
-        elif self.state == MenuState.TIME_DEPTH_CTRL: ## molli: search depth
+
+        elif self.state == MenuState.TIME_DEPTH_CTRL:
             text = self.enter_time_depth_menu()
 
         elif self.state == MenuState.BOOK:
@@ -1312,8 +1282,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.ENG_NAME_LEVEL:
             text = self.enter_eng_name_menu()
-            
-        ## favorites
+
         elif self.state == MenuState.ENG2:
             text = self.enter_top_menu()
 
@@ -1321,7 +1290,7 @@ class DgtMenu(object):
             text = self.enter_eng_menu2()
 
         elif self.state == MenuState.ENG_NAME_LEVEL2:
-             text = self.enter_eng_name_menu2()
+            text = self.enter_eng_name_menu2()
 
         elif self.state == MenuState.SYS:
             text = self.enter_top_menu()
@@ -1385,13 +1354,13 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_VOICE_SPEED_FACTOR:
             text = self.enter_sys_voice_speed_menu()
-            
-        elif self.state == MenuState.SYS_VOICE_VOLUME: #WD
+
+        elif self.state == MenuState.SYS_VOICE_VOLUME:
             text = self.enter_sys_voice_menu()
 
-        elif self.state == MenuState.SYS_VOICE_VOLUME_FACTOR: #WD
+        elif self.state == MenuState.SYS_VOICE_VOLUME_FACTOR:
             text = self.enter_sys_voice_volume_menu()
-            
+
         elif self.state == MenuState.SYS_DISP:
             text = self.enter_sys_menu()
 
@@ -1400,10 +1369,10 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_DISP_CONFIRM_YESNO:
             text = self.enter_sys_disp_confirm_menu()
-        
+
         elif self.state == MenuState.SYS_DISP_ENGINENAME:
             text = self.enter_sys_disp_menu()
-        
+
         elif self.state == MenuState.SYS_DISP_ENGINENAME_YESNO:
             text = self.enter_sys_disp_enginename_menu()
 
@@ -1425,80 +1394,78 @@ class DgtMenu(object):
         elif self.state == MenuState.SYS_DISP_NOTATION_MOVE:
             text = self.enter_sys_disp_notation_menu()
 
-        elif self.state == MenuState.PICOTUTOR:           ##molli v3
+        elif self.state == MenuState.PICOTUTOR:
             text = self.enter_top_menu()
 
         elif self.state == MenuState.PICOTUTOR_PICOWATCHER:
-            text = self.enter_picotutor_menu() ##
+            text = self.enter_picotutor_menu()
 
         elif self.state == MenuState.PICOTUTOR_PICOWATCHER_ONOFF:
             text = self.enter_picotutor_picowatcher_menu()
 
         elif self.state == MenuState.PICOTUTOR_PICOCOACH:
-            text = self.enter_picotutor_menu() ##
-        
+            text = self.enter_picotutor_menu()
+
         elif self.state == MenuState.PICOTUTOR_PICOCOACH_ONOFF:
             text = self.enter_picotutor_picocoach_menu()
-                
+
         elif self.state == MenuState.PICOTUTOR_PICOEXPLORER:
-            text = self.enter_picotutor_menu() ##
-                
+            text = self.enter_picotutor_menu()
+
         elif self.state == MenuState.PICOTUTOR_PICOEXPLORER_ONOFF:
             text = self.enter_picotutor_picoexplorer_menu()
-                            
+
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT:
-            text = self.enter_picotutor_menu() ##
+            text = self.enter_picotutor_menu()
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_OFF:
             text = self.enter_picotutor_picocomment_menu()
-                                      
+
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ENG:
             text = self.enter_picotutor_picocomment_menu()
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ALL:
             text = self.enter_picotutor_picocomment_menu()
-                                      
-        
-        ##################### GAME ######################
-        elif self.state == MenuState.GAME:           ##molli v3
+
+        elif self.state == MenuState.GAME:
             text = self.enter_top_menu()
-        
+
         elif self.state == MenuState.GAME_GAMESAVE:
-            text = self.enter_game_menu() ##
-        
+            text = self.enter_game_menu()
+
         elif self.state == MenuState.GAME_GAMESAVE_GAME1:
-            text = self.enter_game_gamesave_menu() ##
-        
+            text = self.enter_game_gamesave_menu()
+
         elif self.state == MenuState.GAME_GAMESAVE_GAME2:
-            text = self.enter_game_gamesave_menu() ##
-        
+            text = self.enter_game_gamesave_menu()
+
         elif self.state == MenuState.GAME_GAMESAVE_GAME3:
-            text = self.enter_game_gamesave_menu() ##
-        
+            text = self.enter_game_gamesave_menu()
+
         elif self.state == MenuState.GAME_GAMEREAD:
-            text = self.enter_game_menu() ##
+            text = self.enter_game_menu()
 
         elif self.state == MenuState.GAME_GAMEREAD_GAMELAST:
-            text = self.enter_game_gameread_menu() ##
-                        
+            text = self.enter_game_gameread_menu()
+
         elif self.state == MenuState.GAME_GAMEREAD_GAME1:
-            text = self.enter_game_gameread_menu() ##
-        
+            text = self.enter_game_gameread_menu()
+
         elif self.state == MenuState.GAME_GAMEREAD_GAME2:
-            text = self.enter_game_gameread_menu() ##
-        
+            text = self.enter_game_gameread_menu()
+
         elif self.state == MenuState.GAME_GAMEREAD_GAME3:
-            text = self.enter_game_gameread_menu() ##
-        
+            text = self.enter_game_gameread_menu()
+
         elif self.state == MenuState.GAME_GAMEALTMOVE:
-            text = self.enter_game_menu() ##
-        
+            text = self.enter_game_menu()
+
         elif self.state == MenuState.GAME_GAMEALTMOVE_ONOFF:
             text = self.enter_game_altmove_menu()
-        
+
         elif self.state == MenuState.GAME_GAMECONTLAST:
-            text = self.enter_game_menu() ##
-        
+            text = self.enter_game_menu()
+
         elif self.state == MenuState.GAME_GAMECONTLAST_ONOFF:
             text = self.enter_game_contlast_menu()
 
@@ -1523,13 +1490,13 @@ class DgtMenu(object):
                 text = self.enter_book_menu()
             if self.menu_top == Top.ENGINE:
                 text = self.enter_eng_menu()
-            if self.menu_top == Top.ENGINE2: ## favorites
+            if self.menu_top == Top.ENGINE2:
                 text = self.enter_eng_menu2()
             if self.menu_top == Top.SYSTEM:
                 text = self.enter_sys_menu()
-            if self.menu_top == Top.PICOTUTOR:          ## v3
+            if self.menu_top == Top.PICOTUTOR:
                 text = self.enter_picotutor_menu()
-            if self.menu_top == Top.GAME:               ## v3
+            if self.menu_top == Top.GAME:
                 text = self.enter_game_menu()
 
         elif self.state == MenuState.MODE:
@@ -1544,9 +1511,7 @@ class DgtMenu(object):
                 mode_text = self.dgttranslate.text('B10_okmode')
                 event = Event.SET_INTERACTION_MODE(mode=self.menu_mode, mode_text=mode_text, show_ok=True)
                 text = self._fire_event(event)
-            
-        ###########   game  ###########
-        
+
         elif self.state == MenuState.GAME:
             if self.menu_game == Game.SAVE:
                 text = self.enter_game_gamesave_menu()
@@ -1556,7 +1521,7 @@ class DgtMenu(object):
                 text = self.enter_game_altmove_menu()
             if self.menu_game == Game.CONTLAST:
                 text = self.enter_game_contlast_menu()
-        
+
         elif self.state == MenuState.GAME_GAMESAVE:
             if self.menu_game_save == GameSave.GAME1:
                 text = self.enter_game_gamesave_game1_menu()
@@ -1574,7 +1539,7 @@ class DgtMenu(object):
                 text = self.enter_game_gameread_game2_menu()
             if self.menu_game_read == GameRead.GAME3:
                 text = self.enter_game_gameread_game3_menu()
-    
+
         elif self.state == MenuState.GAME_GAMEALTMOVE:
             text = self.enter_game_altmove_onoff_menu()
 
@@ -1590,10 +1555,10 @@ class DgtMenu(object):
             event = Event.ALTMOVES(altmoves=self.menu_game_altmove)
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okaltmove'))
-                
+
         elif self.state == MenuState.GAME_GAMECONTLAST:
             text = self.enter_game_contlast_onoff_menu()
-    
+
         elif self.state == MenuState.GAME_GAMECONTLAST_ONOFF:
             # do action!
             config = ConfigObj('picochess.ini')
@@ -1606,7 +1571,7 @@ class DgtMenu(object):
             event = Event.CONTLAST(contlast=self.menu_game_contlast)
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okcontlast'))
-    
+
         elif self.state == MenuState.GAME_GAMESAVE_GAME1:
             # do action!
             # raise SAVE_PGN_EVENT
@@ -1619,7 +1584,7 @@ class DgtMenu(object):
             event = Event.SAVE_GAME(pgn_filename='picochess_game_2.pgn')
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_oksavegame'))
-    
+
         elif self.state == MenuState.GAME_GAMESAVE_GAME3:
             # raise SAVE_PGN_EVENT
             event = Event.SAVE_GAME(pgn_filename='picochess_game_3.pgn')
@@ -1635,19 +1600,17 @@ class DgtMenu(object):
             event = Event.READ_GAME(pgn_filename='picochess_game_1.pgn')
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okreadgame'))
-        
+
         elif self.state == MenuState.GAME_GAMEREAD_GAME2:
             event = Event.READ_GAME(pgn_filename='picochess_game_2.pgn')
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okreadgame'))
-        
+
         elif self.state == MenuState.GAME_GAMEREAD_GAME3:
             event = Event.READ_GAME(pgn_filename='picochess_game_3.pgn')
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okreadgame'))
 
-        ##################
-        
         elif self.state == MenuState.PICOTUTOR:
             if self.menu_picotutor == PicoTutor.WATCHER:
                 text = self.enter_picotutor_picowatcher_menu()
@@ -1657,7 +1620,7 @@ class DgtMenu(object):
                 text = self.enter_picotutor_picoexplorer_menu()
             if self.menu_picotutor == PicoTutor.COMMENT:
                 text = self.enter_picotutor_picocomment_menu()
-        
+
         elif self.state == MenuState.PICOTUTOR_PICOWATCHER:
             text = self.enter_picotutor_picowatcher_onoff_menu()
 
@@ -1673,10 +1636,10 @@ class DgtMenu(object):
             event = Event.PICOWATCHER(picowatcher=self.menu_picotutor_picowatcher)
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okpicowatcher'))
-                
+
         elif self.state == MenuState.PICOTUTOR_PICOCOACH:
             text = self.enter_picotutor_picocoach_onoff_menu()
-    
+
         elif self.state == MenuState.PICOTUTOR_PICOCOACH_ONOFF:
             # do action!
             config = ConfigObj('picochess.ini')
@@ -1692,7 +1655,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.PICOTUTOR_PICOEXPLORER:
             text = self.enter_picotutor_picoexplorer_onoff_menu()
-                
+
         elif self.state == MenuState.PICOTUTOR_PICOEXPLORER_ONOFF:
             # do action!
             config = ConfigObj('picochess.ini')
@@ -1713,19 +1676,19 @@ class DgtMenu(object):
                 text = self.enter_picotutor_picocomment_on_eng_menu()
             if self.menu_picotutor_picocomment == PicoComment.COM_ON_ALL:
                 text = self.enter_picotutor_picocomment_on_all_menu()
-                                      
+
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_OFF:
             # do action!
             config = ConfigObj('picochess.ini')
             config['tutor-comment'] = 'off'
-                                      
+
             config.write()
             self.res_picotutor_picocomment = PicoComment.COM_OFF
             self.menu_picotutor_picocomment = PicoComment.COM_OFF
             event = Event.PICOCOMMENT(picocomment=self.menu_picotutor_picocomment)
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okpicocomment'))
-        
+
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ENG:
             # do action!
             config = ConfigObj('picochess.ini')
@@ -1737,7 +1700,7 @@ class DgtMenu(object):
             event = Event.PICOCOMMENT(picocomment=self.menu_picotutor_picocomment)
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okpicocomment'))
-                                      
+
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ALL:
             # do action!
             config = ConfigObj('picochess.ini')
@@ -1749,7 +1712,7 @@ class DgtMenu(object):
             event = Event.PICOCOMMENT(picocomment=self.menu_picotutor_picocomment)
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okpicocomment'))
-                                      
+
         elif self.state == MenuState.POS:
             text = self.enter_pos_color_menu()
 
@@ -1791,9 +1754,9 @@ class DgtMenu(object):
                 text = self.enter_time_fisch_menu()
             if self.menu_time_mode == TimeMode.FIXED:
                 text = self.enter_time_fixed_menu()
-            if self.menu_time_mode == TimeMode.TOURN: ## molli: tournament
+            if self.menu_time_mode == TimeMode.TOURN:
                 text = self.enter_time_tourn_menu()
-            if self.menu_time_mode == TimeMode.DEPTH: ## molli: search depth
+            if self.menu_time_mode == TimeMode.DEPTH:
                 text = self.enter_time_depth_menu()
 
         elif self.state == MenuState.TIME_BLITZ:
@@ -1817,17 +1780,17 @@ class DgtMenu(object):
             # do action!
             text = self._fire_timectrl(self.tc_fixed_map[list(self.tc_fixed_map)[self.menu_time_fixed]])
 
-        elif self.state == MenuState.TIME_TOURN:    ## molli tournament
+        elif self.state == MenuState.TIME_TOURN:
             text = self.enter_time_tourn_ctrl_menu()
-        
-        elif self.state == MenuState.TIME_TOURN_CTRL: ## molli tournament
+
+        elif self.state == MenuState.TIME_TOURN_CTRL:
             # do action!
             text = self._fire_timectrl(self.tc_tourn_map[list(self.tc_tourn_map)[self.menu_time_tourn]])
 
-        elif self.state == MenuState.TIME_DEPTH:    ## molli search depth
+        elif self.state == MenuState.TIME_DEPTH:
             text = self.enter_time_depth_ctrl_menu()
-        
-        elif self.state == MenuState.TIME_DEPTH_CTRL: ## molli search depth
+
+        elif self.state == MenuState.TIME_DEPTH_CTRL:
             # do action!
             text = self._fire_timectrl(self.tc_depth_map[list(self.tc_depth_map)[self.menu_time_depth]])
 
@@ -1847,9 +1810,9 @@ class DgtMenu(object):
             # maybe do action!
             text = self.enter_eng_name_level_menu()
             if not text:
-                ## molli
+
                 eng = self.installed_engines[self.menu_engine_name]
-                if not 'Online' in str(eng['name']) and not 'Remote' in str(eng['name']) and not 'FICS' in str(eng['name']) and not 'lichess' in str(eng['name']) and not 'PGN' in str(eng['name']):
+                if 'Online' not in str(eng['name']) and 'Remote' not in str(eng['name']) and 'FICS' not in str(eng['name']) and 'lichess' not in str(eng['name']) and 'PGN' not in str(eng['name']):
                     write_picochess_ini('engine-level', None)
                 eng_text = self.dgttranslate.text('B10_okengine')
                 event = Event.NEW_ENGINE(eng=eng, eng_text=eng_text, options={}, show_ok=True)
@@ -1860,16 +1823,14 @@ class DgtMenu(object):
             # do action!
             eng = self.installed_engines[self.menu_engine_name]
             logging.debug('molli: installed engines in level: %s', str(eng))
-            
+
             level_dict = eng['level_dict']
             if level_dict:
                 msg = sorted(level_dict)[self.menu_engine_level]
                 options = level_dict[msg]
-                ## molli if not self.remote_engine:
-                ##if not self.remote_engine:
-                if not 'Online' in str(eng['name']) and not 'Remote' in str(eng['name']) and not 'FICS' in str(eng['name']) and not 'lichess' in str(eng['name']) and not 'PGN' in str(eng['name']):
+                if 'Online' not in str(eng['name']) and 'Remote' not in str(eng['name']) and 'FICS' not in str(eng['name']) and 'lichess' not in str(eng['name']) and 'PGN' not in str(eng['name']):
                     write_picochess_ini('engine-level', msg)
-                
+
                 event = Event.LEVEL(options={}, level_text=self.dgttranslate.text('B10_level', msg), level_name=msg)
                 Observable.fire(event)
             else:
@@ -1878,7 +1839,7 @@ class DgtMenu(object):
             event = Event.NEW_ENGINE(eng=eng, eng_text=eng_text, options=options, show_ok=True)
             text = self._fire_event(event)
             self.engine_restart = True
-            
+
         elif self.state == MenuState.ENG2:
             text = self.enter_eng_name_menu2()
 
@@ -1886,31 +1847,28 @@ class DgtMenu(object):
             # maybe do action!
             text = self.enter_eng_name_level_menu2()
             if not text:
-               ## molli
-               eng2 = self.installed_engines2[self.menu_engine_name2]
-               if not 'Online' in str(eng2['name']) and not 'Remote' in str(eng2['name']) and not 'FICS' in str(eng2['name']) and not 'lichess' in str(eng2['name']) and not 'PGN' in str(eng2['name']):
-                   write_picochess_ini('engine-level', None)
-               eng_text = self.dgttranslate.text('B10_okengine')
-               event = Event.NEW_ENGINE(eng=eng2, eng_text=eng_text, options={}, show_ok=True)
-               Observable.fire(event)
-               self.engine_restart = True
+                eng2 = self.installed_engines2[self.menu_engine_name2]
+                if 'Online' not in str(eng2['name']) and 'Remote' not in str(eng2['name']) and 'FICS' not in str(eng2['name']) and 'lichess' not in str(eng2['name']) and 'PGN' not in str(eng2['name']):
+                    write_picochess_ini('engine-level', None)
+                eng_text = self.dgttranslate.text('B10_okengine')
+                event = Event.NEW_ENGINE(eng=eng2, eng_text=eng_text, options={}, show_ok=True)
+                Observable.fire(event)
+                self.engine_restart = True
 
         elif self.state == MenuState.ENG_NAME_LEVEL2:
             # do action!
             eng2 = self.installed_engines2[self.menu_engine_name2]
             level_dict2 = eng2['level_dict']
             if level_dict2:
-               msg = sorted(level_dict2)[self.menu_engine_level2]
-               options = level_dict2[msg]
-               ## molli if not self.remote_engine:
-               ##if not self.remote_engine:
-               if not 'Online' in str(eng2['name']) and not 'Remote' in str(eng2['name']) and not 'FICS' in str(eng2['name']) and not 'lichess' in str(eng2['name']) and not 'PGN' in str(eng2['name']):
-                   write_picochess_ini('engine-level', msg)
-               
-               event = Event.LEVEL(options={}, level_text=self.dgttranslate.text('B10_level', msg), level_name=msg)
-               Observable.fire(event)
+                msg = sorted(level_dict2)[self.menu_engine_level2]
+                options = level_dict2[msg]
+                if 'Online' not in str(eng2['name']) and 'Remote' not in str(eng2['name']) and 'FICS' not in str(eng2['name']) and 'lichess' not in str(eng2['name']) and 'PGN' not in str(eng2['name']):
+                    write_picochess_ini('engine-level', msg)
+
+                event = Event.LEVEL(options={}, level_text=self.dgttranslate.text('B10_level', msg), level_name=msg)
+                Observable.fire(event)
             else:
-               options = {}
+                options = {}
             eng_text = self.dgttranslate.text('B10_okengine')
             event = Event.NEW_ENGINE(eng=eng2, eng_text=eng_text, options=options, show_ok=True)
             text = self._fire_event(event)
@@ -2002,7 +1960,7 @@ class DgtMenu(object):
                 text = self.enter_sys_voice_comp_menu()
             if self.menu_system_voice == Voice.SPEED:
                 text = self.enter_sys_voice_speed_menu()
-            if self.menu_system_voice == Voice.VOLUME: #WD
+            if self.menu_system_voice == Voice.VOLUME:
                 text = self.enter_sys_voice_volume_menu()
 
         elif self.state == MenuState.SYS_VOICE_USER:
@@ -2083,12 +2041,12 @@ class DgtMenu(object):
                                     speed=self.menu_system_voice_speedfactor)
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okspeed'))
-            
-        elif self.state == MenuState.SYS_VOICE_VOLUME: #WD
+
+        elif self.state == MenuState.SYS_VOICE_VOLUME:
             self.menu_system_voice = Voice.VOLUME
             text = self.enter_sys_voice_volume_factor_menu()
 
-        elif self.state == MenuState.SYS_VOICE_VOLUME_FACTOR: #WD
+        elif self.state == MenuState.SYS_VOICE_VOLUME_FACTOR:
             # do action!
             assert self.menu_system_voice == Voice.VOLUME, 'menu item is not Voice.VOLUME: %s' % self.menu_system_voice
             write_picochess_ini('volume-voice', str(self.menu_system_voice_volumefactor))
@@ -2103,7 +2061,7 @@ class DgtMenu(object):
                 text = self.enter_sys_disp_ponder_menu()
             if self.menu_system_display == Display.CONFIRM:
                 text = self.enter_sys_disp_confirm_menu()
-            if self.menu_system_display == Display.ENGINENAME:  ## molli v3
+            if self.menu_system_display == Display.ENGINENAME:
                 text = self.enter_sys_disp_enginename_menu()
             if self.menu_system_display == Display.CAPITAL:
                 text = self.enter_sys_disp_capital_menu()
@@ -2123,10 +2081,10 @@ class DgtMenu(object):
             config.write()
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okconfirm'))
 
-        elif self.state == MenuState.SYS_DISP_ENGINENAME:        ## molli v3
+        elif self.state == MenuState.SYS_DISP_ENGINENAME:
             text = self.enter_sys_disp_enginename_yesno_menu()
-        
-        elif self.state == MenuState.SYS_DISP_ENGINENAME_YESNO: ## molli v3
+
+        elif self.state == MenuState.SYS_DISP_ENGINENAME_YESNO:
             # do action!
             config = ConfigObj('picochess.ini')
             if not self.menu_system_display_enginename:
@@ -2181,104 +2139,96 @@ class DgtMenu(object):
     def main_left(self):
         """Change the menu state after LEFT action."""
         text = self.dgttranslate.text('Y00_errormenu')
-        if False:  # switch-case
-            pass
-        elif self.state == MenuState.TOP:
-            pass
-        
-        ############## game #####################
-        elif self.state == MenuState.GAME:     ## molli v3
+        if self.state == MenuState.GAME:
             self.state = MenuState.PICOTUTOR
             self.menu_top = TopLoop.prev(self.menu_top)
             text = self.dgttranslate.text(self.menu_top.value)
-        
-        elif self.state == MenuState.GAME_GAMESAVE:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMESAVE:
             self.state = MenuState.GAME_GAMECONTLAST
             self.menu_game = GameLoop.prev(self.menu_game)
             text = self.dgttranslate.text(self.menu_game.value)
-        
-        elif self.state == MenuState.GAME_GAMESAVE_GAME1:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMESAVE_GAME1:
             self.state = MenuState.GAME_GAMESAVE_GAME3
             self.menu_game_save = GameSaveLoop.prev(self.menu_game_save)
             text = self.dgttranslate.text(self.menu_game_save.value)
-        
-        elif self.state == MenuState.GAME_GAMESAVE_GAME2:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMESAVE_GAME2:
             self.state = MenuState.GAME_GAMESAVE_GAME1
             self.menu_game_save = GameSaveLoop.prev(self.menu_game_save)
             text = self.dgttranslate.text(self.menu_game_save.value)
-        
-        elif self.state == MenuState.GAME_GAMESAVE_GAME3:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMESAVE_GAME3:
             self.state = MenuState.GAME_GAMESAVE_GAME2
             self.menu_game_save = GameSaveLoop.prev(self.menu_game_save)
             text = self.dgttranslate.text(self.menu_game_save.value)
 
-        elif self.state == MenuState.GAME_GAMEREAD:     ## molli v3
+        elif self.state == MenuState.GAME_GAMEREAD:
             self.state = MenuState.GAME_GAMESAVE
             self.menu_game = GameLoop.prev(self.menu_game)
             text = self.dgttranslate.text(self.menu_game.value)
-        
-        elif self.state == MenuState.GAME_GAMEREAD_GAMELAST:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMEREAD_GAMELAST:
             self.state = MenuState.GAME_GAMEREAD_GAME3
-            self.menu_game_read  = GameReadLoop.prev(self.menu_game_read)
+            self.menu_game_read = GameReadLoop.prev(self.menu_game_read)
             text = self.dgttranslate.text(self.menu_game_read.value)
-        
-        elif self.state == MenuState.GAME_GAMEREAD_GAME1:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMEREAD_GAME1:
             self.state = MenuState.GAME_GAMEREAD_GAMELAST
-            self.menu_game_read  = GameReadLoop.prev(self.menu_game_read)
+            self.menu_game_read = GameReadLoop.prev(self.menu_game_read)
             text = self.dgttranslate.text(self.menu_game_read.value)
-        
-        elif self.state == MenuState.GAME_GAMEREAD_GAME2:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMEREAD_GAME2:
             self.state = MenuState.GAME_GAMEREAD_GAME1
             self.menu_game_read = GameReadLoop.prev(self.menu_game_read)
             text = self.dgttranslate.text(self.menu_game_read.value)
 
-        elif self.state == MenuState.GAME_GAMEREAD_GAME3:     ## molli v3
+        elif self.state == MenuState.GAME_GAMEREAD_GAME3:
             self.state = MenuState.GAME_GAMEREAD_GAME2
             self.menu_game_read = GameReadLoop.prev(self.menu_game_read)
             text = self.dgttranslate.text(self.menu_game_read.value)
-        
-        elif self.state == MenuState.GAME_GAMECONTLAST:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMECONTLAST:
             self.state = MenuState.GAME_GAMEALTMOVE
             self.menu_game = GameLoop.prev(self.menu_game)
             text = self.dgttranslate.text(self.menu_game.value)
-        
+
         elif self.state == MenuState.GAME_GAMECONTLAST_ONOFF:
             self.menu_game_contlast = not self.menu_game_contlast
             msg = 'on' if self.menu_game_contlast else 'off'
             text = self.dgttranslate.text('B00_game_contlast_' + msg)
-        
+
         elif self.state == MenuState.GAME_GAMEALTMOVE:
             self.state = MenuState.GAME_GAMEREAD
             self.menu_game = GameLoop.prev(self.menu_game)
             text = self.dgttranslate.text(self.menu_game.value)
-        
+
         elif self.state == MenuState.GAME_GAMEALTMOVE_ONOFF:
             self.menu_game_altmove = not self.menu_game_altmove
             msg = 'on' if self.menu_game_altmove else 'off'
             text = self.dgttranslate.text('B00_game_altmove_' + msg)
-        
-        #########################################
-        
-        elif self.state == MenuState.PICOTUTOR:     ## molli v3
+
+        elif self.state == MenuState.PICOTUTOR:
             self.state = MenuState.SYS
             self.menu_top = TopLoop.prev(self.menu_top)
             text = self.dgttranslate.text(self.menu_top.value)
-        
+
         elif self.state == MenuState.PICOTUTOR_PICOWATCHER:
             self.state = MenuState.PICOTUTOR_PICOCOMMENT
             self.menu_picotutor = PicoTutor.COMMENT
             text = self.dgttranslate.text(self.menu_picotutor.value)
-        
+
         elif self.state == MenuState.PICOTUTOR_PICOWATCHER_ONOFF:
             self.menu_picotutor_picowatcher = not self.menu_picotutor_picowatcher
             msg = 'on' if self.menu_picotutor_picowatcher else 'off'
             text = self.dgttranslate.text('B00_picowatcher_' + msg)
-        
+
         elif self.state == MenuState.PICOTUTOR_PICOCOACH:
             self.state = MenuState.PICOTUTOR_PICOWATCHER
             self.menu_picotutor = PicoTutor.WATCHER
             text = self.dgttranslate.text(self.menu_picotutor.value)
-        
+
         elif self.state == MenuState.PICOTUTOR_PICOCOACH_ONOFF:
             self.menu_picotutor_picocoach = not self.menu_picotutor_picocoach
             msg = 'on' if self.menu_picotutor_picocoach else 'off'
@@ -2288,28 +2238,28 @@ class DgtMenu(object):
             self.state = MenuState.PICOTUTOR_PICOCOACH
             self.menu_picotutor = PicoTutor.COACH
             text = self.dgttranslate.text(self.menu_picotutor.value)
-        
+
         elif self.state == MenuState.PICOTUTOR_PICOEXPLORER_ONOFF:
             self.menu_picotutor_picoexplorer = not self.menu_picotutor_picoexplorer
             msg = 'on' if self.menu_picotutor_picoexplorer else 'off'
             text = self.dgttranslate.text('B00_picoexplorer_' + msg)
-                                      
-        elif self.state == MenuState.PICOTUTOR_PICOCOMMENT:     ## molli v3
+
+        elif self.state == MenuState.PICOTUTOR_PICOCOMMENT:
             self.state = MenuState.PICOTUTOR_PICOEXPLORER
             self.menu_picotutor = PicoTutor.EXPLORER
             text = self.dgttranslate.text(self.menu_picotutor.value)
 
-        elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_OFF:     ## molli v3
+        elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_OFF:
             self.state = MenuState.PICOTUTOR_PICOCOMMENT_ON_ALL
             self.menu_picotutor_picocomment = PicoCommentLoop.prev(self.menu_picotutor_picocomment)
             text = self.dgttranslate.text(self.menu_picotutor_picocomment.value)
 
-        elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ALL:     ## molli v3
+        elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ALL:
             self.state = MenuState.PICOTUTOR_PICOCOMMENT_ON_ENG
             self.menu_picotutor_picocomment = PicoCommentLoop.prev(self.menu_picotutor_picocomment)
             text = self.dgttranslate.text(self.menu_picotutor_picocomment.value)
 
-        elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ENG:     ## molli v3
+        elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ENG:
             self.state = MenuState.PICOTUTOR_PICOCOMMENT_OFF
             self.menu_picotutor_picocomment = PicoCommentLoop.prev(self.menu_picotutor_picocomment)
             text = self.dgttranslate.text(self.menu_picotutor_picocomment.value)
@@ -2377,22 +2327,22 @@ class DgtMenu(object):
         elif self.state == MenuState.TIME_FIXED_CTRL:
             self.menu_time_fixed = (self.menu_time_fixed - 1) % len(self.tc_fixed_map)
             text = self.dgttranslate.text('B00_tc_fixed', self.tc_fixed_list[self.menu_time_fixed])
-        
+
         elif self.state == MenuState.TIME_TOURN:
             self.state = MenuState.TIME_FISCH
             self.menu_time_mode = TimeModeLoop.prev(self.menu_time_mode)
             text = self.dgttranslate.text(self.menu_time_mode.value)
-        
+
         elif self.state == MenuState.TIME_TOURN_CTRL:
             self.menu_time_tourn = (self.menu_time_tourn - 1) % len(self.tc_tourn_map)
             text = self.dgttranslate.text('B00_tc_tourn', self.tc_tourn_list[self.menu_time_tourn])
-        
-        elif self.state == MenuState.TIME_DEPTH:        ##molli depth
+
+        elif self.state == MenuState.TIME_DEPTH:
             self.state = MenuState.TIME_TOURN
             self.menu_time_mode = TimeModeLoop.prev(self.menu_time_mode)
             text = self.dgttranslate.text(self.menu_time_mode.value)
 
-        elif self.state == MenuState.TIME_DEPTH_CTRL:        ##molli depth
+        elif self.state == MenuState.TIME_DEPTH_CTRL:
             self.menu_time_depth = (self.menu_time_depth - 1) % len(self.tc_depth_map)
             text = self.dgttranslate.text('B00_tc_depth', self.tc_depth_list[self.menu_time_depth])
 
@@ -2531,15 +2481,15 @@ class DgtMenu(object):
             text = self._get_current_speaker(speakers, self.menu_system_voice_comp_speak)
 
         elif self.state == MenuState.SYS_VOICE_SPEED:
-            self.state = MenuState.SYS_VOICE_VOLUME # WD
+            self.state = MenuState.SYS_VOICE_VOLUME
             self.menu_system_voice = VoiceLoop.prev(self.menu_system_voice)
             text = self.dgttranslate.text(self.menu_system_voice.value)
 
         elif self.state == MenuState.SYS_VOICE_SPEED_FACTOR:
             self.menu_system_voice_speedfactor = (self.menu_system_voice_speedfactor - 1) % 10
             text = self.dgttranslate.text('B00_voice_speed', str(self.menu_system_voice_speedfactor))
-          
-        elif self.state == MenuState.SYS_VOICE_VOLUME: #WD
+
+        elif self.state == MenuState.SYS_VOICE_VOLUME:
             self.state = MenuState.SYS_VOICE_USER
             self.menu_system_voice = VoiceLoop.prev(self.menu_system_voice)
             text = self.dgttranslate.text(self.menu_system_voice.value)
@@ -2547,7 +2497,7 @@ class DgtMenu(object):
         elif self.state == MenuState.SYS_VOICE_VOLUME_FACTOR:
             self.menu_system_voice_volumefactor = (self.menu_system_voice_volumefactor - 1) % 11
             text = self.dgttranslate.text('B00_voice_volume', str(self.menu_system_voice_volumefactor))
-            
+
         elif self.state == MenuState.SYS_DISP:
             self.state = MenuState.SYS_VOICE
             self.menu_system = SystemLoop.prev(self.menu_system)
@@ -2573,12 +2523,12 @@ class DgtMenu(object):
             self.menu_system_display_confirm = not self.menu_system_display_confirm
             msg = 'off' if self.menu_system_display_confirm else 'on'
             text = self.dgttranslate.text('B00_confirm_' + msg)
-        
+
         elif self.state == MenuState.SYS_DISP_ENGINENAME:
             self.state = MenuState.SYS_DISP_CONFIRM
             self.menu_system_display = DisplayLoop.prev(self.menu_system_display)
             text = self.dgttranslate.text(self.menu_system_display.value)
-        
+
         elif self.state == MenuState.SYS_DISP_ENGINENAME_YESNO:
             self.menu_system_display_enginename = not self.menu_system_display_enginename
             msg = 'on' if self.menu_system_display_enginename else 'off'
@@ -2617,103 +2567,101 @@ class DgtMenu(object):
         elif self.state == MenuState.TOP:
             pass
 
-        ############## game #####################
-        elif self.state == MenuState.GAME:     ## molli v3
+        elif self.state == MenuState.GAME:
             self.state = MenuState.MODE
             self.menu_top = TopLoop.next(self.menu_top)
             text = self.dgttranslate.text(self.menu_top.value)
-        
-        elif self.state == MenuState.GAME_GAMESAVE:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMESAVE:
             self.state = MenuState.GAME_GAMEREAD
             self.menu_game = GameLoop.next(self.menu_game)
             text = self.dgttranslate.text(self.menu_game.value)
-        
-        elif self.state == MenuState.GAME_GAMESAVE_GAME1:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMESAVE_GAME1:
             self.state = MenuState.GAME_GAMESAVE_GAME2
             self.menu_game_save = GameSaveLoop.next(self.menu_game_save)
             text = self.dgttranslate.text(self.menu_game_save.value)
-        
-        elif self.state == MenuState.GAME_GAMESAVE_GAME2:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMESAVE_GAME2:
             self.state = MenuState.GAME_GAMESAVE_GAME3
             self.menu_game_save = GameSaveLoop.next(self.menu_game_save)
             text = self.dgttranslate.text(self.menu_game_save.value)
-        
-        elif self.state == MenuState.GAME_GAMESAVE_GAME3:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMESAVE_GAME3:
             self.state = MenuState.GAME_GAMESAVE_GAME1
             self.menu_game_save = GameSaveLoop.next(self.menu_game_save)
             text = self.dgttranslate.text(self.menu_game_save.value)
-        
-        elif self.state == MenuState.GAME_GAMEREAD:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMEREAD:
             self.state = MenuState.GAME_GAMEALTMOVE
             self.menu_game = GameLoop.next(self.menu_game)
             text = self.dgttranslate.text(self.menu_game.value)
-        
-        elif self.state == MenuState.GAME_GAMEREAD_GAMELAST:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMEREAD_GAMELAST:
             self.state = MenuState.GAME_GAMEREAD_GAME1
-            self.menu_game_read  = GameReadLoop.next(self.menu_game_read)
+            self.menu_game_read = GameReadLoop.next(self.menu_game_read)
             text = self.dgttranslate.text(self.menu_game_read.value)
-        
-        elif self.state == MenuState.GAME_GAMEREAD_GAME1:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMEREAD_GAME1:
             self.state = MenuState.GAME_GAMEREAD_GAME2
-            self.menu_game_read  = GameReadLoop.next(self.menu_game_read)
+            self.menu_game_read = GameReadLoop.next(self.menu_game_read)
             text = self.dgttranslate.text(self.menu_game_read.value)
-        
-        elif self.state == MenuState.GAME_GAMEREAD_GAME2:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMEREAD_GAME2:
             self.state = MenuState.GAME_GAMEREAD_GAME3
             self.menu_game_read = GameReadLoop.next(self.menu_game_read)
             text = self.dgttranslate.text(self.menu_game_read.value)
-        
-        elif self.state == MenuState.GAME_GAMEREAD_GAME3:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMEREAD_GAME3:
             self.state = MenuState.GAME_GAMEREAD_GAMELAST
             self.menu_game_read = GameReadLoop.next(self.menu_game_read)
             text = self.dgttranslate.text(self.menu_game_read.value)
-        
-        elif self.state == MenuState.GAME_GAMECONTLAST:     ## molli v3
+
+        elif self.state == MenuState.GAME_GAMECONTLAST:
             self.state = MenuState.GAME_GAMESAVE
             self.menu_game = GameLoop.next(self.menu_game)
             text = self.dgttranslate.text(self.menu_game.value)
-        
+
         elif self.state == MenuState.GAME_GAMEALTMOVE:
             self.state = MenuState.GAME_GAMECONTLAST
             self.menu_game = GameLoop.next(self.menu_game)
             text = self.dgttranslate.text(self.menu_game.value)
-        
+
         elif self.state == MenuState.GAME_GAMEALTMOVE_ONOFF:
             self.menu_game_altmove = not self.menu_game_altmove
             msg = 'on' if self.menu_game_altmove else 'off'
             text = self.dgttranslate.text('B00_game_altmove_' + msg)
-        
+
         elif self.state == MenuState.GAME_GAMECONTLAST_ONOFF:
             self.menu_game_contlast = not self.menu_game_contlast
             msg = 'on' if self.menu_game_contlast else 'off'
             text = self.dgttranslate.text('B00_game_contlast_' + msg)
-        
-        #########################################
-        elif self.state == MenuState.PICOTUTOR:     ## molli v3
+
+        elif self.state == MenuState.PICOTUTOR:
             self.state = MenuState.GAME
             self.menu_top = TopLoop.next(self.menu_top)
             text = self.dgttranslate.text(self.menu_top.value)
-        
+
         elif self.state == MenuState.PICOTUTOR_PICOWATCHER:
             self.state = MenuState.PICOTUTOR_PICOCOACH
             self.menu_picotutor = PicoTutor.COACH
             text = self.dgttranslate.text(self.menu_picotutor.value)
-        
+
         elif self.state == MenuState.PICOTUTOR_PICOWATCHER_ONOFF:
             self.menu_picotutor_picowatcher = not self.menu_picotutor_picowatcher
             msg = 'on' if self.menu_picotutor_picowatcher else 'off'
             text = self.dgttranslate.text('B00_picowatcher_' + msg)
-        
+
         elif self.state == MenuState.PICOTUTOR_PICOCOACH:
             self.state = MenuState.PICOTUTOR_PICOEXPLORER
             self.menu_picotutor = PicoTutor.EXPLORER
             text = self.dgttranslate.text(self.menu_picotutor.value)
-        
+
         elif self.state == MenuState.PICOTUTOR_PICOCOACH_ONOFF:
             self.menu_picotutor_picocoach = not self.menu_picotutor_picocoach
             msg = 'on' if self.menu_picotutor_picocoach else 'off'
             text = self.dgttranslate.text('B00_picocoach_' + msg)
-        
+
         elif self.state == MenuState.PICOTUTOR_PICOEXPLORER:
             self.state = MenuState.PICOTUTOR_PICOCOMMENT
             self.menu_picotutor = PicoTutor.COMMENT
@@ -2723,23 +2671,23 @@ class DgtMenu(object):
             self.menu_picotutor_picoexplorer = not self.menu_picotutor_picoexplorer
             msg = 'on' if self.menu_picotutor_picoexplorer else 'off'
             text = self.dgttranslate.text('B00_picoexplorer_' + msg)
-                                      
-        elif self.state == MenuState.PICOTUTOR_PICOCOMMENT:     ## molli v3
+
+        elif self.state == MenuState.PICOTUTOR_PICOCOMMENT:
             self.state = MenuState.PICOTUTOR_PICOWATCHER
             self.menu_picotutor = PicoTutor.WATCHER
             text = self.dgttranslate.text(self.menu_picotutor.value)
 
-        elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_OFF:     ## molli v3
+        elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_OFF:
             self.state = MenuState.PICOTUTOR_PICOCOMMENT_ON_ENG
             self.menu_picotutor_picocomment = PicoCommentLoop.next(self.menu_picotutor_picocomment)
             text = self.dgttranslate.text(self.menu_picotutor_picocomment.value)
 
-        elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ENG:     ## molli v3
+        elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ENG:
             self.state = MenuState.PICOTUTOR_PICOCOMMENT_ON_ALL
             self.menu_picotutor_picocomment = PicoCommentLoop.next(self.menu_picotutor_picocomment)
             text = self.dgttranslate.text(self.menu_picotutor_picocomment.value)
 
-        elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ALL:     ## molli v3
+        elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ALL:
             self.state = MenuState.PICOTUTOR_PICOCOMMENT_OFF
             self.menu_picotutor_picocomment = PicoCommentLoop.next(self.menu_picotutor_picocomment)
             text = self.dgttranslate.text(self.menu_picotutor_picocomment.value)
@@ -2807,22 +2755,22 @@ class DgtMenu(object):
         elif self.state == MenuState.TIME_FIXED_CTRL:
             self.menu_time_fixed = (self.menu_time_fixed + 1) % len(self.tc_fixed_map)
             text = self.dgttranslate.text('B00_tc_fixed', self.tc_fixed_list[self.menu_time_fixed])
-        
+
         elif self.state == MenuState.TIME_TOURN:
             self.state = MenuState.TIME_DEPTH
             self.menu_time_mode = TimeModeLoop.next(self.menu_time_mode)
             text = self.dgttranslate.text(self.menu_time_mode.value)
-        
+
         elif self.state == MenuState.TIME_TOURN_CTRL:
             self.menu_time_tourn = (self.menu_time_tourn + 1) % len(self.tc_tourn_map)
             text = self.dgttranslate.text('B00_tc_tourn', self.tc_tourn_list[self.menu_time_tourn])
-        
-        elif self.state == MenuState.TIME_DEPTH:            ## molli depth
+
+        elif self.state == MenuState.TIME_DEPTH:
             self.state = MenuState.TIME_FIXED
             self.menu_time_mode = TimeModeLoop.next(self.menu_time_mode)
             text = self.dgttranslate.text(self.menu_time_mode.value)
-        
-        elif self.state == MenuState.TIME_DEPTH_CTRL:        ## molli depth
+
+        elif self.state == MenuState.TIME_DEPTH_CTRL:
             self.menu_time_depth = (self.menu_time_depth + 1) % len(self.tc_depth_map)
             text = self.dgttranslate.text('B00_tc_depth', self.tc_depth_list[self.menu_time_depth])
 
@@ -2849,7 +2797,7 @@ class DgtMenu(object):
             self.menu_engine_level = (self.menu_engine_level + 1) % len(level_dict)
             msg = sorted(level_dict)[self.menu_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
-            
+
         elif self.state == MenuState.ENG2:
             self.state = MenuState.SYS
             self.menu_top = TopLoop.next(self.menu_top)
@@ -2919,7 +2867,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_system.value)
 
         elif self.state == MenuState.SYS_VOICE_USER:
-            self.state = MenuState.SYS_VOICE_VOLUME # WD
+            self.state = MenuState.SYS_VOICE_VOLUME
             self.menu_system_voice = VoiceLoop.next(self.menu_system_voice)
             text = self.dgttranslate.text(self.menu_system_voice.value)
 
@@ -2969,12 +2917,12 @@ class DgtMenu(object):
             self.menu_system_voice_speedfactor = (self.menu_system_voice_speedfactor + 1) % 10
             text = self.dgttranslate.text('B00_voice_speed', str(self.menu_system_voice_speedfactor))
 
-        elif self.state == MenuState.SYS_VOICE_VOLUME: #WD
+        elif self.state == MenuState.SYS_VOICE_VOLUME:
             self.state = MenuState.SYS_VOICE_SPEED
             self.menu_system_voice = VoiceLoop.next(self.menu_system_voice)
             text = self.dgttranslate.text(self.menu_system_voice.value)
 
-        elif self.state == MenuState.SYS_VOICE_VOLUME_FACTOR: #WD
+        elif self.state == MenuState.SYS_VOICE_VOLUME_FACTOR:
             self.menu_system_voice_volumefactor = (self.menu_system_voice_volumefactor + 1) % 11
             text = self.dgttranslate.text('B00_voice_volume', str(self.menu_system_voice_volumefactor))
 
@@ -3003,12 +2951,12 @@ class DgtMenu(object):
             self.menu_system_display_confirm = not self.menu_system_display_confirm
             msg = 'off' if self.menu_system_display_confirm else 'on'
             text = self.dgttranslate.text('B00_confirm_' + msg)
-        
+
         elif self.state == MenuState.SYS_DISP_ENGINENAME:
             self.state = MenuState.SYS_DISP_CAPITAL
             self.menu_system_display = DisplayLoop.next(self.menu_system_display)
             text = self.dgttranslate.text(self.menu_system_display.value)
-        
+
         elif self.state == MenuState.SYS_DISP_ENGINENAME_YESNO:
             self.menu_system_display_enginename = not self.menu_system_display_enginename
             msg = 'on' if self.menu_system_display_enginename else 'off'
@@ -3117,4 +3065,3 @@ class DgtMenu(object):
     def get_current_text(self):
         """Return the current text."""
         return self.current_text
-

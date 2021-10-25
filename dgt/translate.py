@@ -56,14 +56,11 @@ class DgtTranslate(object):
         """Set capital letters."""
         self.capital = capital
 
-    def capital_text(self, text, is_obj=True):
+    def capital_text(self, text: Dgt.DISPLAY_TEXT) -> Dgt.DISPLAY_TEXT:
         """Transfer text to capital text or not."""
         if self.capital:
-            if is_obj:
-                text.m = text.m.upper()
-                text.l = text.l.upper()
-            else:
-                return text.upper()
+            text.m = text.m.upper()
+            text.l = text.l.upper()
         return text
 
     def set_notation(self, notation: bool):
@@ -105,7 +102,7 @@ class DgtTranslate(object):
         if text_id == 'onlineuser':
             l_len = len(msg) - 1
             l_msg = msg[:l_len]
-            msg = l_msg.ljust(11,' ')
+            msg = l_msg.ljust(11, ' ')
             entxt = Dgt.DISPLAY_TEXT(l=msg[:11], m=msg[:8], s=msg[:6])
             detxt = entxt
             nltxt = entxt
@@ -129,7 +126,7 @@ class DgtTranslate(object):
                 ittxt = Dgt.DISPLAY_TEXT(l='Contr.Tempo', m='Con.Tempo', s='C.Temp')
             elif 'M' == msg[0]:
                 l_msg = msg[1:] + 'min'
-                l_msg = l_msg.ljust(11,' ')
+                l_msg = l_msg.ljust(11, ' ')
                 entxt = Dgt.DISPLAY_TEXT(l=l_msg[:11], m=l_msg[:8], s=l_msg[:6])
                 detxt = entxt
                 nltxt = entxt
@@ -138,7 +135,7 @@ class DgtTranslate(object):
                 ittxt = entxt
             elif 'A' == msg[0]:
                 l_msg = 'Add ' + msg[1:]
-                l_msg = l_msg.ljust(11,' ')
+                l_msg = l_msg.ljust(11, ' ')
                 entxt = Dgt.DISPLAY_TEXT(l=l_msg[:11], m=l_msg[:8], s=l_msg[:6])
                 detxt = entxt
                 nltxt = entxt
@@ -294,10 +291,8 @@ class DgtTranslate(object):
                         piece_de = 'w ' + 'K'
                     else:
                         piece_de = 'w?'
-                ##text_de = 'setze ' + piece_de + msg[-2:]
                 text_de_m = piece_de + msg[-2:]
                 text_de = 'setze ' + text_de_m
-                ##text_en = 'put ' + piece_en + msg[-2:]
                 text_en_m = piece_en + msg[-2:]
                 text_en = 'put ' + text_en_m
                 entxt = Dgt.DISPLAY_TEXT(l=text_en, m=text_en_m, s=text_en_m)
@@ -306,9 +301,6 @@ class DgtTranslate(object):
                 frtxt = entxt
                 estxt = entxt
                 ittxt = entxt
-            else:
-                ## error: should not occur!
-                pass
         if text_id == 'picotutor_msg':
             if msg == 'POSOK':
                 entxt = Dgt.DISPLAY_TEXT(l='Position ok', m='Posit ok', s='POS ok')
@@ -362,7 +354,7 @@ class DgtTranslate(object):
             elif 'HINT' in msg:
                 beep = False
                 l_msg = 'hint ' + msg[4:]
-                l_msg = l_msg.ljust(11,' ')
+                l_msg = l_msg.ljust(11, ' ')
                 l_move_g = msg[4:]
                 l_move_g = l_move_g.replace('N', 'S')
                 l_move_g = l_move_g.replace('Q', 'D')
@@ -370,7 +362,7 @@ class DgtTranslate(object):
                 l_move_g = l_move_g.replace('B', 'L')
                 l_move_g = l_move_g.replace('P', 'B')
                 l_msg_g = 'Tipp ' + l_move_g
-                l_msg_g = l_msg_g.ljust(11,' ')
+                l_msg_g = l_msg_g.ljust(11, ' ')
                 m_move_g = msg[4:]
                 m_move_g = l_move_g.replace('N', 'S')
                 m_move_g = l_move_g.replace('Q', 'D')
@@ -381,13 +373,13 @@ class DgtTranslate(object):
                     m_msg = 'hnt' + msg[4:]
                     m_msg_g = 'Tip' + m_move_g
                 elif len(msg[4:]) > 3:
-                    m_msg   = 'hint' + msg[4:]
+                    m_msg = 'hint' + msg[4:]
                     m_msg_g = 'Tipp' + m_move_g
                 else:
-                    m_msg   = 'hint ' + msg[4:]
+                    m_msg = 'hint ' + msg[4:]
                     m_msg_g = 'Tipp ' + m_move_g
-                m_msg   = m_msg.ljust(8,' ')
-                m_msg_g = m_msg_g.ljust(8,' ')
+                m_msg = m_msg.ljust(8, ' ')
+                m_msg_g = m_msg_g.ljust(8, ' ')
                 entxt = Dgt.DISPLAY_TEXT(l=l_msg[:11], m=m_msg[:8], s=m_msg[:6])
                 detxt = Dgt.DISPLAY_TEXT(l=l_msg_g[:11], m=m_msg_g[:8], s=m_msg_g[:6])
                 nltxt = entxt
@@ -397,16 +389,16 @@ class DgtTranslate(object):
             elif 'THREAT' in msg:
                 beep = False
                 if len(msg[6:]) > 4:
-                    l_msg   = 'threat' + msg[6:]
-                    m_msg   = 'tht' + msg[6:]
+                    l_msg = 'threat' + msg[6:]
+                    m_msg = 'tht' + msg[6:]
                 elif len(msg[6:]) > 3:
-                    l_msg   = 'threat ' + msg[6:]
-                    m_msg   = 'thrt' + msg[6:]
+                    l_msg = 'threat ' + msg[6:]
+                    m_msg = 'thrt' + msg[6:]
                 else:
-                    l_msg   = 'threat ' + msg[6:]
-                    m_msg   = 'thrt ' + msg[6:]
-                l_msg = l_msg.ljust(11,' ')
-                m_msg = m_msg.ljust(8,' ')
+                    l_msg = 'threat ' + msg[6:]
+                    m_msg = 'thrt ' + msg[6:]
+                l_msg = l_msg.ljust(11, ' ')
+                m_msg = m_msg.ljust(8, ' ')
                 l_move_g = msg[6:]
                 l_move_g = l_move_g.replace('N', 'S')
                 l_move_g = l_move_g.replace('Q', 'D')
@@ -423,9 +415,9 @@ class DgtTranslate(object):
                     l_msg_g = 'droht' + l_move_g
                 else:
                     l_msg_g = 'droht ' + l_move_g
-                l_msg_g = l_msg_g.ljust(11,' ')
+                l_msg_g = l_msg_g.ljust(11, ' ')
                 m_msg_g = m_move_g
-                m_msg_g = m_msg_g.ljust(8,' ')
+                m_msg_g = m_msg_g.ljust(8, ' ')
                 entxt = Dgt.DISPLAY_TEXT(l=l_msg[:11], m=m_msg[:8], s=m_msg[:6])
                 detxt = Dgt.DISPLAY_TEXT(l=l_msg_g[:11], m=m_msg_g[:8], s=m_msg_g[:6])
                 nltxt = entxt
@@ -435,7 +427,7 @@ class DgtTranslate(object):
             elif 'BEST' in msg:
                 beep = False
                 l_msg = 'hint ' + msg[4:]
-                l_msg = l_msg.ljust(11,' ')
+                l_msg = l_msg.ljust(11, ' ')
                 l_move_g = msg[4:]
                 l_move_g = l_move_g.replace('N', 'S')
                 l_move_g = l_move_g.replace('Q', 'D')
@@ -443,7 +435,7 @@ class DgtTranslate(object):
                 l_move_g = l_move_g.replace('B', 'L')
                 l_move_g = l_move_g.replace('P', 'B')
                 l_msg_g = 'Tipp ' + l_move_g
-                l_msg_g = l_msg_g.ljust(11,' ')
+                l_msg_g = l_msg_g.ljust(11, ' ')
                 m_move_g = msg[4:]
                 m_move_g = l_move_g.replace('N', 'S')
                 m_move_g = l_move_g.replace('Q', 'D')
@@ -452,15 +444,15 @@ class DgtTranslate(object):
                 m_move_g = l_move_g.replace('P', 'B')
                 if len(msg[4:]) > 4:
                     m_msg = 'hnt' + msg[4:]
-                    m_msg_g= 'Tip' + m_move_g
+                    m_msg_g = 'Tip' + m_move_g
                 elif len(msg[4:]) > 3:
-                    m_msg   = 'hint' + msg[4:]
+                    m_msg = 'hint' + msg[4:]
                     m_msg_g = 'Tipp' + m_move_g
                 else:
-                    m_msg   = 'hint ' + msg[4:]
+                    m_msg = 'hint ' + msg[4:]
                     m_msg_g = 'Tipp ' + m_move_g
-                m_msg   = m_msg.ljust(8,' ')
-                m_msg_g = m_msg_g.ljust(8,' ')
+                m_msg = m_msg.ljust(8, ' ')
+                m_msg_g = m_msg_g.ljust(8, ' ')
                 entxt = Dgt.DISPLAY_TEXT(l=l_msg[:11], m=m_msg[:8], s=m_msg[:6])
                 detxt = Dgt.DISPLAY_TEXT(l=l_msg_g[:11], m=m_msg_g[:8], s=m_msg_g[:6])
                 nltxt = entxt
@@ -470,13 +462,13 @@ class DgtTranslate(object):
             elif 'POS' in msg:
                 beep = False
                 l_msg = 'eval ' + msg[3:]
-                l_msg = l_msg.ljust(11,' ')
+                l_msg = l_msg.ljust(11, ' ')
                 l_msg_de = 'Wert ' + msg[3:]
-                l_msg_de = l_msg_de.ljust(11,' ')
+                l_msg_de = l_msg_de.ljust(11, ' ')
                 m_msg = 'eval' + msg[3:]
-                m_msg = m_msg.ljust(8,' ')
+                m_msg = m_msg.ljust(8, ' ')
                 m_msg_de = 'Wert' + msg[3:]
-                m_msg_de = m_msg_de.ljust(8,' ')
+                m_msg_de = m_msg_de.ljust(8, ' ')
                 entxt = Dgt.DISPLAY_TEXT(l=l_msg[:11], m=m_msg[:8], s=m_msg[:6])
                 detxt = Dgt.DISPLAY_TEXT(l=l_msg_de[:11], m=m_msg_de[:8], s=m_msg_de[:6])
                 nltxt = entxt
@@ -485,11 +477,11 @@ class DgtTranslate(object):
                 ittxt = entxt
             else:
                 l_msg = 'PicTutor ' + msg[:2]
-                l_msg = l_msg.ljust(11,' ')
+                l_msg = l_msg.ljust(11, ' ')
                 m_msg = 'Tutor ' + msg[:2]
-                m_msg = m_msg.ljust(9,' ')
+                m_msg = m_msg.ljust(9, ' ')
                 s_msg = 'Tut ' + msg[:2]
-                s_msg = s_msg.ljust(6,' ')
+                s_msg = s_msg.ljust(6, ' ')
                 entxt = Dgt.DISPLAY_TEXT(l=l_msg, m=m_msg, s=s_msg)
                 detxt = entxt
                 nltxt = entxt
@@ -1132,13 +1124,13 @@ class DgtTranslate(object):
             frtxt = Dgt.DISPLAY_TEXT(l='Normal     ', m='Normal  ', s='normal')
             estxt = Dgt.DISPLAY_TEXT(l='Normal     ', m='Normal  ', s='normal')
             ittxt = Dgt.DISPLAY_TEXT(l='Normale    ', m='Normale ', s='normal')
-        if text_id == 'mode_training_menu': # WD
-            entxt = Dgt.DISPLAY_TEXT(l='Training   ', m='Training', s='train') # WD
-            detxt = Dgt.DISPLAY_TEXT(l='Training   ', m='Training', s='train') # WD
-            nltxt = entxt # WD
-            frtxt = entxt # WD
-            estxt = entxt # WD
-            ittxt = entxt # WD
+        if text_id == 'mode_training_menu':
+            entxt = Dgt.DISPLAY_TEXT(l='Training   ', m='Training', s='train')
+            detxt = Dgt.DISPLAY_TEXT(l='Training   ', m='Training', s='train')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
         if text_id == 'mode_brain_menu':
             entxt = Dgt.DISPLAY_TEXT(l='Ponder on  ', m='PonderOn', s='ponder')
             detxt = Dgt.DISPLAY_TEXT(l='Ponder an  ', m='PonderAn', s='ponder')
@@ -1282,7 +1274,7 @@ class DgtTranslate(object):
         if text_id == 'gameresult_mate':
             wait = True
             entxt = Dgt.DISPLAY_TEXT(l='checkmate  ', m='mate    ', s='mate  ')
-            detxt = Dgt.DISPLAY_TEXT(l='Schachmatt ', m='Matt    ', s='matt  ') # WD
+            detxt = Dgt.DISPLAY_TEXT(l='Schachmatt ', m='Matt    ', s='matt  ')
             nltxt = Dgt.DISPLAY_TEXT(l='mat        ', m='mat     ', s='mat   ')
             frtxt = Dgt.DISPLAY_TEXT(l='mat        ', m='mat     ', s='mat   ')
             estxt = Dgt.DISPLAY_TEXT(l='mate       ', m='mate    ', s='mate  ')
@@ -1481,21 +1473,21 @@ class DgtTranslate(object):
             frtxt = entxt
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(l='ok veloc vo', m='ok veloc', s='ok vel')
-        if text_id == 'voice_volume_menu': #WD
+        if text_id == 'voice_volume_menu':
             entxt = Dgt.DISPLAY_TEXT(l='VoiceVolume', m='Vc vol  ', s='vs vol')
             detxt = Dgt.DISPLAY_TEXT(l='Volume     ', m='Stm Vol ', s='st vol')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(l='Volume voce', m='Vol voce', s='vovoce')
-        if text_id == 'voice_volume': #WD
+        if text_id == 'voice_volume':
             entxt = Dgt.DISPLAY_TEXT(l='VoiceVol ' + msg, m='Volume' + msg, s='vol ' + msg)
             detxt = Dgt.DISPLAY_TEXT(l='Volume   ' + msg, m='Volume' + msg, s='vol ' + msg)
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(l='VoluVoce ' + msg, m='Volume' + msg, s='vol ' + msg)
-        if text_id == 'okvolume': #WD
+        if text_id == 'okvolume':
             entxt = Dgt.DISPLAY_TEXT(l='ok volume  ', m='ok vol  ', s='ok vol')
             detxt = Dgt.DISPLAY_TEXT(l='ok Volume  ', m='ok vol  ', s='ok vol')
             nltxt = entxt
@@ -1538,14 +1530,14 @@ class DgtTranslate(object):
             frtxt = Dgt.DISPLAY_TEXT(l='Voix eteint', m='Voix ete', s='vo ete')
             estxt = Dgt.DISPLAY_TEXT(l='Voz apagada', m='Voz apag', s='vz apa')
             ittxt = Dgt.DISPLAY_TEXT(l='Voce spenta', m='Voce spe', s='vc spe')
-        if text_id == 'okvolume': #WD
+        if text_id == 'okvolume':
             entxt = Dgt.DISPLAY_TEXT(l='ok Volume  ', m='okVolume', s='ok vol')
             detxt = Dgt.DISPLAY_TEXT(l='ok Lautst  ', m='okLautst', s='ok Lau')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
-        if text_id == 'voice_volume_menu': #WD
+        if text_id == 'voice_volume_menu':
             entxt = Dgt.DISPLAY_TEXT(l='VoiceVolume', m='VoiceVol', s='voivol')
             detxt = Dgt.DISPLAY_TEXT(l='Lautstaerke', m='Lautstr ', s='lautst')
             nltxt = entxt
@@ -1615,7 +1607,7 @@ class DgtTranslate(object):
             frtxt = entxt
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(l='Conferma no', m='Conf  no', s='cnf no')
-        ### molli show engine name
+        # molli show engine name
         if text_id == 'display_enginename_menu':
             entxt = Dgt.DISPLAY_TEXT(l='ShowEngName', m='Eng.name', s='engnam')
             detxt = Dgt.DISPLAY_TEXT(l='Engine-Name', m='Eng.Name', s='engnam')
@@ -1707,14 +1699,14 @@ class DgtTranslate(object):
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
-        if text_id == 'tc_tourn': ## molli tournament time control
+        if text_id == 'tc_tourn':  # molli tournament time control
             entxt = Dgt.DISPLAY_TEXT(l=msg[:11], m=msg[:8], s=msg[:6])
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
-        if text_id == 'tc_depth': ## support of depth per move search
+        if text_id == 'tc_depth':  # support of depth per move search
             entxt = Dgt.DISPLAY_TEXT(l='Depth ' + msg, m='Depth ' + msg, s='dep ' + msg)
             detxt = Dgt.DISPLAY_TEXT(l='Tiefe ' + msg, m='Tiefe ' + msg, s='tief' + msg)
             nltxt = entxt

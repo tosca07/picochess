@@ -34,7 +34,6 @@ from web.picoweb import picoweb as pw
 from dgt.api import Event, Message
 from dgt.util import PlayMode, Mode, ClockSide
 from dgt.iface import DgtIface
-from dgt.translate import DgtTranslate
 from dgt.board import DgtBoard
 
 # This needs to be reworked to be session based (probably by token)
@@ -269,13 +268,6 @@ class WebVr(DgtIface):
 
     def display_text_on_clock(self, message):
         """Display a text on the web clock."""
-        is_new_rev2 = self.dgtboard.is_revelation and self.dgtboard.enable_revelation_pi
-        """
-        if self.enable_dgtpi or is_new_rev2:
-            text = message.l
-        else:
-            text = message.m if self.enable_dgt3000 else message.s
-        """
         text = message.l
         if self.get_name() not in message.devs:
             logging.debug('ignored %s - devs: %s', text, message.devs)
@@ -342,10 +334,9 @@ class WebVr(DgtIface):
         result = {'event': 'Light', 'move': uci_move}
         EventHandler.write_to_clients(result)
         return True
-        
+
     def light_square_on_revelation(self, square):
         """Light the rev2 square."""
-        ##result = {'event': 'Light', 'square': square}
         uci_move = square + square
         result = {'event': 'Light', 'move': uci_move}
         EventHandler.write_to_clients(result)
