@@ -1,0 +1,4 @@
+mypy
+mock
+pylama
+pyflakes
