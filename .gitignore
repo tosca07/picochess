@@ -64,3 +64,5 @@ docs/_build/
 # Config file
 picochess.ini
 picochess.uci
+*.swp
+.venv/
