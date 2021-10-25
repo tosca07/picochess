@@ -1065,7 +1065,7 @@ class DgtMenu(object):
 
     def _get_current_speaker(self, speakers, index: int):
         speaker = speakers[list(speakers)[index]]
-        text = Dgt.DISPLAY_TEXT(l=speaker['large'], m=speaker['medium'], s=speaker['small'])
+        text = Dgt.DISPLAY_TEXT(large_text=speaker['large'], medium_text=speaker['medium'], small_text=speaker['small'])
         text.beep = self.dgttranslate.bl(BeepLevel.BUTTON)
         text.wait = False
         text.maxtime = 0

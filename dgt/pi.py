@@ -22,7 +22,7 @@ from ctypes import cdll, c_byte, create_string_buffer, pointer
 from platform import machine
 
 from utilities import DisplayMsg, hms_time
-from dgt.api import Message
+from dgt.api import Dgt, Message
 from dgt.util import ClockIcons, ClockSide
 from dgt.board import DgtBoard
 from dgt.iface import DgtIface
@@ -148,11 +148,11 @@ class DgtPi(DgtIface):
         else:
             return True
 
-    def display_text_on_clock(self, message):
+    def display_text_on_clock(self, message: Dgt.DISPLAY_TEXT):
         """Display a text on the dgtpi."""
-        text = message.l
+        text = message.large_text
         if text is None:
-            text = message.m
+            text = message.medium_text
         if self.get_name() not in message.devs:
             logging.debug('ignored %s - devs: %s', text, message.devs)
             return

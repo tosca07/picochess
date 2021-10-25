@@ -31,7 +31,7 @@ from tornado.websocket import WebSocketHandler
 from utilities import Observable, DisplayMsg, hms_time, RepeatedTimer
 from web.picoweb import picoweb as pw
 
-from dgt.api import Event, Message
+from dgt.api import Dgt, Event, Message
 from dgt.util import PlayMode, Mode, ClockSide
 from dgt.iface import DgtIface
 from dgt.board import DgtBoard
@@ -266,9 +266,9 @@ class WebVr(DgtIface):
         EventHandler.write_to_clients(result)
         return True
 
-    def display_text_on_clock(self, message):
+    def display_text_on_clock(self, message: Dgt.DISPLAY_TEXT):
         """Display a text on the web clock."""
-        text = message.l
+        text = message.large_text
         if self.get_name() not in message.devs:
             logging.debug('ignored %s - devs: %s', text, message.devs)
             return True
@@ -399,7 +399,8 @@ class WebDisplay(DisplayMsg, threading.Thread):
 
         if 'game_info' in self.shared:
             if 'level_text' in self.shared['game_info']:
-                engine_level = ' ({0})'.format(self.shared['game_info']['level_text'].l)
+                text: Dgt.DISPLAY_TEXT = self.shared['game_info']['level_text']
+                engine_level = ' ({0})'.format(text.large_text)
             else:
                 engine_level = ''
             if 'level_name' in self.shared['game_info']:

@@ -29,12 +29,13 @@ from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
 import mimetypes
 import requests
+from typing import Optional
 
 import chess
 import chess.pgn
 from timecontrol import TimeControl
 from utilities import DisplayMsg
-from dgt.api import Message
+from dgt.api import Dgt, Message
 from dgt.util import GameResult, PlayMode, Mode, TimeMode
 
 
@@ -260,7 +261,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         self.user_name = '?'
         self.user_name_orig = '?'
         self.location = '?'
-        self.level_text = None
+        self.level_text: Optional[Dgt.DISPLAY_TEXT] = None
         self.level_name = ''
         self.user_elo = '-'
         self.engine_elo = '-'

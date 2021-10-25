@@ -23,6 +23,7 @@ from fcntl import fcntl, F_GETFL, F_SETFL
 from os import O_NONBLOCK, read, path, listdir
 from serial import Serial, SerialException, STOPBITS_ONE, PARITY_NONE, EIGHTBITS
 import time
+from typing import Optional
 
 from dgt.util import DgtAck, DgtClk, DgtCmd, DgtMsg, ClockIcons, ClockSide, enum
 from dgt.api import Message, Dgt
@@ -95,7 +96,7 @@ class DgtBoard(object):
         self.r_time = 3600 * 10  # max value cause 10h cant be reached by clock
         self.l_time = 3600 * 10  # max value cause 10h cant be reached by clock
 
-        self.bconn_text = None
+        self.bconn_text: Optional[Dgt.DISPLAY_TEXT] = None
         # keep track of changed board positions
         self.field_timer = None
         self.field_timer_running = False
@@ -223,7 +224,8 @@ class DgtBoard(object):
                     text_l, text_m, text_s = 'BT e-Board', 'BT board', 'ok bt'
                 self.channel = 'BT'
                 self.ask_battery_status()
-            self.bconn_text = Dgt.DISPLAY_TEXT(l=text_l, m=text_m, s=text_s, wait=True, beep=False, maxtime=1.1,
+            self.bconn_text = Dgt.DISPLAY_TEXT(large_text=text_l, medium_text=text_m, small_text=text_s,
+                                               wait=True, beep=False, maxtime=1.1,
                                                devs={'i2c', 'web'})  # serial clock lateron
             DisplayMsg.show(Message.DGT_EBOARD_VERSION(text=self.bconn_text, channel=self.channel))
             self.startup_serial_clock()  # now ask the serial clock to answer

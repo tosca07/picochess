@@ -51,7 +51,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self.play_move = self.hint_move = self.last_move = self.take_back_move = chess.Move.null()
         self.play_fen = self.hint_fen = self.last_fen = None
         self.play_turn = self.hint_turn = self.last_turn = None
-        self.score = self.dgttranslate.text('N10_score', None)
+        self.score: Dgt.DISPLAY_TEXT = self.dgttranslate.text('N10_score', None)
         self.depth = None
         self.uci960 = False
         self.play_mode = PlayMode.USER_WHITE
@@ -144,7 +144,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self.score = self.dgttranslate.text('N10_score', None)
         self.depth = None
 
-    def _combine_depth_and_score(self):
+    def _combine_depth_and_score(self) -> Dgt.DISPLAY_TEXT:
         def _score_to_string(score_val, length):
             if Rev2Info.get_new_rev2_mode():
                 if length == 's':
@@ -162,18 +162,18 @@ class DgtDisplay(DisplayMsg, threading.Thread):
                     return '{:9.2f}'.format(int(score_val) / 100).replace('.', '')
         score = copy.copy(self.score)
         try:
-            if int(score.s) <= -1000:
-                score.s = '-999'
-            if int(score.s) >= 1000:
-                score.s = '999'
+            if int(score.small_text) <= -1000:
+                score.small_text = '-999'
+            if int(score.small_text) >= 1000:
+                score.small_text = '999'
             if Rev2Info.get_new_rev2_mode():
-                score.l = '{:2d}{:s}'.format(self.depth, _score_to_string(score.l[-8:], 'l'))
-                score.m = '{:2d}{:s}'.format(self.depth % 100, _score_to_string(score.m[-6:], 'm'))
-                score.s = '{:2d}{:s}'.format(self.depth % 100, _score_to_string(score.s[-4:], 's'))
+                score.large_text = '{:2d}{:s}'.format(self.depth, _score_to_string(score.large_text[-8:], 'l'))
+                score.medium_text = '{:2d}{:s}'.format(self.depth % 100, _score_to_string(score.medium_text[-6:], 'm'))
+                score.small_text = '{:2d}{:s}'.format(self.depth % 100, _score_to_string(score.small_text[-4:], 's'))
             else:
-                score.l = '{:3d}{:s}'.format(self.depth, _score_to_string(score.l[-8:], 'l'))
-                score.m = '{:2d}{:s}'.format(self.depth % 100, _score_to_string(score.m[-6:], 'm'))
-                score.s = '{:2d}{:s}'.format(self.depth % 100, _score_to_string(score.s[-4:], 's'))
+                score.large_text = '{:3d}{:s}'.format(self.depth, _score_to_string(score.large_text[-8:], 'l'))
+                score.medium_text = '{:2d}{:s}'.format(self.depth % 100, _score_to_string(score.medium_text[-6:], 'm'))
+                score.small_text = '{:2d}{:s}'.format(self.depth % 100, _score_to_string(score.small_text[-4:], 's'))
             score.rd = ClockIcons.DOT
         except ValueError:
             pass

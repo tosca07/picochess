@@ -49,7 +49,7 @@ from server import WebServer
 from talker.picotalker import PicoTalkerDisplay
 from dispatcher import Dispatcher
 
-from dgt.api import Message, Event
+from dgt.api import Dgt, Message, Event
 from dgt.util import GameResult, TimeMode, Mode, PlayMode, PicoComment
 from dgt.hw import DgtHw
 from dgt.pi import DgtPi
@@ -2280,7 +2280,7 @@ def main():
     ModeInfo.set_game_ending(result='*')
 
     state.dgtmenu.set_state_eng()
-    text = state.dgtmenu.enter_eng_name_menu()
+    text: Dgt.DISPLAY_TEXT = state.dgtmenu.enter_eng_name_menu()
     state.engine_text = str(text.l)
     state.dgtmenu.exit_menu()
 
@@ -2483,7 +2483,7 @@ def main():
                     set_wait_state(msg, state, not engine_fallback)
                     if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):   # engine isnt started/searching => stop the clock
                         stop_clock(state)
-                    text = state.dgtmenu.enter_eng_name_menu()
+                    text: Dgt.DISPLAY_TEXT = state.dgtmenu.enter_eng_name_menu()
                     state.engine_text = str(text.l)
                     state.dgtmenu.exit_menu()
                     if state.dgtmenu.get_enginename():

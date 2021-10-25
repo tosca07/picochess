@@ -22,6 +22,7 @@ from utilities import hms_time
 from dgt.iface import DgtIface
 from dgt.util import ClockIcons, ClockSide
 from dgt.board import DgtBoard
+from dgt.api import Dgt
 
 
 class DgtHw(DgtIface):
@@ -68,13 +69,13 @@ class DgtHw(DgtIface):
                 logging.warning('SetText() returned error %i', res)
             return res
 
-    def display_text_on_clock(self, message):
+    def display_text_on_clock(self, message: Dgt.DISPLAY_TEXT):
         """Display a text on the dgtxl/3k/rev2."""
         is_new_rev2 = self.dgtboard.is_revelation and self.dgtboard.enable_revelation_pi
         if is_new_rev2:
-            text = message.l
+            text = message.large_text
         else:
-            text = message.m if self.enable_dgt3000 else message.s
+            text = message.medium_text if self.enable_dgt3000 else message.small_text
         if self.get_name() not in message.devs:
             logging.debug('ignored %s - devs: %s', text, message.devs)
             return True
@@ -89,7 +90,7 @@ class DgtHw(DgtIface):
                 right_icons = message.rd if hasattr(message, 'rd') else ClockIcons.NONE
                 return self._display_on_dgt_xl(text, message.beep, left_icons, right_icons)
 
-    def display_move_on_clock(self, message):
+    def display_move_on_clock(self, message: Dgt.DISPLAY_MOVE):
         """Display a move on the dgtxl/3k/rev2."""
         is_new_rev2 = self.dgtboard.is_revelation and self.dgtboard.enable_revelation_pi
         if self.enable_dgt3000 or is_new_rev2:
