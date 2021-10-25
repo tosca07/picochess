@@ -1,4 +1,4 @@
-name: Pylama
+name: CI
 
 on: [push]
 
@@ -21,3 +21,6 @@ jobs:
     - name: Analysing the code with pylama
       run: |
         pylama
+    - name: Run unit tests
+      run: |
+        python -m unittest
