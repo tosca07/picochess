@@ -4,7 +4,6 @@ on: [push]
 
 jobs:
   pylama:
-    needs: build
     runs-on: ubuntu-latest
    
     steps:
@@ -23,7 +22,6 @@ jobs:
         pylama
         
   unittest:
-    needs: build
     runs-on: ubuntu-latest
     
     steps:
