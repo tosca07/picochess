@@ -66,7 +66,7 @@ def read_engine_ini(engine_shell=None, engine_path=None, filename=''):
                     level_dict[p_section][option] = parser[p_section][option]
 
         confsect = config[section]
-        text = Dgt.DISPLAY_TEXT(l=confsect['large'], m=confsect['medium'], s=confsect['small'], wait=True, beep=False,
+        text = Dgt.DISPLAY_TEXT(large_text=confsect['large'], medium_text=confsect['medium'], small_text=confsect['small'], wait=True, beep=False,
                                 maxtime=0, devs={'ser', 'i2c', 'web'})
         library.append(
             {

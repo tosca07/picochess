@@ -171,7 +171,7 @@ class PicochessState:
         self.time_control: TimeControl = None
 
 
-def main():
+def main() -> None:
     """Main function."""
     state = PicochessState()
     flag_last_engine_pgn = False
@@ -2281,7 +2281,7 @@ def main():
 
     state.dgtmenu.set_state_eng()
     text: Dgt.DISPLAY_TEXT = state.dgtmenu.enter_eng_name_menu()
-    state.engine_text = str(text.l)
+    state.engine_text = str(text.large_text)
     state.dgtmenu.exit_menu()
 
     # Event loop
@@ -2484,7 +2484,7 @@ def main():
                     if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):   # engine isnt started/searching => stop the clock
                         stop_clock(state)
                     text: Dgt.DISPLAY_TEXT = state.dgtmenu.enter_eng_name_menu()
-                    state.engine_text = str(text.l)
+                    state.engine_text = str(text.large)
                     state.dgtmenu.exit_menu()
                     if state.dgtmenu.get_enginename():
                         DisplayMsg.show(Message.ENGINE_NAME(engine_name=state.engine_text))
@@ -2534,7 +2534,7 @@ def main():
                         if 'mate in' in pgn_problem or 'Mate in' in pgn_problem:
                             set_fen_from_pgn(pgn_fen, state)
                             state.play_mode = PlayMode.USER_WHITE if state.game.turn == chess.WHITE else PlayMode.USER_BLACK
-                            text = state.play_mode.value  # type: str
+                            text: str = state.play_mode.value
                             msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=dgttranslate.text(text))
                             DisplayMsg.show(msg)
                             time.sleep(1)

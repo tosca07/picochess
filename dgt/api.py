@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Set
 
 from dgt.util import ClockIcons
@@ -220,7 +220,7 @@ class Dgt():
         small_text: str = ''
         beep: bool = False
         maxtime: float = 0
-        devs: Set[str] = set()
+        devs: Set[str] = field(default_factory=set)
         wait: bool = False
         ld: ClockIcons = ClockIcons.NONE
         rd: ClockIcons = ClockIcons.NONE
