@@ -1,4 +1,4 @@
-import chess
+import chess  # type: ignore
 import mock
 import unittest
 

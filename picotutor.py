@@ -18,9 +18,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import csv
 import chess
 import chess.uci
 import chess.engine
+from pathlib import Path
 from random import randint
 from dgt.util import PicoComment
 
@@ -31,8 +33,6 @@ import picotutor_constants as c
 class PicoTutor:
 
     def __init__(self, i_engine_path='/opt/picochess/engines/armv7l/a-stockf', i_player_color=chess.WHITE, i_fen='', i_comment_file='', i_lang='en'):
-        self.log_file_name = "picotutor-log.txt"
-        self.log_file = ''
         self.user_color = i_player_color
         self.max_valid_moves = 200
         self.engine_path = i_engine_path
@@ -78,43 +78,45 @@ class PicoTutor:
         self.explorer_on = False
         self.comments_on = False
 
-        self.open_log()
-
         try:
-            self.book_data = open("chess-eco_pos.txt").readlines()
-        except Exception:
-            self.log("ECO opening book not found!")
+            with open("chess-eco_pos.txt") as fp:
+                self.book_data = list(csv.DictReader(filter(lambda row: row[0] != '#', fp.readlines()), delimiter='|'))
+        except EnvironmentError:
             self.book_data = []
 
         try:
-            self.book_fen_data = open("opening_name_fen.txt").readlines()
+            with open("opening_name_fen.txt") as fp:
+                self.book_fen_data = fp.readlines()
         except Exception:
-            self.log("ECO FEN opening book not found!")
             self.book_fen_data = []
 
-        self.log("comment_file %s" % i_comment_file)
+        self._setup_comments(i_lang, i_comment_file)
+
+        self._setup_board(i_fen)
+
+    def _setup_comments(self, i_lang, i_comment_file):
         if i_comment_file:
             try:
-                self.comments = open(i_comment_file).readlines()
+                with open(i_comment_file) as fp:
+                    self.comments = fp.readlines()
             except Exception:
-                self.log("Game commentary file not found!")
                 self.comments = []
 
             if self.comments:
                 self.comment_no = len(self.comments)
-                self.log("found %s comments" % self.comment_no)
 
         try:
-            general_comment_file = '/opt/picochess/engines/armv7l/general_game_comments_' + i_lang + '.txt'
-            self.comments_all = open(general_comment_file).readlines()
+            path = Path(__file__).parent
+            general_comment_file = path + '/engines/armv7l/general_game_comments_' + i_lang + '.txt'
+            with open(general_comment_file) as fp:
+                self.comments_all = fp.readlines()
         except Exception:
-            self.log("General game commentary file not found!")
             self.comments_all = []
 
         if self.comments_all:
             self.comment_all_no = len(self.comments_all)
-            self.log("found %s comments" % self.comment_all_no)
 
+    def _setup_board(self, i_fen):
         if i_fen:
             self.board = chess.Board(i_fen)
         else:
@@ -142,9 +144,6 @@ class PicoTutor:
                 pass
 
     def get_game_comment(self, pico_comment=PicoComment.COM_OFF, com_factor=0):
-        self.log("**** start get game comment")
-        self.log("pico_comment= %s" % pico_comment)
-        self.log("com_factor= %s" % str(com_factor))
         max_range = 0
         max_range_all = 0
         range_fac = 0
@@ -161,25 +160,21 @@ class PicoTutor:
                 index = randint(0, max_range)
                 if index > self.comment_no-1:
                     return ''
-                self.log("found game comment %s" % self.comments[index])
                 return self.comments[index]
             else:
                 return ''
         elif pico_comment == PicoComment.COM_ON_ALL:
             # get a comment by pure chance
-            self.log("General Comment")
             if self.comments and self.comment_no > 0:
                 index = randint(0, max_range)
                 if index > self.comment_no-1:
                     return ''
-                self.log("found game comment %s" % self.comments[index])
                 return self.comments[index]
             else:
                 if self.comments_all and self.comment_all_no > 0:
                     index = randint(0, max_range_all)
                     if index > self.comment_all_no-1:
                         return ''
-                    self.log("found game comment %s" % self.comments_all[index])
                     return self.comments_all[index]
                 else:
                     return ''
@@ -187,43 +182,42 @@ class PicoTutor:
     def init_comments(self, i_comment_file):
         self.comments = []
         self.comment_no = 0
-        self.log("new comment_file %s" % i_comment_file)
         if i_comment_file:
             try:
                 self.comments = open(i_comment_file).readlines()
             except Exception:
-                self.log("Game commentary file not found!")
                 self.comments = []
 
             if self.comments:
                 self.comment_no = len(self.comments)
-                self.log("found %s comments" % self.comment_no)
 
         else:
             self.comments = []
 
-    def get_opening(self):
+    def _find_longest_matching_opening(self, played: str) -> (str, str, str):
+        opening_name = moves = eco = ''
+        for opening in self.book_data:
+            # if len(opening.get('moves')) > 5:
+            if played[:len(opening.get('moves'))] == opening.get('moves'):
+                if len(opening.get('moves')) > len(moves):
+                    opening_name = opening.get('opening_name')
+                    moves = opening.get('moves')
+                    eco = opening.get('eco')
+        return opening_name, moves, eco
+
+    def get_opening(self) -> (str, str, str, bool):
 
         diff = self.board.fullmove_number - self.last_inside_book_moveno
         inside_book_opening = False
 
-        self.log("++++++++++get_opening start++++++++++++")
-
-        id = '', '', ''
+        opening_name = moves = eco = ''
 
         if self.op == [] or diff > 2:
-            return(id[2], id[0], id[1], inside_book_opening)
+            return(eco, opening_name, moves, inside_book_opening)
 
         played = '%s' % (' '.join(self.op))
 
-        for line in self.book_data:
-            h5 = line.split('"')
-            if len(h5) > 5:
-                eco, name, mv = h5[1], h5[3], h5[5]
-
-                if played[:len(mv)] == mv:
-                    if len(mv) > len(id[1]):
-                        id = name, mv, eco
+        opening_name, moves, eco = self._find_longest_matching_opening(played)
 
         halfmoves = 2 * self.board.fullmove_number
 
@@ -231,17 +225,8 @@ class PicoTutor:
             halfmoves -= 2
         else:
             halfmoves -= 1
-        if halfmoves < 0:
-            halfmoves = 0
 
-        self.log("halfmoves:%s" % halfmoves)
-
-        try:
-            help = id[1].split()
-        except Exception:
-            help = ''
-
-        if halfmoves <= len(help):
+        if halfmoves <= len(moves.split()):
             inside_book_opening = True
             self.last_inside_book_moveno = self.board.fullmove_number
         else:
@@ -251,66 +236,37 @@ class PicoTutor:
 
             op_name, i_book = self.get_fen_opening()
             if i_book and op_name:
-                id = op_name, id[1], id[2]
+                opening_name = op_name
                 inside_book_opening = True
                 self.last_inside_book_moveno = self.board.fullmove_number
             else:
                 inside_book_opening = False
 
-        self.log("insidebook: %s" % inside_book_opening)
-        if id[0]:
-            self.log("opening: %s" % id[0])
-
-        self.log("+++++++++get_opening end+++++++++++++")
-        return(id[2], id[0], id[1], inside_book_opening)
+        return(eco, opening_name, moves, inside_book_opening)
 
     def get_fen_opening(self):
-        self.log("++++++++++++get_fen_opening start++++++++++++")
-
         fen = self.board.board_fen()
-
-        self.log("get_fen_opening fen= %s" % fen)
 
         if not fen:
             return("", False)
 
         index = 0
-        op_name = ''
+        opening_name = ''
 
         for line in self.book_fen_data:
             line_list = line.split()
             if line_list[0] == fen:
-                op_name = self.book_fen_data[index+1]
+                opening_name = self.book_fen_data[index+1]
                 break
             index = index + 1
 
-        if op_name:
-            self.log("opening: %s" % op_name)
-            self.log("+++++++ get_opening end +++++++++")
-            return (op_name, True)
+        if opening_name:
+            return (opening_name, True)
         else:
-            self.log("get_opening end")
             return ("", False)
-
-    def open_log(self):
-        try:
-            self.log_file = open(self.log_file_name, 'w')
-        except Exception:
-            self.log_file = ''
-            print("# Could not create log file")
-
-    def log(self, x):
-        pass
-        """
-        if self.log:
-
-            self.log_file.write("< %s\n" % x)
-            self.log_file.flush()
-        """
 
     def reset(self):
         self.pos = False
-        self.log("Tutor reset / newgame")
         self.legal_moves = []
         self.legal_moves2 = []
         self.op = []
@@ -350,7 +306,6 @@ class PicoTutor:
         self.mate = 0
 
     def set_user_color(self, i_user_color):
-        self.log("Tutor engine set_user_color: %s" % i_user_color)
 
         self.pause()
         self.history = []
@@ -374,7 +329,6 @@ class PicoTutor:
         return(self.user_color)
 
     def set_position(self, i_fen, i_turn=chess.WHITE):
-        self.log("Tutor engine set_position")
         if not(self.coach_on or self.watcher_on):
             return
         self.reset()
@@ -394,10 +348,7 @@ class PicoTutor:
             self.pause()
 
     def push_move(self, i_uci_move):
-        self.log("------------------------------------")
-        self.log("Tutor engine push")
         if i_uci_move not in self.board.legal_moves:
-            self.log("Move is invalid: %s" % i_uci_move)
             return(False)
 
         self.op.append(self.board.san(i_uci_move))
@@ -411,7 +362,6 @@ class PicoTutor:
         self.engine.isready()
         self.engine2.position(self.board)
         self.engine2.isready()
-        self.log("Valid move: %s" % i_uci_move)
 
         if self.board.turn == self.user_color:
             # if it is user player's turn then start analyse engine
@@ -426,59 +376,54 @@ class PicoTutor:
 
         return(True)
 
+    def _update_internal_history_after_pop(self, poped_move: chess.Move) -> None:
+        try:
+            if self.history[-1] == poped_move:
+                self.history.pop()
+        except IndexError:
+            self.history.append((0, chess.Move.null(), 0.00, 0))
+
+        try:
+            if self.board.turn != self.user_color:
+                if self.history2[-1] == poped_move:
+                    self.history2.pop()
+        except IndexError:
+            self.history2.append((0, chess.Move.null(), 0.00, 0))
+
+    def _update_internal_state_after_pop(self, poped_move: chess.Move) -> None:
+        try:
+            self.op.pop()
+        except IndexError:
+            pass
+
+        if not(self.coach_on or self.watcher_on):
+            return chess.Move.null()
+
+        self.pause()
+        self.engine.position(self.board)
+        self.engine.isready()
+        self.engine2.position(self.board)
+        self.engine2.isready()
+
+        if self.board.turn == self.user_color:
+            # if it is user player's turn then start analyse engine
+            # otherwise it is computer opponents turn and analyze negine
+            # should be paused
+            self.start()
+        else:
+            self.eval_legal_moves()
+            self.eval_legal_moves2()
+
     def pop_last_move(self):
-        self.log("Tutor engine pop")
-        back_move = chess.Move.null()
+        poped_move = chess.Move.null()
         self.legal_moves = []
         self.legal_moves2 = []
 
         if self.board.move_stack:
+            poped_move = self.board.pop()
+            self._update_internal_state_after_pop(poped_move)
 
-            back_move = self.board.pop()
-            try:
-                if self.op:
-                    self.op.pop()
-            except Exception:
-                self.op = []
-
-            if not(self.coach_on or self.watcher_on):
-                return chess.Move.null()
-
-            self.pause()
-            self.engine.position(self.board)
-            self.engine.isready()
-            self.engine2.position(self.board)
-            self.engine2.isready()
-            self.log('backmove =%s' % back_move)
-            try:
-                if self.history:
-                    pop_move = self.history.pop()
-                    if pop_move != back_move:
-                        self.history.push(pop_move)
-            except Exception:
-                self.history = []
-                self.history.append((0, chess.Move.null(), 0.00, 0))
-
-            try:
-                if self.history2 and self.board.turn != self.user_color:
-                    pop_move = self.history2.pop()
-                    if pop_move != back_move:
-                        self.history2.push(pop_move)
-            except Exception:
-                self.history2 = []
-                self.history2.append((0, chess.Move.null(), 0.00, 0))
-
-            if self.board.turn == self.user_color:
-                # if it is user player's turn then start analyse engine
-                # otherwise it is computer opponents turn and analyze negine
-                # should be paused
-                self.start()
-            else:
-                self.eval_legal_moves()
-                self.eval_legal_moves2()
-
-            self.log("Tutor engine pop END")
-        return back_move
+        return poped_move
 
     def get_stack(self):
         return(self.board.move_stack)
@@ -495,7 +440,6 @@ class PicoTutor:
         if self.engine:
             self.engine.position(self.board)
             self.engine.go(depth=c.DEEP_DEPTH, async_callback=True)
-        self.log("Tutor engine started")
 
     def pause(self):
         # during thinking time of opponent tutor should be paused
@@ -504,7 +448,6 @@ class PicoTutor:
             self.engine.stop()
         if self.engine2:
             self.engine2.stop()
-        self.log("Tutor engine paused")
 
     def stop(self):
         if self.engine:
@@ -517,7 +460,6 @@ class PicoTutor:
             self.engine2.quit()
             self.engine2 = None
             self.info_handler2 = None
-        self.log("Tutor engine stopped")
 
     def print_score(self):
         if self.board.turn:
@@ -551,12 +493,6 @@ class PicoTutor:
             self.pv_best_move = []
             self.pv_user_move = []
 
-        self.log("History:")
-        self.log(self.history)
-        self.log("----------------------------------")
-        self.log("PV Best line: %s" % str(self.pv_best_move))
-        self.log("PV User line: %s" % str(self.pv_user_move))
-
     def eval_user_move2(self, user_move):
         if not(self.coach_on or self.watcher_on):
             return
@@ -582,48 +518,46 @@ class PicoTutor:
             self.pv_best_move2 = []
             self.pv_user_move2 = []
 
-        self.log("History2:")
-        self.log(self.history2)
-        self.log("----------------------------------")
-        self.log("PV Best line2: %s" % str(self.pv_best_move2))
-        self.log("PV User line2: %s" % str(self.pv_user_move2))
-
     def sort_score(self, tupel):
         return tupel[2]
+
+    @staticmethod
+    def _eval_pv_list(pv_list, info_handler, legal_moves):
+        best_score = -999
+
+        for pv_key, pv_list in pv_list.items():
+            if info_handler.info["score"][pv_key]:
+                score_val = info_handler.info["score"][pv_key]
+                move = chess.Move.null()
+
+                score = 0
+                mate = 0
+                if score_val.cp:
+                    score = score_val.cp/100
+                if pv_list[0]:
+                    move = pv_list[0]
+                if score_val.mate:
+                    mate = int(score_val.mate)
+                    if mate < 0:
+                        score = -999
+                    elif mate > 0:
+                        score = 999
+                legal_moves.append((pv_key, move, score, mate))
+                if score >= best_score:
+                    best_score = score
+
+        return best_score
 
     def eval_legal_moves(self):
         if not(self.coach_on or self.watcher_on):
             return
-        self.log("Analyzing moves...")
         self.legal_moves = []
-        best_score = -999
         self.alt_best_moves = []
 
         pv_list = self.info_handler.info["pv"]
 
         if pv_list:
-            self.log("...........................................")
-
-            for pv_key, pv_list in pv_list.items():
-                if self.info_handler.info["score"][pv_key]:
-                    score_val = self.info_handler.info["score"][pv_key]
-                    move = chess.Move.null()
-
-                    score = 0
-                    mate = 0
-                    if score_val.cp:
-                        score = score_val.cp/100
-                    if pv_list[0]:
-                        move = pv_list[0]
-                    if score_val.mate:
-                        mate = int(score_val.mate)
-                        if mate < 0:
-                            score = -999
-                        elif mate > 0:
-                            score = 999
-                    self.legal_moves.append((pv_key, move, score, mate))
-                    if score >= best_score:
-                        best_score = score
+            best_score = PicoTutor._eval_pv_list(pv_list, self.info_handler, self.legal_moves)
 
             # collect possible good alternative moves
             self.legal_moves.sort(key=self.sort_score, reverse=True)
@@ -633,49 +567,21 @@ class PicoTutor:
                     if diff <= 0.2:
                         self.alt_best_moves.append(move)
 
-        self.log("Legal Moves:")
-        self.log(self.legal_moves)
-
-        self.log("ALt. best moves:")
-        self.log(self.alt_best_moves)
-
     def eval_legal_moves2(self):
         if not(self.coach_on or self.watcher_on):
             return
-        self.log("Analyzing moves2...")
         self.legal_moves2 = []
 
         pv_list = self.info_handler2.info["pv"]
 
         if pv_list:
-            self.log("...........................................")
-
-            for pv_key, pv_list in pv_list.items():
-                if self.info_handler2.info["score"][pv_key]:
-                    score_val = self.info_handler2.info["score"][pv_key]
-                    move = chess.Move.null()
-                    score = 0
-                    mate = 0
-                    if score_val.cp:
-                        score = score_val.cp/100
-                    if pv_list[0]:
-                        move = pv_list[0]
-                    if score_val.mate:
-                        mate = int(score_val.mate)
-                        if mate < 0:
-                            score = -999
-                        elif mate > 0:
-                            score = 999
-                    self.legal_moves2.append((pv_key, move, score, mate))
+            PicoTutor._eval_pv_list(pv_list, self.info_handler2, self.legal_moves2)
 
         self.legal_moves2.sort(key=self.sort_score, reverse=True)
-        self.log("Legal Moves2:")
-        self.log(self.legal_moves2)
 
     def get_user_move_eval(self):
         if not(self.coach_on or self.watcher_on):
             return
-        self.log("Tutor get_user_move_eval")
         eval_string = ''
         best_mate = 0
         best_score = 0
@@ -687,7 +593,6 @@ class PicoTutor:
             try:
                 current_pv, current_move, current_score, current_mate = self.history[-1]  # last evaluation = for current user move
             except IndexError:
-                current_pv = []
                 current_score = 0.0
                 current_mate = ''
                 eval_string = ''
@@ -696,51 +601,20 @@ class PicoTutor:
             try:
                 before_pv, before_move, before_score, before_mate = self.history[-2]
             except IndexError:
-                before_pv = []
                 before_score = 0.0
-                before_mate = ''
                 eval_string = ''
                 return eval_string, self.mate, self.hint_move
 
         else:
-            current_pv = []
             current_score = 0.0
             current_mate = ''
-            before_pv = []
             before_score = 0.0
-            before_mate = ''
             eval_string = ''
             return eval_string, self.mate, self.hint_move
-
-        self.log("**************************************")
-        self.log("User move evaluation")
-        self.log("**************************************")
-
-        if current_pv:
-            self.log("current_pv %s" % current_pv)
-        if current_score:
-            self.log("current_score %s" % current_score)
-        if current_mate:
-            self.log("current_mate %s" % current_mate)
-        if before_pv:
-            self.log("before_pv %s" % before_pv)
-        if before_score:
-            self.log("before_score %s" % before_score)
-        if before_mate:
-            self.log("before_mate %s" % before_mate)
 
         # best deep engine score/move
         if self.legal_moves:
             best_pv, best_move, best_score, best_mate = self.legal_moves[0]  # tupel (pv,move,score,mate)
-
-        if best_pv:
-            self.log("best pv %s" % best_pv)
-        if best_move:
-            self.log("best move %s" % best_move)
-        if best_score:
-            self.log("best score %s" % best_score)
-        if best_mate:
-            self.log("best mate %s" % best_mate)
 
         # calculate diffs based on low depth search for obvious moves
         if len(self.history2) > 0:
@@ -755,15 +629,9 @@ class PicoTutor:
             eval_string = ''
             return eval_string, self.mate, self.hint_move
 
-        best_low_diff = best_score - low_score
         best_deep_diff = best_score - current_score
         deep_low_diff = current_score - low_score
         score_hist_diff = current_score - before_score
-
-        self.log("best_low_diff %s" % best_low_diff)
-        self.log("best_deep_diff %s" % best_deep_diff)
-        self.log("deep_low_diff %s" % deep_low_diff)
-        self.log("score_hist_diff %s" % score_hist_diff)
 
         # count legal moves in current position (for this we have to undo the user move)
         board_copy = self.board.copy()
@@ -787,9 +655,6 @@ class PicoTutor:
         elif best_deep_diff > c.DUBIOUS_TH and abs(deep_low_diff) > c.UNCLEAR_DIFF and score_hist_diff > c.POS_INCREASE:
             eval_string = '?!'
 
-        if eval_string != '':
-            self.log("Intermediate Calc: bad: %s" % eval_string)
-
         ###############################################################
         # 2. good moves
         ##############################################################
@@ -811,7 +676,6 @@ class PicoTutor:
             eval_string2 = '!?'
 
         if eval_string2 != '':
-            self.log("Intermediate Calc: good: %s" % eval_string2)
             if eval_string == '':
                 eval_string = eval_string2
 
@@ -821,21 +685,16 @@ class PicoTutor:
         self.mate = current_mate
         self.hint_move = best_move
 
-        self.log("eval_string %s" % eval_string)
-
         return eval_string, self.mate, self.hint_move
 
     def get_user_move_info(self):
         if not(self.coach_on or self.watcher_on):
             return
-        self.log("Tutor get_user_move_info")
         return self.mate, self.hint_move, self.pv_best_move, self.pv_user_move
 
     def get_pos_analysis(self):
         if not(self.coach_on or self.watcher_on):
             return
-        self.log("**************************************")
-        self.log("Tutor get_pos_analysis")
         # calculate material / position / mobility / development / threats / best move / best score
         # call a picotalker method with these information
         mate = 0
@@ -869,7 +728,4 @@ class PicoTutor:
         elif mate < 0:
             score = -999
 
-        self.log("Tutor engine best_move = %s" % str(best_move))
-        self.log("Tutor engine best_score = %s" % str(score))
-        self.log("Tutor engine mate = %s" % str(mate))
         return best_move, score, mate, pv_best_move, self.alt_best_moves

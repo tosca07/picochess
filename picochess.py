@@ -1270,12 +1270,12 @@ def main() -> None:
 
             if picotutor_mode(state) and not position_mode and not state.takeback_active and not state.automatic_takeback:
                 if state.dgtmenu.get_picoexplorer():
-                    op_name = ''
-                    op_in_book = False
-                    op_eco, op_name, op_moves, op_in_book = state.picotutor.get_opening()
-                    if op_in_book and op_name:
-                        ModeInfo.set_opening(state.book_in_use, str(op_name), op_eco)
-                        DisplayMsg.show(Message.SHOW_TEXT(text_string=op_name))
+                    opening_name = ''
+                    opening_in_book = False
+                    opening_eco, opening_name, _, opening_in_book = state.picotutor.get_opening()
+                    if opening_in_book and opening_name:
+                        ModeInfo.set_opening(state.book_in_use, str(opening_name), opening_eco)
+                        DisplayMsg.show(Message.SHOW_TEXT(text_string=opening_name))
                         time.sleep(0.7)
 
                 if state.dgtmenu.get_picocomment() != PicoComment.COM_OFF and not game_end:
