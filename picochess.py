@@ -3182,7 +3182,7 @@ def main() -> None:
                                 valid = state.picotutor.push_move(event.move)
 
                                 if not valid:
-                                    state.picotutor.set_position(game_copy.fen(), i_turn=state.game_copy.turn)
+                                    state.picotutor.set_position(game_copy.fen(), i_turn=game_copy.turn)
 
                                     if state.play_mode == PlayMode.USER_BLACK:
                                         state.picotutor.set_user_color(chess.BLACK)
@@ -3307,7 +3307,7 @@ def main() -> None:
                 else:
                     state.flag_picotutor = False
                     if pico_calc:
-                        state.state.picotutor.stop()
+                        state.picotutor.stop()
                 DisplayMsg.show(Message.PICOWATCHER(picowatcher=event.picowatcher))
 
             elif isinstance(event, Event.PICOCOACH):
