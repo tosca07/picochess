@@ -50,9 +50,8 @@ class DgtHw(DgtIface):
         if len(text) > 8:
             logging.warning('(ser) clock message too long [%s]', text)
         logging.debug('[%s]', text)
-        text = bytes(text, 'utf-8')
         with self.lib_lock:
-            res = self.dgtboard.set_text_3k(text, 0x03 if beep else 0x00)
+            res = self.dgtboard.set_text_3k(bytes(text, 'utf-8'), 0x03 if beep else 0x00)
             if not res:
                 logging.warning('SetText() returned error %i', res)
             return res
@@ -62,9 +61,8 @@ class DgtHw(DgtIface):
         if len(text) > 11:
             logging.warning('(rev) clock message too long [%s]', text)
         logging.debug('[%s]', text)
-        text = bytes(text, 'utf-8')
         with self.lib_lock:
-            res = self.dgtboard.set_text_rp(text, 0x03 if beep else 0x00)
+            res = self.dgtboard.set_text_rp(bytes(text, 'utf-8'), 0x03 if beep else 0x00)
             if not res:
                 logging.warning('SetText() returned error %i', res)
             return res

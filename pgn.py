@@ -31,8 +31,8 @@ import mimetypes
 import requests
 from typing import Optional
 
-import chess
-import chess.pgn
+import chess  # type: ignore
+import chess.pgn  # type: ignore
 from timecontrol import TimeControl
 from utilities import DisplayMsg
 from dgt.api import Dgt, Message

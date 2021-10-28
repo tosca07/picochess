@@ -32,7 +32,7 @@ from pathlib import Path
 from shutil import which
 from random import randint
 
-import chess
+import chess  # type: ignore
 from utilities import DisplayMsg
 from dgt.api import Message
 from dgt.util import GameResult, PlayMode, Voice
@@ -118,8 +118,6 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         :param computer_voice: The voice to use for the computer (eg. en:christina).
         """
         super(PicoTalkerDisplay, self).__init__()
-        self.user_picotalker = None  # type: PicoTalker
-        self.computer_picotalker = None  # type: PicoTalker
         self.speed_factor = (90 + (speed_factor % 10) * 5) / 100  # RR Used by sox.
         self.play_mode = PlayMode.USER_WHITE
         self.low_time = False
@@ -179,7 +177,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
     def set_computer(self, picotalker):
         """Set the computer talker."""
-        self.computer_picotalker = picotalker
+        self.computer_picotalker: PicoTalker = picotalker
         """molli: set correct number and assign it to voice group comment variables"""
         self.c_no_beforecmove = self.calc_no_group_comments('f_beforecmove')
         self.c_no_beforeumove = self.calc_no_group_comments('f_beforeumove')
@@ -212,7 +210,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
     def set_user(self, picotalker):
         """Set the user talker."""
-        self.user_picotalker = picotalker
+        self.user_picotalker: PicoTalker = picotalker
 
     def set_factor(self, speed_factor):
         """Set speech factor."""

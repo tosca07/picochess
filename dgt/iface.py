@@ -19,7 +19,7 @@ import logging
 import queue
 from threading import Thread
 
-from chess import Board
+from chess import Board  # type: ignore
 from utilities import DisplayDgt
 from dgt.util import ClockSide
 from dgt.api import Dgt

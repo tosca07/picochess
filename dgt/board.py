@@ -21,9 +21,9 @@ import subprocess
 from threading import Timer, Lock
 from fcntl import fcntl, F_GETFL, F_SETFL
 from os import O_NONBLOCK, read, path, listdir
-from serial import Serial, SerialException, STOPBITS_ONE, PARITY_NONE, EIGHTBITS
+from serial import Serial, SerialException, STOPBITS_ONE, PARITY_NONE, EIGHTBITS  # type: ignore
 import time
-from typing import Optional
+from typing import List, Optional, Tuple
 
 from dgt.util import DgtAck, DgtClk, DgtCmd, DgtMsg, ClockIcons, ClockSide, enum
 from dgt.api import Message, Dgt
@@ -76,11 +76,11 @@ class DgtBoard(object):
         self.serial = None
         self.lock = Lock()  # lock the serial write
         self.incoming_board_thread = None
-        self.lever_pos = None
+        self.lever_pos: Optional[int] = None
         # the next three are only used for "not dgtpi" mode
-        self.clock_lock = False  # serial connected clock is locked
-        self.last_clock_command = []  # Used for resend last (failed) clock command
-        self.enable_ser_clock = None  # None = "unknown status" False="only board found" True="clock also found"
+        self.clock_lock: float = 0.0  # serial connected clock is locked
+        self.last_clock_command: list = []  # Used for resend last (failed) clock command
+        self.enable_ser_clock: Optional[bool] = None  # None = "unknown status" False="only board found" True="clock also found"
         self.watchdog_timer = RepeatedTimer(1, self._watchdog)
         # bluetooth vars for Jessie upwards & autoconnect
         self.btctl = None
@@ -88,8 +88,8 @@ class DgtBoard(object):
         self.bt_state = -1
         self.bt_line = ''
         self.bt_current_device = -1
-        self.bt_mac_list = []
-        self.bt_name_list = []
+        self.bt_mac_list: List[str] = []
+        self.bt_name_list: List[str] = []
         self.bt_name = ''
         self.wait_counter = 0
         # keep the last time to find out errorous DGT_MSG_BWTIME messages (error: current time > last time)
@@ -100,7 +100,7 @@ class DgtBoard(object):
         # keep track of changed board positions
         self.field_timer = None
         self.field_timer_running = False
-        self.channel = None
+        self.channel = ''
 
         self.in_settime = False  # this is true between set_clock and clock_start => use set values instead of clock
         self.low_time = False  # This is set from picochess.py and used to limit the field timer
@@ -430,7 +430,7 @@ class DgtBoard(object):
         return b''
 
     def _read_board_message(self, head: bytes):
-        message = ()
+        message: Tuple = ()
         header_len = 3
         header = head + self._read_serial(header_len - 1)
         try:
@@ -447,7 +447,8 @@ class DgtBoard(object):
                 now = time.time()
                 while counter > 0:
                     ee_moves = self._read_serial(counter)
-                    logging.info('EE_MOVES 0x%x bytes read - inWaiting: 0x%x', len(ee_moves), self.serial.inWaiting())
+                    if self.serial:
+                        logging.info('EE_MOVES 0x%x bytes read - inWaiting: 0x%x', len(ee_moves), self.serial.inWaiting())
                     counter -= len(ee_moves)
                     if time.time() - now > 15:
                         logging.warning('EE_MOVES needed over 15secs => ignore not readed 0x%x bytes now', counter)
@@ -468,7 +469,7 @@ class DgtBoard(object):
             byte = self._read_serial()
             try:
                 if byte:
-                    data = struct.unpack('>B', byte)
+                    data: Tuple = struct.unpack('>B', byte)
                     counter -= 1
                     if data[0] & 0x80:
                         logging.warning('illegal data in message 0x%x found', message_id)
@@ -511,7 +512,7 @@ class DgtBoard(object):
 
     def startup_serial_clock(self):
         """Ask the clock for its version."""
-        self.clock_lock = False
+        self.clock_lock = 0.0
         self.enable_ser_clock = False
         command = [DgtCmd.DGT_CLOCK_MESSAGE, 0x03, DgtClk.DGT_CMD_CLOCK_START_MESSAGE,
                    DgtClk.DGT_CMD_CLOCK_VERSION, DgtClk.DGT_CMD_CLOCK_END_MESSAGE]
@@ -526,7 +527,7 @@ class DgtBoard(object):
             if time.time() - self.clock_lock > 2:
                 logging.warning('(ser) clock is locked over 2secs')
                 logging.debug('resending locked (ser) clock message [%s]', self.last_clock_command)
-                self.clock_lock = False
+                self.clock_lock = 0.0
                 self.write_command(self.last_clock_command)
         self.write_command([DgtCmd.DGT_RETURN_SERIALNR])  # ask for this AFTER cause of - maybe - old board hardware
 
@@ -736,7 +737,7 @@ class DgtBoard(object):
         if has_to_wait:
             logging.debug('(ser) clock is released now')
 
-    def set_text_rp(self, text: str, beep: int):
+    def set_text_rp(self, text: bytes, beep: int):
         """Display a text on a Pi enabled Rev2."""
         self._wait_for_clock('SetTextRp()')
         res = self.write_command([DgtCmd.DGT_CLOCK_MESSAGE, 0x0f, DgtClk.DGT_CMD_CLOCK_START_MESSAGE,
@@ -746,7 +747,7 @@ class DgtBoard(object):
                                   DgtClk.DGT_CMD_CLOCK_END_MESSAGE])
         return res
 
-    def set_text_3k(self, text: str, beep: int):
+    def set_text_3k(self, text: bytes, beep: int):
         """Display a text on a 3000 Clock."""
         self._wait_for_clock('SetText3K()')
         Rev2Info.set_pi_mode(True)

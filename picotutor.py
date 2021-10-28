@@ -19,12 +19,13 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import csv
-import chess
-import chess.uci
-import chess.engine
+import chess  # type: ignore
+import chess.uci  # type: ignore
+import chess.engine  # type: ignore
 from pathlib import Path
 from random import randint
 from dgt.util import PicoComment
+from typing import Tuple
 
 # PicoTutor Constants
 import picotutor_constants as c
@@ -194,7 +195,7 @@ class PicoTutor:
         else:
             self.comments = []
 
-    def _find_longest_matching_opening(self, played: str) -> (str, str, str):
+    def _find_longest_matching_opening(self, played: str) -> Tuple[str, str, str]:
         opening_name = moves = eco = ''
         for opening in self.book_data:
             # if len(opening.get('moves')) > 5:
@@ -205,7 +206,7 @@ class PicoTutor:
                     eco = opening.get('eco')
         return opening_name, moves, eco
 
-    def get_opening(self) -> (str, str, str, bool):
+    def get_opening(self) -> Tuple[str, str, str, bool]:
 
         diff = self.board.fullmove_number - self.last_inside_book_moveno
         inside_book_opening = False

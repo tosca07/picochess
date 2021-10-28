@@ -17,10 +17,11 @@
 
 import os
 import logging
-from configobj import ConfigObj
+from configobj import ConfigObj  # type: ignore
 from collections import OrderedDict
+from typing import Dict, List, Set
 
-import chess
+import chess  # type: ignore
 from timecontrol import TimeControl
 from utilities import Observable, DispatchDgt, get_tags, version, write_picochess_ini
 from dgt.util import TimeMode, TimeModeLoop, Top, TopLoop, Mode, ModeLoop, Language, LanguageLoop, BeepLevel, BeepLoop
@@ -194,14 +195,14 @@ class DgtMenu(object):
         self.engine_restart = False
 
         self.menu_engine_name = 0
-        self.menu_engine_level = None
-        self.installed_engines = []
+        self.menu_engine_level = 0
+        self.installed_engines: List[Dict[str, str]] = []
         self.menu_engine_name2 = 0
-        self.menu_engine_level2 = None
-        self.installed_engines2 = []
+        self.menu_engine_level2 = 0
+        self.installed_engines2: List[Dict[str, str]] = []
 
         self.menu_book = 0
-        self.all_books = []
+        self.all_books: List[Dict[str, str]] = []
 
         self.menu_system = System.INFO
         self.menu_system_sound = self.dgttranslate.beep
@@ -306,10 +307,10 @@ class DgtMenu(object):
         # setup the result vars for api (dgtdisplay)
         self.save_choices()
         # During "picochess" is displayed, some special actions allowed
-        self.picochess_displayed = set()
+        self.picochess_displayed: Set[str] = set()
         self.updt_top = False  # inside the update-menu?
-        self.updt_devs = set()  # list of devices which are inside the update-menu
-        self.updt_tags = []
+        self.updt_devs: Set[str] = set()  # list of devices which are inside the update-menu
+        self.updt_tags: List[List[str]] = []
         self.updt_version = 0  # index to current version
 
         self.battery = '-NA'  # standard value: NotAvailable (discharging)

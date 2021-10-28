@@ -22,7 +22,7 @@ import copy
 from math import ceil
 
 from utilities import Observable, hms_time
-import chess
+import chess  # type: ignore
 from dgt.api import Event
 from dgt.util import TimeMode
 

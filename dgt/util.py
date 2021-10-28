@@ -18,7 +18,7 @@
 try:
     import enum
 except ImportError:
-    import enum34 as enum
+    import enum34 as enum  # type: ignore
 
 
 class MyEnum(enum.Enum):

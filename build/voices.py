@@ -18,7 +18,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from configobj import ConfigObj
+from configobj import ConfigObj  # type: ignore
 
 
 def write_voice_ini():

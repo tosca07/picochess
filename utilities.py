@@ -33,13 +33,13 @@ from dgt.translate import DgtTranslate
 from dgt.api import Dgt
 from ctypes import cdll
 
-from configobj import ConfigObj, ConfigObjError, DuplicateError
+from configobj import ConfigObj, ConfigObjError, DuplicateError  # type: ignore
 
 # picochess version
 version = '3'
 
-evt_queue = queue.Queue()
-dispatch_queue = queue.Queue()
+evt_queue: queue.Queue = queue.Queue()
+dispatch_queue: queue.Queue = queue.Queue()
 
 msgdisplay_devices = []
 dgtdisplay_devices = []

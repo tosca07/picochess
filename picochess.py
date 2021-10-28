@@ -29,17 +29,17 @@ import logging
 from logging.handlers import RotatingFileHandler
 import time
 import queue
-import configargparse
+import configargparse  # type: ignore
 import paramiko
 import math
-from typing import Set
+from typing import Optional, Set
 
 from uci.engine import UciShell, UciEngine
 from uci.read import read_engine_ini
-import chess
-import chess.pgn
-import chess.polyglot
-import chess.uci
+import chess  # type: ignore
+import chess.pgn  # type: ignore
+import chess.polyglot  # type: ignore
+import chess.uci  # type: ignore
 
 from timecontrol import TimeControl
 from utilities import get_location, update_picochess, get_opening_books, shutdown, reboot, checkout_tag
@@ -122,7 +122,7 @@ online_prefix = 'Online'
 seeking_flag = False
 fen_error_occured = False
 position_mode = False
-start_time_cmove_done = 0
+start_time_cmove_done = 0.0
 reset_auto = False
 
 
@@ -2042,7 +2042,7 @@ def main() -> None:
 
     # Enable logging
     if args.log_file:
-        handler = RotatingFileHandler('logs' + os.sep + args.log_file, maxBytes=1.4 * 1024 * 1024, backupCount=5)
+        handler = RotatingFileHandler('logs' + os.sep + args.log_file, maxBytes=1 * 1024 * 1024, backupCount=5)
         logging.basicConfig(level=getattr(logging, args.log_level.upper()),
                             format='%(asctime)s.%(msecs)03d %(levelname)7s %(module)10s - %(funcName)s: %(message)s',
                             datefmt="%Y-%m-%d %H:%M:%S", handlers=[handler])
@@ -2175,7 +2175,7 @@ def main() -> None:
     engine_remote_home = args.engine_remote_home.rstrip(os.sep)
 
     engine_tries = 0
-    engine = engine_name = None
+    engine_name = None
     uci_remote_shell = None
 
     uci_local_shell = UciShell(hostname='', username='', key_file='', password='')
@@ -2254,7 +2254,7 @@ def main() -> None:
     if pgn_mode():
         ModeInfo.set_pgn_mode(mode=True)
         flag_last_engine_pgn = True
-        det_pgn_guess_tctrl()
+        det_pgn_guess_tctrl(state)
     else:
         ModeInfo.set_pgn_mode(mode=False)
 
@@ -2356,7 +2356,7 @@ def main() -> None:
 
                 if engine.quit():
                     # Load the new one and send args.
-                    if remote_engine_mode() and flag_eng:
+                    if remote_engine_mode() and flag_eng and uci_remote_shell:
                         engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell)
                     else:
                         engine = UciEngine(file=engine_file, uci_shell=uci_local_shell)
@@ -2372,7 +2372,7 @@ def main() -> None:
                         help_str = old_file.rsplit(os.sep, 1)[1]
                         remote_file = engine_remote_home + os.sep + help_str
 
-                        if remote_engine_mode() and flag_eng():
+                        if remote_engine_mode() and flag_eng and uci_remote_shell:
                             engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell)
                         else:
                             engine = UciEngine(file=old_file, uci_shell=uci_local_shell)
@@ -2391,7 +2391,7 @@ def main() -> None:
                         logging.debug('new engine doesnt support brain mode, reverting to %s', old_file)
                         engine_fallback = True
                         if engine.quit():
-                            if remote_engine_mode() and flag_eng:
+                            if remote_engine_mode() and flag_eng and uci_remote_shell:
                                 engine = UciEngine(file=old_file, uci_shell=uci_remote_shell)
                             else:
                                 engine = UciEngine(file=old_file, uci_shell=uci_local_shell)
@@ -2422,12 +2422,12 @@ def main() -> None:
                             DisplayMsg.show(Message.ONLINE_FAILED())
                             time.sleep(3)
                             engine_fallback = True
-                            event.options = None
+                            event.options = dict()
                             old_file = 'engines/armv7l/a-stockf'
                             help_str = old_file.rsplit(os.sep, 1)[1]
                             remote_file = engine_remote_home + os.sep + help_str
 
-                            if remote_engine_mode() and flag_eng:
+                            if remote_engine_mode() and flag_eng and uci_remote_shell:
                                 engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell)
                             else:
                                 engine = UciEngine(file=old_file, uci_shell=uci_local_shell)
@@ -2483,8 +2483,7 @@ def main() -> None:
                     set_wait_state(msg, state, not engine_fallback)
                     if interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):   # engine isnt started/searching => stop the clock
                         stop_clock(state)
-                    text: Dgt.DISPLAY_TEXT = state.dgtmenu.enter_eng_name_menu()
-                    state.engine_text = str(text.large)
+                    state.engine_text = state.dgtmenu.enter_eng_name_menu().large_text
                     state.dgtmenu.exit_menu()
                     if state.dgtmenu.get_enginename():
                         DisplayMsg.show(Message.ENGINE_NAME(engine_name=state.engine_text))
@@ -2501,7 +2500,7 @@ def main() -> None:
                     if not flag_last_engine_pgn:
                         state.tc_init_last = state.time_control.get_parameters()
 
-                    det_pgn_guess_tctrl()
+                    det_pgn_guess_tctrl(state)
 
                     flag_last_engine_pgn = True
                 elif emulation_mode():
@@ -2527,15 +2526,14 @@ def main() -> None:
                     # molli: in these cases we can't continue from current position but
                     #        have to start a new game
                     if emulation_mode():
-                        set_emulation_tctrl()
+                        set_emulation_tctrl(state)
                     # prepare new game
                     if pgn_mode():
                         pgn_game_name, pgn_problem, pgn_fen, pgn_result, pgn_white, pgn_black = read_pgn_info()
                         if 'mate in' in pgn_problem or 'Mate in' in pgn_problem:
                             set_fen_from_pgn(pgn_fen, state)
                             state.play_mode = PlayMode.USER_WHITE if state.game.turn == chess.WHITE else PlayMode.USER_BLACK
-                            text: str = state.play_mode.value
-                            msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=dgttranslate.text(text))
+                            msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=dgttranslate.text(state.play_mode.value))
                             DisplayMsg.show(msg)
                             time.sleep(1)
                     pos960 = 518
@@ -2690,7 +2688,7 @@ def main() -> None:
                             set_fen_from_pgn(pgn_fen, state)
                     set_wait_state(Message.START_NEW_GAME(game=state.game.copy(), newgame=newgame), state)
                     if 'no_player' not in opp_user and 'no_user' not in own_user:
-                        switch_online()
+                        switch_online(state)
 
                 else:
                     if online_mode():
@@ -2743,7 +2741,7 @@ def main() -> None:
                         state.game_declared = False
                         set_wait_state(Message.START_NEW_GAME(game=state.game.copy(), newgame=newgame), state)
                         if 'no_player' not in opp_user and 'no_user' not in own_user:
-                            switch_online()
+                            switch_online(state)
                     else:
                         logging.debug('no need to start a new game')
                         if pgn_mode():
@@ -2863,8 +2861,7 @@ def main() -> None:
                         engine.position(copy.deepcopy(state.game))
                         engine.ponder()
                         state.play_mode = PlayMode.USER_WHITE if state.game.turn == chess.WHITE else PlayMode.USER_BLACK
-                        text = state.play_mode.value  # type: str
-                        msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=dgttranslate.text(text))
+                        msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=dgttranslate.text(state.play_mode.value))
                         DisplayMsg.show(msg)
                     else:
                         logging.debug('illegal fen %s', fen)
@@ -2888,8 +2885,7 @@ def main() -> None:
                         move = chess.Move.null()  # not really needed
 
                     state.play_mode = PlayMode.USER_WHITE if state.play_mode == PlayMode.USER_BLACK else PlayMode.USER_BLACK
-                    text = state.play_mode.value  # type: str
-                    msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=dgttranslate.text(text))
+                    msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=dgttranslate.text(state.play_mode.value))
 
                     if state.time_control.mode == TimeMode.FIXED:
                         state.time_control.reset()
@@ -2946,8 +2942,7 @@ def main() -> None:
                         move = chess.Move.null()  # not really needed
 
                     state.play_mode = PlayMode.USER_WHITE if state.play_mode == PlayMode.USER_BLACK else PlayMode.USER_BLACK
-                    text = state.play_mode.value  # type: str
-                    msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=dgttranslate.text(text))
+                    msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=dgttranslate.text(state.play_mode.value))
 
                     if state.time_control.mode == TimeMode.FIXED:
                         state.time_control.reset()
@@ -3020,8 +3015,8 @@ def main() -> None:
                                 result_str, winner = read_online_result()
                                 logging.debug('molli result_str:%s', result_str)
                                 logging.debug('molli winner:%s', winner)
-                                gameresult_tmp = ''
-                                gameresult_tmp2 = ''
+                                gameresult_tmp: Optional[GameResult] = None
+                                gameresult_tmp2: Optional[GameResult] = None
 
                                 if 'Checkmate' in result_str or 'checkmate' in result_str or 'mate' in result_str:
                                     gameresult_tmp = GameResult.MATE
@@ -3082,7 +3077,7 @@ def main() -> None:
                                 logging.debug('molli result_tmp:%s', gameresult_tmp)
                                 logging.debug('molli result_tmp2:%s', gameresult_tmp2)
 
-                                if gameresult_tmp2 != '' and not (state.game.is_game_over() and gameresult_tmp == GameResult.ABORT):
+                                if gameresult_tmp2 and not (state.game.is_game_over() and gameresult_tmp == GameResult.ABORT):
                                     if gameresult_tmp == GameResult.OUT_OF_TIME:
                                         DisplayMsg.show(Message.LOST_ON_TIME())
                                         time.sleep(2)
@@ -3092,7 +3087,7 @@ def main() -> None:
                                         time.sleep(2)
                                         DisplayMsg.show(Message.GAME_ENDS(tc_init=state.time_control.get_parameters(), result=gameresult_tmp2, play_mode=state.play_mode, game=game_msg))
                                 else:
-                                    if gameresult_tmp == GameResult.ABORT and gameresult_tmp2 != '':
+                                    if gameresult_tmp == GameResult.ABORT and gameresult_tmp2:
                                         DisplayMsg.show(Message.GAME_ENDS(tc_init=state.time_control.get_parameters(), result=gameresult_tmp2, play_mode=state.play_mode, game=game_msg))
                                     else:
                                         DisplayMsg.show(Message.GAME_ENDS(tc_init=state.time_control.get_parameters(), result=gameresult_tmp, play_mode=state.play_mode, game=game_msg))

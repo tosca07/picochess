@@ -135,13 +135,12 @@ class DgtPi(DgtIface):
         if len(text) > 11:
             logging.warning('(i2c) clock message too long [%s]', text)
         logging.debug('[%s]', text)
-        text = bytes(text, 'utf-8')
         with self.lib_lock:
-            res = self.lib.dgtpicom_set_text(text, 0x03 if beep else 0x00, left_icons.value, right_icons.value)
+            res = self.lib.dgtpicom_set_text(bytes(text, 'utf-8'), 0x03 if beep else 0x00, left_icons.value, right_icons.value)
             if res < 0:
                 logging.warning('SetText() returned error %i, running configure', res)
                 self._run_configure()
-                res = self.lib.dgtpicom_set_text(text, 0x03 if beep else 0x00, left_icons.value, right_icons.value)
+                res = self.lib.dgtpicom_set_text(bytes(text, 'utf-8'), 0x03 if beep else 0x00, left_icons.value, right_icons.value)
         if res < 0:
             logging.warning('finally failed %i', res)
             return False

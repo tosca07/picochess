@@ -17,14 +17,14 @@
 
 import logging
 import configparser
-import spur
+import spur  # type: ignore
 import paramiko
 
 from subprocess import DEVNULL
 from dgt.api import Event
 from utilities import Observable
-import chess.uci
-from chess import Board
+import chess.uci  # type: ignore
+from chess import Board  # type: ignore
 from uci.informer import Informer
 from uci.read import read_engine_ini
 
@@ -78,7 +78,7 @@ class UciEngine(object):
                 self.engine.uci()
             else:
                 logging.error('engine executable [%s] not found', file)
-            self.options = {}
+            self.options: dict = {}
             self.future = None
             self.show_best = True
 
@@ -281,11 +281,10 @@ class UciEngine(object):
     def startup(self, options: dict, show=True):
         """Startup engine."""
         parser = configparser.ConfigParser()
-        parser.optionxform = str
 
         if not options:
             if self.shell is None:
-                success = parser.read(self.get_file() + '.uci')
+                success = bool(parser.read(self.get_file() + '.uci'))
             else:
                 try:
                     with self.shell.open(self.get_file() + '.uci', 'r') as file:

@@ -19,14 +19,15 @@ import datetime
 import threading
 import logging
 from collections import OrderedDict
+from typing import Optional, Set
 
-import chess
-import chess.pgn as pgn
+import chess  # type: ignore
+import chess.pgn as pgn  # type: ignore
 
-import tornado.web
-import tornado.wsgi
-from tornado.ioloop import IOLoop
-from tornado.websocket import WebSocketHandler
+import tornado.web  # type: ignore
+import tornado.wsgi  # type: ignore
+from tornado.ioloop import IOLoop  # type: ignore
+from tornado.websocket import WebSocketHandler  # type: ignore
 
 from utilities import Observable, DisplayMsg, hms_time, RepeatedTimer
 from web.picoweb import picoweb as pw
@@ -96,7 +97,7 @@ class ChannelHandler(ServerRequestHandler):
 
 
 class EventHandler(WebSocketHandler):
-    clients = set()
+    clients: Set[WebSocketHandler] = set()
 
     def initialize(self, shared=None):
         self.shared = shared
@@ -158,7 +159,7 @@ class ChessBoardHandler(ServerRequestHandler):
 
 class WebServer(threading.Thread):
     def __init__(self, port: int, dgtboard: DgtBoard):
-        shared = {}
+        shared: dict = {}
 
         WebDisplay(shared).start()
         WebVr(shared, dgtboard).start()
@@ -189,7 +190,7 @@ class WebVr(DgtIface):
     def __init__(self, shared, dgtboard: DgtBoard):
         super(WebVr, self).__init__(dgtboard)
         self.shared = shared
-        self.virtual_timer = None
+        self.virtual_timer: Optional[RepeatedTimer] = None
         self.enable_dgtpi = dgtboard.is_pi
         sub = 2 if dgtboard.is_pi else 0
         DisplayMsg.show(Message.DGT_CLOCK_VERSION(main=2, sub=sub, dev='web', text=None))

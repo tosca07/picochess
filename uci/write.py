@@ -36,7 +36,7 @@ def write_engine_ini(engine_path=None):
             return inc
 
         parser = configparser.ConfigParser()
-        parser.optionxform = str
+        parser.optionxform = str  # type: ignore
         if not parser.read(engine_path + os.sep + engine_filename + '.uci'):
             options = engine.get_options()
             if engine.has_limit_strength():

@@ -22,7 +22,7 @@ import copy
 import queue
 import threading
 
-import chess
+import chess  # type: ignore
 from utilities import DisplayMsg, Observable, DispatchDgt, write_picochess_ini
 from dgt.translate import DgtTranslate
 from dgt.menu import DgtMenu
@@ -52,7 +52,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self.play_fen = self.hint_fen = self.last_fen = None
         self.play_turn = self.hint_turn = self.last_turn = None
         self.score: Dgt.DISPLAY_TEXT = self.dgttranslate.text('N10_score', None)
-        self.depth = None
+        self.depth = 0
         self.uci960 = False
         self.play_mode = PlayMode.USER_WHITE
         self.low_time = False
@@ -142,7 +142,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self.last_fen = None
         self.last_turn = None
         self.score = self.dgttranslate.text('N10_score', None)
-        self.depth = None
+        self.depth = 0
 
     def _combine_depth_and_score(self) -> Dgt.DISPLAY_TEXT:
         def _score_to_string(score_val, length):
