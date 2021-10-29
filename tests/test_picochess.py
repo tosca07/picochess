@@ -2,7 +2,7 @@ import chess  # type: ignore
 import mock
 import unittest
 
-from picochess import AlternativeMover
+from picochess import AlternativeMover, read_pgn_info
 
 
 class TestAlternativeMover(unittest.TestCase):
@@ -103,3 +103,13 @@ class TestAlternativeMover(unittest.TestCase):
         bookreader.weighted_choice.side_effect = [book_move]
 
         self.assertFalse(self.testee.check_book(bookreader, self.game))
+
+
+class TestReadPGNInfo(unittest.TestCase):
+    def test_read_pgn_info(self):
+        game_name, problem, fen, result, white, black = read_pgn_info()
+        self.assertEqual(game_name, 'Hoerspie   ')  # TODO: Validate if this is expected
+        self.assertEqual(problem, '           ')  # TODO: Validate if this is expected
+        self.assertEqual(fen, '')
+        self.assertEqual(white, 'NN')
+        self.assertEqual(black, 'Stimpas')
