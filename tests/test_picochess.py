@@ -2,7 +2,7 @@ import chess  # type: ignore
 import mock
 import unittest
 
-from picochess import AlternativeMover, read_pgn_info
+from picochess import AlternativeMover, read_pgn_info, read_online_result, read_online_user_info
 
 
 class TestAlternativeMover(unittest.TestCase):
@@ -113,3 +113,19 @@ class TestReadPGNInfo(unittest.TestCase):
         self.assertEqual(fen, '')
         self.assertEqual(white, 'NN')
         self.assertEqual(black, 'Stimpas')
+
+
+class TestReadOnlineGame(unittest.TestCase):
+    def test_read_online_result(self):
+        result, winner = read_online_result()
+        self.assertEqual(result, 'unknown')
+        self.assertEqual(winner, '')
+
+    def test_read_online_user_info(self):
+        login, own_color, own_user, opp_user, game_time, fisher_inc = read_online_user_info()
+        self.assertEqual(login, 'ok')
+        self.assertEqual(own_color, 'W')
+        self.assertEqual(own_user, 'GuestBLQS')
+        self.assertEqual(opp_user, 'levoll')
+        self.assertEqual(game_time, 5)
+        self.assertEqual(fisher_inc, 0)

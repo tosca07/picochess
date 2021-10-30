@@ -33,7 +33,7 @@ import queue
 import configargparse  # type: ignore
 import paramiko
 import math
-from typing import Optional, Set
+from typing import Optional, Set, Tuple
 
 from uci.engine import UciShell, UciEngine
 from uci.read import read_engine_ini
@@ -138,6 +138,7 @@ class PicochessState:
         self.com_factor = 0
         self.comment_file = ''
         self.dgtmenu = None
+        self.dgttranslate = None
         self.done_computer_fen = None
         self.done_move = chess.Move.null()
         self.engine_text = ''
@@ -211,6 +212,125 @@ class PicochessState:
         condition2 = (self.play_mode == PlayMode.USER_BLACK and self.game.turn == chess.WHITE)
         return condition1 or condition2
 
+    def set_online_tctrl(self, game_time, fischer_inc):
+        l_game_time = 0
+        l_fischer_inc = 0
+
+        logging.debug('molli online set_online_tctrl input %s %s', game_time, fischer_inc)
+        l_game_time = int(game_time)
+        l_fischer_inc = int(fischer_inc)
+        self.stop_clock()
+        self.time_control.stop_internal(log=False)
+
+        self.time_control = TimeControl()
+        tc_init = self.time_control.get_parameters()
+
+        if l_fischer_inc == 0:
+            tc_init['mode'] = TimeMode.BLITZ
+            tc_init['blitz'] = l_game_time
+            tc_init['fischer'] = 0
+        else:
+            tc_init['mode'] = TimeMode.FISCHER
+            tc_init['blitz'] = l_game_time
+            tc_init['fischer'] = l_fischer_inc
+
+        tc_init['blitz2'] = 0
+        tc_init['moves_to_go'] = 0
+
+        lt_white = l_game_time * 60 + l_fischer_inc
+        lt_black = l_game_time * 60 + l_fischer_inc
+        tc_init['internal_time'] = {chess.WHITE: lt_white, chess.BLACK: lt_black}
+
+        self.time_control = TimeControl(**tc_init)
+        text = self.dgttranslate.text('N00_oktime')
+        msg = Message.TIME_CONTROL(time_text=text, show_ok=True, tc_init=tc_init)
+        DisplayMsg.show(msg)
+        self.stop_fen_timer()
+
+    def check_game_state(self):
+        """
+        Check if the game has ended or not ; it also sends Message to Displays if the game has ended.
+
+        :param game:
+        :param play_mode:
+        :return: False is the game continues, Game_Ends() Message if it has ended
+        """
+        if self.game.is_stalemate():
+            result = GameResult.STALEMATE
+        elif self.game.is_insufficient_material():
+            result = GameResult.INSUFFICIENT_MATERIAL
+        elif self.game.is_seventyfive_moves():
+            result = GameResult.SEVENTYFIVE_MOVES
+        elif self.game.is_fivefold_repetition():
+            result = GameResult.FIVEFOLD_REPETITION
+        elif self.game.is_checkmate():
+            result = GameResult.MATE
+        else:
+            return False
+
+        return Message.GAME_ENDS(tc_init=self.time_control.get_parameters(), result=result, play_mode=self.play_mode, game=self.game.copy())
+
+    @staticmethod
+    def _num(time_str):
+        try:
+            value = int(time_str)
+            if value > 999:
+                value = 999
+            return value
+        except ValueError:
+            return 1
+
+    def transfer_time(self, time_list: list, depth=0):
+        """Transfer the time list to a TimeControl Object and a Text Object."""
+        i_depth = self._num(depth)
+
+        if i_depth > 0:
+            fixed = 671
+            timec = TimeControl(TimeMode.FIXED, fixed=fixed, depth=i_depth)
+            textc = self.dgttranslate.text('B00_tc_depth', timec.get_list_text())
+            return timec, textc
+
+        if len(time_list) == 1:
+            fixed = self._num(time_list[0])
+            timec = TimeControl(TimeMode.FIXED, fixed=fixed)
+            textc = self.dgttranslate.text('B00_tc_fixed', timec.get_list_text())
+        elif len(time_list) == 2:
+            blitz = self._num(time_list[0])
+            fisch = self._num(time_list[1])
+            if fisch == 0:
+                timec = TimeControl(TimeMode.BLITZ, blitz=blitz)
+                textc = self.dgttranslate.text('B00_tc_blitz', timec.get_list_text())
+            else:
+                timec = TimeControl(TimeMode.FISCHER, blitz=blitz, fischer=fisch)
+                textc = self.dgttranslate.text('B00_tc_fisch', timec.get_list_text())
+        elif len(time_list) == 3:
+            moves_to_go = self._num(time_list[0])
+            blitz = self._num(time_list[1])
+            blitz2 = self._num(time_list[2])
+            if blitz2 == 0:
+                timec = TimeControl(TimeMode.BLITZ, blitz=blitz, moves_to_go=moves_to_go, blitz2=blitz2)
+                textc = self.dgttranslate.text('B00_tc_tourn', timec.get_list_text())
+            else:
+                fisch = blitz2
+                blitz2 = 0
+                timec = TimeControl(TimeMode.FISCHER, blitz=blitz, fischer=fisch, moves_to_go=moves_to_go, blitz2=blitz2)
+                textc = self.dgttranslate.text('B00_tc_tourn', timec.get_list_text())
+        elif len(time_list) == 4:
+            moves_to_go = self._num(time_list[0])
+            blitz = self._num(time_list[1])
+            fisch = self._num(time_list[2])
+            blitz2 = self._num(time_list[3])
+            if fisch == 0:
+                timec = TimeControl(TimeMode.BLITZ, blitz=blitz, moves_to_go=moves_to_go, blitz2=blitz2)
+                textc = self.dgttranslate.text('B00_tc_tourn', timec.get_list_text())
+            else:
+                timec = TimeControl(TimeMode.FISCHER, blitz=blitz, fischer=fisch, moves_to_go=moves_to_go, blitz2=blitz2)
+                textc = self.dgttranslate.text('B00_tc_tourn', timec.get_list_text())
+        else:
+            timec = TimeControl(TimeMode.BLITZ, blitz=5)
+            textc = self.dgttranslate.text('B00_tc_blitz', timec.get_list_text())
+        return timec, textc
+
 
 def check_ssh(host, username, password):
     l_ssh = True
@@ -255,6 +375,68 @@ def read_pgn_info():
     return(pgn_game_name, pgn_problem, pgn_fen, pgn_result, pgn_white, pgn_black)
 
 
+def read_online_result():
+    result_line = ''
+    winner = ''
+
+    try:
+        log_u = open('online_game.txt', 'r')
+    except Exception:
+        log_u = ''
+        logging.error('Could not read online game file')
+        return
+
+    if log_u:
+        i = 0
+        lines = log_u.readlines()
+        for line in lines:
+            i += 1
+            if i == 9:
+                result_line = line[12:].strip()
+            elif i == 10:
+                winner = line[7:].strip()
+    else:
+        result_line = ''
+
+    log_u.close()
+    logging.debug('Molli in read_result: %s', result_line)
+    logging.debug('Molli in read_result: %s', winner)
+    return(str(result_line), str(winner))
+
+
+def read_online_user_info() -> Tuple[str, str, str, str, int, int]:
+    own_user = 'unknown'
+    opp_user = 'unknown'
+    login = 'failed'
+    own_color = ''
+
+    try:
+        log_u = open('online_game.txt', 'r')
+        lines = log_u.readlines()
+        for line in lines:
+            key, value = line.split('=')
+            if key == 'LOGIN':
+                login = value.strip()
+            elif key == 'COLOR':
+                own_color = value.strip()
+            elif key == 'OWN_USER':
+                own_user = value.strip()
+            elif key == 'OPPONENT_USER':
+                opp_user = value.strip()
+            elif key == 'GAME_TIME':
+                game_time = int(value.strip())
+            elif key == 'FISCHER_INC':
+                fischer_inc = int(value.strip())
+    except Exception:
+        logging.error('Could not read online game file')
+        return login, own_color, own_user, opp_user, 0, 0
+
+    log_u.close()
+    logging.debug('online game_time %s fischer_inc: %s', game_time, fischer_inc)
+
+    return login, own_color, own_user, opp_user, game_time, fischer_inc
+
+
 def compare_fen(fen_board_external='', fen_board_internal='') -> str:
     # <Piece Placement> ::= <rank8>'/'<rank7>'/'<rank6>'/'<rank5>'/'<rank4>'/'<rank3>'/'<rank2>'/'<rank1>
     # <ranki>       ::= [<digit17>]<piece> {[<digit17>]<piece>} [<digit17>] | '8'
@@ -262,7 +444,6 @@ def compare_fen(fen_board_external='', fen_board_internal='') -> str:
     # <digit17>     ::= '1' | '2' | '3' | '4' | '5' | '6' | '7'
     # <white Piece> ::= 'P' | 'N' | 'B' | 'R' | 'Q' | 'K'
     # <black Piece> ::= 'p' | 'n' | 'b' | 'r' | 'q' | 'k'
-
     # eg. starting position 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'
     #                       'a8 b8 c8 d8... / a7 b7... / a1 b1 c1 ... h1'
 
@@ -287,6 +468,25 @@ def compare_fen(fen_board_external='', fen_board_internal='') -> str:
             else:
                 put_field = str('put ' + str(internal_board.piece_at(square_no)) + ' ' + chess.square_name(square_no))
     return put_field
+
+
+def compute_legal_fens(game_copy: chess.Board):
+    """
+    Compute a list of legal FENs for the given game.
+
+    :param game_copy: The game
+    :return: A list of legal FENs
+    """
+    fens = []
+    for move in game_copy.legal_moves:
+        game_copy.push(move)
+        fens.append(game_copy.board_fen())
+        game_copy.pop()
+    return fens
+
+
+def _dgt_serial_nr():
+    DisplayMsg.show(Message.DGT_SERIAL_NR(number='dont_use'))
 
 
 def main() -> None:
@@ -349,46 +549,11 @@ def main() -> None:
         tc_init['depth'] = 0
 
         state.stop_clock()
-        text = dgttranslate.text('N00_oktime')
+        text = state.dgttranslate.text('N00_oktime')
         state.time_control.reset()
         Observable.fire(Event.SET_TIME_CONTROL(tc_init=tc_init, time_text=text, show_ok=True))
         state.stop_clock()
         DisplayMsg.show(Message.EXIT_MENU())
-
-    def set_online_tctrl(game_time, fischer_inc, state: PicochessState):
-        l_game_time = 0
-        l_fischer_inc = 0
-
-        logging.debug('molli online set_online_tctrl input %s %s', game_time, fischer_inc)
-        l_game_time = int(game_time)
-        l_fischer_inc = int(fischer_inc)
-        state.stop_clock()
-        state.time_control.stop_internal(log=False)
-
-        state.time_control = TimeControl()
-        tc_init = state.time_control.get_parameters()
-
-        if l_fischer_inc == 0:
-            tc_init['mode'] = TimeMode.BLITZ
-            tc_init['blitz'] = l_game_time
-            tc_init['fischer'] = 0
-        else:
-            tc_init['mode'] = TimeMode.FISCHER
-            tc_init['blitz'] = l_game_time
-            tc_init['fischer'] = l_fischer_inc
-
-        tc_init['blitz2'] = 0
-        tc_init['moves_to_go'] = 0
-
-        lt_white = l_game_time * 60 + l_fischer_inc
-        lt_black = l_game_time * 60 + l_fischer_inc
-        tc_init['internal_time'] = {chess.WHITE: lt_white, chess.BLACK: lt_black}
-
-        state.time_control = TimeControl(**tc_init)
-        text = dgttranslate.text('N00_oktime')
-        msg = Message.TIME_CONTROL(time_text=text, show_ok=True, tc_init=tc_init)
-        DisplayMsg.show(msg)
-        state.stop_fen_timer()
 
     def set_emulation_tctrl(state: PicochessState):
         logging.debug('molli: set_emulation_tctrl')
@@ -416,9 +581,9 @@ def main() -> None:
 
             if pico_tctrl_str:
                 logging.debug('molli: set_emulation_tctrl input %s', pico_tctrl_str)
-                state.time_control, time_text = transfer_time(pico_tctrl_str.split(), depth=pico_depth)
+                state.time_control, time_text = state.transfer_time(pico_tctrl_str.split(), depth=pico_depth)
                 tc_init = state.time_control.get_parameters()
-                text = dgttranslate.text('N00_oktime')
+                text = state.dgttranslate.text('N00_oktime')
                 Observable.fire(Event.SET_TIME_CONTROL(tc_init=tc_init, time_text=text, show_ok=True))
                 state.stop_fen_timer()
 
@@ -588,7 +753,7 @@ def main() -> None:
 
             if l_game_pgn.headers['PicoTimeControl']:
                 l_pico_tc = str(l_game_pgn.headers['PicoTimeControl'])
-                state.time_control, time_text = transfer_time(l_pico_tc.split(), depth=l_pico_depth)
+                state.time_control, time_text = state.transfer_time(l_pico_tc.split(), depth=l_pico_depth)
 
             if l_game_pgn.headers['PicoRemTimeW']:
                 lt_white = int(l_game_pgn.headers['PicoRemTimeW'])
@@ -606,7 +771,7 @@ def main() -> None:
         state.tc_init_last = state.time_control.get_parameters()
 
         tc_init['internal_time'] = {chess.WHITE: lt_white, chess.BLACK: lt_black}
-        text = dgttranslate.text('N00_oktime')
+        text = state.dgttranslate.text('N00_oktime')
         state.time_control.reset()
 
         Observable.fire(Event.SET_TIME_CONTROL(tc_init=tc_init, time_text=text, show_ok=False))
@@ -622,7 +787,7 @@ def main() -> None:
         assert engine.is_waiting(), 'molli: read_pgn engine not waiting! thinking status: %s' % engine.is_thinking()
         engine.position(copy.deepcopy(state.game))
 
-        game_end = check_game_state(state.game, state.play_mode, state)
+        game_end = state.check_game_state()
         if game_end:
             state.play_mode = PlayMode.USER_WHITE if turn == chess.WHITE else PlayMode.USER_BLACK
             state.legal_fens = []
@@ -631,7 +796,7 @@ def main() -> None:
         else:
             state.play_mode = PlayMode.USER_WHITE if turn == chess.WHITE else PlayMode.USER_BLACK
             text = state.play_mode.value
-            msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=dgttranslate.text(text))
+            msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=state.dgttranslate.text(text))
             DisplayMsg.show(msg)
             time.sleep(1)
 
@@ -781,130 +946,6 @@ def main() -> None:
                 fen_error_occured = True  # to be reset in fen_handling
         flag_startup = False
 
-    ###################################
-    # Online mode
-    ###################################
-    def read_online_result():
-        result_line = ''
-        winner = ''
-
-        try:
-            log_u = open('online_game.txt', 'r')
-        except Exception:
-            log_u = ''
-            logging.error('Could not read online game file')
-            return
-
-        if log_u:
-            i = 0
-            lines = log_u.readlines()
-            for line in lines:
-                i += 1
-                if i == 2:
-                    if len(line) > 6:
-                        own_color = line[6]
-                        own_color.replace("\n", "")
-                        own_color.replace("\r", "")
-                elif i == 3:
-                    if len(line) > 9:
-                        own_user = line[9:]
-                        own_user.replace("\n", "")
-                        own_user.replace("\r", "")
-                elif i == 4:
-                    if len(line) > 14:
-                        own_user.replace("\n", "")
-                        own_user.replace("\r", "")
-                elif i == 5:
-                    if len(line) > 10:
-                        game_time = line[10:]
-                        game_time.replace("\n", "")
-                        game_time.replace("\r", "")
-                elif i == 6:
-                    if len(line) > 12:
-                        fischer_inc = line[12:]
-                        fischer_inc.replace("\n", "")
-                        fischer_inc.replace("\r", "")
-                elif i == 9:
-                    result_line = line[12:]
-                elif i == 10:
-                    winner = line[7:]
-        else:
-            result_line = ''
-
-        log_u.close()
-        logging.debug('Molli in read_result: %s', result_line)
-        logging.debug('Molli in read_result: %s', winner)
-        return(str(result_line), str(winner))
-
-    def read_online_user_info():
-        own_user = 'unknown'
-        opp_user = 'unknown'
-        login = 'failed'
-        own_color = ''
-
-        try:
-            log_u = open('online_game.txt', 'r')
-        except Exception:
-            log_u = ''
-            logging.error('Could not read online game file')
-            return
-
-        if log_u:
-            lines = log_u.readlines()
-            i = 0
-            for line in lines:
-                i += 1
-                if i == 1:
-                    if len(line) > 6:
-                        login = line[6:]
-                elif i == 2:
-                    if len(line) > 6:
-                        own_color = line[6]
-                        own_color.replace("\n", "")
-                        own_color.replace("\r", "")
-                        own_color.replace("]", "")
-                        own_color.replace("[", "")
-                elif i == 3:
-                    if len(line) > 9:
-                        own_user = line[9:]
-                        own_user.replace("\n", "")
-                        own_user.replace("\r", "")
-                        own_user.replace("]", "")
-                        own_user.replace("[", "")
-                elif i == 4:
-                    if len(line) > 14:
-                        opp_user = line[14:]
-                        opp_user.replace("\n", "")
-                        opp_user.replace("\r", "")
-                        opp_user.replace("]", "")
-                        opp_user.replace("[", "")
-                elif i == 5:
-                    if len(line) > 10:
-                        game_time = line[10:]
-                        game_time.replace("\n", "")
-                        game_time.replace("\r", "")
-                        game_time.replace("]", "")
-                        game_time.replace("[", "")
-                elif i == 6:
-                    if len(line) > 12:
-                        fischer_inc = line[12:]
-                        fischer_inc.replace("\n", "")
-                        fischer_inc.replace("\r", "")
-                        fischer_inc.replace("]", "")
-                        fischer_inc.replace("[", "")
-        else:
-            own_color = ''
-            own_user = 'unknown'
-            opp_user = 'unknown'
-            game_time = '0'
-            fischer_inc = '0'
-            login = 'failed'
-
-        log_u.close()
-        logging.debug('online game_time %s fischer_inc: %s', game_time, fischer_inc)
-
-        return(login, own_color, own_user, opp_user, game_time, fischer_inc)
-
     def start_fen_timer(state: PicochessState):
         """Start the fen timer in case an unhandled fen string been received from board."""
         global position_mode
@@ -917,20 +958,6 @@ def main() -> None:
         state.fen_timer = threading.Timer(delay, expired_fen_timer)
         state.fen_timer.start()
         state.fen_timer_running = True
-
-    def compute_legal_fens(game_copy: chess.Board):
-        """
-        Compute a list of legal FENs for the given game.
-
-        :param game_copy: The game
-        :return: A list of legal FENs
-        """
-        fens = []
-        for move in game_copy.legal_moves:
-            game_copy.push(move)
-            fens.append(game_copy.board_fen())
-            game_copy.pop()
-        return fens
 
     def think(game: chess.Board, timec: TimeControl, msg: Message, state: PicochessState, searchlist=False):
         """
@@ -1015,31 +1042,6 @@ def main() -> None:
             while not engine.is_waiting():
                 time.sleep(0.05)
                 logging.warning('engine is still not waiting')
-
-    def check_game_state(game: chess.Board, play_mode: PlayMode, time_control):
-        """
-        Check if the game has ended or not ; it also sends Message to Displays if the game has ended.
-
-        :param game:
-        :param play_mode:
-        :return: False is the game continues, Game_Ends() Message if it has ended
-        """
-        result = None
-        if game.is_stalemate():
-            result = GameResult.STALEMATE
-        if game.is_insufficient_material():
-            result = GameResult.INSUFFICIENT_MATERIAL
-        if game.is_seventyfive_moves():
-            result = GameResult.SEVENTYFIVE_MOVES
-        if game.is_fivefold_repetition():
-            result = GameResult.FIVEFOLD_REPETITION
-        if game.is_checkmate():
-            result = GameResult.MATE
-
-        if result is None:
-            return False
-        else:
-            return Message.GAME_ENDS(tc_init=time_control.get_parameters(), result=result, play_mode=play_mode, game=game.copy())
 
     def user_move(move: chess.Move, sliding: bool, state: PicochessState):
         """Handle an user move."""
@@ -1164,7 +1166,7 @@ def main() -> None:
             state.searchmoves.reset()
             if state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
                 msg = Message.USER_MOVE_DONE(move=move, fen=fen, turn=turn, game=state.game.copy())
-                game_end = check_game_state(state.game, state.play_mode, state)
+                game_end = state.check_game_state()
                 if game_end:
                     # molli: for online/emulation mode we have to publish this move as well to the engine
                     if online_mode():
@@ -1182,7 +1184,7 @@ def main() -> None:
                         state.legal_fens_after_cmove = []  # molli
                 else:
                     if state.interaction_mode in (Mode.NORMAL, Mode.TRAINING) or not ponder_hit:
-                        if not check_game_state(state.game, state.play_mode, state):
+                        if not state.check_game_state():
                             # molli: automatic takeback of blunder moves for mame engines
                             if emulation_mode() and eval_str == '??' and state.last_move != move:
                                 # molli: do not send move to engine
@@ -1202,7 +1204,7 @@ def main() -> None:
                 state.last_move = move
             elif state.interaction_mode == Mode.REMOTE:
                 msg = Message.USER_MOVE_DONE(move=move, fen=fen, turn=turn, game=state.game.copy())
-                game_end = check_game_state(state.game, state.play_mode, state)
+                game_end = state.check_game_state()
                 if game_end:
                     DisplayMsg.show(msg)
                     DisplayMsg.show(game_end)
@@ -1210,7 +1212,7 @@ def main() -> None:
                     observe(state.game, msg)
             elif state.interaction_mode == Mode.OBSERVE:
                 msg = Message.REVIEW_MOVE_DONE(move=move, fen=fen, turn=turn, game=state.game.copy())
-                game_end = check_game_state(state.game, state.play_mode, state)
+                game_end = state.check_game_state()
                 if game_end:
                     DisplayMsg.show(msg)
                     DisplayMsg.show(game_end)
@@ -1218,7 +1220,7 @@ def main() -> None:
                     observe(state.game, msg)
             else:  # state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.PONDER):
                 msg = Message.REVIEW_MOVE_DONE(move=move, fen=fen, turn=turn, game=state.game.copy())
-                game_end = check_game_state(state.game, state.play_mode, state)
+                game_end = state.check_game_state()
                 if game_end:
                     DisplayMsg.show(msg)
                     DisplayMsg.show(game_end)
@@ -1456,7 +1458,7 @@ def main() -> None:
             state.game.push(state.done_move)
             state.done_computer_fen = None
             state.done_move = chess.Move.null()
-            game_end = check_game_state(state.game, state.play_mode, state)
+            game_end = state.check_game_state()
             valid = True
             if picotutor_mode(state):
                 state.picotutor.pop_last_move()
@@ -1515,7 +1517,7 @@ def main() -> None:
                 cmove_time = 0
                 start_time_cmove_done = 0
 
-            game_end = check_game_state(state.game, state.play_mode, state)
+            game_end = state.check_game_state()
             if game_end:
                 state.legal_fens = []
                 state.legal_fens_after_cmove = []
@@ -1707,7 +1709,7 @@ def main() -> None:
                         user_color = chess.WHITE
                     if picotutor_mode(state):
                         state.picotutor.set_user_color(user_color)
-                    DisplayMsg.show(Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=dgttranslate.text(text)))
+                    DisplayMsg.show(Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=state.dgttranslate.text(text)))
         if start_search:
             assert engine.is_waiting(), 'engine not waiting! thinking status: %s' % engine.is_thinking()
             # Go back to analysing or observing
@@ -1730,64 +1732,6 @@ def main() -> None:
             reset_auto = False
         state.stop_fen_timer()
 
-    def transfer_time(time_list: list, depth=0):
-        """Transfer the time list to a TimeControl Object and a Text Object."""
-        def _num(time_str):
-            try:
-                value = int(time_str)
-                if value > 999:
-                    value = 999
-                return value
-            except ValueError:
-                return 1
-
-        i_depth = _num(depth)
-
-        if i_depth > 0:
-            fixed = 671
-            timec = TimeControl(TimeMode.FIXED, fixed=fixed, depth=i_depth)
-            textc = dgttranslate.text('B00_tc_depth', timec.get_list_text())
-        elif len(time_list) == 1:
-            fixed = _num(time_list[0])
-            timec = TimeControl(TimeMode.FIXED, fixed=fixed)
-            textc = dgttranslate.text('B00_tc_fixed', timec.get_list_text())
-        elif len(time_list) == 2:
-            blitz = _num(time_list[0])
-            fisch = _num(time_list[1])
-            if fisch == 0:
-                timec = TimeControl(TimeMode.BLITZ, blitz=blitz)
-                textc = dgttranslate.text('B00_tc_blitz', timec.get_list_text())
-            else:
-                timec = TimeControl(TimeMode.FISCHER, blitz=blitz, fischer=fisch)
-                textc = dgttranslate.text('B00_tc_fisch', timec.get_list_text())
-        elif len(time_list) == 3:
-            moves_to_go = _num(time_list[0])
-            blitz = _num(time_list[1])
-            blitz2 = _num(time_list[2])
-            if blitz2 == 0:
-                timec = TimeControl(TimeMode.BLITZ, blitz=blitz, moves_to_go=moves_to_go, blitz2=blitz2)
-                textc = dgttranslate.text('B00_tc_tourn', timec.get_list_text())
-            else:
-                fisch = blitz2
-                blitz2 = 0
-                timec = TimeControl(TimeMode.FISCHER, blitz=blitz, fischer=fisch, moves_to_go=moves_to_go, blitz2=blitz2)
-                textc = dgttranslate.text('B00_tc_tourn', timec.get_list_text())
-        elif len(time_list) == 4:
-            moves_to_go = _num(time_list[0])
-            blitz = _num(time_list[1])
-            fisch = _num(time_list[2])
-            blitz2 = _num(time_list[3])
-            if fisch == 0:
-                timec = TimeControl(TimeMode.BLITZ, blitz=blitz, moves_to_go=moves_to_go, blitz2=blitz2)
-                textc = dgttranslate.text('B00_tc_tourn', timec.get_list_text())
-            else:
-                timec = TimeControl(TimeMode.FISCHER, blitz=blitz, fischer=fisch, moves_to_go=moves_to_go, blitz2=blitz2)
-                textc = dgttranslate.text('B00_tc_tourn', timec.get_list_text())
-        else:
-            timec = TimeControl(TimeMode.BLITZ, blitz=5)
-            textc = dgttranslate.text('B00_tc_blitz', timec.get_list_text())
-        return timec, textc
-
     def get_engine_level_dict(engine_level):
         """Transfer an engine level to its level_dict plus an index."""
         installed_engines = engine.get_installed_engines()
@@ -1808,9 +1752,6 @@ def main() -> None:
         elif state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
             analyse_mode = True
         engine.mode(ponder=ponder_mode, analyse=analyse_mode)
-
-    def _dgt_serial_nr():
-        DisplayMsg.show(Message.DGT_SERIAL_NR(number='dont_use'))
 
     def switch_online(state: PicochessState):
         color = ''
@@ -1833,7 +1774,7 @@ def main() -> None:
                 color = own_color
 
             logging.debug('molli switch_online start timecontrol')
-            set_online_tctrl(game_time, fischer_inc, state)
+            state.set_online_tctrl(game_time, fischer_inc)
             state.time_control.reset_start_time()
 
             logging.debug('molli switch_online new_color: %s', color)
@@ -1841,7 +1782,7 @@ def main() -> None:
                 # switch to black color for user and send a 'go' to the engine
                 state.play_mode = PlayMode.USER_BLACK
                 text = state.play_mode.value  # type: str
-                msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=dgttranslate.text(text))
+                msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=state.dgttranslate.text(text))
 
                 stop_search_and_clock()
 
@@ -1887,7 +1828,7 @@ def main() -> None:
             state.time_control.reset()
 
         state.legal_fens = []
-        game_end = check_game_state(state.game, state.play_mode, state)
+        game_end = state.check_game_state()
         if game_end:
             DisplayMsg.show(msg)
         else:
@@ -2022,12 +1963,12 @@ def main() -> None:
 
     # wire some dgt classes
     dgtboard = DgtBoard(args.dgt_port, args.disable_revelation_leds, args.dgtpi, args.disable_et, args.slow_slide)
-    dgttranslate = DgtTranslate(args.beep_config, args.beep_some_level, args.language, version)
+    state.dgttranslate = DgtTranslate(args.beep_config, args.beep_some_level, args.language, version)
     state.dgtmenu = DgtMenu(args.disable_confirm_message, args.ponder_interval,
                             args.user_voice, args.computer_voice, args.speed_voice, args.enable_capital_letters,
                             args.disable_short_notation, args.log_file, args.engine_remote_server,
                             args.rolling_display_normal, args.volume_voice,
-                            args.rolling_display_ponder, args.show_engine, dgttranslate)
+                            args.rolling_display_ponder, args.show_engine, state.dgttranslate)
 
     dgtdispatcher = Dispatcher(state.dgtmenu)
 
@@ -2048,12 +1989,12 @@ def main() -> None:
 
     logging.debug('molli: depth %s', args.depth)
 
-    state.time_control, time_text = transfer_time(args.time.split(), depth=args.depth)
+    state.time_control, time_text = state.transfer_time(args.time.split(), depth=args.depth)
     state.tc_init_last = state.time_control.get_parameters()
     time_text.beep = False
 
     # The class dgtDisplay fires Event (Observable) & DispatchDgt (Dispatcher)
-    DgtDisplay(dgttranslate, state.dgtmenu, state.time_control).start()
+    DgtDisplay(state.dgttranslate, state.dgtmenu, state.time_control).start()
 
     # Create PicoTalker for speech output
     # molli: add probability factor for game comments args.com_fact
@@ -2107,7 +2048,7 @@ def main() -> None:
 
     # Update
     if args.enable_update:
-        update_picochess(args.dgtpi, args.enable_update_reboot, dgttranslate)
+        update_picochess(args.dgtpi, args.enable_update_reboot, state.dgttranslate)
 
     #################################################
 
@@ -2174,7 +2115,7 @@ def main() -> None:
     # Startup - external
     level_name = args.engine_level
     if level_name:
-        level_text = dgttranslate.text('B00_level', level_name)
+        level_text = state.dgttranslate.text('B00_level', level_name)
         level_text.beep = False
     else:
         level_text = None
@@ -2197,7 +2138,7 @@ def main() -> None:
 
     if emulation_mode():
         flag_last_engine_emu = True
-        time_control_l, time_text_l = transfer_time(pico_time.split(), depth=0)
+        time_control_l, time_text_l = state.transfer_time(pico_time.split(), depth=0)
         state.tc_init_last = time_control_l.get_parameters()
 
     if pgn_mode():
@@ -2460,7 +2401,7 @@ def main() -> None:
                     # molli restore last saved timecontrol
                     if (flag_last_engine_pgn or flag_last_engine_emu) and state.tc_init_last is not None and not online_mode() and not emulation_mode() and not pgn_mode():
                         state.stop_clock()
-                        text = dgttranslate.text('N00_oktime')
+                        text = state.dgttranslate.text('N00_oktime')
                         Observable.fire(Event.SET_TIME_CONTROL(tc_init=state.tc_init_last, time_text=text, show_ok=True))
                         state.stop_clock()
                         DisplayMsg.show(Message.EXIT_MENU())
@@ -2482,7 +2423,7 @@ def main() -> None:
                         if 'mate in' in pgn_problem or 'Mate in' in pgn_problem:
                             set_fen_from_pgn(pgn_fen, state)
                             state.play_mode = PlayMode.USER_WHITE if state.game.turn == chess.WHITE else PlayMode.USER_BLACK
-                            msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=dgttranslate.text(state.play_mode.value))
+                            msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=state.dgttranslate.text(state.play_mode.value))
                             DisplayMsg.show(msg)
                             time.sleep(1)
                     pos960 = 518
@@ -2773,7 +2714,7 @@ def main() -> None:
                             state.time_control.reset()
                         # set computer to move - in case the user just changed the engine
                         state.play_mode = PlayMode.USER_WHITE if state.game.turn == chess.BLACK else PlayMode.USER_BLACK
-                        if not check_game_state(state.game, state.play_mode, state):
+                        if not state.check_game_state():
                             if picotutor_mode(state):
                                 state.picotutor.pop_last_move()
                             think(state.game, state.time_control, Message.ALTERNATIVE_MOVE(game=state.game.copy(), play_mode=state.play_mode), state, searchlist=True)
@@ -2810,7 +2751,7 @@ def main() -> None:
                         engine.position(copy.deepcopy(state.game))
                         engine.ponder()
                         state.play_mode = PlayMode.USER_WHITE if state.game.turn == chess.WHITE else PlayMode.USER_BLACK
-                        msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=dgttranslate.text(state.play_mode.value))
+                        msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=state.dgttranslate.text(state.play_mode.value))
                         DisplayMsg.show(msg)
                     else:
                         logging.debug('illegal fen %s', fen)
@@ -2834,7 +2775,7 @@ def main() -> None:
                         move = chess.Move.null()  # not really needed
 
                     state.play_mode = PlayMode.USER_WHITE if state.play_mode == PlayMode.USER_BLACK else PlayMode.USER_BLACK
-                    msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=dgttranslate.text(state.play_mode.value))
+                    msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=state.dgttranslate.text(state.play_mode.value))
 
                     if state.time_control.mode == TimeMode.FIXED:
                         state.time_control.reset()
@@ -2849,7 +2790,7 @@ def main() -> None:
                             state.picotutor.pop_last_move()
 
                     state.legal_fens = []
-                    game_end = check_game_state(state.game, state.play_mode, state)
+                    game_end = state.check_game_state()
                     if game_end:
                         DisplayMsg.show(msg)
                     else:
@@ -2891,13 +2832,13 @@ def main() -> None:
                         move = chess.Move.null()  # not really needed
 
                     state.play_mode = PlayMode.USER_WHITE if state.play_mode == PlayMode.USER_BLACK else PlayMode.USER_BLACK
-                    msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=dgttranslate.text(state.play_mode.value))
+                    msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=state.dgttranslate.text(state.play_mode.value))
 
                     if state.time_control.mode == TimeMode.FIXED:
                         state.time_control.reset()
 
                     state.legal_fens = []
-                    game_end = check_game_state(state.game, state.play_mode, state)
+                    game_end = state.check_game_state()
                     if game_end:
                         DisplayMsg.show(msg)
                     else:
@@ -3194,7 +3135,7 @@ def main() -> None:
                 if event.mode not in (Mode.NORMAL, Mode.REMOTE, Mode.TRAINING) and state.done_computer_fen:  # @todo check why still needed
                     state.dgtmenu.set_mode(state.interaction_mode)  # undo the button4 stuff
                     logging.warning('mode cant be changed to a pondering mode as long as a move is displayed')
-                    mode_text = dgttranslate.text('Y10_errormode')
+                    mode_text = state.dgttranslate.text('Y10_errormode')
                     msg = Message.INTERACTION_MODE(mode=state.interaction_mode, mode_text=mode_text, show_ok=False)
                     DisplayMsg.show(msg)
                 else:
