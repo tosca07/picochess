@@ -448,7 +448,8 @@ class WebDisplay(DisplayMsg, threading.Thread):
             EventHandler.write_to_clients({'event': 'Header', 'headers': self.shared['headers']})
 
         def _send_title():
-            EventHandler.write_to_clients({'event': 'Title', 'ip_info': self.shared['ip_info']})
+            if 'ip_info' in self.shared:
+                EventHandler.write_to_clients({'event': 'Title', 'ip_info': self.shared['ip_info']})
 
         def _transfer(game: chess.Board):
             pgn_game = pgn.Game().from_board(game)

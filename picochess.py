@@ -957,7 +957,7 @@ def main() -> None:
             delay = 1  # if a fen error already occured don't wait too long for next check
         else:
             delay = 4
-        state.fen_timer = threading.Timer(delay, expired_fen_timer)
+        state.fen_timer = threading.Timer(delay, expired_fen_timer, args=[state])
         state.fen_timer.start()
         state.fen_timer_running = True
 
@@ -2063,7 +2063,7 @@ def main() -> None:
     ip_info_thread = threading.Timer(12, display_ip_info, args=[state])  # give RaspberyPi 10sec time to startup its network devices
     ip_info_thread.start()
 
-    state.fen_timer = threading.Timer(4, expired_fen_timer)
+    state.fen_timer = threading.Timer(4, expired_fen_timer, args=[state])
     state.fen_timer_running = False
     ###########################################
 

@@ -121,6 +121,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         self.speed_factor = (90 + (speed_factor % 10) * 5) / 100  # RR Used by sox.
         self.play_mode = PlayMode.USER_WHITE
         self.low_time = False
+        self.user_picotalker = None
         self.play_game = None  # saves the game after a computer move - used for "setpieces" to speak the move again
         self.setpieces_voice = setpieces_voice
         self.c_no_beforecmove = 0
