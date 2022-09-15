@@ -56,6 +56,8 @@ from dgt.hw import DgtHw
 from dgt.pi import DgtPi
 from dgt.display import DgtDisplay
 from dgt.board import DgtBoard
+from chesslink.board import ChessLinkBoard
+from chessnut.board import ChessnutBoard
 from dgt.translate import DgtTranslate
 from dgt.menu import DgtMenu
 
@@ -1928,6 +1930,7 @@ def main() -> None:
     parser.add_argument('-dtcs', '--def-timectrl', type=str, default='5 0', help='default time control setting when leaving an emulation engine after startup')
     parser.add_argument('-altm', '--alt-move', action='store_true', help='Playing direct alternative move for pico: default is off')
     parser.add_argument('-odec', '--online-decrement', type=float, default=2.0, help='Seconds to be subtracted after each own online move in order to sync with server times')
+    parser.add_argument('-board', '--board-type', type=str, default='dgt', help='type of e-board: "dgt", "chesslink" or "chessnut", default is "dgt"')
 
     args, unknown = parser.parse_known_args()
 
@@ -1962,7 +1965,12 @@ def main() -> None:
     logging.debug('molli: premove %s', str(state.flag_premove))
 
     # wire some dgt classes
-    dgtboard = DgtBoard(args.dgt_port, args.disable_revelation_leds, args.dgtpi, args.disable_et, args.slow_slide)
+    if args.board_type.lower() == 'chesslink':
+        dgtboard = ChessLinkBoard()
+    elif args.board_type.lower() == 'chessnut':
+        dgtboard = ChessnutBoard()
+    else:
+        dgtboard = DgtBoard(args.dgt_port, args.disable_revelation_leds, args.dgtpi, args.disable_et, args.slow_slide)
     state.dgttranslate = DgtTranslate(args.beep_config, args.beep_some_level, args.language, version)
     state.dgtmenu = DgtMenu(args.disable_confirm_message, args.ponder_interval,
                             args.user_voice, args.computer_voice, args.speed_voice, args.enable_capital_letters,
