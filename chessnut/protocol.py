@@ -20,6 +20,7 @@ import threading
 import queue
 import json
 
+from move_debouncer import MoveDebouncer
 from chessnut.ble_transport import Transport
 from chessnut.parser import Parser, ParserCallback, Battery
 from chessnut import command
@@ -55,6 +56,8 @@ class Protocol(ParserCallback):
         self.parser = Parser(self)
         self.brd_reversed = False
         self.device_in_config = False
+        self.debouncer = MoveDebouncer(350, lambda fen: self.appque.put({'cmd': 'raw_board_position', 'fen': fen,
+                                                                         'actor': self.name}))
 
         self.thread_active = True
         self.event_thread = threading.Thread(target=self._event_worker_thread)
@@ -200,7 +203,7 @@ class Protocol(ParserCallback):
                 time.sleep(0.01)
 
     def board_update(self, short_fen: str):
-        self.appque.put({'cmd': 'raw_board_position', 'fen': short_fen, 'actor': self.name})
+        self.debouncer.update(short_fen)
         with self.board_mutex:
             self.last_fen = short_fen
 
