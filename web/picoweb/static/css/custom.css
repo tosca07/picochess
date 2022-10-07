@@ -21,7 +21,7 @@
 }
 
 .gameMoves {
-    font-size: 1.5vw;
+    font-size: 1.8vw;
     font-weight: bolder;
     line-height: 150%;
     font-family: Tahoma, Geneva, sans-serif;
@@ -29,7 +29,7 @@
 
 .gameMoves .highlight {
     color: darkgreen;
-    font-size: 1.6vw;
+    font-size: 1.8vw;
 }
 
 .gameMoves a {
@@ -95,6 +95,7 @@
 
 body {
     font-size: 1vh;
+    overflow-y: hidden;
 }
 
 .nav li a {
@@ -103,7 +104,7 @@ body {
 }
 
 #BoardStatus {
-    font-size: 2.8vh;
+    font-size: 3.8vh;
 }
 
 #DGTClockStatus {
@@ -112,7 +113,7 @@ body {
 }
 
 #DGTClockText {
-    font-size: 6vh;
+    font-size: 4vh;
     margin: 0;
 }
 
@@ -142,11 +143,11 @@ body {
 }
 
 .btn-group-xs .btn, .btn-group-xs .input-group-btn .btn, .btn.btn-xs, .input-group-btn .btn.btn-xs {
-    padding: 1vh 1vw;
+    padding: 2vh 2.6vw;
 }
 
 .panel {
-    margin-bottom: 3vh;
+    margin-bottom: 0;
 }
 
 .panel-body {
@@ -193,4 +194,40 @@ div.dataTables_wrapper div.dataTables_length select {
 	left: 0;
     width: 100%;
     height: 100%;
+}
+
+.scroll_movelist {
+    height: 180px;
+    overflow: auto;
+    margin-bottom: 1vh;
+} 
+
+.scroll_engine {
+    overflow: auto;
+} 
+
+body .container-fluid .well {
+    box-shadow: none;
+}
+
+canvas {
+    width: 20vw;
+    height: 2vh;
+    vertical-align: middle;
+}
+
+table.table-bordered.dataTable tbody th, table.table-bordered.dataTable tbody td {
+    border-bottom-width: 0;
+    vertical-align: middle;
+    padding: 1px;
+}
+
+.dataTables_wrapper table thead{
+    display: none;
+}
+
+table td {
+    font-size: 1.6vw;
+    font-weight: bolder;
+    font-family: Tahoma, Geneva, sans-serif;
 }

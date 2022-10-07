@@ -97,9 +97,7 @@ var boardStatusEl = $('#BoardStatus'),
     pgnEl = $('#pgn');
 
 var gameHistory, fenHash, currentPosition;
-const BACKEND_SERVER_PREFIX = 'http://drshivaji.com:3334';
-//const BACKEND_SERVER_PREFIX = '';
-//const BACKEND_SERVER_PREFIX = "http://localhost:7777";
+const BACKEND_SERVER_PREFIX = "http://localhost:7777";
 
 // remote begin
 var remote_server_prefix = "drshivaji.com:9876";
@@ -153,61 +151,58 @@ function figurinizeMove(move) {
 }
 
 var bookDataTable = $('#BookTable').DataTable( {
-    'processing': true,
+    'processing': false,
     'paging': false,
     'info': false,
     'searching': false,
-    'order': [[2, 'desc']],
-    'select': {
-        'style': 'os',
-        'selector': 'td:not(.control)'
-    },
-    'responsive': {
-        'details': {
-           'type': 'column',
-           'target': 0
-        }
-      },
-      'columnDefs': [
-         {
+    'order': [[1, 'desc']],
+    'columnDefs': [
+       {
            'data': null,
            'defaultContent': '',
            'className': 'control',
            'orderable': false,
            'targets': 0
-         }
-      ],
+        }
+    ],
     'ajax': {
         'url': BACKEND_SERVER_PREFIX + '/query',
-        'dataSrc': 'records',
-        'dataType': 'jsonp',
+        'dataSrc': 'data',
         'data': function ( d ) {
             d.action = 'get_book_moves';
             d.fen = dataTableFen;
-            d.db = '#ref';
         }
     },
     'columns': [
-        {data: null},
         {data: 'move', render: function ( data, type, row ) { return figurinizeMove(data); } },
-        {data: 'freq', render: $.fn.dataTable.render.intlNumber()},
-        {data: 'pct', render: $.fn.dataTable.render.number( ',', '.', 2, '', '%' )},
-        {data: 'draws', render: $.fn.dataTable.render.intlNumber()},
-        {data: 'wins', render: $.fn.dataTable.render.intlNumber()},
-        {data: 'losses', render: $.fn.dataTable.render.intlNumber()}
+        {data: 'count', render: $.fn.dataTable.render.intlNumber()},
+        {data: 'draws', render: function ( data, type, row ) { return "" },
+            createdCell: function (td, cellData, rowData, row, col) {
+                var canvas = jQuery("<canvas id=\"white_draws_black\"></canvas>");
+                canvas.appendTo(jQuery(td));
+
+                ctx = $(canvas).get(0).getContext("2d");
+                ctx.fillStyle= '#4f4f4f';
+                ctx.fillRect(0,0, 300, 150); // border
+                var height = 138;
+                var maxWidth = 298;
+                var top = 6
+                whiteWins = rowData['whitewins']
+                whiteWidth = maxWidth * whiteWins / 100;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(1, top, whiteWidth, height); // white wins
+                draws = cellData;
+                if ((100 - whiteWins - draws) == 1) { // take care of rounding errors
+                    draws++;
+                }
+                drawsWidth = maxWidth * draws / 100;
+                ctx.fillStyle = '#bfbfbf';
+                ctx.fillRect(whiteWidth + 1, top, drawsWidth, height); // draws
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(whiteWidth + drawsWidth + 1, top, maxWidth - whiteWidth - drawsWidth, height); // black wins
+            },
+        },
     ]
-});
-bookDataTable.on('select', function(e, dt, type, indexes ) {
-    if( type === 'row') {
-        var data = bookDataTable.rows(indexes).data().pluck('move')[0];
-        stopAnalysis();
-        var tmpGame = createGamePointer();
-        var move = tmpGame.move(data);
-        updateCurrentPosition(move, tmpGame);
-        updateChessGround();
-        updateStatus();
-        removeHighlights();
-    }
 });
 
 var gameDataTable = $('#GameTable').DataTable( {
@@ -667,18 +662,18 @@ var updateStatus = function() {
 
     // checkmate?
     if (tmpGame.in_checkmate() === true) {
-        status = moveColor + ' is in checkmate';
+        status = moveColor + ' (mate)';
     }
     // draw?
     else if (tmpGame.in_draw() === true) {
-        status = 'Drawn position';
+        status = moveColor + ' (draw)';
     }
     // game still on
     else {
-        status = moveColor + ' to move';
+        status = moveColor;
         // check?
         if (tmpGame.in_check() === true) {
-            status += ' (in check)';
+            status += ' (check)';
         }
     }
 
@@ -1420,7 +1415,7 @@ function formatEngineOutput(line) {
         output = '<div class="list-group-item">';
         if (score !== null) {
             output += '<h4 class="list-group-item-heading" id="pv_' + multipv + '_score">';
-            output += '<button id="import_pv_' + multipv + '" style="margin-top: 0px;" class="importPVBtn btn btn-raised btn-info btn-xs" onclick="importPv(multipv)" data-placement="auto" data-toggle="tooltip" title="copy to game record"><i class="fa fa-copy"></i><span>&nbsp;Copy</span></button>';
+            output += '<button id="import_pv_' + multipv + '" style="margin-top: 0px;" class="importPVBtn btn-raised btn-info btn-xs" onclick="importPv(multipv)" data-placement="auto"><i class="fa fa-copy"></i><span>&nbsp;Copy</span></button>';
             output += '<span style="color:blue; font-size: 1.8vw; margin-left: 1vw;">' + score + '/' + depth + '</span>';
             output += '</h4>';
         }
