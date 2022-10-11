@@ -1794,7 +1794,6 @@ $(function() {
             switch (data.event) {
                 case 'Fen':
                     updateDGTPosition(data);
-                    updateStatus();
                     if(data.play === 'reload') {
                         removeHighlights();
                     }
