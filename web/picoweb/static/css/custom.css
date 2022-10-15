@@ -227,7 +227,6 @@ table.table-bordered.dataTable tbody th, table.table-bordered.dataTable tbody td
 }
 
 table td {
-    font-size: 1.6vw;
     font-weight: bolder;
     font-family: Tahoma, Geneva, sans-serif;
 }

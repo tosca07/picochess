@@ -97,7 +97,8 @@ var boardStatusEl = $('#BoardStatus'),
     pgnEl = $('#pgn');
 
 var gameHistory, fenHash, currentPosition;
-const BACKEND_SERVER_PREFIX = "http://localhost:7777";
+const OBOCK_SERVER_PREFIX = "http://localhost:7777";
+const GAMES_SERVER_PREFIX = "http://localhost:7778";
 
 // remote begin
 var remote_server_prefix = "drshivaji.com:9876";
@@ -166,7 +167,7 @@ var bookDataTable = $('#BookTable').DataTable( {
         }
     ],
     'ajax': {
-        'url': BACKEND_SERVER_PREFIX + '/query',
+        'url': OBOCK_SERVER_PREFIX + '/query',
         'dataSrc': 'data',
         'data': function ( d ) {
             d.action = 'get_book_moves';
@@ -206,98 +207,49 @@ var bookDataTable = $('#BookTable').DataTable( {
 });
 
 var gameDataTable = $('#GameTable').DataTable( {
-    'processing': true,
-    'serverSide': true,
-    'paging': true,
-    'info': true,
-    'searching': true,
-    'order': [[1, 'desc']],
+    'processing': false,
+    'paging': false,
+    'info': false,
+    'searching': false,
+    'ordering': false,
     'select': {
         'style': 'os',
         'selector': 'td:not(.control)'
     },
-    'responsive': {
-        'details': {
-           'type': 'column',
-           'target': 0
-        }
-      },
-      'columnDefs': [
+    'columnDefs': [
           {
               'data': null,
               'defaultContent': '',
               'className': 'control',
               'orderable': false,
               'targets': 0
-          },
-          {
-              'targets': [1],
-              'visible': false
           }
-      ],
+    ],
     'ajax': {
-        'url': BACKEND_SERVER_PREFIX + '/query',
-        'dataSrc': 'records',
-        'dataType': 'jsonp',
+        'url': GAMES_SERVER_PREFIX + '/query',
+        'dataSrc': 'data',
         'data': function ( d ) {
             d.action = 'get_games';
             d.fen = dataTableFen;
-            d.db = '#ref';
         },
-    'error': function (xhr, error, thrown) {
-        console.warn(xhr);
+        'error': function (xhr, error, thrown) {
+            console.warn(xhr);
         }
     },
-    'initComplete': function() {
-        var searchInput = $('div.dataTables_filter input');
-        searchInput.unbind();
-        searchInput.bind('keyup', function(e) {
-            if(this.value.length > 2) {
-                gameDataTable.search( this.value ).draw();
-            }
-            if(this.value === '') {
-                gameDataTable.search('').draw();
-            }
-        });
-    },
     'columns': [
-        {data: null},
-        {data: 'id'},
         {data: 'white'},
-        {data: 'white_elo'},
         {data: 'black'},
-        {data: 'black_elo'},
         {data: 'result'},
-        {data: 'date'},
-        {data: 'event'},
-        {data: 'site'},
-        {data: 'eco'}
+        {data: 'event'}
     ]
 });
-gameDataTable.on('xhr.dt', function(e, settings, json, xhr) {
-    if(json) {
-        json['recordsTotal'] = json['totalRecordCount'];
-        json['recordsFiltered'] = json['queryRecordCount'];
-        delete json['totalRecordCount'];
-        delete json['queryRecordCount'];
-    }
-});
+
 gameDataTable.on('select', function(e, dt, type, indexes ) {
     if( type === 'row') {
-        var data = gameDataTable.rows(indexes).data().pluck('id')[0];
-        $.ajax({
-            dataType: 'jsonp',
-            url: BACKEND_SERVER_PREFIX + '/query?callback=game_callback',
-            data: {
-                action: 'get_game_content',
-                game_num: data,
-                db: '#ref'
-            }
-        }).done(function(data) {
-            loadGame(data['pgn']);
-            updateStatus();
-            removeHighlights();
-        });
+        var data = gameDataTable.rows(indexes).data().pluck('pgn')[0].split("\n");
+        loadGame(data);
+        updateStatus();
+        removeHighlights();
     }
 });
 
