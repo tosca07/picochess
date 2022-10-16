@@ -593,7 +593,7 @@ body .container-fluid .jumbotron-danger {
 .btn-group-xs .btn,
 .btn-group-xs .input-group-btn .btn {
   padding: 4px 15px;
-  font-size: 10px;
+  font-size: 30px;
 }
 fieldset[disabled][disabled] .btn,
 fieldset[disabled][disabled] .input-group-btn .btn,
