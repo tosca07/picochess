@@ -100,13 +100,6 @@ var gameHistory, fenHash, currentPosition;
 const OBOCK_SERVER_PREFIX = "http://localhost:7777";
 const GAMES_SERVER_PREFIX = "http://localhost:7778";
 
-// remote begin
-var remote_server_prefix = "drshivaji.com:9876";
-//var remote_server_prefix = 'http://drshivaji.com:3334';
-//var remote_server_prefix = "localhost:7766";
-var remote_ws = null;
-// remote end
-
 fenHash = {};
 
 currentPosition = {};
@@ -1008,14 +1001,6 @@ function newBoard(fen) {
     updateStatus();
 }
 
-function broadcastPosition() {
-    if (currentPosition) {
-        var content = getFullGame();
-        $.post('/channel', {action: 'broadcast', fen: currentPosition.fen, pgn: content}, function (data) {
-        });
-    }
-}
-
 function clockButton0() {
     $.post('/channel', {action: 'clockbutton', button: 0}, function (data) {
     });
@@ -1055,23 +1040,6 @@ function toggleLeverButton() {
 function clockButtonPower() {
     $.post('/channel', {action: 'clockbutton', button: 0x11}, function (data) {
     });
-}
-
-function sendConsoleCommand() {
-    var cmd = $('#inputConsole').val();
-    $('#consoleLogArea').append('<li>' + cmd + '</li>');
-    $.post('/channel', {action: 'command', command: cmd}, function (data) {
-    });
-}
-
-function getFenToConsole() {
-    var tmpGame = createGamePointer();
-    $('#inputConsole').val(tmpGame.fen());
-}
-
-function toggleConsoleButton() {
-    $('#Console').toggle();
-    $('#Database').toggle();
 }
 
 function goToPosition(fen) {
@@ -1131,173 +1099,13 @@ function boardFlip() {
     chessground1.toggleOrientation();
 }
 
-// remote begin
-function sendRemoteMsg() {
-    if(remote_ws) {
-        var text_msg_obj = {"event": "text", "payload": $('#remoteText').val()};
-        $("#remoteText").val("");
-        $("#remoteText").focus();
-        var jmsg = JSON.stringify(text_msg_obj);
-        remote_ws.send(jmsg);
-    } else {
-        console.log('cant send message cause of closed connection!');
-    }
-}
-
-function sendRemoteFen(data) {
-    if(remote_ws) {
-        var text_msg_obj = {"event": "Fen", "move": data.move, "fen": data.fen, "play": data.play};
-        var jmsg = JSON.stringify(text_msg_obj);
-        remote_ws.send(jmsg);
-    } else {
-        console.log('cant send message cause of closed connection!');
-    }
-}
-
-function sendRemoteGame(fen) {
-    if(remote_ws) {
-        var text_msg_obj = {"event": "Game", "fen": fen};
-        var jmsg = JSON.stringify(text_msg_obj);
-        remote_ws.send(jmsg);
-    } else {
-        console.log('cant send message cause of closed connection!');
-    }
-}
-
-function setInsideRoom() {
-    $('#leaveRoomBtn').removeAttr('disabled').show();
-    $('#SendTextRemoteBtn').removeAttr('disabled');
-    $('#enterRoomBtn').attr('disabled', 'disabled').hide();
-    $('#RemoteRoom').attr('disabled', 'disabled');
-    $('#RemoteNick').attr('disabled', 'disabled');
-    $('#broadcastBtn').removeAttr('disabled');
-
-    $.post('/channel', {action: 'room', room: 'inside'}, function (data) {
-    });
-}
-
-function setOutsideRoom() {
-    $('#leaveRoomBtn').attr('disabled', 'disabled').hide();
-    $('#SendTextRemoteBtn').attr('disabled', 'disabled');
-    $('#enterRoomBtn').removeAttr('disabled').show();
-    $('#RemoteRoom').removeAttr('disabled');
-    $('#RemoteNick').removeAttr('disabled');
-    $('#broadcastBtn').attr('disabled', 'disabled');
-
-    $.post('/channel', {action: 'room', room: 'outside'}, function (data) {
-    });
-}
-
-function leaveRoom() {
-    setOutsideRoom();
-    if(remote_ws) {
-        remote_ws.close();
-    }
-}
-
-function enterRoom() {
-    $.ajax({
-        dataType: 'jsonp',
-        url: 'http://' + remote_server_prefix,
-        data: {
-            room: $('#RemoteRoom').val(),
-            nick: $('#RemoteNick').val()
-        }
-    }).done(function(data) {
-        console.log(data);
-        if(data.result === 'OK') {
-            setInsideRoom();
-
-            remote_ws = new WebSocket("ws://" + remote_server_prefix + "/ws/" + data.client_id);
-
-            remote_ws.onopen = function (event) {
-                console.log("RemoteChessServerSocket opened");
-            };
-
-            remote_ws.onclose = function () {
-                console.log("RemoteChessServerSocket closed");
-                setOutsideRoom();
-            };
-
-            remote_ws.onerror = function (event) {
-                console.warn("RemoteChessServerSocket error");
-                dgtClockStatusEl.html(event.data);
-            };
-
-            remote_ws.onmessage = receive_message;
-        }
-
-    }).fail(function(jqXHR, textStatus) {
-        console.warn('Failed ajax request');
-        console.log(jqXHR);
-        dgtClockStatusEl.html(textStatus);
-    });
-}
-
-function format_username(username) {
-    if(username === $('#RemoteNick').val()) {
-        return '<span style="color: green;">' + username + '</span>';
-    } else {
-        return '<span style="color: red;">' + username + '</span>';
-    }
-}
-
 function receive_message(wsevent) {
     console.log("received message: " + wsevent.data);
     var msg_obj = $.parseJSON(wsevent.data);
-    var logging = $('#consoleLogArea');
-    var username = format_username(msg_obj.username);
-    switch (msg_obj.event) {
-        case "join":
-            logging.append('<li>' + username + ' => Joined room ' + msg_obj.payload + '</li>');
-            break;
-        case "leave":
-            logging.append('<li>' + username + ' => Left room ' + msg_obj.payload + '</li>');
-            break;
-        case "nick_list":
-            logging.append('<li>' + username + ' => Current users: ' + msg_obj.payload.toString() + '</li>');
-            break;
-        case "text":
-            logging.append('<li>' + username + ' => ' +  msg_obj.payload + '</li>');
-            break;
-        // picochess events!
-        case 'Clock':
-            logging.append('<li>' + username + ' => Clock: ' + msg_obj.msg + '</li>');
-            break;
-        case 'Light':
-            logging.append('<li>' + username + ' => Light: ' + msg_obj.move + '</li>');
-            break;
-        case 'Clear':
-            logging.append('<li>' + username + ' => Clear' + '</li>');
-            break;
-        case 'Fen':
-            logging.append('<li>' + username + ' => Fen: ' + msg_obj.fen + ' move: ' + msg_obj.move + ' play: ' + msg_obj.play + '</li>');
-            break;
-        case 'Game':
-            logging.append('<li>' + username + ' => NewGame: ' + msg_obj.fen + '</li>');
-            break;
-        case 'Message':
-            logging.append('<li>' + username + ' => Message: ' + msg_obj.msg + '</li>');
-            break;
-        case 'Status':
-            logging.append('<li>' + username + ' => ClockStatus: ' + msg_obj.msg + '</li>');
-            break;
-        case 'Header':
-            logging.append('<li>' + username + ' => Header: ' + msg_obj.headers.toString() + '</li>');
-            break;
-        case 'Title':
-            logging.append('<li>' + username + ' => Title: ' + msg_obj.ip_info.toString() + '</li>');
-            break;
-        case 'Broadcast':
-            logging.append('<li>' + username + ' => Broadcast: ' + msg_obj.msg + 'fen: ' + msg_obj.fen + '</li>');
-            break;
-        default:
-            console.log(msg_obj.event);
-            console.log(msg_obj);
-            console.log(' ');
-    }
+    console.log(msg_obj.event);
+    console.log(msg_obj);
+    console.log(' ');
 }
-// remote end
 
 function formatEngineOutput(line) {
     if (line.search('depth') > 0 && line.search('currmove') < 0) {
@@ -1658,7 +1466,6 @@ $('#endBtn').on('click', goToEnd);
 
 $('#DgtSyncBtn').on('click', goToDGTFen);
 $('#downloadBtn').on('click', download);
-$('#broadcastBtn').on('click', broadcastPosition);
 
 $('#analyzeBtn').on('click', analyzePressed);
 
@@ -1672,22 +1479,6 @@ $('#ClockBtn3').on('click', clockButton3);
 $('#ClockBtn4').on('click', clockButton4);
 $('#ClockLeverBtn').on('click', toggleLeverButton);
 
-$('#consoleBtn').on('click', toggleConsoleButton);
-$('#getFenToConsoleBtn').on('click', getFenToConsole);
-
-// remote begin
-$('#enterRoomBtn').on('click', enterRoom);
-$('#leaveRoomBtn').on('click', leaveRoom);
-$('#SendTextRemoteBtn').on('click', sendRemoteMsg);
-// remote end
-
-$("#inputConsole").keyup(function(event) {
-    if(event.keyCode === 13) {
-        sendConsoleCommand();
-        $(this).val('');
-    }
-});
-
 $(function() {
     getAllInfo();
 
@@ -1696,20 +1487,6 @@ $(function() {
     });
     window.engine_lines = {};
     window.multipv = 1;
-
-// remote begin
-    setOutsideRoom();
-    $("#RemoteRoom").keyup(function(event) { remote_send(); } );
-    $("#RemoteNick").keyup(function(event) { remote_send(); } );
-
-    function remote_send() {
-        if ( $("#RemoteRoom").val() !== "" && $("#RemoteNick").val() !== "") {
-            $("#enterRoomBtn").removeAttr("disabled");
-        } else {
-            $("#enterRoomBtn").attr("disabled", "disabled");
-        }
-    }
-// remote end
 
     $(document).keydown(function(e) {
         if (e.keyCode === 39) { //right arrow
@@ -1755,11 +1532,9 @@ $(function() {
                     if(data.play === 'review') {
                         highlightBoard(data.move, 'review');
                     }
-                    //sendRemoteFen(data);
                     break;
                 case 'Game':
                     newBoard(data.fen);
-                    //sendRemoteGame(data.fen);
                     break;
                 case 'Message':
                     boardStatusEl.html(data.msg);
