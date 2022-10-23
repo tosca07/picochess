@@ -219,7 +219,10 @@ canvas {
 table.table-bordered.dataTable tbody th, table.table-bordered.dataTable tbody td {
     border-bottom-width: 0;
     vertical-align: middle;
-    padding: 1px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    padding-left: 4px;
+    padding-right: 4px;
 }
 
 .dataTables_wrapper table thead{
@@ -229,4 +232,19 @@ table.table-bordered.dataTable tbody th, table.table-bordered.dataTable tbody td
 table td {
     font-weight: bolder;
     font-family: Tahoma, Geneva, sans-serif;
+}
+
+td.dt-right.zero-border-right {
+    text-align: right;
+    border-right: 0px;
+}
+
+td.dt-center.zero-border-right {
+    text-align: center;
+    border-right: 0px;
+}
+
+td.result {
+    text-align: center;
+    white-space: nowrap;
 }

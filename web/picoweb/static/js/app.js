@@ -150,13 +150,12 @@ var bookDataTable = $('#BookTable').DataTable( {
     'info': false,
     'searching': false,
     'order': [[1, 'desc']],
-    'columnDefs': [
-       {
-           'data': null,
-           'defaultContent': '',
-           'className': 'control',
-           'orderable': false,
-           'targets': 0
+    'columnDefs': [ {
+            className: 'dt-center zero-border-right',
+            'targets': 0
+        }, {
+            className: 'dt-right zero-border-right',
+            'targets': 1
         }
     ],
     'ajax': {
@@ -168,7 +167,13 @@ var bookDataTable = $('#BookTable').DataTable( {
         }
     },
     'columns': [
-        {data: 'move', render: function ( data, type, row ) { return figurinizeMove(data); } },
+        {data: 'move', render: function ( data, type, row ) {
+            var tmp_board = new Chess(currentPosition.fen, chessGameType);
+            move = tmp_board.move({from: data.slice(0, 2), to: data.slice(2, 4), promotion: data.slice(4)});
+            if (move) {
+                return figurinizeMove(move.san);
+            }
+            return data; } },
         {data: 'count', render: $.fn.dataTable.render.intlNumber()},
         {data: 'draws', render: function ( data, type, row ) { return "" },
             createdCell: function (td, cellData, rowData, row, col) {
@@ -209,14 +214,10 @@ var gameDataTable = $('#GameTable').DataTable( {
         'style': 'os',
         'selector': 'td:not(.control)'
     },
-    'columnDefs': [
-          {
-              'data': null,
-              'defaultContent': '',
-              'className': 'control',
-              'orderable': false,
-              'targets': 0
-          }
+    'columnDefs': [ {
+            className: 'result',
+            'targets': 2
+        }
     ],
     'ajax': {
         'url': GAMES_SERVER_PREFIX + '/query',
@@ -232,7 +233,7 @@ var gameDataTable = $('#GameTable').DataTable( {
     'columns': [
         {data: 'white'},
         {data: 'black'},
-        {data: 'result'},
+        {data: 'result', render: function ( data, type, row ) { return data.replace('1/2-1/2', '\u00BD'); }},
         {data: 'event'}
     ]
 });
