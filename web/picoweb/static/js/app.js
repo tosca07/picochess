@@ -97,8 +97,8 @@ var boardStatusEl = $('#BoardStatus'),
     pgnEl = $('#pgn');
 
 var gameHistory, fenHash, currentPosition;
-const OBOCK_SERVER_PREFIX = "http://localhost:7777";
-const GAMES_SERVER_PREFIX = "http://localhost:7778";
+const OBOCK_SERVER_PREFIX = "http://picochess.local:7777";
+const GAMES_SERVER_PREFIX = "http://picochess.local:7778";
 
 fenHash = {};
 
