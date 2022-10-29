@@ -12,17 +12,18 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-def set_led(pos, reversed: bool):
+def set_led(pos, is_reversed: bool):
     """
     Set LEDs according to `position`.
     :param pos: `position` array, field != 0 indicates a led that should be on
+    :param is_reversed: whether the colors on the board are reversed
     """
     leds = bytearray(8)
     for y in range(8):
         for x in range(8):
             if pos[y][x] != 0:
                 square = (7 - y) * 8 + x
-                if reversed:
+                if is_reversed:
                     square = 63 - square
                 _set_bit(leds, square, 1)
 
@@ -33,7 +34,7 @@ def set_led(pos, reversed: bool):
 
 
 def _set_bit(data: bytearray, pos: int, val: int):
-    posByte = (int)(pos / 8)
+    posByte = int(pos / 8)
     posBit = pos % 8
     oldByte = data[posByte]
     oldByte = (((0xFF7F >> posBit) & oldByte) & 0x00FF)

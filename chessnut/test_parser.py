@@ -23,70 +23,70 @@ from chessnut.parser import Battery
 class TestParser(unittest.TestCase):
 
     def test_initial_position(self, MockedParserCallback):
-        input = bytearray.fromhex('012458233185444444440000000000000000000000000000000077777777A6C99B6AFFFFFFFF')
-        Parser(MockedParserCallback).parse(input)
+        data = bytearray.fromhex('012458233185444444440000000000000000000000000000000077777777A6C99B6AFFFFFFFF')
+        Parser(MockedParserCallback).parse(data)
         MockedParserCallback.board_update.assert_called_once_with('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
 
     def test_initial_position_twice_calls_update_only_once(self, MockedParserCallback):
-        input = bytearray.fromhex('012458233185444444440000000000000000000000000000000077777777A6C99B6AFFFFFFFF'
-                                  + '012458233185444444440000000000000000000000000000000077777777A6C99B6AFFFFFFFF')
-        Parser(MockedParserCallback).parse(input)
+        data = bytearray.fromhex('012458233185444444440000000000000000000000000000000077777777A6C99B6AFFFFFFFF' +
+                                 '012458233185444444440000000000000000000000000000000077777777A6C99B6AFFFFFFFF')
+        Parser(MockedParserCallback).parse(data)
         MockedParserCallback.board_update.assert_called_once_with('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
 
     def test_two_different_positions_calls_update_twice(self, MockedParserCallback):
-        input = bytearray.fromhex('012458233185444444440000000000000000000000000000000077777777A6C99B6AFFFFFFFF'
-                                  + '012458233185444400440000000000000000000000000000000077700777A6C99B6AFFFFFFFF')
-        Parser(MockedParserCallback).parse(input)
+        data = bytearray.fromhex('012458233185444444440000000000000000000000000000000077777777A6C99B6AFFFFFFFF' +
+                                 '012458233185444400440000000000000000000000000000000077700777A6C99B6AFFFFFFFF')
+        Parser(MockedParserCallback).parse(data)
         calls = [call('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'),
                  call('rnbqkbnr/pp2pppp/8/8/8/8/PP1PP1PP/RNBQKBNR')]
         MockedParserCallback.board_update.assert_has_calls(calls)
 
     def test_invalid_data(self, MockedParserCallback):
-        input = bytearray.fromhex('012458233185444444440000000000000FFFF00000000000000077777777A6C99B6AFFFFFFFF')
-        Parser(MockedParserCallback).parse(input)
+        data = bytearray.fromhex('012458233185444444440000000000000FFFF00000000000000077777777A6C99B6AFFFFFFFF')
+        Parser(MockedParserCallback).parse(data)
         MockedParserCallback.board_update.assert_not_called()
 
     def test_initial_position_black_and_white_reversed(self, MockedParserCallback):
-        input = bytearray.fromhex('0124A6B99C6A77777777000000000000000000000000000000004444444458133285FFFFFFFF')
-        Parser(MockedParserCallback).parse(input)
+        data = bytearray.fromhex('0124A6B99C6A77777777000000000000000000000000000000004444444458133285FFFFFFFF')
+        Parser(MockedParserCallback).parse(data)
         MockedParserCallback.board_update.assert_called_once_with('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
 
     def test_reversed_board_calls_reversed_true(self, MockedParserCallback):
-        input = bytearray.fromhex('0124A6B99C6A77777777000000000000000000000000000000004444444458133285FFFFFFFF')
-        Parser(MockedParserCallback).parse(input)
+        data = bytearray.fromhex('0124A6B99C6A77777777000000000000000000000000000000004444444458133285FFFFFFFF')
+        Parser(MockedParserCallback).parse(data)
         MockedParserCallback.reversed.assert_called_once_with(True)
 
     def test_junk_before_position_is_ignored(self, MockedParserCallback):
-        input = bytearray.fromhex(
+        data = bytearray.fromhex(
             '9876543210' + '012458233185444444440000000000000000000000000000000077777777A6C99B6AFFFFFFFF')
-        Parser(MockedParserCallback).parse(input)
+        Parser(MockedParserCallback).parse(data)
         MockedParserCallback.board_update.assert_called_once_with('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
 
     def test_initial_position_split_with_junk_in_front(self, MockedParserCallback):
-        input = bytearray.fromhex('9871233210' + '012458233185444444440000000000000000000000000000000077777777')
+        data = bytearray.fromhex('9871233210' + '012458233185444444440000000000000000000000000000000077777777')
         parser = Parser(MockedParserCallback)
-        parser.parse(input)
+        parser.parse(data)
         parser.parse(bytearray.fromhex('A6C99B6AFFFFFFFF'))
         MockedParserCallback.board_update.assert_called_once_with('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
 
     def test_battery_charging(self, MockedParserCallback):
-        input = bytearray.fromhex('2a026401')
-        Parser(MockedParserCallback).parse(input)
+        data = bytearray.fromhex('2a026401')
+        Parser(MockedParserCallback).parse(data)
         MockedParserCallback.battery.assert_called_once_with(100, Battery.CHARGING)
 
     def test_battery_discharging(self, MockedParserCallback):
-        input = bytearray.fromhex('2a025800')
-        Parser(MockedParserCallback).parse(input)
+        data = bytearray.fromhex('2a025800')
+        Parser(MockedParserCallback).parse(data)
         MockedParserCallback.battery.assert_called_once_with(88, Battery.DISCHARGING)
 
     def test_battery_low(self, MockedParserCallback):
-        input = bytearray.fromhex('2a020900')
-        Parser(MockedParserCallback).parse(input)
+        data = bytearray.fromhex('2a020900')
+        Parser(MockedParserCallback).parse(data)
         MockedParserCallback.battery.assert_called_once_with(9, Battery.LOW)
 
     def test_battery_exhausted(self, MockedParserCallback):
-        input = bytearray.fromhex('2a020400')
-        Parser(MockedParserCallback).parse(input)
+        data = bytearray.fromhex('2a020400')
+        Parser(MockedParserCallback).parse(data)
         MockedParserCallback.battery.assert_called_once_with(4, Battery.EXHAUSTED)
 
     def test_junk_position_junk_battery(self, MockedParserCallback):

@@ -30,7 +30,7 @@ except ImportError:
     bluepy_ble_support = False
 
 
-class Transport():
+class Transport(object):
 
     def __init__(self, que: queue.Queue):
         """
