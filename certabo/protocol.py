@@ -60,6 +60,7 @@ class Protocol(ParserCallback, CalibrationCallback):
         self.parser = CertaboBoardMessageParser(self)
         self.calibrator = CertaboCalibrator(self)
         self.calibrated = False
+        self.initial_position_received = False  # initial position after calibration is complete
         self.brd_reversed = False
         self.device_in_config = False
         self.debouncer = MoveDebouncer(350, lambda fen: self.appque.put({'cmd': 'raw_board_position', 'fen': fen,
@@ -196,7 +197,12 @@ class Protocol(ParserCallback, CalibrationCallback):
                 time.sleep(0.01)
 
     def board_update(self, short_fen: str):
-        self.debouncer.update(short_fen)
+        if not self.initial_position_received and short_fen == 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR':
+            self.initial_position_received = True
+        if self.initial_position_received:
+            # only forward the fen if the initial position has been received at least once
+            # to prevent additional queens on the board from changing settings
+            self.debouncer.update(short_fen)
         with self.board_mutex:
             self.last_fen = short_fen
 
