@@ -97,16 +97,8 @@ var boardStatusEl = $('#BoardStatus'),
     pgnEl = $('#pgn');
 
 var gameHistory, fenHash, currentPosition;
-const BACKEND_SERVER_PREFIX = 'http://drshivaji.com:3334';
-//const BACKEND_SERVER_PREFIX = '';
-//const BACKEND_SERVER_PREFIX = "http://localhost:7777";
-
-// remote begin
-var remote_server_prefix = "drshivaji.com:9876";
-//var remote_server_prefix = 'http://drshivaji.com:3334';
-//var remote_server_prefix = "localhost:7766";
-var remote_ws = null;
-// remote end
+const OBOCK_SERVER_PREFIX = "http://picochess.local:7777";
+const GAMES_SERVER_PREFIX = "http://picochess.local:7778";
 
 fenHash = {};
 
@@ -153,156 +145,105 @@ function figurinizeMove(move) {
 }
 
 var bookDataTable = $('#BookTable').DataTable( {
-    'processing': true,
+    'processing': false,
     'paging': false,
     'info': false,
     'searching': false,
-    'order': [[2, 'desc']],
-    'select': {
-        'style': 'os',
-        'selector': 'td:not(.control)'
-    },
-    'responsive': {
-        'details': {
-           'type': 'column',
-           'target': 0
+    'order': [[1, 'desc']],
+    'columnDefs': [ {
+            className: 'dt-center zero-border-right',
+            'targets': 0
+        }, {
+            className: 'dt-right zero-border-right',
+            'targets': 1
         }
-      },
-      'columnDefs': [
-         {
-           'data': null,
-           'defaultContent': '',
-           'className': 'control',
-           'orderable': false,
-           'targets': 0
-         }
-      ],
+    ],
     'ajax': {
-        'url': BACKEND_SERVER_PREFIX + '/query',
-        'dataSrc': 'records',
-        'dataType': 'jsonp',
+        'url': OBOCK_SERVER_PREFIX + '/query',
+        'dataSrc': 'data',
         'data': function ( d ) {
             d.action = 'get_book_moves';
             d.fen = dataTableFen;
-            d.db = '#ref';
         }
     },
     'columns': [
-        {data: null},
-        {data: 'move', render: function ( data, type, row ) { return figurinizeMove(data); } },
-        {data: 'freq', render: $.fn.dataTable.render.intlNumber()},
-        {data: 'pct', render: $.fn.dataTable.render.number( ',', '.', 2, '', '%' )},
-        {data: 'draws', render: $.fn.dataTable.render.intlNumber()},
-        {data: 'wins', render: $.fn.dataTable.render.intlNumber()},
-        {data: 'losses', render: $.fn.dataTable.render.intlNumber()}
+        {data: 'move', render: function ( data, type, row ) {
+            var tmp_board = new Chess(currentPosition.fen, chessGameType);
+            move = tmp_board.move({from: data.slice(0, 2), to: data.slice(2, 4), promotion: data.slice(4)});
+            if (move) {
+                return figurinizeMove(move.san);
+            }
+            return data; } },
+        {data: 'count', render: $.fn.dataTable.render.intlNumber()},
+        {data: 'draws', render: function ( data, type, row ) { return "" },
+            createdCell: function (td, cellData, rowData, row, col) {
+                var canvas = jQuery("<canvas id=\"white_draws_black\"></canvas>");
+                canvas.appendTo(jQuery(td));
+
+                ctx = $(canvas).get(0).getContext("2d");
+                ctx.fillStyle= '#4f4f4f';
+                ctx.fillRect(0,0, 300, 150); // border
+                var height = 138;
+                var maxWidth = 298;
+                var top = 6
+                whiteWins = rowData['whitewins']
+                whiteWidth = maxWidth * whiteWins / 100;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(1, top, whiteWidth, height); // white wins
+                draws = cellData;
+                if ((100 - whiteWins - draws) == 1) { // take care of rounding errors
+                    draws++;
+                }
+                drawsWidth = maxWidth * draws / 100;
+                ctx.fillStyle = '#bfbfbf';
+                ctx.fillRect(whiteWidth + 1, top, drawsWidth, height); // draws
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(whiteWidth + drawsWidth + 1, top, maxWidth - whiteWidth - drawsWidth, height); // black wins
+            },
+        },
     ]
-});
-bookDataTable.on('select', function(e, dt, type, indexes ) {
-    if( type === 'row') {
-        var data = bookDataTable.rows(indexes).data().pluck('move')[0];
-        stopAnalysis();
-        var tmpGame = createGamePointer();
-        var move = tmpGame.move(data);
-        updateCurrentPosition(move, tmpGame);
-        updateChessGround();
-        updateStatus();
-        removeHighlights();
-    }
 });
 
 var gameDataTable = $('#GameTable').DataTable( {
-    'processing': true,
-    'serverSide': true,
-    'paging': true,
-    'info': true,
-    'searching': true,
-    'order': [[1, 'desc']],
+    'processing': false,
+    'paging': false,
+    'info': false,
+    'searching': false,
+    'ordering': false,
     'select': {
         'style': 'os',
         'selector': 'td:not(.control)'
     },
-    'responsive': {
-        'details': {
-           'type': 'column',
-           'target': 0
+    'columnDefs': [ {
+            className: 'result',
+            'targets': 2
         }
-      },
-      'columnDefs': [
-          {
-              'data': null,
-              'defaultContent': '',
-              'className': 'control',
-              'orderable': false,
-              'targets': 0
-          },
-          {
-              'targets': [1],
-              'visible': false
-          }
-      ],
+    ],
     'ajax': {
-        'url': BACKEND_SERVER_PREFIX + '/query',
-        'dataSrc': 'records',
-        'dataType': 'jsonp',
+        'url': GAMES_SERVER_PREFIX + '/query',
+        'dataSrc': 'data',
         'data': function ( d ) {
             d.action = 'get_games';
             d.fen = dataTableFen;
-            d.db = '#ref';
         },
-    'error': function (xhr, error, thrown) {
-        console.warn(xhr);
+        'error': function (xhr, error, thrown) {
+            console.warn(xhr);
         }
     },
-    'initComplete': function() {
-        var searchInput = $('div.dataTables_filter input');
-        searchInput.unbind();
-        searchInput.bind('keyup', function(e) {
-            if(this.value.length > 2) {
-                gameDataTable.search( this.value ).draw();
-            }
-            if(this.value === '') {
-                gameDataTable.search('').draw();
-            }
-        });
-    },
     'columns': [
-        {data: null},
-        {data: 'id'},
         {data: 'white'},
-        {data: 'white_elo'},
         {data: 'black'},
-        {data: 'black_elo'},
-        {data: 'result'},
-        {data: 'date'},
-        {data: 'event'},
-        {data: 'site'},
-        {data: 'eco'}
+        {data: 'result', render: function ( data, type, row ) { return data.replace('1/2-1/2', '\u00BD'); }},
+        {data: 'event'}
     ]
 });
-gameDataTable.on('xhr.dt', function(e, settings, json, xhr) {
-    if(json) {
-        json['recordsTotal'] = json['totalRecordCount'];
-        json['recordsFiltered'] = json['queryRecordCount'];
-        delete json['totalRecordCount'];
-        delete json['queryRecordCount'];
-    }
-});
+
 gameDataTable.on('select', function(e, dt, type, indexes ) {
     if( type === 'row') {
-        var data = gameDataTable.rows(indexes).data().pluck('id')[0];
-        $.ajax({
-            dataType: 'jsonp',
-            url: BACKEND_SERVER_PREFIX + '/query?callback=game_callback',
-            data: {
-                action: 'get_game_content',
-                game_num: data,
-                db: '#ref'
-            }
-        }).done(function(data) {
-            loadGame(data['pgn']);
-            updateStatus();
-            removeHighlights();
-        });
+        var data = gameDataTable.rows(indexes).data().pluck('pgn')[0].split("\n");
+        loadGame(data);
+        updateStatus();
+        removeHighlights();
     }
 });
 
@@ -667,18 +608,18 @@ var updateStatus = function() {
 
     // checkmate?
     if (tmpGame.in_checkmate() === true) {
-        status = moveColor + ' is in checkmate';
+        status = moveColor + ' (mate)';
     }
     // draw?
     else if (tmpGame.in_draw() === true) {
-        status = 'Drawn position';
+        status = moveColor + ' (draw)';
     }
     // game still on
     else {
-        status = moveColor + ' to move';
+        status = moveColor;
         // check?
         if (tmpGame.in_check() === true) {
-            status += ' (in check)';
+            status += ' (check)';
         }
     }
 
@@ -1061,14 +1002,6 @@ function newBoard(fen) {
     updateStatus();
 }
 
-function broadcastPosition() {
-    if (currentPosition) {
-        var content = getFullGame();
-        $.post('/channel', {action: 'broadcast', fen: currentPosition.fen, pgn: content}, function (data) {
-        });
-    }
-}
-
 function clockButton0() {
     $.post('/channel', {action: 'clockbutton', button: 0}, function (data) {
     });
@@ -1108,23 +1041,6 @@ function toggleLeverButton() {
 function clockButtonPower() {
     $.post('/channel', {action: 'clockbutton', button: 0x11}, function (data) {
     });
-}
-
-function sendConsoleCommand() {
-    var cmd = $('#inputConsole').val();
-    $('#consoleLogArea').append('<li>' + cmd + '</li>');
-    $.post('/channel', {action: 'command', command: cmd}, function (data) {
-    });
-}
-
-function getFenToConsole() {
-    var tmpGame = createGamePointer();
-    $('#inputConsole').val(tmpGame.fen());
-}
-
-function toggleConsoleButton() {
-    $('#Console').toggle();
-    $('#Database').toggle();
 }
 
 function goToPosition(fen) {
@@ -1184,173 +1100,13 @@ function boardFlip() {
     chessground1.toggleOrientation();
 }
 
-// remote begin
-function sendRemoteMsg() {
-    if(remote_ws) {
-        var text_msg_obj = {"event": "text", "payload": $('#remoteText').val()};
-        $("#remoteText").val("");
-        $("#remoteText").focus();
-        var jmsg = JSON.stringify(text_msg_obj);
-        remote_ws.send(jmsg);
-    } else {
-        console.log('cant send message cause of closed connection!');
-    }
-}
-
-function sendRemoteFen(data) {
-    if(remote_ws) {
-        var text_msg_obj = {"event": "Fen", "move": data.move, "fen": data.fen, "play": data.play};
-        var jmsg = JSON.stringify(text_msg_obj);
-        remote_ws.send(jmsg);
-    } else {
-        console.log('cant send message cause of closed connection!');
-    }
-}
-
-function sendRemoteGame(fen) {
-    if(remote_ws) {
-        var text_msg_obj = {"event": "Game", "fen": fen};
-        var jmsg = JSON.stringify(text_msg_obj);
-        remote_ws.send(jmsg);
-    } else {
-        console.log('cant send message cause of closed connection!');
-    }
-}
-
-function setInsideRoom() {
-    $('#leaveRoomBtn').removeAttr('disabled').show();
-    $('#SendTextRemoteBtn').removeAttr('disabled');
-    $('#enterRoomBtn').attr('disabled', 'disabled').hide();
-    $('#RemoteRoom').attr('disabled', 'disabled');
-    $('#RemoteNick').attr('disabled', 'disabled');
-    $('#broadcastBtn').removeAttr('disabled');
-
-    $.post('/channel', {action: 'room', room: 'inside'}, function (data) {
-    });
-}
-
-function setOutsideRoom() {
-    $('#leaveRoomBtn').attr('disabled', 'disabled').hide();
-    $('#SendTextRemoteBtn').attr('disabled', 'disabled');
-    $('#enterRoomBtn').removeAttr('disabled').show();
-    $('#RemoteRoom').removeAttr('disabled');
-    $('#RemoteNick').removeAttr('disabled');
-    $('#broadcastBtn').attr('disabled', 'disabled');
-
-    $.post('/channel', {action: 'room', room: 'outside'}, function (data) {
-    });
-}
-
-function leaveRoom() {
-    setOutsideRoom();
-    if(remote_ws) {
-        remote_ws.close();
-    }
-}
-
-function enterRoom() {
-    $.ajax({
-        dataType: 'jsonp',
-        url: 'http://' + remote_server_prefix,
-        data: {
-            room: $('#RemoteRoom').val(),
-            nick: $('#RemoteNick').val()
-        }
-    }).done(function(data) {
-        console.log(data);
-        if(data.result === 'OK') {
-            setInsideRoom();
-
-            remote_ws = new WebSocket("ws://" + remote_server_prefix + "/ws/" + data.client_id);
-
-            remote_ws.onopen = function (event) {
-                console.log("RemoteChessServerSocket opened");
-            };
-
-            remote_ws.onclose = function () {
-                console.log("RemoteChessServerSocket closed");
-                setOutsideRoom();
-            };
-
-            remote_ws.onerror = function (event) {
-                console.warn("RemoteChessServerSocket error");
-                dgtClockStatusEl.html(event.data);
-            };
-
-            remote_ws.onmessage = receive_message;
-        }
-
-    }).fail(function(jqXHR, textStatus) {
-        console.warn('Failed ajax request');
-        console.log(jqXHR);
-        dgtClockStatusEl.html(textStatus);
-    });
-}
-
-function format_username(username) {
-    if(username === $('#RemoteNick').val()) {
-        return '<span style="color: green;">' + username + '</span>';
-    } else {
-        return '<span style="color: red;">' + username + '</span>';
-    }
-}
-
 function receive_message(wsevent) {
     console.log("received message: " + wsevent.data);
     var msg_obj = $.parseJSON(wsevent.data);
-    var logging = $('#consoleLogArea');
-    var username = format_username(msg_obj.username);
-    switch (msg_obj.event) {
-        case "join":
-            logging.append('<li>' + username + ' => Joined room ' + msg_obj.payload + '</li>');
-            break;
-        case "leave":
-            logging.append('<li>' + username + ' => Left room ' + msg_obj.payload + '</li>');
-            break;
-        case "nick_list":
-            logging.append('<li>' + username + ' => Current users: ' + msg_obj.payload.toString() + '</li>');
-            break;
-        case "text":
-            logging.append('<li>' + username + ' => ' +  msg_obj.payload + '</li>');
-            break;
-        // picochess events!
-        case 'Clock':
-            logging.append('<li>' + username + ' => Clock: ' + msg_obj.msg + '</li>');
-            break;
-        case 'Light':
-            logging.append('<li>' + username + ' => Light: ' + msg_obj.move + '</li>');
-            break;
-        case 'Clear':
-            logging.append('<li>' + username + ' => Clear' + '</li>');
-            break;
-        case 'Fen':
-            logging.append('<li>' + username + ' => Fen: ' + msg_obj.fen + ' move: ' + msg_obj.move + ' play: ' + msg_obj.play + '</li>');
-            break;
-        case 'Game':
-            logging.append('<li>' + username + ' => NewGame: ' + msg_obj.fen + '</li>');
-            break;
-        case 'Message':
-            logging.append('<li>' + username + ' => Message: ' + msg_obj.msg + '</li>');
-            break;
-        case 'Status':
-            logging.append('<li>' + username + ' => ClockStatus: ' + msg_obj.msg + '</li>');
-            break;
-        case 'Header':
-            logging.append('<li>' + username + ' => Header: ' + msg_obj.headers.toString() + '</li>');
-            break;
-        case 'Title':
-            logging.append('<li>' + username + ' => Title: ' + msg_obj.ip_info.toString() + '</li>');
-            break;
-        case 'Broadcast':
-            logging.append('<li>' + username + ' => Broadcast: ' + msg_obj.msg + 'fen: ' + msg_obj.fen + '</li>');
-            break;
-        default:
-            console.log(msg_obj.event);
-            console.log(msg_obj);
-            console.log(' ');
-    }
+    console.log(msg_obj.event);
+    console.log(msg_obj);
+    console.log(' ');
 }
-// remote end
 
 function formatEngineOutput(line) {
     if (line.search('depth') > 0 && line.search('currmove') < 0) {
@@ -1420,7 +1176,7 @@ function formatEngineOutput(line) {
         output = '<div class="list-group-item">';
         if (score !== null) {
             output += '<h4 class="list-group-item-heading" id="pv_' + multipv + '_score">';
-            output += '<button id="import_pv_' + multipv + '" style="margin-top: 0px;" class="importPVBtn btn btn-raised btn-info btn-xs" onclick="importPv(multipv)" data-placement="auto" data-toggle="tooltip" title="copy to game record"><i class="fa fa-copy"></i><span>&nbsp;Copy</span></button>';
+            output += '<button id="import_pv_' + multipv + '" style="margin-top: 0px;" class="importPVBtn btn-raised btn-info btn-xs" onclick="importPv(multipv)" data-placement="auto"><i class="fa fa-copy"></i><span>&nbsp;Copy</span></button>';
             output += '<span style="color:blue; font-size: 1.8vw; margin-left: 1vw;">' + score + '/' + depth + '</span>';
             output += '</h4>';
         }
@@ -1711,7 +1467,6 @@ $('#endBtn').on('click', goToEnd);
 
 $('#DgtSyncBtn').on('click', goToDGTFen);
 $('#downloadBtn').on('click', download);
-$('#broadcastBtn').on('click', broadcastPosition);
 
 $('#analyzeBtn').on('click', analyzePressed);
 
@@ -1725,22 +1480,6 @@ $('#ClockBtn3').on('click', clockButton3);
 $('#ClockBtn4').on('click', clockButton4);
 $('#ClockLeverBtn').on('click', toggleLeverButton);
 
-$('#consoleBtn').on('click', toggleConsoleButton);
-$('#getFenToConsoleBtn').on('click', getFenToConsole);
-
-// remote begin
-$('#enterRoomBtn').on('click', enterRoom);
-$('#leaveRoomBtn').on('click', leaveRoom);
-$('#SendTextRemoteBtn').on('click', sendRemoteMsg);
-// remote end
-
-$("#inputConsole").keyup(function(event) {
-    if(event.keyCode === 13) {
-        sendConsoleCommand();
-        $(this).val('');
-    }
-});
-
 $(function() {
     getAllInfo();
 
@@ -1749,20 +1488,6 @@ $(function() {
     });
     window.engine_lines = {};
     window.multipv = 1;
-
-// remote begin
-    setOutsideRoom();
-    $("#RemoteRoom").keyup(function(event) { remote_send(); } );
-    $("#RemoteNick").keyup(function(event) { remote_send(); } );
-
-    function remote_send() {
-        if ( $("#RemoteRoom").val() !== "" && $("#RemoteNick").val() !== "") {
-            $("#enterRoomBtn").removeAttr("disabled");
-        } else {
-            $("#enterRoomBtn").attr("disabled", "disabled");
-        }
-    }
-// remote end
 
     $(document).keydown(function(e) {
         if (e.keyCode === 39) { //right arrow
@@ -1799,7 +1524,6 @@ $(function() {
             switch (data.event) {
                 case 'Fen':
                     updateDGTPosition(data);
-                    updateStatus();
                     if(data.play === 'reload') {
                         removeHighlights();
                     }
@@ -1809,11 +1533,9 @@ $(function() {
                     if(data.play === 'review') {
                         highlightBoard(data.move, 'review');
                     }
-                    //sendRemoteFen(data);
                     break;
                 case 'Game':
                     newBoard(data.fen);
-                    //sendRemoteGame(data.fen);
                     break;
                 case 'Message':
                     boardStatusEl.html(data.msg);
