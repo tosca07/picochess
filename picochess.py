@@ -1978,7 +1978,7 @@ def main() -> None:
     state.dgtmenu = DgtMenu(args.disable_confirm_message, args.ponder_interval,
                             args.user_voice, args.computer_voice, args.speed_voice, args.enable_capital_letters,
                             args.disable_short_notation, args.log_file, args.engine_remote_server,
-                            args.rolling_display_normal, args.volume_voice,
+                            args.rolling_display_normal, args.volume_voice, args.board_type,
                             args.rolling_display_ponder, args.show_engine, state.dgttranslate)
 
     dgtdispatcher = Dispatcher(state.dgtmenu)

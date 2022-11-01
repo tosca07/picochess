@@ -1271,6 +1271,41 @@ class DgtTranslate(object):
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
+        if text_id == 'system_eboard_menu':
+            entxt = Dgt.DISPLAY_TEXT(large_text='E-Board    ', medium_text='E-Board ', small_text='eboard')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'eboard_dgt_menu':
+            entxt = Dgt.DISPLAY_TEXT(large_text='DGT        ', medium_text='DGT     ', small_text='dgt   ')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'eboard_certabo_menu':
+            entxt = Dgt.DISPLAY_TEXT(large_text='Certabo    ', medium_text='Certabo ', small_text='certab')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'eboard_chesslink_menu':
+            entxt = Dgt.DISPLAY_TEXT(large_text='ChessLink  ', medium_text='ChessLnk', small_text='cheslk')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'eboard_chessnut_menu':
+            entxt = Dgt.DISPLAY_TEXT(large_text='Chessnut   ', medium_text='Chessnut', small_text='chesnt')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
         if text_id == 'gameresult_mate':
             wait = True
             entxt = Dgt.DISPLAY_TEXT(large_text='checkmate  ', medium_text='mate    ', small_text='mate  ')
@@ -1445,6 +1480,13 @@ class DgtTranslate(object):
             frtxt = Dgt.DISPLAY_TEXT(large_text='ok langue  ', medium_text='okLangue', small_text='oklang')
             estxt = Dgt.DISPLAY_TEXT(large_text='ok idioma  ', medium_text='okIdioma', small_text='oklang')
             ittxt = Dgt.DISPLAY_TEXT(large_text='lingua ok  ', medium_text='okLingua', small_text='okling')
+        if text_id == 'okeboard':
+            entxt = Dgt.DISPLAY_TEXT(large_text='ok eboard', medium_text='okeboard', small_text='ok brd')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
         if text_id == 'oklogfile':
             entxt = Dgt.DISPLAY_TEXT(large_text='ok log file', medium_text='oklogfil', small_text='ok log')
             detxt = entxt

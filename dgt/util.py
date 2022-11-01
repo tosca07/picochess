@@ -438,6 +438,11 @@ class System(MyEnum):
     LOGFILE = 'B00_system_logfile_menu'
     VOICE = 'B00_system_voice_menu'
     DISPLAY = 'B00_system_display_menu'
+    EBOARD = 'B00_system_eboard_menu'
+
+    @classmethod
+    def items(cls):
+        return [System.INFO, System.SOUND, System.LANGUAGE, System.LOGFILE, System.VOICE, System.DISPLAY, System.EBOARD]
 
 
 class SystemLoop(object):
@@ -450,36 +455,40 @@ class SystemLoop(object):
     @staticmethod
     def next(item: System):
         """Get next item."""
-        if item == System.INFO:
-            return System.SOUND
-        elif item == System.SOUND:
-            return System.LANGUAGE
-        elif item == System.LANGUAGE:
-            return System.LOGFILE
-        elif item == System.LOGFILE:
-            return System.VOICE
-        elif item == System.VOICE:
-            return System.DISPLAY
-        elif item == System.DISPLAY:
-            return System.INFO
-        return 'errSystNext'
+        return next_item(System.items(), item, 'errSystNext')
 
     @staticmethod
     def prev(item: System):
         """Get previous item."""
-        if item == System.INFO:
-            return System.DISPLAY
-        if item == System.DISPLAY:
-            return System.VOICE
-        if item == System.VOICE:
-            return System.LOGFILE
-        if item == System.LOGFILE:
-            return System.LANGUAGE
-        if item == System.LANGUAGE:
-            return System.SOUND
-        elif item == System.SOUND:
-            return System.INFO
-        return 'errSystPrev'
+        return prev_item(System.items(), item, 'errSystPrev')
+
+
+class EBoard(MyEnum):
+
+    CERTABO = 'B00_eboard_certabo_menu'
+    CHESSLINK = 'B00_eboard_chesslink_menu'
+    CHESSNUT = 'B00_eboard_chessnut_menu'
+    DGT = 'B00_eboard_dgt_menu'
+
+    @classmethod
+    def items(cls):
+        return [EBoard.CERTABO, EBoard.CHESSLINK, EBoard.CHESSNUT, EBoard.DGT]
+
+
+class EBoardLoop(object):
+
+    def __init__(self):
+        super(EBoardLoop, self).__init__()
+
+    @staticmethod
+    def next(item: EBoard):
+        """Get next item."""
+        return next_item(EBoard.items(), item, 'errEboardNext')
+
+    @staticmethod
+    def prev(item: EBoard):
+        """Get previous item."""
+        return prev_item(EBoard.items(), item, 'errEboardPrev')
 
 
 class Info(MyEnum):
@@ -888,3 +897,35 @@ class DgtMsg(enum.IntEnum):
     EE_FUTURE_2 = 0x7e
     EE_NOP = 0x7f
     EE_NOP2 = 0x00
+
+
+def next_item(items, item, error: str):
+    """
+    :param items: list of items
+    :param item: item to search for in the list
+    :param error: return this error string
+    :return: the next item in the list or the first item as the next for the last one
+    """
+    if item in items:
+        next_index = items.index(item) + 1
+        if next_index >= len(items):
+            next_index = 0
+        return items[next_index]
+    else:
+        return error
+
+
+def prev_item(items, item, error: str):
+    """
+    :param items: list of items
+    :param item: item to search for in the list
+    :param error: return this error string
+    :return: the previous item in the list or the last item as the previous for the first one
+    """
+    if item in items:
+        prev_index = items.index(item) - 1
+        if prev_index < 0:
+            prev_index = len(items) - 1
+        return items[prev_index]
+    else:
+        return error
