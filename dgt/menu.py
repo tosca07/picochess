@@ -24,7 +24,7 @@ from typing import Dict, List, Set
 import chess  # type: ignore
 from timecontrol import TimeControl
 from utilities import Observable, DispatchDgt, get_tags, version, write_picochess_ini
-from dgt.util import TimeMode, TimeModeLoop, Top, TopLoop, Mode, ModeLoop, Language, LanguageLoop, BeepLevel, BeepLoop
+from dgt.util import TimeMode, TimeModeLoop, Top, TopLoop, Mode, ModeLoop, Language, LanguageLoop, BeepLevel, BeepLoop, EBoard, EBoardLoop
 from dgt.util import System, SystemLoop, Display, DisplayLoop, ClockIcons, Voice, VoiceLoop, Info, InfoLoop, PicoTutor, Game, GameLoop, GameSave, GameSaveLoop, GameRead, GameReadLoop, PicoComment, PicoCommentLoop
 from dgt.api import Dgt, Event
 from dgt.translate import DgtTranslate
@@ -102,6 +102,8 @@ class MenuState(object):
     SYS_DISP_NOTATION_MOVE = 764100  # short, long
     SYS_DISP_ENGINENAME = 765000        # molli v3
     SYS_DISP_ENGINENAME_YESNO = 765100  # yes,no ## molli v3
+    SYS_EBOARD = 770000
+    SYS_EBOARD_TYPE = 771000  # dgt, chesslink, ...
 
     PICOTUTOR = 800000
     PICOTUTOR_PICOWATCHER = 810000
@@ -138,7 +140,7 @@ class DgtMenu(object):
     def __init__(self, disable_confirm: bool, ponder_interval: int,
                  user_voice: str, comp_voice: str, speed_voice: int, enable_capital_letters: bool,
                  disable_short_move: bool, log_file, engine_server, rol_disp_norm: bool,
-                 volume_voice: int,
+                 volume_voice: int, board_type: str,
                  rol_disp_brain: bool, show_enginename: bool, dgttranslate: DgtTranslate):
         super(DgtMenu, self).__init__()
 
@@ -232,6 +234,11 @@ class DgtMenu(object):
 
         self.menu_system_voice_speedfactor = speed_voice
         self.menu_system_voice_volumefactor = volume_voice
+
+        self.board_type = board_type
+        eboards = {'certabo': EBoard.CERTABO, 'chesslink': EBoard.CHESSLINK, 'chessnut': EBoard.CHESSNUT,
+                   'dgt': EBoard.DGT}
+        self.menu_system_eboard_type = eboards[board_type]
 
         self.menu_system_display = Display.PONDER
         self.menu_system_info = Info.VERSION
@@ -1187,6 +1194,18 @@ class DgtMenu(object):
         text = self.dgttranslate.text('B00_notation_' + msg)
         return text
 
+    def enter_sys_eboard_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.SYS_EBOARD
+        text = self.dgttranslate.text(self.menu_system.value)
+        return text
+
+    def enter_sys_eboard_type_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.SYS_EBOARD_TYPE
+        text = self.dgttranslate.text(self.menu_system_eboard_type.value)
+        return text
+
     def _fire_event(self, event: Event):
         Observable.fire(event)
         return self.save_choices()
@@ -1394,6 +1413,12 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_DISP_NOTATION_MOVE:
             text = self.enter_sys_disp_notation_menu()
+
+        elif self.state == MenuState.SYS_EBOARD:
+            text = self.enter_sys_menu()
+
+        elif self.state == MenuState.SYS_EBOARD_TYPE:
+            text = self.enter_sys_eboard_menu()
 
         elif self.state == MenuState.PICOTUTOR:
             text = self.enter_top_menu()
@@ -1878,16 +1903,18 @@ class DgtMenu(object):
         elif self.state == MenuState.SYS:
             if self.menu_system == System.INFO:
                 text = self.enter_sys_info_menu()
-            if self.menu_system == System.SOUND:
+            elif self.menu_system == System.SOUND:
                 text = self.enter_sys_sound_menu()
-            if self.menu_system == System.LANGUAGE:
+            elif self.menu_system == System.LANGUAGE:
                 text = self.enter_sys_lang_menu()
-            if self.menu_system == System.LOGFILE:
+            elif self.menu_system == System.LOGFILE:
                 text = self.enter_sys_log_menu()
-            if self.menu_system == System.VOICE:
+            elif self.menu_system == System.VOICE:
                 text = self.enter_sys_voice_menu()
-            if self.menu_system == System.DISPLAY:
+            elif self.menu_system == System.DISPLAY:
                 text = self.enter_sys_disp_menu()
+            elif self.menu_system == System.EBOARD:
+                text = self.enter_sys_eboard_menu()
 
         elif self.state == MenuState.SYS_INFO:
             if self.menu_system_info == Info.VERSION:
@@ -2131,6 +2158,19 @@ class DgtMenu(object):
                 del config['disable-short-notation']
             config.write()
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_oknotation'))
+
+        elif self.state == MenuState.SYS_EBOARD:
+            text = self.enter_sys_eboard_type_menu()
+
+        elif self.state == MenuState.SYS_EBOARD_TYPE:
+            eboards = {EBoard.CERTABO: 'certabo', EBoard.CHESSLINK: 'chesslink', EBoard.CHESSNUT: 'chessnut',
+                       EBoard.DGT: 'dgt'}
+            eboard_type = eboards[self.menu_system_eboard_type]
+            write_picochess_ini('board-type', eboard_type)
+            text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okeboard'))
+            if eboard_type != self.board_type:
+                # only reboot if e-board type is different from the current e-board type
+                self._fire_event(Event.REBOOT(dev='menu'))
 
         else:  # Default
             pass
@@ -2392,7 +2432,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_top.value)
 
         elif self.state == MenuState.SYS_INFO:
-            self.state = MenuState.SYS_DISP
+            self.state = MenuState.SYS_EBOARD
             self.menu_system = SystemLoop.prev(self.menu_system)
             text = self.dgttranslate.text(self.menu_system.value)
 
@@ -2554,6 +2594,15 @@ class DgtMenu(object):
             self.menu_system_display_notation = not self.menu_system_display_notation
             msg = 'long' if self.menu_system_display_notation else 'short'
             text = self.dgttranslate.text('B00_notation_' + msg)
+
+        elif self.state == MenuState.SYS_EBOARD:
+            self.state = MenuState.SYS_DISP
+            self.menu_system = SystemLoop.prev(self.menu_system)
+            text = self.dgttranslate.text(self.menu_system.value)
+
+        elif self.state == MenuState.SYS_EBOARD_TYPE:
+            self.menu_system_eboard_type = EBoardLoop.prev(self.menu_system_eboard_type)
+            text = self.dgttranslate.text(self.menu_system_eboard_type.value)
 
         else:  # Default
             pass
@@ -2928,7 +2977,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text('B00_voice_volume', str(self.menu_system_voice_volumefactor))
 
         elif self.state == MenuState.SYS_DISP:
-            self.state = MenuState.SYS_INFO
+            self.state = MenuState.SYS_EBOARD
             self.menu_system = SystemLoop.next(self.menu_system)
             text = self.dgttranslate.text(self.menu_system.value)
 
@@ -2982,6 +3031,15 @@ class DgtMenu(object):
             self.menu_system_display_notation = not self.menu_system_display_notation
             msg = 'long' if self.menu_system_display_notation else 'short'
             text = self.dgttranslate.text('B00_notation_' + msg)
+
+        elif self.state == MenuState.SYS_EBOARD:
+            self.state = MenuState.SYS_INFO
+            self.menu_system = SystemLoop.prev(self.menu_system)
+            text = self.dgttranslate.text(self.menu_system.value)
+
+        elif self.state == MenuState.SYS_EBOARD_TYPE:
+            self.menu_system_eboard_type = EBoardLoop.next(self.menu_system_eboard_type)
+            text = self.dgttranslate.text(self.menu_system_eboard_type.value)
 
         else:  # Default
             pass

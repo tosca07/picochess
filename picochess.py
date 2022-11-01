@@ -56,6 +56,9 @@ from dgt.hw import DgtHw
 from dgt.pi import DgtPi
 from dgt.display import DgtDisplay
 from dgt.board import DgtBoard
+from chesslink.board import ChessLinkBoard
+from chessnut.board import ChessnutBoard
+from certabo.board import CertaboBoard
 from dgt.translate import DgtTranslate
 from dgt.menu import DgtMenu
 
@@ -955,7 +958,7 @@ def main() -> None:
             delay = 1  # if a fen error already occured don't wait too long for next check
         else:
             delay = 4
-        state.fen_timer = threading.Timer(delay, expired_fen_timer)
+        state.fen_timer = threading.Timer(delay, expired_fen_timer, args=[state])
         state.fen_timer.start()
         state.fen_timer_running = True
 
@@ -1928,6 +1931,7 @@ def main() -> None:
     parser.add_argument('-dtcs', '--def-timectrl', type=str, default='5 0', help='default time control setting when leaving an emulation engine after startup')
     parser.add_argument('-altm', '--alt-move', action='store_true', help='Playing direct alternative move for pico: default is off')
     parser.add_argument('-odec', '--online-decrement', type=float, default=2.0, help='Seconds to be subtracted after each own online move in order to sync with server times')
+    parser.add_argument('-board', '--board-type', type=str, default='dgt', help='type of e-board: "dgt", "certabo", "chesslink" or "chessnut", default is "dgt"')
 
     args, unknown = parser.parse_known_args()
 
@@ -1962,12 +1966,19 @@ def main() -> None:
     logging.debug('molli: premove %s', str(state.flag_premove))
 
     # wire some dgt classes
-    dgtboard = DgtBoard(args.dgt_port, args.disable_revelation_leds, args.dgtpi, args.disable_et, args.slow_slide)
+    if args.board_type.lower() == 'chesslink':
+        dgtboard = ChessLinkBoard()
+    elif args.board_type.lower() == 'chessnut':
+        dgtboard = ChessnutBoard()
+    elif args.board_type.lower() == 'certabo':
+        dgtboard = CertaboBoard()
+    else:
+        dgtboard = DgtBoard(args.dgt_port, args.disable_revelation_leds, args.dgtpi, args.disable_et, args.slow_slide)
     state.dgttranslate = DgtTranslate(args.beep_config, args.beep_some_level, args.language, version)
     state.dgtmenu = DgtMenu(args.disable_confirm_message, args.ponder_interval,
                             args.user_voice, args.computer_voice, args.speed_voice, args.enable_capital_letters,
                             args.disable_short_notation, args.log_file, args.engine_remote_server,
-                            args.rolling_display_normal, args.volume_voice,
+                            args.rolling_display_normal, args.volume_voice, args.board_type,
                             args.rolling_display_ponder, args.show_engine, state.dgttranslate)
 
     dgtdispatcher = Dispatcher(state.dgtmenu)
@@ -2055,7 +2066,7 @@ def main() -> None:
     ip_info_thread = threading.Timer(12, display_ip_info, args=[state])  # give RaspberyPi 10sec time to startup its network devices
     ip_info_thread.start()
 
-    state.fen_timer = threading.Timer(4, expired_fen_timer)
+    state.fen_timer = threading.Timer(4, expired_fen_timer, args=[state])
     state.fen_timer_running = False
     ###########################################
 
