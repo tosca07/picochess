@@ -61,7 +61,7 @@ class ParserCallback(object):
         pass
 
 
-NO_PIECE = CertaboPiece(b'\x00\x00\x00\x00\x00')
+NO_PIECE = CertaboPiece(bytearray(5))
 BLACK_EXTRA_QUEEN_SQUARE = 19
 WHITE_EXTRA_QUEEN_SQUARE = 43
 NO_STONE = ' '
@@ -257,7 +257,7 @@ class CalibrationSquare(object):
             return self._no_stone_or('K')
         return None
 
-    def _no_stone_or(self, stone: int):
+    def _no_stone_or(self, stone: str):
         if self.pieceId == NO_PIECE:
             return ' '
         else:
