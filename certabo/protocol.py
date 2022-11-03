@@ -26,7 +26,6 @@ from certabo.parser import CalibrationCallback, CertaboCalibrator, CertaboPiece,
     CertaboBoardMessageParser, ParserCallback
 from certabo.led_control import CertaboLedControl
 from certabo.usb_transport import Transport
-from move_debouncer import MoveDebouncer
 
 
 class Protocol(ParserCallback, CalibrationCallback):
@@ -54,17 +53,14 @@ class Protocol(ParserCallback, CalibrationCallback):
         self.trque = queue.Queue()
         self.trans = None
         self.led_control = None
-        self.config = None
         self.connected = False
         self.last_fen = None
-        self.parser = CertaboBoardMessageParser(self)
+        self.low_gain = True
         self.calibrator = CertaboCalibrator(self)
         self.calibrated = False
         self.initial_position_received = False  # initial position after calibration is complete
         self.brd_reversed = False
         self.device_in_config = False
-        self.debouncer = MoveDebouncer(350, lambda fen: self.appque.put({'cmd': 'raw_board_position', 'fen': fen,
-                                                                         'actor': self.name}))
         self.thread_active = True
         self.event_thread = threading.Thread(target=self._event_worker_thread)
         self.event_thread.setDaemon(True)
@@ -75,6 +71,9 @@ class Protocol(ParserCallback, CalibrationCallback):
             self._read_config()
         except Exception as e:
             self.log.debug(f'No valid default configuration, starting board-scan: {e}')
+
+        self.parser = CertaboBoardMessageParser(self, self.low_gain)
+
         while True:
             if not self.device_in_config:
                 self._search_board()
@@ -82,7 +81,7 @@ class Protocol(ParserCallback, CalibrationCallback):
             if self.config is None or self.trans is None:
                 self.log.error('Cannot connect.')
                 if self.config is None:
-                    self.config = {}
+                    self.config = {'low_gain': self.low_gain}
                     self.write_configuration()
                 self.error_condition = True
             else:
@@ -97,6 +96,7 @@ class Protocol(ParserCallback, CalibrationCallback):
     def _read_config(self):
         with open('certabo_config.json', 'r') as f:
             self.config = json.load(f)
+            self.low_gain = self.config.get('low_gain', True)
             if 'address' in self.config:
                 self.log.debug(f"Checking default configuration for board at {self.config['address']}")
                 trans = self._open_transport()
@@ -112,7 +112,7 @@ class Protocol(ParserCallback, CalibrationCallback):
             address = tr.search_board()
             if address is not None:
                 self.log.debug(f'Found board at address {address}')
-                self.config = {'address': address}
+                self.config = {'address': address, 'low_gain': self.low_gain}
                 self.trans = tr
                 self.write_configuration()
         else:
@@ -202,7 +202,7 @@ class Protocol(ParserCallback, CalibrationCallback):
         if self.initial_position_received:
             # only forward the fen if the initial position has been received at least once
             # to prevent additional queens on the board from changing settings
-            self.debouncer.update(short_fen)
+            self.appque.put({'cmd': 'raw_board_position', 'fen': short_fen, 'actor': self.name})
         with self.board_mutex:
             self.last_fen = short_fen
 

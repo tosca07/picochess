@@ -14,6 +14,7 @@
 import binascii
 import re
 import typing
+from collections import Counter
 
 
 class CertaboPiece(object):
@@ -126,9 +127,11 @@ class Parser(object):
 
 class CertaboBoardMessageParser(BoardTranslator):
 
-    def __init__(self, callback: ParserCallback):
+    def __init__(self, callback: ParserCallback, low_gain):
         self.callback = callback
         self.last_board = []
+        self.board_history = []
+        self.low_gain_chips = low_gain
         self.reversed = False
         self.stones = {}
         self.parser = Parser(self)
@@ -149,10 +152,27 @@ class CertaboBoardMessageParser(BoardTranslator):
             else:
                 newBoard[square] = NO_STONE
             i += 1
-        if self.last_board != newBoard:
-            self.last_board = newBoard
-            newBoard = self._check_reversed(newBoard)
-            self.callback.board_update(self._to_short_fen(newBoard))
+        if self.low_gain_chips:
+            # average over the last three IDs for each square for low gain chips
+            self.board_history = self.board_history[-2:]
+            self.board_history.append(newBoard)
+            counter = Counter()
+            for board in self.board_history:
+                d = {index: value for index, value in enumerate(board)}
+                counter.update(d)
+            avg_board = []
+            for i in range(64):
+                stone = Counter(counter[i]).most_common(1)[0][0]
+                avg_board.append(stone)
+            self._process_new_board(avg_board)
+        else:
+            self._process_new_board(newBoard)
+
+    def _process_new_board(self, new_board):
+        if self.last_board != new_board:
+            self.last_board = new_board
+            board = self._check_reversed(new_board)
+            self.callback.board_update(self._to_short_fen(board))
 
     # TODO duplicates _to_short_fen from chessnut/parser.py
     def _to_short_fen(self, board):

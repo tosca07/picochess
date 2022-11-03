@@ -16,15 +16,13 @@
 import typing
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import call, patch
 
-from certabo.parser import Parser
-from certabo.parser import BoardTranslator
-from certabo.parser import CertaboPiece
-from certabo.parser import CertaboCalibrator
+from certabo.parser import BoardTranslator, CalibrationCallback, CertaboBoardMessageParser, CertaboCalibrator, \
+    CertaboPiece, Parser
 
 
-class TestTranslator(BoardTranslator):
+class SimpleTestTranslator(BoardTranslator):
 
     def __init__(self):
         super().__init__()
@@ -32,6 +30,21 @@ class TestTranslator(BoardTranslator):
 
     def translate(self, board: typing.List[CertaboPiece]):
         self.board = board
+
+    def calibration_complete_square(self, square: int):
+        pass
+
+    def calibration_error(self):
+        pass
+
+
+class SimpleTestCalibrationCallback(CalibrationCallback):
+
+    def __init__(self):
+        self.stones = None
+
+    def calibration_complete(self, stones: typing.Dict[CertaboPiece, int]):
+        self.stones = stones
 
     def calibration_complete_square(self, square: int):
         pass
@@ -124,7 +137,7 @@ class TestParser(unittest.TestCase):
             '94 211 7 40 74 124 195 174 25 3 0 84 44 165 3 0 84 68 112 3 0 84 237 98 3 0 84 252 170 0 0 0 0 0 3 0 '
             '84 78 209 3 0 84 242 11 3 0 84 78 216 3 0 85 0 16 3 0 83 229 13 3 0 85 0 67 3 0 84 121 142 3 0 84 105 '
             '128 3 0 84 106 231 3 0 84 247 87 3 0 84 252 15\r\n', encoding='UTF-8')
-        callback = TestTranslator()
+        callback = SimpleTestTranslator()
         Parser(callback).parse(data)
         # check last piece
         self.assertEqual(CertaboPiece(piece_id=bytearray(b'\x03\x00\x54\xfc\x0f')), callback.board[-1])
@@ -145,7 +158,7 @@ class TestParser(unittest.TestCase):
                           '85 0 67 3 0 84 121 142 3 0 84 105 128 3 0 84 106 231 3 0 84 247 \n'
                           '87 3 0 84 252 17', encoding='UTF-8')
         data2 = bytearray("0\nL\r\n", encoding='UTF-8')
-        callback = TestTranslator()
+        callback = SimpleTestTranslator()
         parser = Parser(callback)
         parser.parse(data1)
         parser.parse(data2)
@@ -299,6 +312,79 @@ class TestCalibrator(unittest.TestCase):
             '78 216 3 0 85 0 16 3 0 83 229 13 3 0 85 0 67 3 0 84 121 142 3 0 84 105 128 3 0 84 106 231 3 0 84 247 87 '
             '3 0 84 252 15\r\n', encoding='UTF-8'))
         MockedCalibratorCallback.calibration_complete.assert_not_called()
+
+
+@patch('certabo.parser.ParserCallback')
+class TestCertaboBoardMessageParser(unittest.TestCase):
+
+    def test_low_gain_use_most_common(self, MockedParserCallback):
+        data1, data2, data3, stones = self._board_data()
+        # parse three times, last time with noise
+        parser = CertaboBoardMessageParser(MockedParserCallback, True)
+        parser.update_stones(stones)
+        parser.parse(data1)
+        parser.parse(data2)
+        parser.parse(data3)
+        calls = [call('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'),
+                 call('rnbqkbnr/ppppppp1/8/8/8/8/PPPPPPPP/RNBQKBNR')]
+        MockedParserCallback.board_update.assert_has_calls(calls)
+        self.assertEqual(2, MockedParserCallback.board_update.call_count)
+
+    def test_high_gain(self, MockedParserCallback):
+        data1, data2, data3, stones = self._board_data()
+        # parse three times, last time with noise
+        parser = CertaboBoardMessageParser(MockedParserCallback, False)
+        parser.update_stones(stones)
+        parser.parse(data1)
+        parser.parse(data2)
+        parser.parse(data3)
+        calls = [call('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'),
+                 call('rnbqkbnr/ppppppp1/8/8/8/8/PPPPPPPP/RNBQKBNR'),
+                 call('rnb1k1n1/ppppppp1/8/8/8/8/P1PPPPP1/RNBQKBNR')]
+        MockedParserCallback.board_update.assert_has_calls(calls)
+        self.assertEqual(3, MockedParserCallback.board_update.call_count)
+
+    def _board_data(self):
+        # initial position
+        data1 = bytearray(
+            ':48 0 248 71 99 48 0 248 85 159 48 0 177 203 192 48 0 177 215 17 48 0 177 117 59 48 0 177 43 7 48 0 248 '
+            '222 81 48 0 247 200 86 48 0 248 114 180 48 0 248 155 251 48 0 248 48 74 48 0 177 236 131 48 0 177 230 12 '
+            '48 0 177 187 36 48 0 248 146 97 48 0 248 89 231 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 '
+            '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 '
+            '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 '
+            '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 48 0 248 85 122 48 0 248 68 117 48 0 248 201 109 '
+            '48 0 248 144 65 48 0 177 231 217 48 0 248 76 179 48 0 248 161 89 48 0 94 124 14 48 0 248 98 180 48 0 248 '
+            '233 43 48 0 248 86 247 48 0 248 145 6 48 0 248 104 144 48 0 248 79 194 48 0 248 134 85 48 0 177 81 73\r\n',
+            encoding='UTF-8')
+        # pawn removed on h7
+        data2 = bytearray(
+            ':48 0 248 71 99 48 0 248 85 159 48 0 177 203 192 48 0 177 215 17 48 0 177 117 59 48 0 177 43 7 48 0 248 '
+            '222 81 48 0 247 200 86 48 0 248 114 180 48 0 248 155 251 48 0 248 48 74 48 0 177 236 131 48 0 177 230 12 '
+            '48 0 177 187 36 48 0 248 146 97 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 '
+            '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 '
+            '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 '
+            '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 48 0 248 85 122 48 0 248 68 117 48 0 248 201 109 '
+            '48 0 248 144 65 48 0 177 231 217 48 0 248 76 179 48 0 248 161 89 48 0 94 124 14 48 0 248 98 180 48 0 248 '
+            '233 43 48 0 248 86 247 48 0 248 145 6 48 0 248 104 144 48 0 248 79 194 48 0 248 134 85 48 0 177 81 73\r\n',
+            encoding='UTF-8')
+        # pawn removed on h7, with noise
+        data3 = bytearray(
+            ':48 0 248 71 99 48 0 248 85 159 48 0 177 203 192 48 0 177 23 19 48 0 177 117 59 48 0 177 43 6 48 0 248 '
+            '222 81 48 0 239 200 86 48 0 248 114 180 48 0 248 155 251 48 0 248 48 74 48 0 177 236 131 48 0 177 230 12 '
+            '48 0 177 187 36 48 0 248 146 97 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 '
+            '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 '
+            '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 '
+            '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 48 0 248 85 122 48 0 248 73 250 48 0 248 201 109 '
+            '48 0 248 144 65 48 0 177 231 217 48 0 248 76 179 48 0 248 161 89 48 0 30 124 13 48 0 248 98 180 48 0 248 '
+            '233 43 48 0 248 86 247 48 0 248 145 6 48 0 248 104 144 48 0 248 79 194 48 0 248 134 85 48 0 177 81 73\r\n',
+            encoding='UTF-8')
+        # calibrate to get stones
+        callback = SimpleTestCalibrationCallback()
+        calibrator = CertaboCalibrator(callback)
+        for i in range(7):
+            calibrator.calibrate(data1)
+        stones = callback.stones
+        return data1, data2, data3, stones
 
 
 if __name__ == '__main__':
