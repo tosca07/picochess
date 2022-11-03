@@ -1480,6 +1480,13 @@ $('#ClockBtn3').on('click', clockButton3);
 $('#ClockBtn4').on('click', clockButton4);
 $('#ClockLeverBtn').on('click', toggleLeverButton);
 
+$("#ClockBtn0").mouseup(function(){ btn=$(this); setTimeout(function() { btn.blur(); }, 500); })
+$("#ClockBtn1").mouseup(function(){ btn=$(this); setTimeout(function() { btn.blur(); }, 500); })
+$("#ClockBtn2").mouseup(function(){ btn=$(this); setTimeout(function() { btn.blur(); }, 500); })
+$("#ClockBtn3").mouseup(function(){ btn=$(this); setTimeout(function() { btn.blur(); }, 500); })
+$("#ClockBtn4").mouseup(function(){ btn=$(this); setTimeout(function() { btn.blur(); }, 500); })
+$("#ClockLeverBtn").mouseup(function(){ btn=$(this); setTimeout(function() { btn.blur(); }, 500); })
+
 $(function() {
     getAllInfo();
 
