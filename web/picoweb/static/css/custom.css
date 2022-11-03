@@ -104,7 +104,11 @@ body {
 }
 
 #BoardStatus {
-    font-size: 3.8vh;
+    font-size: 3vw;
+}
+
+#sidetomove {
+    font-size: 3vw;
 }
 
 #DGTClockStatus {
@@ -247,4 +251,12 @@ td.dt-center.zero-border-right {
 td.result {
     text-align: center;
     white-space: nowrap;
+}
+
+#boardButtons {
+    margin-bottom: 0px;
+}
+
+.boardinfo {
+    margin-top: 6px;
 }

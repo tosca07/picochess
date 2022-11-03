@@ -49,7 +49,9 @@
                         <div id="board" class="svg-content" style="margin-bottom: 10px;"></div>
                     </section>
                     <div class="pull-left">
-                        <span id="sidetomove"></span>&nbsp;&nbsp;&nbsp;<span id="BoardStatus"></span>
+                        <div class="boardinfo">
+                            <span id="sidetomove"></span>&nbsp;&nbsp;&nbsp;<span id="BoardStatus"></span>
+                        </div>
                     </div>
                     <div class="pull-right">
                         <div id="gameControls">
@@ -68,7 +70,7 @@
                         </div>
                     </div>
                     <div class="pull-left">
-                        <div class="btn-group" role="group">
+                        <div id="boardButtons" class="btn-group" role="group">
                             <button type="button" id="flipOrientationBtn" class="btn-raised btn-default btn-xs text-break" data-placement="auto">
                             <i class="fa fa-refresh"></i><span class="hidden-xs"> Flip</span>
                             </button>

@@ -600,10 +600,10 @@ var updateStatus = function() {
 
     if (tmpGame.turn() === 'b') {
         moveColor = 'Black';
-        $('#sidetomove').html("<i class=\"fa fa-square fa-lg \"></i>");
+        $('#sidetomove').html("<i class=\"fa fa-square \"></i>");
     }
     else {
-        $('#sidetomove').html("<i class=\"fa fa-square-o fa-lg \"></i>");
+        $('#sidetomove').html("<i class=\"fa fa-square-o \"></i>");
     }
 
     // checkmate?
