@@ -1931,7 +1931,8 @@ def main() -> None:
     parser.add_argument('-dtcs', '--def-timectrl', type=str, default='5 0', help='default time control setting when leaving an emulation engine after startup')
     parser.add_argument('-altm', '--alt-move', action='store_true', help='Playing direct alternative move for pico: default is off')
     parser.add_argument('-odec', '--online-decrement', type=float, default=2.0, help='Seconds to be subtracted after each own online move in order to sync with server times')
-    parser.add_argument('-board', '--board-type', type=str, default='dgt', help='type of e-board: "dgt", "certabo", "chesslink" or "chessnut", default is "dgt"')
+    parser.add_argument('-board', '--board-type', type=str, default='dgt', help='Type of e-board: "dgt", "certabo", "chesslink" or "chessnut", default is "dgt"')
+    parser.add_argument('-theme', '--theme', type=str, default='dark', help='Web theme, "light", "dark" or blank, default is "dark", leave blank for another light theme')
 
     args, unknown = parser.parse_known_args()
 
@@ -2022,7 +2023,7 @@ def main() -> None:
 
     # Launch web server
     if args.web_server_port:
-        WebServer(args.web_server_port, dgtboard).start()
+        WebServer(args.web_server_port, dgtboard, args.theme).start()
         dgtdispatcher.register('web')
 
     if args.enable_console:

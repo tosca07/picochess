@@ -12,19 +12,37 @@ const NAG_SPECULATIVE_MOVE = 5;
 const NAG_DUBIOUS_MOVE = 6;
 //"""A dubious move. Can also be indicated by ``?!`` in PGN notation."""
 
-var simpleNags = {'1': '!', '2': '?', '3': '!!', '4': '??', '5': '!?', '6': '?!', '7': '&#9633', '8': '&#9632',
-    '11': '=', '13': '&infin;', '14': '&#10866', '15': '&#10865', '16': '&plusmn;', '17': '&#8723',
-    '18': '&#43; &minus;', '19': '&minus; &#43;', '36': '&rarr;','142': '&#8979','146': 'N'};
+var simpleNags = {
+    '1': '!',
+    '2': '?',
+    '3': '!!',
+    '4': '??',
+    '5': '!?',
+    '6': '?!',
+    '7': '&#9633',
+    '8': '&#9632',
+    '11': '=',
+    '13': '&infin;',
+    '14': '&#10866',
+    '15': '&#10865',
+    '16': '&plusmn;',
+    '17': '&#8723',
+    '18': '&#43; &minus;',
+    '19': '&minus; &#43;',
+    '36': '&rarr;',
+    '142': '&#8979',
+    '146': 'N'
+};
 var myvoice = "";
 var voices = speechSynthesis.getVoices();
-/* martin/molli: for Safari we need to pick an English voice explicitly,
-   otherwise the system default is used */
+/* for Safari we need to pick an English voice explicitly, otherwise the system default is used */
 for (i = 0; i < voices.length; i++) {
     if (voices[i].lang == "en-US") {
         myvoice = voices[i];
         break;
     }
 }
+
 function talk(text) {
     var msg = new SpeechSynthesisUtterance(text);
     msg.lang = "en-US";
@@ -37,12 +55,12 @@ talk("Hello, welcome to Picochess!");
 
 function saymove(move, board) {
     var pnames = {
-	"p": "pawn",
-	"n": "knight",
-	"b": "bishop",
-	"r": "rook",
-	"q": "queen",
-	"k": "king",
+        "p": "pawn",
+        "n": "knight",
+        "b": "bishop",
+        "r": "rook",
+        "q": "queen",
+        "k": "king",
     };
     talk(pnames[move.piece] + " from " + move.from + " to " + move.to + ".");
     if (move.color == "b") {
@@ -97,8 +115,9 @@ var boardStatusEl = $('#BoardStatus'),
     pgnEl = $('#pgn');
 
 var gameHistory, fenHash, currentPosition;
-const OBOCK_SERVER_PREFIX = "http://picochess.local:7777";
-const GAMES_SERVER_PREFIX = "http://picochess.local:7778";
+const SERVER_NAME = 'picochess.local'
+const OBOCK_SERVER_PREFIX = 'http://' + SERVER_NAME + ':7777';
+const GAMES_SERVER_PREFIX = 'http://' + SERVER_NAME + ':7778';
 
 fenHash = {};
 
@@ -113,23 +132,22 @@ gameHistory.variations = [];
 var setupBoardFen = START_FEN;
 var dataTableFen = START_FEN;
 var chessGameType = 0; // 0=Standard ; 1=Chess960
-var computerside = "";  // color played by the computer
+var computerside = ""; // color played by the computer
 
 function removeHighlights() {
     chessground1.setShapes([]);
 }
 
 function highlightBoard(ucimove, play) {
-    //removeHighlights();
     var move = ucimove.match(/.{2}/g);
     var brush = 'green';
-    if( play === 'computer') {
+    if (play === 'computer') {
         brush = 'yellow';
     }
-    if( play === 'review') {
+    if (play === 'review') {
         brush = 'blue';
     }
-    var shapes = {orig: move[0], dest: move[1], brush: brush};
+    var shapes = { orig: move[0], dest: move[1], brush: brush };
     chessground1.setShapes([shapes]);
 }
 
@@ -144,45 +162,55 @@ function figurinizeMove(move) {
     return move;
 }
 
-var bookDataTable = $('#BookTable').DataTable( {
+var bookDataTable = $('#BookTable').DataTable({
     'processing': false,
     'paging': false,
     'info': false,
     'searching': false,
-    'order': [[1, 'desc']],
-    'columnDefs': [ {
-            className: 'dt-center zero-border-right',
-            'targets': 0
-        }, {
-            className: 'dt-right zero-border-right',
-            'targets': 1
-        }
+    'sScrollY': '197px',
+    'order': [
+        [1, 'desc']
     ],
+    'columnDefs': [{
+        className: 'dt-center zero-border-right bookMoves',
+        'targets': 0
+    }, {
+        className: 'dt-right zero-border-right',
+        'targets': 1
+    }],
     'ajax': {
         'url': OBOCK_SERVER_PREFIX + '/query',
         'dataSrc': 'data',
-        'data': function ( d ) {
+        'data': function(d) {
             d.action = 'get_book_moves';
             d.fen = dataTableFen;
         }
     },
     'columns': [
-        {data: 'move', render: function ( data, type, row ) {
-            var tmp_board = new Chess(currentPosition.fen, chessGameType);
-            move = tmp_board.move({from: data.slice(0, 2), to: data.slice(2, 4), promotion: data.slice(4)});
-            if (move) {
-                return figurinizeMove(move.san);
+        {
+            data: 'move',
+            render: function(data, type, row) {
+                if (currentPosition) {
+                    var tmp_board = new Chess(currentPosition.fen, chessGameType);
+                    move = tmp_board.move({ from: data.slice(0, 2), to: data.slice(2, 4), promotion: data.slice(4) });
+                    if (move) {
+                        return figurinizeMove(move.san);
+                    }
+                }
+                return data;
             }
-            return data; } },
-        {data: 'count', render: $.fn.dataTable.render.intlNumber()},
-        {data: 'draws', render: function ( data, type, row ) { return "" },
-            createdCell: function (td, cellData, rowData, row, col) {
+        },
+        { data: 'count', render: $.fn.dataTable.render.number(',', '.') },
+        {
+            data: 'draws',
+            render: function(data, type, row) { return "" },
+            createdCell: function(td, cellData, rowData, row, col) {
                 var canvas = jQuery("<canvas id=\"white_draws_black\"></canvas>");
                 canvas.appendTo(jQuery(td));
 
                 ctx = $(canvas).get(0).getContext("2d");
-                ctx.fillStyle= '#4f4f4f';
-                ctx.fillRect(0,0, 300, 150); // border
+                ctx.fillStyle = '#4f4f4f';
+                ctx.fillRect(0, 0, 300, 150); // border
                 var height = 138;
                 var maxWidth = 298;
                 var top = 6
@@ -204,47 +232,41 @@ var bookDataTable = $('#BookTable').DataTable( {
     ]
 });
 
-var gameDataTable = $('#GameTable').DataTable( {
+var gameDataTable = $('#GameTable').DataTable({
     'processing': false,
     'paging': false,
     'info': false,
     'searching': false,
     'ordering': false,
-    'select': {
-        'style': 'os',
-        'selector': 'td:not(.control)'
-    },
-    'columnDefs': [ {
-            className: 'result',
-            'targets': 2
-        }
-    ],
+    'select': { items: 'row', style: 'single', toggleable: false },
+    'columnDefs': [{
+        className: 'result',
+        'targets': 2
+    }],
     'ajax': {
         'url': GAMES_SERVER_PREFIX + '/query',
         'dataSrc': 'data',
-        'data': function ( d ) {
+        'data': function(d) {
             d.action = 'get_games';
             d.fen = dataTableFen;
         },
-        'error': function (xhr, error, thrown) {
+        'error': function(xhr, error, thrown) {
             console.warn(xhr);
         }
     },
     'columns': [
-        {data: 'white'},
-        {data: 'black'},
-        {data: 'result', render: function ( data, type, row ) { return data.replace('1/2-1/2', '\u00BD'); }},
-        {data: 'event'}
+        { data: 'white' },
+        { data: 'black' },
+        { data: 'result', render: function(data, type, row) { return data.replace('1/2-1/2', '\u00BD'); } },
+        { data: 'event' }
     ]
 });
 
-gameDataTable.on('select', function(e, dt, type, indexes ) {
-    if( type === 'row') {
-        var data = gameDataTable.rows(indexes).data().pluck('pgn')[0].split("\n");
-        loadGame(data);
-        updateStatus();
-        removeHighlights();
-    }
+gameDataTable.on('select', function(e, dt, type, indexes) {
+    var data = gameDataTable.rows(indexes).data().pluck('pgn')[0].split("\n");
+    loadGame(data);
+    updateStatus();
+    removeHighlights();
 });
 
 // do not pick up pieces if the game is over
@@ -294,15 +316,13 @@ function WebExporter(columns) {
         this.lines.push(line.trim());
     };
 
-    this.start_game = function() {
-    };
+    this.start_game = function() {};
 
     this.end_game = function() {
         this.write_line();
     };
 
-    this.start_headers = function() {
-    };
+    this.start_headers = function() {};
 
     this.end_headers = function() {
         this.write_line();
@@ -365,7 +385,7 @@ function WebExporter(columns) {
             console.log(board.moves());
             console.log(tmp_board.ascii());
             console.log(m);
-            out_move = {'san': 'X' + m.from + m.to};
+            out_move = { 'san': 'X' + m.from + m.to };
         }
         this.write_token('<span class="gameMove' + (board.fullmove_number) + '"><a href="#" class="fen" data-fen="' + fen + '" id="' + stripped_fen + '"> ' + figurinizeMove(out_move.san) + ' </a></span>');
     };
@@ -374,7 +394,7 @@ function WebExporter(columns) {
         this.write_token(result + " ");
     };
 
-    // toString override added to prototype of Foo class
+    // toString override
     this.toString = function() {
         if (this.current_line) {
             var tmp_lines = this.lines.slice(0);
@@ -411,15 +431,13 @@ function PgnExporter(columns) {
         this.lines.push(line.trim());
     };
 
-    this.start_game = function() {
-    };
+    this.start_game = function() {};
 
     this.end_game = function() {
         this.write_line();
     };
 
-    this.start_headers = function() {
-    };
+    this.start_headers = function() {};
 
     this.put_header = function(tagname, tagvalue) {
         this.write_line("[{0} \"{1}\"]".format(tagname, tagvalue));
@@ -475,7 +493,7 @@ function PgnExporter(columns) {
             console.warn('put_move error');
             console.log(tmp_board.ascii());
             console.log(m);
-            out_move = {'san': 'X' + m.from + m.to};
+            out_move = { 'san': 'X' + m.from + m.to };
         }
         this.write_token(out_move.san + " ");
     };
@@ -484,7 +502,7 @@ function PgnExporter(columns) {
         this.write_token(result + " ");
     };
 
-    // toString override added to prototype of Foo class
+    // toString override
     this.toString = function() {
         if (this.current_line) {
             var tmp_lines = this.lines.slice(0);
@@ -580,7 +598,7 @@ function updateCurrentPosition(move, tmpGame) {
         }
     }
     if (!foundMove) {
-        var __ret = addNewMove({'move': move}, currentPosition, tmpGame.fen());
+        var __ret = addNewMove({ 'move': move }, currentPosition, tmpGame.fen());
         currentPosition = __ret.node;
         var exporter = new WebExporter();
         exportGame(gameHistory, exporter, true, true, undefined, false);
@@ -598,12 +616,21 @@ var updateStatus = function() {
 
     var strippedFen = stripFen(fen);
 
+    var bgcolor = $('body').css("background-color")
+    // squares for dark mode
+    var whiteSquare = 'fa-square-o'
+    var blackSquare = 'fa-square'
+    if (bgcolor == 'rgb(255, 255, 255)') {
+        // squares for light mode
+        whiteSquare = 'fa-square';
+        blackSquare = 'fa-square-o';
+    }
     if (tmpGame.turn() === 'b') {
         moveColor = 'Black';
-        $('#sidetomove').html("<i class=\"fa fa-square \"></i>");
+        $('#sidetomove').html("<i class=\"fa " + whiteSquare + " fa-lg\"></i>");
     }
     else {
-        $('#sidetomove').html("<i class=\"fa fa-square-o \"></i>");
+        $('#sidetomove').html("<i class=\"fa " + blackSquare + " fa-lg\"></i>");
     }
 
     // checkmate?
@@ -629,24 +656,24 @@ var updateStatus = function() {
     }
 
     dataTableFen = fen;
-    
+
 
     if ($('#' + strippedFen).position()) {
         pgnEl.scrollTop(0);
         var y_position = $('#' + strippedFen).position().top;
         pgnEl.scrollTop(y_position);
     }
-                                  
-    bookDataTable.ajax.reload(); //molli
-    gameDataTable.ajax.reload(); //molli
+
+    bookDataTable.ajax.reload();
+    gameDataTable.ajax.reload();
 };
 
 function toDests(chess) {
     var dests = {};
-    chess.SQUARES.forEach(function (s) {
+    chess.SQUARES.forEach(function(s) {
         var ms = chess.moves({ square: s, verbose: true });
         if (ms.length)
-            dests[s] = ms.map(function (m) { return m.to; });
+            dests[s] = ms.map(function(m) { return m.to; });
     });
     return dests;
 }
@@ -659,7 +686,7 @@ var onSnapEnd = function(source, target) {
     stopAnalysis();
     var tmpGame = createGamePointer();
 
-    if(!currentPosition) {
+    if (!currentPosition) {
         currentPosition = {};
         currentPosition.fen = tmpGame.fen();
         gameHistory = currentPosition;
@@ -675,10 +702,8 @@ var onSnapEnd = function(source, target) {
 
     updateCurrentPosition(move, tmpGame);
     updateChessGround();
-    //updateStatus(); //molli
-    $.post('/channel', {action: 'move', fen: currentPosition.fen, source: source, target: target}, function(data) {
-    });
-    updateStatus(); // molli
+    $.post('/channel', { action: 'move', fen: currentPosition.fen, source: source, target: target }, function(data) {});
+    updateStatus();
 };
 
 function updateChessGround() {
@@ -699,14 +724,14 @@ function playOtherSide() {
 }
 
 var cfg3 = {
-            movable: {
-                color: 'white',
-                free: false,
-                dests: toDests(Chess())
-            }
-        };
+    movable: {
+        color: 'white',
+        free: false,
+        dests: toDests(Chess())
+    }
+};
 
-var chessground1 = new Chessground(document.getElementById('board'), cfg3 );
+var chessground1 = new Chessground(document.getElementById('board'), cfg3);
 
 chessground1.set({
     movable: { events: { after: playOtherSide() } }
@@ -750,7 +775,7 @@ function addNewMove(m, current_position, fen, props) {
         }
         current_position.variations.push(node);
     }
-    return {node: node, position: current_position};
+    return { node: node, position: current_position };
 }
 
 function loadGame(pgn_lines) {
@@ -892,7 +917,7 @@ function loadGame(pgn_lines) {
             last_variation_stack_index = variation_stack.length - 1;
 
             var preparsed_move = token;
-            var move = board_stack[last_board_stack_index].move(preparsed_move, {sloppy: true});
+            var move = board_stack[last_board_stack_index].move(preparsed_move, { sloppy: true });
             in_variation = true;
             if (move === null) {
                 console.log('Unparsed move:');
@@ -913,13 +938,13 @@ function loadGame(pgn_lines) {
             }
             lastmove = move;
 
-            var __ret = addNewMove({'move': move}, variation_stack[last_variation_stack_index], board_stack[last_board_stack_index].fen(), props);
+            var __ret = addNewMove({ 'move': move }, variation_stack[last_variation_stack_index], board_stack[last_board_stack_index].fen(), props);
             variation_stack[last_variation_stack_index] = __ret.node;
         }
     }
     if (computerside == "" || (computerside != "" && lastmove.color != computerside)) {
         var tmp_board = new Chess(currentPosition.fen, chessGameType);
-        saymove(lastmove, tmp_board);  // announce user move
+        saymove(lastmove, tmp_board); // announce user move
     }
     fenHash['last'] = fenHash[tmpGame.fen()];
 
@@ -944,9 +969,9 @@ function getFullGame() {
             'Date': '?',
             'Round': '?',
             'Result': '*',
-            'BlackElo' : '-',
-            'WhiteElo' : '-',
-            'Time' : '00:00:00'
+            'BlackElo': '-',
+            'WhiteElo': '-',
+            'Time': '00:00:00'
         };
         gameHeader = getPgnGameHeader(gameHistory.originalHeader);
     }
@@ -1003,44 +1028,37 @@ function newBoard(fen) {
 }
 
 function clockButton0() {
-    $.post('/channel', {action: 'clockbutton', button: 0}, function (data) {
-    });
+    $.post('/channel', { action: 'clockbutton', button: 0 }, function(data) {});
 }
 
 function clockButton1() {
-    $.post('/channel', {action: 'clockbutton', button: 1}, function (data) {
-    });
+    $.post('/channel', { action: 'clockbutton', button: 1 }, function(data) {});
 }
 
 function clockButton2() {
-    $.post('/channel', {action: 'clockbutton', button: 2}, function (data) {
-    });
+    $.post('/channel', { action: 'clockbutton', button: 2 }, function(data) {});
 }
 
 function clockButton3() {
-    $.post('/channel', {action: 'clockbutton', button: 3}, function (data) {
-    });
+    $.post('/channel', { action: 'clockbutton', button: 3 }, function(data) {});
 }
 
 function clockButton4() {
-    $.post('/channel', {action: 'clockbutton', button: 4}, function (data) {
-    });
+    $.post('/channel', { action: 'clockbutton', button: 4 }, function(data) {});
 }
 
 function toggleLeverButton() {
     $('#leverDown').toggle();
     $('#leverUp').toggle();
     var button = 0x40;
-    if($('#leverDown').is(':hidden')) {
+    if ($('#leverDown').is(':hidden')) {
         button = -0x40;
     }
-    $.post('/channel', {action: 'clockbutton', button: button}, function (data) {
-    });
+    $.post('/channel', { action: 'clockbutton', button: button }, function(data) {});
 }
 
 function clockButtonPower() {
-    $.post('/channel', {action: 'clockbutton', button: 0x11}, function (data) {
-    });
+    $.post('/channel', { action: 'clockbutton', button: 0x11 }, function(data) {});
 }
 
 function goToPosition(fen) {
@@ -1159,14 +1177,14 @@ function formatEngineOutput(line) {
                 promotion = pv_out[i][4];
             }
             if (promotion) {
-                var mv = analysis_game.move(({from: from, to: to, promotion: promotion}));
+                var mv = analysis_game.move(({ from: from, to: to, promotion: promotion }));
             } else {
-                analysis_game.move(({from: from, to: to}));
+                analysis_game.move(({ from: from, to: to }));
             }
         }
 
         var history = analysis_game.history();
-        window.engine_lines['import_pv_' + multipv] = {score: score, depth: depth, line: history};
+        window.engine_lines['import_pv_' + multipv] = { score: score, depth: depth, line: history };
 
         var turn_sep = '';
         if (start_move_num % 2 === 0) {
@@ -1176,8 +1194,8 @@ function formatEngineOutput(line) {
         output = '<div class="list-group-item">';
         if (score !== null) {
             output += '<h4 class="list-group-item-heading" id="pv_' + multipv + '_score">';
-            output += '<button id="import_pv_' + multipv + '" style="margin-top: 0px;" class="importPVBtn btn-raised btn-info btn-xs" onclick="importPv(multipv)" data-placement="auto"><i class="fa fa-copy"></i><span>&nbsp;Copy</span></button>';
-            output += '<span style="color:blue; font-size: 1.8vw; margin-left: 1vw;">' + score + '/' + depth + '</span>';
+            output += '<button id="import_pv_' + multipv + '" style="margin-top: 0px;" class="btn btn-info btn-xs" onclick="importPv(multipv)" data-placement="auto"><i class="fa fa-copy"></i><span>&nbsp;Copy</span></button>';
+            output += '<span style="font-size: 1.8vw; margin-left: 1vw;">' + score + '/' + depth + '</span>';
             output += '</h4>';
         }
         output += '<p class="list-group-item-text">' + turn_sep;
@@ -1192,7 +1210,7 @@ function formatEngineOutput(line) {
         output += '</p></div>';
 
         analysis_game = null;
-        return {line: output, pv_index: multipv};
+        return { line: output, pv_index: multipv };
     }
     else if (line.search('currmove') < 0 && line.search('time') < 0) {
         return line;
@@ -1210,11 +1228,11 @@ function multiPvIncrease() {
                 window.stockfish.postMessage('go infinite');
             }
             else {
-                $('#engineMultiPVStatus').html(window.multipv + " line(s)");
+                $('#engineMultiPVStatus').html(window.multipv + (window.multipv > 1 ? ' lines' : ' line'));
             }
         }
 
-        var new_div_str = "<div id=\"pv_" + window.multipv + "\"  style=\"margin-bottom: 3vh;\"></div>";
+        var new_div_str = "<div id=\"pv_" + window.multipv + "\"  style=\"margin-top: 0px; margin-left: 12px; margin-bottom: 3vh;\"></div>";
         $("#pv_output").append(new_div_str);
 
         if (!window.StockfishModule) {
@@ -1237,7 +1255,7 @@ function multiPvDecrease() {
                 window.stockfish.postMessage('go infinite');
             }
             else {
-                $('#engineMultiPVStatus').html(window.multipv + " line(s)");
+                $('#engineMultiPVStatus').html(window.multipv + (window.multipv > 1 ? ' lines' : ' line'));
             }
         }
 
@@ -1256,7 +1274,7 @@ function importPv(multipv) {
     for (var i = 0; i < line.length; ++i) {
         var text_move = line[i];
         var move = tmpGame.move(text_move);
-        if(move) {
+        if (move) {
             updateCurrentPosition(move, tmpGame);
         } else {
             console.warn('import_pv error');
@@ -1290,7 +1308,7 @@ function handleMessage(event) {
     if (output && output.pv_index && output.pv_index > 0) {
         $('#pv_' + output.pv_index).html(output.line);
     }
-    $('#engineMultiPVStatus').html(window.multipv + " line(s)");
+    $('#engineMultiPVStatus').html(window.multipv + (window.multipv > 1 ? ' lines' : ' line'));
 }
 
 function loadNaclStockfish() {
@@ -1393,7 +1411,7 @@ function updateDGTPosition(data) {
 }
 
 function goToDGTFen() {
-    $.get('/dgt', {action: 'get_last_move'}, function(data) {
+    $.get('/dgt', { action: 'get_last_move' }, function(data) {
         if (data) {
             updateDGTPosition(data);
             highlightBoard(data.move, data.play);
@@ -1436,22 +1454,22 @@ function setHeaders(data) {
 }
 
 function getAllInfo() {
-    $.get('/info', {action: 'get_system_info'}, function(data) {
+    $.get('/info', { action: 'get_system_info' }, function(data) {
         window.system_info = data;
     }).fail(function(jqXHR, textStatus) {
         dgtClockStatusEl.html(textStatus);
     });
-    $.get('/info', {action: 'get_ip_info'}, function(data) {
+    $.get('/info', { action: 'get_ip_info' }, function(data) {
         setTitle(data);
     }).fail(function(jqXHR, textStatus) {
         dgtClockStatusEl.html(textStatus);
     });
-    $.get('/info', {action: 'get_headers'}, function(data) {
+    $.get('/info', { action: 'get_headers' }, function(data) {
         setHeaders(data);
     }).fail(function(jqXHR, textStatus) {
         dgtClockStatusEl.html(textStatus);
     });
-    $.get('/info', {action: 'get_clock_text'}, function(data) {
+    $.get('/info', { action: 'get_clock_text' }, function(data) {
         dgtClockTextEl.html(data);
     }).fail(function(jqXHR, textStatus) {
         console.warn(textStatus);
@@ -1466,12 +1484,22 @@ $('#startBtn').on('click', goToStart);
 $('#endBtn').on('click', goToEnd);
 
 $('#DgtSyncBtn').on('click', goToDGTFen);
-$('#downloadBtn').on('click', download);
+if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') {
+    $('#downloadBtn').hide()
+} else {
+    $('#downloadBtn').on('click', download);
+}
 
 $('#analyzeBtn').on('click', analyzePressed);
 
-$('#analyzePlus').on('click', multiPvIncrease);
-$('#analyzeMinus').on('click', multiPvDecrease);
+// disable plus/minus analysis on device as this currently causes the engine to load multiple times
+if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') {
+    $('#analyzePlus').hide()
+    $('#analyzeMinus').hide()
+} else {
+    $('#analyzePlus').on('click', multiPvIncrease);
+    $('#analyzeMinus').on('click', multiPvDecrease);
+}
 
 $('#ClockBtn0').on('click', clockButton0);
 $('#ClockBtn1').on('click', clockButton1);
@@ -1480,12 +1508,18 @@ $('#ClockBtn3').on('click', clockButton3);
 $('#ClockBtn4').on('click', clockButton4);
 $('#ClockLeverBtn').on('click', toggleLeverButton);
 
-$("#ClockBtn0").mouseup(function(){ btn=$(this); setTimeout(function() { btn.blur(); }, 500); })
-$("#ClockBtn1").mouseup(function(){ btn=$(this); setTimeout(function() { btn.blur(); }, 500); })
-$("#ClockBtn2").mouseup(function(){ btn=$(this); setTimeout(function() { btn.blur(); }, 500); })
-$("#ClockBtn3").mouseup(function(){ btn=$(this); setTimeout(function() { btn.blur(); }, 500); })
-$("#ClockBtn4").mouseup(function(){ btn=$(this); setTimeout(function() { btn.blur(); }, 500); })
-$("#ClockLeverBtn").mouseup(function(){ btn=$(this); setTimeout(function() { btn.blur(); }, 500); })
+$("#ClockBtn0").mouseup(function() { btn = $(this);
+    setTimeout(function() { btn.blur(); }, 100); })
+$("#ClockBtn1").mouseup(function() { btn = $(this);
+    setTimeout(function() { btn.blur(); }, 100); })
+$("#ClockBtn2").mouseup(function() { btn = $(this);
+    setTimeout(function() { btn.blur(); }, 100); })
+$("#ClockBtn3").mouseup(function() { btn = $(this);
+    setTimeout(function() { btn.blur(); }, 100); })
+$("#ClockBtn4").mouseup(function() { btn = $(this);
+    setTimeout(function() { btn.blur(); }, 100); })
+$("#ClockLeverBtn").mouseup(function() { btn = $(this);
+    setTimeout(function() { btn.blur(); }, 100); })
 
 $(function() {
     getAllInfo();
@@ -1497,7 +1531,7 @@ $(function() {
     window.multipv = 1;
 
     $(document).keydown(function(e) {
-        if (e.keyCode === 39) { //right arrow
+        if (e.keyCode === 39) { // right arrow
             if (e.ctrlKey) {
                 $('#endBtn').click();
             } else {
@@ -1508,7 +1542,7 @@ $(function() {
     });
 
     $(document).keydown(function(e) {
-        if (e.keyCode === 37) { //left arrow
+        if (e.keyCode === 37) { // left arrow
             if (e.ctrlKey) {
                 $('#startBtn').click();
             } else {
@@ -1531,13 +1565,13 @@ $(function() {
             switch (data.event) {
                 case 'Fen':
                     updateDGTPosition(data);
-                    if(data.play === 'reload') {
+                    if (data.play === 'reload') {
                         removeHighlights();
                     }
-                    if(data.play === 'user') {
+                    if (data.play === 'user') {
                         highlightBoard(data.move, 'user');
                     }
-                    if(data.play === 'review') {
+                    if (data.play === 'review') {
                         highlightBoard(data.move, 'review');
                     }
                     break;
@@ -1555,7 +1589,7 @@ $(function() {
                     break;
                 case 'Light':
                     var tmp_board = new Chess(currentPosition.fen, chessGameType);
-                    var tmp_move = tmp_board.move(data.move, {sloppy: true});
+                    var tmp_move = tmp_board.move(data.move, { sloppy: true });
                     computerside = tmp_move.color;
                     saymove(tmp_move, tmp_board);
                     highlightBoard(data.move, 'computer');
@@ -1587,6 +1621,4 @@ $(function() {
     }
 
     $.fn.dataTable.ext.errMode = 'throw';
-
-    $('[data-toggle="tooltip"]').tooltip();
 });
