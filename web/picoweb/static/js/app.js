@@ -209,11 +209,16 @@ var bookDataTable = $('#BookTable').DataTable({
                 canvas.appendTo(jQuery(td));
 
                 ctx = $(canvas).get(0).getContext("2d");
-                ctx.fillStyle = '#4f4f4f';
+                ctx.fillStyle = '#bfbfbf'; // border color for dark theme
+                var bgcolor = $('body').css("background-color")
+                if (bgcolor == 'rgb(255, 255, 255)') {
+                    // border color for light theme
+                    ctx.fillStyle = '#4f4f4f';
+                }
                 ctx.fillRect(0, 0, 300, 150); // border
-                var height = 138;
+                var height = 130;
                 var maxWidth = 298;
-                var top = 6
+                var top = 10
                 whiteWins = rowData['whitewins']
                 whiteWidth = maxWidth * whiteWins / 100;
                 ctx.fillStyle = '#ffffff';
