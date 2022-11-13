@@ -12,7 +12,7 @@ class EBoard(typing.Protocol):
     r_time: int = 0
     disable_end: bool = True
     in_settime: bool = False  # this is true between set_clock and clock_start => use set values instead of clock
-    low_time: bool = False # This is set from picochess.py and used to limit the field timer
+    low_time: bool = False  # This is set from picochess.py and used to limit the field timer
 
     @abstractmethod
     def light_squares_on_revelation(self, uci_move: str):

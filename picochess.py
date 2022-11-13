@@ -33,7 +33,7 @@ import queue
 import configargparse  # type: ignore
 import paramiko
 import math
-from typing import Optional, Set, Tuple, Protocol
+from typing import Optional, Set, Tuple
 
 from uci.engine import UciShell, UciEngine
 from uci.read import read_engine_ini
@@ -346,7 +346,7 @@ def check_ssh(host, username, password):
     except Exception:
         l_ssh = False
 
-    return(l_ssh)
+    return (l_ssh)
 
 
 def log_pgn(state: PicochessState):
@@ -376,7 +376,7 @@ def read_pgn_info():
     pgn_game_name = pgn_game_name[:-1].ljust(11, ' ')
     pgn_problem = pgn_problem[:-1].ljust(11, ' ')
 
-    return(pgn_game_name, pgn_problem, pgn_fen, pgn_result, pgn_white, pgn_black)
+    return (pgn_game_name, pgn_problem, pgn_fen, pgn_result, pgn_white, pgn_black)
 
 
 def read_online_result():
@@ -405,7 +405,7 @@ def read_online_result():
     log_u.close()
     logging.debug('Molli in read_result: %s', result_line)
     logging.debug('Molli in read_result: %s', winner)
-    return(str(result_line), str(winner))
+    return (str(result_line), str(winner))
 
 
 def read_online_user_info() -> Tuple[str, str, str, str, int, int]:
@@ -468,7 +468,7 @@ def compare_fen(fen_board_external='', fen_board_internal='') -> str:
     for square_no in range(0, 63):
         if internal_board.piece_at(square_no) != external_board.piece_at(square_no):
             if internal_board.piece_at(square_no) is None:
-                return(str('clear ' + chess.square_name(square_no)))
+                return (str('clear ' + chess.square_name(square_no)))
             else:
                 put_field = str('put ' + str(internal_board.piece_at(square_no)) + ' ' + chess.square_name(square_no))
     return put_field
@@ -638,21 +638,21 @@ def main() -> None:
 
     def pgn_mode():
         if 'pgn_' in engine_file:
-            return(True)
+            return (True)
         else:
-            return(False)
+            return (False)
 
     def remote_engine_mode():
         if 'remote' in engine_file:
-            return(True)
+            return (True)
         else:
-            return(False)
+            return (False)
 
     def emulation_mode():
         emulation = False
         if '(mame' in engine_name or '(mess' in engine_name:
             emulation = True
-        return(emulation)
+        return (emulation)
 
     def online_mode():
         online = False
@@ -661,7 +661,7 @@ def main() -> None:
                 online = True
             else:
                 online = False
-        return(online)
+        return (online)
 
     def remote_windows():
         windows = False
@@ -669,7 +669,7 @@ def main() -> None:
             windows = True
         else:
             windows = False
-        return(windows)
+        return (windows)
 
     def display_ip_info(state: PicochessState):
         """Fire an IP_INFO message with the IP adr."""
@@ -1265,7 +1265,7 @@ def main() -> None:
             flag_startup = False
             # molli: Chess tutor
             if picotutor_mode(state) and state.dgtmenu.get_picocoach() and fen != chess.STARTING_BOARD_FEN and not state.take_back_locked and not fen_error_occured and not position_mode and not state.automatic_takeback:
-                if ((state.game.turn == chess.WHITE and state.play_mode == PlayMode.USER_WHITE) or (state.game.turn == chess.BLACK and state.play_mode == PlayMode.USER_BLACK)) and not(state.game.is_checkmate() or state.game.is_stalemate()):
+                if ((state.game.turn == chess.WHITE and state.play_mode == PlayMode.USER_WHITE) or (state.game.turn == chess.BLACK and state.play_mode == PlayMode.USER_BLACK)) and not (state.game.is_checkmate() or state.game.is_stalemate()):
                     state.stop_clock()
                     state.stop_fen_timer()
                     eval_str = 'ANALYSIS'
