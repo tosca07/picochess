@@ -22,8 +22,8 @@ import time
 import os
 
 try:
-    import bluepy
-    from bluepy.btle import Scanner, DefaultDelegate, Peripheral
+    import bluepy  # type: ignore
+    from bluepy.btle import Scanner, DefaultDelegate, Peripheral  # type: ignore
 
     bluepy_ble_support = True
 except ImportError:
@@ -39,7 +39,7 @@ class Transport(object):
         if not bluepy_ble_support:
             self.init = False
             return
-        self.wrque = queue.Queue()
+        self.wrque: queue.Queue = queue.Queue()
         self.log = logging.getLogger('Chessnut')
         self.que = que
         self.init = True

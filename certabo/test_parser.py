@@ -43,7 +43,7 @@ class SimpleTestCalibrationCallback(CalibrationCallback):
     def __init__(self):
         self.stones = None
 
-    def calibration_complete(self, stones: typing.Dict[CertaboPiece, int]):
+    def calibration_complete(self, stones: typing.Dict[CertaboPiece, typing.Optional[str]]):
         self.stones = stones
 
     def calibration_complete_square(self, square: int):

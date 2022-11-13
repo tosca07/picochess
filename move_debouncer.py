@@ -11,10 +11,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Callable
+from typing import Callable, List, Optional
 from threading import Timer
 
-import chess
+import chess  # type: ignore
 
 
 class MoveDebouncer(object):
@@ -40,8 +40,8 @@ class MoveDebouncer(object):
         self.debounce_time_millis = debounce_time_millis
         self.callback = callback
         self.previous_fen = None
-        self.timer = None
-        self.previous_fens = []
+        self.timer: Optional[Timer] = None
+        self.previous_fens: List[str] = []
 
     def update(self, short_fen: str):
         """

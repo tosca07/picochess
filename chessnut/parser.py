@@ -11,6 +11,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from typing import List
 from enum import Enum
 
 
@@ -38,7 +39,7 @@ class Parser(object):
     def __init__(self, callback: ParserCallback):
         self.callback = callback
         self.buffer = bytearray()
-        self.last_board = []
+        self.last_board: List = []
         self.reversed = False
 
     def parse(self, msg: bytearray):

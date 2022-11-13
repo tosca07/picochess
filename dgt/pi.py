@@ -24,7 +24,7 @@ from platform import machine
 from utilities import DisplayMsg, hms_time
 from dgt.api import Dgt, Message
 from dgt.util import ClockIcons, ClockSide
-from dgt.board import DgtBoard
+from eboard import EBoard
 from dgt.iface import DgtIface
 from dgt.board import Rev2Info
 
@@ -33,7 +33,7 @@ class DgtPi(DgtIface):
 
     """Handle the DgtPi communication."""
 
-    def __init__(self, dgtboard: DgtBoard):
+    def __init__(self, dgtboard: EBoard):
         super(DgtPi, self).__init__(dgtboard)
 
         self.lib_lock = Lock()

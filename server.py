@@ -35,7 +35,7 @@ from web.picoweb import picoweb as pw
 from dgt.api import Dgt, Event, Message
 from dgt.util import PlayMode, Mode, ClockSide
 from dgt.iface import DgtIface
-from dgt.board import DgtBoard
+from eboard import EBoard
 
 # This needs to be reworked to be session based (probably by token)
 # Otherwise multiple clients behind a NAT can all play as the 'player'
@@ -158,7 +158,7 @@ class ChessBoardHandler(ServerRequestHandler):
 
 
 class WebServer(threading.Thread):
-    def __init__(self, port: int, dgtboard: DgtBoard):
+    def __init__(self, port: int, dgtboard: EBoard):
         shared: dict = {}
 
         WebDisplay(shared).start()
@@ -187,7 +187,7 @@ class WebVr(DgtIface):
 
     """Handle the web (clock) communication."""
 
-    def __init__(self, shared, dgtboard: DgtBoard):
+    def __init__(self, shared, dgtboard: EBoard):
         super(WebVr, self).__init__(dgtboard)
         self.shared = shared
         self.virtual_timer: Optional[RepeatedTimer] = None

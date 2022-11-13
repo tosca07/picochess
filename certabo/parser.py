@@ -11,9 +11,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Dict, List, Optional
 import binascii
 import re
-import typing
 from collections import Counter
 
 
@@ -37,13 +37,13 @@ class CertaboPiece(object):
 
 class BoardTranslator:
 
-    def translate(self, board: typing.List[CertaboPiece]):
+    def translate(self, board: List[CertaboPiece]):
         pass
 
 
 class CalibrationCallback:
 
-    def calibration_complete(self, stones: typing.Dict[CertaboPiece, int]):
+    def calibration_complete(self, stones: Dict[CertaboPiece, Optional[str]]):
         pass
 
     def calibration_complete_square(self, square: int):
@@ -79,7 +79,7 @@ class Parser(object):
     def __init__(self, callback: BoardTranslator):
         self.callback = callback
         self.buffer = bytearray()
-        self.last_board = []
+        self.last_board: List = []
         self.reversed = False
 
     def parse(self, msg: bytearray):
@@ -129,21 +129,21 @@ class CertaboBoardMessageParser(BoardTranslator):
 
     def __init__(self, callback: ParserCallback, low_gain):
         self.callback = callback
-        self.last_board = []
-        self.board_history = []
+        self.last_board: List = []
+        self.board_history: List = []
         self.low_gain_chips = low_gain
         self.reversed = False
-        self.stones = {}
+        self.stones: Dict = {}
         self.parser = Parser(self)
 
-    def update_stones(self, stones: typing.Dict[CertaboPiece, int]):
+    def update_stones(self, stones: Dict[CertaboPiece, Optional[str]]):
         self.stones = stones
 
     def parse(self, msg: bytearray):
         self.parser.parse(msg)
 
-    def translate(self, board: typing.List[CertaboPiece]):
-        newBoard = [None] * 64
+    def translate(self, board: List[CertaboPiece]):
+        newBoard: List = [None] * 64
         i = 0
         for piece in board:
             square = to_square(i)
@@ -156,13 +156,13 @@ class CertaboBoardMessageParser(BoardTranslator):
             # average over the last three IDs for each square for low gain chips
             self.board_history = self.board_history[-2:]
             self.board_history.append(newBoard)
-            counter = Counter()
+            counter: Dict = Counter()
             for board in self.board_history:
                 d = {index: value for index, value in enumerate(board)}
                 counter.update(d)
             avg_board = []
             for i in range(64):
-                stone = Counter(counter[i]).most_common(1)[0][0]
+                stone: str = Counter(counter[i]).most_common(1)[0][0]
                 avg_board.append(stone)
             self._process_new_board(avg_board)
         else:
@@ -224,10 +224,10 @@ class CalibrationSquare(object):
 
     def __init__(self, square: int):
         self.square = square
-        self.pieceId = None
+        self.pieceId: Optional[CertaboPiece] = None
 
-    def calibrate_piece(self, callback: CalibrationCallback, received_boards: typing.List[typing.List[CertaboPiece]]):
-        piece_count: typing.Dict[CertaboPiece, int] = {}
+    def calibrate_piece(self, callback: CalibrationCallback, received_boards: List[List[CertaboPiece]]):
+        piece_count: Dict[CertaboPiece, int] = {}
         for board in received_boards:
             piece = board[self.square]
             if piece in piece_count.keys():
@@ -290,7 +290,7 @@ class CertaboCalibrator(BoardTranslator):
         super().__init__()
         self.callback = callback
         self.calibrationSquares = []
-        self.receivedBoards = []
+        self.receivedBoards: List = []
         self.calibrationComplete = False
         self.parser = Parser(self)
         for i in range(16):
@@ -305,14 +305,14 @@ class CertaboCalibrator(BoardTranslator):
     def calibrate(self, input: bytearray):
         self.parser.parse(input)
 
-    def translate(self, board: typing.List[CertaboPiece]):
+    def translate(self, board: List[CertaboPiece]):
         self.receivedBoards.append(board)
         if len(self.receivedBoards) >= 7 and not self.calibrationComplete:
             if self.check_pieces():
-                stones = {}
+                stones: Dict[CertaboPiece, Optional[str]] = {}
                 for square in self.calibrationSquares:
                     stone = square.get_stone()
-                    if stone is not None:
+                    if stone is not None and square.pieceId is not None:
                         stones[square.pieceId] = stone
                 self.calibrationComplete = True
                 self.callback.calibration_complete(stones)

@@ -17,19 +17,18 @@ from threading import Thread
 import queue
 import inspect
 
+from eboard import EBoard
 from utilities import DisplayMsg
 from dgt.api import Message, Dgt
+from dgt.util import ClockIcons
 
 from chessnut.chessnut_agent import ChessnutAgent
 from chessnut.parser import Battery
 
 
-class ChessnutBoard(object):
+class ChessnutBoard(EBoard):
 
     def __init__(self):
-        self.is_pi = False
-        self.is_revelation = True
-        self.enable_revelation_pi = True
         self.agent = None
         self.appque = queue.Queue()
 
@@ -124,3 +123,18 @@ class ChessnutBoard(object):
         incoming_board_thread = Thread(target=self._process_incoming_board_forever)
         incoming_board_thread.setDaemon(True)
         incoming_board_thread.start()
+
+    def set_text_xl(self, text: str, beep: int, left_icons=ClockIcons.NONE, right_icons=ClockIcons.NONE):
+        pass
+
+    def set_text_3k(self, text: bytes, beep: int):
+        pass
+
+    def set_and_run(self, lr: int, lh: int, lm: int, ls: int, rr: int, rh: int, rm: int, rs: int):
+        pass
+
+    def end_text(self):
+        pass
+
+    def set_reverse(self, flag):
+        pass

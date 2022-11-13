@@ -229,7 +229,7 @@ class Protocol(ParserCallback, CalibrationCallback):
             if self.led_control is not None:
                 self.led_control.write_led_command(command.set_leds_calibrate())
 
-    def calibration_complete(self, stones: typing.Dict[CertaboPiece, int]):
+    def calibration_complete(self, stones: typing.Dict[CertaboPiece, typing.Optional[str]]):
         self.log.info('Certabo calibration complete')
         self.parser.update_stones(stones)
         self.calibrated = True

@@ -21,7 +21,7 @@ from threading import Lock
 from utilities import hms_time
 from dgt.iface import DgtIface
 from dgt.util import ClockIcons, ClockSide
-from dgt.board import DgtBoard
+from eboard import EBoard
 from dgt.api import Dgt
 
 
@@ -29,7 +29,7 @@ class DgtHw(DgtIface):
 
     """Handle the DgtXL/3000 communication."""
 
-    def __init__(self, dgtboard: DgtBoard):
+    def __init__(self, dgtboard: EBoard):
         super(DgtHw, self).__init__(dgtboard)
 
         self.lib_lock = Lock()

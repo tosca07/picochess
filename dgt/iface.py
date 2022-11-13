@@ -23,7 +23,7 @@ from chess import Board  # type: ignore
 from utilities import DisplayDgt
 from dgt.util import ClockSide
 from dgt.api import Dgt
-from dgt.board import DgtBoard
+from eboard import EBoard
 from dgt.board import Rev2Info
 
 
@@ -31,7 +31,7 @@ class DgtIface(DisplayDgt, Thread):
 
     """An Interface class for DgtHw, DgtPi, DgtVr."""
 
-    def __init__(self, dgtboard: DgtBoard):
+    def __init__(self, dgtboard: EBoard):
         super(DgtIface, self).__init__()
 
         self.dgtboard = dgtboard

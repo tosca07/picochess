@@ -33,7 +33,7 @@ import queue
 import configargparse  # type: ignore
 import paramiko
 import math
-from typing import Optional, Set, Tuple
+from typing import Optional, Set, Tuple, Protocol
 
 from uci.engine import UciShell, UciEngine
 from uci.read import read_engine_ini
@@ -55,6 +55,7 @@ from dgt.util import GameResult, TimeMode, Mode, PlayMode, PicoComment
 from dgt.hw import DgtHw
 from dgt.pi import DgtPi
 from dgt.display import DgtDisplay
+from eboard import EBoard
 from dgt.board import DgtBoard
 from chesslink.board import ChessLinkBoard
 from chessnut.board import ChessnutBoard
@@ -1967,7 +1968,7 @@ def main() -> None:
 
     # wire some dgt classes
     if args.board_type.lower() == 'chesslink':
-        dgtboard = ChessLinkBoard()
+        dgtboard: EBoard = ChessLinkBoard()
     elif args.board_type.lower() == 'chessnut':
         dgtboard = ChessnutBoard()
     elif args.board_type.lower() == 'certabo':

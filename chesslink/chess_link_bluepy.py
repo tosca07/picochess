@@ -34,8 +34,8 @@ import os
 import chesslink.chess_link_protocol as clp
 
 try:
-    import bluepy
-    from bluepy.btle import Scanner, DefaultDelegate, Peripheral
+    import bluepy # type: ignore
+    from bluepy.btle import Scanner, DefaultDelegate, Peripheral # type: ignore
 
     bluepy_ble_support = True
 except ImportError:
