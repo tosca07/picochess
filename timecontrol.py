@@ -288,7 +288,7 @@ class TimeControl(object):
                 uci_dict['binc'] = str(self.fisch_inc * 1000)
 
             if self.moves_to_go_orig > 0 and self.moves_to_go > 0:
-                uci_dict['movestogo'] = str(self.moves_to_go)
+                uci_dict['movestogo'] = self.moves_to_go
 
         elif self.mode == TimeMode.FIXED:
             uci_dict['movetime'] = str(self.move_time * 1000)
