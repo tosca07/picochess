@@ -10,12 +10,16 @@
     <link rel="stylesheet" href="/static/css/chessground/theme.css"/>
     <link rel="stylesheet" type="text/css" href="/static/css/datatables.min.css"/>
     <link rel="stylesheet" href="/static/css/font-awesome.min.css"/>
+{% try %}
     {% if theme=='dark' %}
     <link rel="stylesheet" href="/static/css/mdb.dark.min.css"/>
-    {% end %} 
+    {% end %}
     {% if theme=='light' %}
     <link rel="stylesheet" href="/static/css/mdb.min.css" />
-    {% end %} 
+    {% end %}
+{% except %}
+    <link rel="stylesheet" href="/static/css/mdb.dark.min.css"/>
+{% end %}
     <link rel="stylesheet" href="/static/css/select.dataTables.css"/>
     <link rel="stylesheet" href="/static/css/dataTables.bootstrap5.min.css"/>
     <link rel="stylesheet" href="/static/css/custom.css"/>
@@ -30,9 +34,13 @@
     <script type="text/javascript" src="/static/js/chessground.min.js"></script>
 </head>
 <body>
-{% if theme=='dark' or theme=='light' %}
+{% try %}
+    {% if theme=='dark' or theme=='light' %}
 <script type="text/javascript" src="/static/js/mdb.min.js"></script>
-{% end %} 
+    {% end %}
+{% except %}
+<script type="text/javascript" src="/static/js/mdb.min.js"></script>
+{% end %}
 <div class="container-fluid">
     <div class="row">
         <div class="col">
