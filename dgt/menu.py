@@ -3034,7 +3034,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_EBOARD:
             self.state = MenuState.SYS_INFO
-            self.menu_system = SystemLoop.prev(self.menu_system)
+            self.menu_system = SystemLoop.next(self.menu_system)
             text = self.dgttranslate.text(self.menu_system.value)
 
         elif self.state == MenuState.SYS_EBOARD_TYPE:
