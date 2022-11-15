@@ -258,18 +258,20 @@ def reboot(dgtpi: bool, dev: str):
 
 
 def get_location():
-    """Return the location of the user and the external and interal ip adr."""
+    """Return the location of the user and the external and internal ip adr."""
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.connect(('8.8.8.8', 80))
         int_ip = sock.getsockname()[0]
         sock.close()
-        response = urllib.request.urlopen('http://will6.de/freegeoip')
+        response = urllib.request.urlopen('http://www.geolocation-db.com/json/')
         j = json.loads(response.read().decode())
-        country_name = j['country_name'] + ' ' if 'country_name' in j else ''
-        country_code = j['country_code'] + ' ' if 'country_code' in j else ''
-        ext_ip = j['ip'] if 'ip' in j else None
-        city = j['city'] + ', ' if 'city' in j else ''
+        country_name = j['country_name'] + ' ' if 'country_name' in j and j['country_name'] is not None else ''
+        country_code = j['country_code'] + ' ' if 'country_code' in j and j['country_code'] is not None else ''
+        city = j['city'] + ', ' if 'city' in j and j['city'] is not None else ''
+
+        ext_ip = j['IPv4'] if 'IPv4' in j and j['IPv4'] is not None else None
+
         return (city + country_name + country_code).strip(), ext_ip, int_ip
     except Exception:
         return '?', None, None
