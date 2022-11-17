@@ -25,6 +25,7 @@ from serial import Serial, SerialException, STOPBITS_ONE, PARITY_NONE, EIGHTBITS
 import time
 from typing import List, Optional, Tuple
 
+from eboard import EBoard
 from dgt.util import DgtAck, DgtClk, DgtCmd, DgtMsg, ClockIcons, ClockSide, enum
 from dgt.api import Message, Dgt
 from utilities import RepeatedTimer, DisplayMsg, hms_time
@@ -55,7 +56,7 @@ class Rev2Info():
             return False
 
 
-class DgtBoard(object):
+class DgtBoard(EBoard):
 
     """Handle the DGT board communication."""
 
@@ -92,7 +93,7 @@ class DgtBoard(object):
         self.bt_name_list: List[str] = []
         self.bt_name = ''
         self.wait_counter = 0
-        # keep the last time to find out errorous DGT_MSG_BWTIME messages (error: current time > last time)
+        # keep the last time to find out erroneous DGT_MSG_BWTIME messages (error: current time > last time)
         self.r_time = 3600 * 10  # max value cause 10h cant be reached by clock
         self.l_time = 3600 * 10  # max value cause 10h cant be reached by clock
 

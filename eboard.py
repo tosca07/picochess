@@ -1,10 +1,11 @@
-import typing
+from typing_extensions import Protocol
 from abc import abstractmethod
 
 from dgt.util import ClockIcons
 
 
-class EBoard(typing.Protocol):
+class EBoard(Protocol):
+    """ Protocol for e-board implementations """
     is_pi: bool = False
     is_revelation: bool = True
     enable_revelation_pi: bool = True
@@ -16,14 +17,17 @@ class EBoard(typing.Protocol):
 
     @abstractmethod
     def light_squares_on_revelation(self, uci_move: str):
+        """Light LEDs for the given uci_move."""
         raise NotImplementedError
 
     @abstractmethod
     def light_square_on_revelation(self, square: str):
+        """Light LEDs on the given square."""
         raise NotImplementedError
 
     @abstractmethod
     def clear_light_on_revelation(self):
+        """Clear the LEDs."""
         raise NotImplementedError
 
     @abstractmethod
@@ -37,10 +41,12 @@ class EBoard(typing.Protocol):
 
     @abstractmethod
     def set_text_xl(self, text: str, beep: int, left_icons=ClockIcons.NONE, right_icons=ClockIcons.NONE):
+        """Display a text on a XL clock."""
         raise NotImplementedError
 
     @abstractmethod
     def set_text_3k(self, text: bytes, beep: int):
+        """Display a text on a 3000 Clock."""
         raise NotImplementedError
 
     @abstractmethod
@@ -55,4 +61,5 @@ class EBoard(typing.Protocol):
 
     @abstractmethod
     def set_reverse(self, flag):
+        """Set the reverse flag."""
         raise NotImplementedError
