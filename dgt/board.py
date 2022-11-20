@@ -590,6 +590,11 @@ class DgtBoard(EBoard):
                     self.bt_state = 3
                     self.btctl.stdin.write("scan on\n")
                     self.btctl.stdin.flush()
+                    # get already-paired devices since BlueZ > 5.43 no longer lists already-paired
+                    # devices when bluetoothctl is started in a shell
+                    self.btctl.stdin.write("paired-devices\n")
+                    self.btctl.stdin.flush()
+                    
                 elif 'Discovering: yes' in self.bt_line:
                     self.bt_state = 4
                 elif 'Pairing successful' in self.bt_line:
@@ -609,14 +614,16 @@ class DgtBoard(EBoard):
                     self.bt_name_list.remove(self.bt_name_list[self.bt_current_device])
                     self.bt_current_device -= 1
                     logging.debug('BT pairing failed, unknown device')
-                elif ('DGT_BT_' in self.bt_line or 'PCS-REVII' in self.bt_line) and \
-                        ('NEW' in self.bt_line or 'CHG' in self.bt_line) and 'Device' in self.bt_line:
-                    # New e-Board found add to list
+                    # space before DGT_BT_ and PCS-REVII to prevent double detection
+                    # when bluetoothctl is connected and bt_line contains e.g. "[DGT_BT_..."
+                elif (' DGT_BT_' in self.bt_line or ' PCS-REVII' in self.bt_line):
                     try:
-                        if not self.bt_line.split()[3] in self.bt_mac_list:
-                            self.bt_mac_list.append(self.bt_line.split()[3])
-                            self.bt_name_list.append(self.bt_line.split()[4])
-                            logging.debug('BT found device: %s %s', self.bt_line.split()[3], self.bt_line.split()[4])
+                        # since the MAC address and Name occur at the end of the bt_line, use [-2]
+                        # and [-1] to grab the respective text
+                        if not self.bt_line.split()[-2] in self.bt_mac_list:
+                            self.bt_mac_list.append(self.bt_line.split()[-2])
+                            self.bt_name_list.append(self.bt_line.split()[-1])
+                            logging.debug('BT found device: %s %s', self.bt_line.split()[-2], self.bt_line.split()[-1])
                     except IndexError:
                         logging.error('BT wrong line [%s]', self.bt_line)
                 # clear the line
