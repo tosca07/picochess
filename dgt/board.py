@@ -138,6 +138,8 @@ class DgtBoard(EBoard):
 
     def write_command(self, message: list):
         """Write the message list to the dgt board."""
+        if not self.serial:
+            return False
         mes = message[3] if message[0].value == DgtCmd.DGT_CLOCK_MESSAGE.value else message[0]
         if not mes == DgtCmd.DGT_RETURN_SERIALNR:
             logging.debug('(ser) board put [%s] length: %i', mes, len(message))
@@ -161,7 +163,8 @@ class DgtBoard(EBoard):
                 array.append(item.value)
             elif isinstance(item, str):
                 for character in item:
-                    array.append(char_to_xl[character.lower()])
+                    if character in char_to_xl:
+                        array.append(char_to_xl[character.lower()])
             else:
                 logging.error('type not supported [%s]', type(item))
                 return False
