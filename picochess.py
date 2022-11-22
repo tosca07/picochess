@@ -2532,8 +2532,8 @@ def main() -> None:
                                 
                     if state.play_mode != PlayMode.USER_WHITE:
                         state.play_mode = PlayMode.USER_WHITE
-                        text = state.play_mode.value  # type: str
-                        msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=state.dgttranslate.text(text))
+                        msg = Message.PLAY_MODE(play_mode=state.play_mode,
+                                                play_mode_text=state.dgttranslate.text(str(state.play_mode.value)))
                         DisplayMsg.show(msg)
                     stop_search_and_clock()
 
@@ -2611,8 +2611,8 @@ def main() -> None:
                             
                         if state.play_mode != PlayMode.USER_WHITE:
                             state.play_mode = PlayMode.USER_WHITE
-                            text = state.play_mode.value  # type: str
-                            msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=state.dgttranslate.text(text))
+                            msg = Message.PLAY_MODE(play_mode=state.play_mode,
+                                                    play_mode_text=state.dgttranslate.text(str(state.play_mode.value)))
                             DisplayMsg.show(msg)
                         
                         # see setup_position
