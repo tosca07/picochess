@@ -233,16 +233,17 @@ def update_picochess(dgtpi: bool, auto_reboot: bool, dgttranslate: DgtTranslate)
 
 def shutdown(dgtpi: bool, dev: str):
     """Shutdown picochess."""
-    dgt_functions = cdll.LoadLibrary('etc/dgtpicom.so')
     logging.debug('shutting down system requested by (%s)', dev)
     time.sleep(3)  # give some time to send out the pgn file or speak the event
     if platform.system() == 'Windows':
         os.system('shutdown /s')
     elif dgtpi:
+        dgt_functions = cdll.LoadLibrary('etc/dgtpicom.so')
         dgt_functions.dgtpicom_off(1)
         os.system('shutdown -h now')
+        time.sleep(5)
     else:
-        os.system('shutdown -h now')
+        os.system('sudo shutdown -h now')
 
 
 def reboot(dgtpi: bool, dev: str):
