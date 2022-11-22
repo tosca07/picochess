@@ -2529,7 +2529,12 @@ def main() -> None:
                     state.play_mode = PlayMode.USER_WHITE
                     if uci960:
                         state.game.set_chess960_pos(event.pos960)
-
+                                
+                    if state.play_mode != PlayMode.USER_WHITE:
+                        state.play_mode = PlayMode.USER_WHITE
+                        text = state.play_mode.value  # type: str
+                        msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=state.dgttranslate.text(text))
+                        DisplayMsg.show(msg)
                     stop_search_and_clock()
 
                     # see setup_position
@@ -2603,7 +2608,13 @@ def main() -> None:
                         state.play_mode = PlayMode.USER_WHITE
                         if uci960:
                             state.game.set_chess960_pos(event.pos960)
-
+                            
+                        if state.play_mode != PlayMode.USER_WHITE:
+                            state.play_mode = PlayMode.USER_WHITE
+                            text = state.play_mode.value  # type: str
+                            msg = Message.PLAY_MODE(play_mode=state.play_mode, play_mode_text=state.dgttranslate.text(text))
+                            DisplayMsg.show(msg)
+                        
                         # see setup_position
                         stop_search_and_clock()
                         state.stop_fen_timer()
