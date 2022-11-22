@@ -107,8 +107,7 @@ class PicoTutor:
                 self.comment_no = len(self.comments)
 
         try:
-            path = Path(__file__).parent
-            general_comment_file = path + '/engines/armv7l/general_game_comments_' + i_lang + '.txt'
+            general_comment_file = '/opt/picochess/engines/armv7l/general_game_comments_' + i_lang + '.txt'
             with open(general_comment_file) as fp:
                 self.comments_all = fp.readlines()
         except Exception:
