@@ -1934,7 +1934,7 @@ def main() -> None:
     parser.add_argument('-odec', '--online-decrement', type=float, default=2.0, help='Seconds to be subtracted after each own online move in order to sync with server times')
     parser.add_argument('-board', '--board-type', type=str, default='dgt', help='Type of e-board: "dgt", "certabo", "chesslink" or "chessnut", default is "dgt"')
     parser.add_argument('-theme', '--theme', type=str, default='dark', help='Web theme, "light", "dark" or blank, default is "dark", leave blank for another light theme')
-
+    parser.add_argument('-rspeed', '--rspeed', type=str, default='-speed 1.0', help='Speedbar, -nothrottle for fullspeed or any other value from 0.2 to 1.0')
     args, unknown = parser.parse_known_args()
 
     # Enable logging
@@ -2074,6 +2074,7 @@ def main() -> None:
 
     # try the given engine first and if that fails the first/second from "engines.ini" then crush
     engine_file = args.engine
+    engine_speed = args.rspeed
 
     engine_home = engine_file
     engine_remote_home = args.engine_remote_home.rstrip(os.sep)
@@ -2090,7 +2091,7 @@ def main() -> None:
             engine_file = eng_ini[engine_tries]['file']
             engine_tries += 1
 
-        engine = UciEngine(file=engine_file, uci_shell=uci_local_shell)
+        engine = UciEngine(file=engine_file, uci_shell=uci_local_shell, retrospeed=engine_speed)
         try:
             engine_name = engine.get_name()
             break
@@ -2260,9 +2261,9 @@ def main() -> None:
                 if engine.quit():
                     # Load the new one and send args.
                     if remote_engine_mode() and flag_eng and uci_remote_shell:
-                        engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell)
+                        engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell, retrospeed=engine_speed)
                     else:
-                        engine = UciEngine(file=engine_file, uci_shell=uci_local_shell)
+                        engine = UciEngine(file=engine_file, uci_shell=uci_local_shell, retrospeed=engine_speed)
 
                     try:
                         engine_name = engine.get_name()
@@ -2276,9 +2277,9 @@ def main() -> None:
                         remote_file = engine_remote_home + os.sep + help_str
 
                         if remote_engine_mode() and flag_eng and uci_remote_shell:
-                            engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell)
+                            engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell, retrospeed=engine_speed)
                         else:
-                            engine = UciEngine(file=old_file, uci_shell=uci_local_shell)
+                            engine = UciEngine(file=old_file, uci_shell=uci_local_shell, retrospeed=engine_speed)
 
                         try:
                             engine_name = engine.get_name()
@@ -2295,9 +2296,9 @@ def main() -> None:
                         engine_fallback = True
                         if engine.quit():
                             if remote_engine_mode() and flag_eng and uci_remote_shell:
-                                engine = UciEngine(file=old_file, uci_shell=uci_remote_shell)
+                                engine = UciEngine(file=old_file, uci_shell=uci_remote_shell, retrospeed=engine_speed)
                             else:
-                                engine = UciEngine(file=old_file, uci_shell=uci_local_shell)
+                                engine = UciEngine(file=old_file, uci_shell=uci_local_shell, retrospeed=engine_speed)
                             engine.startup(old_options)
                             engine.newgame(state.game.copy())
                             try:
@@ -2331,9 +2332,9 @@ def main() -> None:
                             remote_file = engine_remote_home + os.sep + help_str
 
                             if remote_engine_mode() and flag_eng and uci_remote_shell:
-                                engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell)
+                                engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell, retrospeed=engine_speed)
                             else:
-                                engine = UciEngine(file=old_file, uci_shell=uci_local_shell)
+                                engine = UciEngine(file=old_file, uci_shell=uci_local_shell, retrospeed=engine_speed)
 
                             try:
                                 engine_name = engine.get_name()

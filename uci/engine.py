@@ -62,14 +62,22 @@ class UciEngine(object):
 
     """Handle the uci engine communication."""
 
-    def __init__(self, file: str, uci_shell: UciShell, home=''):
+    def __init__(self, file: str, uci_shell: UciShell, retrospeed: str):
         super(UciEngine, self).__init__()
+        logging.info('parameter retrospeed=' + retrospeed)
         try:
             self.shell = uci_shell.get()
-            if self.shell:
-                self.engine = chess.uci.spur_spawn_engine(self.shell, [file])
+            logging.info('file ' + file)
+            if file.find('/engines/armv7l/mame') > 0:
+                mfile = [file, retrospeed]
+                logging.info(mfile)
             else:
-                self.engine = chess.uci.popen_engine(file, stderr=DEVNULL)
+                mfile = [file]
+                logging.info(mfile)
+            if self.shell:
+                self.engine = chess.uci.spur_spawn_engine(self.shell, mfile)
+            else:
+                self.engine = chess.uci.popen_engine(mfile, stderr=DEVNULL)
 
             self.file = file
             if self.engine:
