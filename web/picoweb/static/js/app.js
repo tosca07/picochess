@@ -113,6 +113,7 @@ var boardStatusEl = $('#BoardStatus'),
     dgtClockStatusEl = $('#DGTClockStatus'),
     dgtClockTextEl = $('#DGTClockText'),
     pgnEl = $('#pgn');
+    moveListEl = $('#moveList')
 
 var gameHistory, fenHash, currentPosition;
 const SERVER_NAME = 'picochess.local'
@@ -664,9 +665,9 @@ var updateStatus = function() {
 
 
     if ($('#' + strippedFen).position()) {
-        pgnEl.scrollTop(0);
+        moveListEl.scrollTop(0);
         var y_position = $('#' + strippedFen).position().top;
-        pgnEl.scrollTop(y_position);
+        moveListEl.scrollTop(y_position);
     }
 
     bookDataTable.ajax.reload();
