@@ -666,8 +666,11 @@ var updateStatus = function() {
 
     if ($('#' + strippedFen).position()) {
         moveListEl.scrollTop(0);
-        var y_position = $('#' + strippedFen).position().top;
+        var element = $('#' + strippedFen);
+        var y_position = element.position().top;
         moveListEl.scrollTop(y_position);
+        element.addClass('text-warning');
+        setTimeout(function() { element.removeClass('text-warning'); }, 500);
     }
 
     bookDataTable.ajax.reload();
