@@ -212,7 +212,6 @@ canvas {
 }
 
 table.compact.dataTable tbody th, table.compact.dataTable tbody td {
-    border-bottom-width: 1;
     vertical-align: middle;
     padding-top: 0px;
     padding-bottom: 0px;
