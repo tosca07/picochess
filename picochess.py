@@ -360,23 +360,17 @@ def log_pgn(state: PicochessState):
 
 
 def read_pgn_info():
+    info = {}
     try:
-        pgn = ConfigParser(allow_no_value=True)
-        pgn.read('pgn_game_info.txt')
-        pgn_game_name = pgn['PGN'].get('PGN_GAME', 'Game Error')
-        pgn_problem = pgn['PGN'].get('PGN_PROBLEM', '')
-        pgn_white = pgn['PGN'].get('PGN_White', '')
-        pgn_black = pgn['PGN'].get('PGN_Black', '')
-        pgn_fen = pgn['PGN'].get('PGN_FEN', '')
-        pgn_result = pgn['PGN'].get('PGN_RESULT', '*')
-    except Exception:
+        with open('pgn_game_info.txt') as info_file:
+            for line in info_file:
+                name, value = line.partition("=")[::2]
+                info[name.strip()] = value.strip()
+        return (info['PGN_GAME'], info['PGN_PROBLEM'], info['PGN_FEN'], info['PGN_RESULT'], info['PGN_White'],
+                info['PGN_Black'])
+    except (OSError, KeyError):
         logging.error('Could not read pgn_game_info file')
-        return
-
-    pgn_game_name = pgn_game_name[:-1].ljust(11, ' ')
-    pgn_problem = pgn_problem[:-1].ljust(11, ' ')
-
-    return (pgn_game_name, pgn_problem, pgn_fen, pgn_result, pgn_white, pgn_black)
+        return 'Game Error', '', '', '*', '', ''
 
 
 def read_online_result():

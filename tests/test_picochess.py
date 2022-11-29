@@ -108,11 +108,12 @@ class TestAlternativeMover(unittest.TestCase):
 class TestReadPGNInfo(unittest.TestCase):
     def test_read_pgn_info(self):
         game_name, problem, fen, result, white, black = read_pgn_info()
-        self.assertEqual(game_name, 'Hoerspie   ')  # TODO: Validate if this is expected
-        self.assertEqual(problem, '           ')  # TODO: Validate if this is expected
-        self.assertEqual(fen, '')
-        self.assertEqual(white, 'NN')
-        self.assertEqual(black, 'Stimpas')
+        self.assertEqual('Kasparov 25 board Simul', game_name.strip())
+        self.assertEqual('', problem.strip())
+        self.assertEqual('', fen.strip())
+        self.assertEqual('1/2-1/2', result.strip())
+        self.assertEqual('Kasparov', white.strip())
+        self.assertEqual('Lloyds Bank: Munro, Clarke, Cooper, Drew', black.strip())
 
 
 class TestReadOnlineGame(unittest.TestCase):
