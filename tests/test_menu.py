@@ -151,16 +151,16 @@ class TestDgtMenu(unittest.TestCase):
         menu = self.create_menu(machine_mock)
         menu.set_state_current_engine()
         menu.enter_top_menu()
-        self.assertEqual('Engine', menu.main_down().large_text.strip())
-        self.assertEqual('Modern Engines', menu.main_down().large_text)
+        self.assertEqual('Engine', menu.main_down().medium_text.strip())
+        self.assertEqual('Modern', menu.main_down().medium_text.strip())
         menu.main_down()  # first engine 'Lc0'
         self.assertEqual('zurichess', menu.main_left().large_text)  # last engine
         self.assertEqual('level     0', menu.main_down().large_text)  # level of zurichess
         self.assertFalse(menu.main_down())  # select zurichess engine
         self.assertEqual('zurichess', menu.get_current_engine_name().large_text)
 
-        self.assertEqual('Engine', menu.main_down().large_text.strip())
-        self.assertEqual('Modern Engines', menu.main_down().large_text)
+        self.assertEqual('Engine', menu.main_down().medium_text.strip())
+        self.assertEqual('Modern', menu.main_down().medium_text.strip())
         self.assertEqual('zurichess', menu.main_down().large_text)  # previously selected engine
 
     @patch('platform.machine')
@@ -168,16 +168,16 @@ class TestDgtMenu(unittest.TestCase):
         menu = self.create_menu(machine_mock)
         menu.set_state_current_engine()
         menu.enter_top_menu()
-        self.assertEqual('Engine', menu.main_down().large_text.strip())
-        self.assertEqual('Modern Engines', menu.main_down().large_text)
-        self.assertEqual('Retro Engines', menu.main_right().large_text)
+        self.assertEqual('Engine', menu.main_down().medium_text.strip())
+        self.assertEqual('Modern', menu.main_down().medium_text.strip())
+        self.assertEqual('Retro', menu.main_right().medium_text.strip())
         menu.main_down()  # first retro engine 'Mep.Academy'
         self.assertEqual('Schachzwerg', menu.main_left().large_text)  # last retro engine
         self.assertFalse(menu.main_down())  # select Schachzwerg engine
         self.assertEqual('Schachzwerg', menu.get_current_engine_name().large_text)
 
-        self.assertEqual('Engine', menu.main_down().large_text.strip())
-        self.assertEqual('Retro Engines', menu.main_down().large_text)
+        self.assertEqual('Engine', menu.main_down().medium_text.strip())
+        self.assertEqual('Retro', menu.main_down().medium_text.strip())
         self.assertEqual('Schachzwerg', menu.main_down().large_text)  # previously selected engine
 
     @patch('platform.machine')
@@ -185,9 +185,9 @@ class TestDgtMenu(unittest.TestCase):
         menu = self.create_menu(machine_mock)
         menu.set_state_current_engine()
         menu.enter_top_menu()
-        self.assertEqual('Engine', menu.main_down().large_text.strip())
-        self.assertEqual('Modern Engines', menu.main_down().large_text)
-        self.assertEqual('Retro Engines', menu.main_right().large_text)
+        self.assertEqual('Engine', menu.main_down().medium_text.strip())
+        self.assertEqual('Modern', menu.main_down().medium_text.strip())
+        self.assertEqual('Retro', menu.main_right().medium_text.strip())
         menu.main_down()  # first retro engine 'Mep.Academy'
         menu.main_right()  # second retro engine
         self.assertEqual('Mep. Milano', menu.main_right().large_text)  # third retro engine
@@ -196,8 +196,8 @@ class TestDgtMenu(unittest.TestCase):
         self.assertFalse(menu.main_down())
         self.assertEqual('Mep. Milano', menu.get_current_engine_name().large_text)
 
-        self.assertEqual('Engine', menu.main_down().large_text.strip())
-        self.assertEqual('Retro Engines', menu.main_down().large_text)
+        self.assertEqual('Engine', menu.main_down().medium_text.strip())
+        self.assertEqual('Retro', menu.main_down().medium_text.strip())
         self.assertEqual('Mep. Milano', menu.main_down().large_text)  # previously selected engine
         self.assertEqual('Level 10 - 60m game', menu.main_down().large_text)  # previously selected engine level
 
@@ -207,8 +207,8 @@ class TestDgtMenu(unittest.TestCase):
         menu = self.create_menu(machine_mock)
         menu.set_state_current_engine()
         menu.enter_top_menu()
-        self.assertEqual('Engine', menu.main_down().large_text.strip())
-        self.assertEqual('Modern Engines', menu.main_down().large_text)
+        self.assertEqual('Engine', menu.main_down().medium_text.strip())
+        self.assertEqual('Modern', menu.main_down().medium_text.strip())
         menu.main_down()  # first engine 'Lc0'
         self.assertEqual('zurichess', menu.main_left().large_text)  # last engine
         self.assertEqual('level     0', menu.main_down().large_text)  # level of zurichess
@@ -216,16 +216,16 @@ class TestDgtMenu(unittest.TestCase):
 
         # select retro engine
         menu.enter_top_menu()
-        self.assertEqual('Engine', menu.main_down().large_text.strip())
-        self.assertEqual('Modern Engines', menu.main_down().large_text)
-        self.assertEqual('Retro Engines', menu.main_right().large_text)
+        self.assertEqual('Engine', menu.main_down().medium_text.strip())
+        self.assertEqual('Modern', menu.main_down().medium_text.strip())
+        self.assertEqual('Retro', menu.main_right().medium_text.strip())
         menu.main_down()  # first retro engine 'Mep.Academy'
         self.assertEqual('Schachzwerg', menu.main_left().large_text)  # last retro engine
         self.assertFalse(menu.main_down())  # select Schachzwerg engine
 
         # re-select modern engine
         menu.enter_top_menu()
-        self.assertEqual('Engine', menu.main_down().large_text.strip())
-        self.assertEqual('Retro Engines', menu.main_down().large_text)
-        self.assertEqual('Modern Engines', menu.main_left().large_text)
+        self.assertEqual('Engine', menu.main_down().medium_text.strip())
+        self.assertEqual('Retro', menu.main_down().medium_text.strip())
+        self.assertEqual('Modern', menu.main_left().medium_text.strip())
         self.assertEqual('zurichess', menu.main_down().large_text)  # previous modern engine
