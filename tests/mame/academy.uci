@@ -1,0 +1,45 @@
+[Level 00 - speed]
+speed=0
+level = NORMAL 0:45
+PicoTimeControl = 45
+
+[Level 01 - 5s move]
+level = NORMAL 0:05
+PicoTimeControl = 5
+
+[Level 02 - 10s move]
+level = NORMAL 0:10
+PicoTimeControl = 10
+
+[Level 03 - 15s move]
+level = NORMAL 0:15
+PicoTimeControl = 15
+
+[Level 04 - 30s move]
+level = NORMAL 0:30
+PicoTimeControl = 30
+
+[Level 07 - 60s move]
+level = NORMAL 0:60
+PicoTimeControl = 60
+
+[Level 06 - 5m game]
+level = BLITZ 5:00 
+PicoTimeControl = 5 
+
+[Level 07 - 15m game]
+level = BLITZ 15:00 
+PicoTimeControl = 15 
+
+[Level 08 - 30m game]
+level = BLITZ 30:00 
+PicoTimeControl = 30 
+
+[Level 09 - 45m game]
+level = BLITZ 45:00
+PicoTimeControl = 45 
+
+[Level 10 - 60m game]
+level = BLITZ 60:00
+PicoTimeControl = 60 
+

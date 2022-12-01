@@ -24,7 +24,7 @@ from typing import Dict, List, Set
 import chess  # type: ignore
 from timecontrol import TimeControl
 from utilities import Observable, DispatchDgt, get_tags, version, write_picochess_ini
-from dgt.util import TimeMode, TimeModeLoop, Top, TopLoop, Mode, ModeLoop, Language, LanguageLoop, BeepLevel, BeepLoop, EBoard, EBoardLoop
+from dgt.util import TimeMode, TimeModeLoop, Top, TopLoop, Mode, ModeLoop, Language, LanguageLoop, BeepLevel, BeepLoop, EBoard, EBoardLoop, EngineTop, EngineTopLoop
 from dgt.util import System, SystemLoop, Display, DisplayLoop, ClockIcons, Voice, VoiceLoop, Info, InfoLoop, PicoTutor, Game, GameLoop, GameSave, GameSaveLoop, GameRead, GameReadLoop, PicoComment, PicoCommentLoop
 from dgt.api import Dgt, Event
 from dgt.translate import DgtTranslate
@@ -60,13 +60,19 @@ class MenuState(object):
     BOOK = 500000
     BOOK_NAME = 510000
 
-    ENG = 600000
-    ENG_NAME = 610000
-    ENG_NAME_LEVEL = 611000
+    ENGINE = 550000
 
-    ENG2 = 650000
-    ENG_NAME2 = 651000
-    ENG_NAME_LEVEL2 = 651100
+    ENG_MODERN = 600000
+    ENG_MODERN_NAME = 610000
+    ENG_MODERN_NAME_LEVEL = 611000
+
+    ENG_RETRO = 630000
+    ENG_RETRO_NAME = 631000
+    ENG_RETRO_NAME_LEVEL = 631100
+
+    ENG_FAV = 650000
+    ENG_FAV_NAME = 651000
+    ENG_FAV_NAME_LEVEL = 651100
 
     SYS = 700000
     SYS_INFO = 710000
@@ -173,7 +179,7 @@ class DgtMenu(object):
         self.remote_engine = bool(engine_server)
         self.dgttranslate = dgttranslate
         if show_enginename:
-            self.state = MenuState.ENG_NAME
+            self.state = MenuState.ENG_MODERN_NAME
         else:
             self.state = MenuState.TOP
 
@@ -196,12 +202,19 @@ class DgtMenu(object):
         self.engine_has_ponder = False
         self.engine_restart = False
 
-        self.menu_engine_name = 0
+        self.installed_engines: List[Dict[str, str]] = []  # list of all engines available, sum of modern+retro engines
+        self.menu_engine_index = 0
         self.menu_engine_level = 0
-        self.installed_engines: List[Dict[str, str]] = []
-        self.menu_engine_name2 = 0
-        self.menu_engine_level2 = 0
-        self.installed_engines2: List[Dict[str, str]] = []
+        self.menu_modern_engine_index = 0
+        self.menu_modern_engine_level = 0
+        self.installed_modern_engines: List[Dict[str, str]] = []  # list of all modern engines
+        self.menu_retro_engine_index = 0
+        self.menu_retro_engine_level = 0
+        self.installed_retro_engines: List[Dict[str, str]] = []  # list of all retro engines
+        self.menu_fav_engine_index = 0
+        self.menu_fav_engine_level = 0
+        self.installed_fav_engines: List[Dict[str, str]] = []  # favorites, selection from all available engines
+        self.menu_engine = EngineTop.MODERN_ENGINE
 
         self.menu_book = 0
         self.all_books: List[Dict[str, str]] = []
@@ -313,6 +326,9 @@ class DgtMenu(object):
 
         # setup the result vars for api (dgtdisplay)
         self.save_choices()
+        self.res_engine_index = self.menu_engine_index
+        self.res_engine_level = self.menu_engine_level
+
         # During "picochess" is displayed, some special actions allowed
         self.picochess_displayed: Set[str] = set()
         self.updt_top = False  # inside the update-menu?
@@ -323,13 +339,9 @@ class DgtMenu(object):
         self.battery = '-NA'  # standard value: NotAvailable (discharging)
         self.inside_room = False
 
-    def set_state_eng(self):
-        self.state = MenuState.ENG_NAME
+    def set_state_current_engine(self):
+        self.state = MenuState.ENG_MODERN_NAME
         self.menu_top = Top.ENGINE
-
-    def set_state_eng2(self):
-        self.state = MenuState.ENG_NAME2
-        self.menu_top = Top.ENGINE2
 
     def inside_updt_menu(self):
         """Inside update menu."""
@@ -370,12 +382,6 @@ class DgtMenu(object):
         self.res_time_depth = self.menu_time_depth
 
         self.res_book_name = self.menu_book
-
-        self.res_engine_name = self.menu_engine_name
-        self.res_engine_level = self.menu_engine_level
-
-        self.res_engine_name2 = self.menu_engine_name2
-        self.res_engine_level2 = self.menu_engine_level2
 
         self.res_system_display_confirm = self.menu_system_display_confirm
         self.res_system_display_ponderinterval = self.menu_system_display_ponderinterval
@@ -444,39 +450,25 @@ class DgtMenu(object):
         self.res_mode = self.menu_mode = mode
 
     def get_engine(self):
-        """Get the flag."""
-        return self.installed_engines[self.res_engine_name]
+        return self.installed_engines[self.res_engine_index]
 
     def set_engine_index(self, index: int):
-        """Set the flag."""
-        self.res_engine_name = self.menu_engine_name = index
+        self.res_engine_index = self.menu_engine_index = index
 
     def get_engine_level(self):
-        """Get the flag."""
         return self.res_engine_level
 
     def set_engine_level(self, level: int):
-        """Set the flag."""
         self.res_engine_level = self.menu_engine_level = level
 
+    def set_modern_engines(self, modern_engines):
+        self.installed_modern_engines = modern_engines
+
+    def set_retro_engines(self, retro_engines):
+        self.installed_retro_engines = retro_engines
+
     def set_favorite_engines(self, fav_engines):
-        self.installed_engines2 = fav_engines
-
-    def get_engine2(self):
-        """Get the flag."""
-        return self.installed_engines2[self.res_engine_name2]
-
-    def set_engine_index2(self, index: int):
-        """Set the flag."""
-        self.res_engine_name2 = self.menu_engine_name2 = index
-
-    def get_engine_level2(self):
-        """Get the flag."""
-        return self.res_engine_level2
-
-    def set_engine_level2(self, level: int):
-        """Set the flag."""
-        self.res_engine_level2 = self.menu_engine_level2 = level
+        self.installed_fav_engines = fav_engines
 
     def set_enginename(self, showname: bool):
         """Set the flag."""
@@ -905,65 +897,111 @@ class DgtMenu(object):
         self.state = MenuState.BOOK_NAME
         return self._get_current_book_name()
 
-    def enter_eng_menu(self):
+    def enter_modern_eng_menu(self):
         """Set the menu state."""
-        self.state = MenuState.ENG
-        text = self.dgttranslate.text(Top.ENGINE.value)
+        self.state = MenuState.ENG_MODERN
+        text = self.dgttranslate.text(EngineTop.MODERN_ENGINE.value)
         return text
 
-    def enter_eng_menu2(self):
+    def enter_retro_eng_menu(self):
         """Set the menu state."""
-        self.state = MenuState.ENG2
-        text = self.dgttranslate.text(Top.ENGINE2.value)
+        self.state = MenuState.ENG_RETRO
+        text = self.dgttranslate.text(EngineTop.RETRO_ENGINE.value)
         return text
 
-    def _get_current_engine_name(self):
-        text = self.installed_engines[self.menu_engine_name]['text']
+    def enter_fav_eng_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.ENG_FAV
+        text = self.dgttranslate.text(EngineTop.FAV_ENGINE.value)
+        return text
+
+    def _get_current_modern_engine_name(self):
+        text = self.installed_engines[self.menu_modern_engine_index]['text']
         text.beep = self.dgttranslate.bl(BeepLevel.BUTTON)
         return text
 
-    def _get_current_engine_name2(self):
-        text = self.installed_engines2[self.menu_engine_name2]['text']
+    def _get_current_retro_engine_name(self):
+        text = self.installed_retro_engines[self.menu_retro_engine_index]['text']
         text.beep = self.dgttranslate.bl(BeepLevel.BUTTON)
         return text
 
-    def enter_eng_name_menu(self):
-        """Set the menu state."""
-        self.state = MenuState.ENG_NAME
-        return self._get_current_engine_name()
+    def _get_current_fav_engine_name(self):
+        text = self.installed_fav_engines[self.menu_fav_engine_index]['text']
+        text.beep = self.dgttranslate.bl(BeepLevel.BUTTON)
+        return text
 
-    def enter_eng_name_menu2(self):
-        """Set the menu state."""
-        self.state = MenuState.ENG_NAME2
-        return self._get_current_engine_name2()
+    def get_current_engine_name(self):
+        """Get current engine name."""
+        text = self.installed_engines[self.menu_engine_index]['text']
+        text.beep = self.dgttranslate.bl(BeepLevel.BUTTON)
+        return text
 
-    def enter_eng_name_level_menu(self):
+    def enter_eng_modern_name_menu(self):
         """Set the menu state."""
-        self.state = MenuState.ENG_NAME_LEVEL
-        eng = self.installed_engines[self.menu_engine_name]
+        self.state = MenuState.ENG_MODERN_NAME
+        return self._get_current_modern_engine_name()
+
+    def enter_eng_retro_name_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.ENG_RETRO_NAME
+        return self._get_current_retro_engine_name()
+
+    def enter_eng_fav_name_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.ENG_FAV_NAME
+        return self._get_current_fav_engine_name()
+
+    def enter_modern_eng_name_level_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.ENG_MODERN_NAME_LEVEL
+        eng = self.installed_engines[self.menu_modern_engine_index]
         level_dict = eng['level_dict']
         if level_dict:
-            if self.menu_engine_level is None or len(level_dict) <= self.menu_engine_level:
-                self.menu_engine_level = len(level_dict) - 1
-            msg = sorted(level_dict)[self.menu_engine_level]
+            if self.menu_modern_engine_level is None or len(level_dict) <= self.menu_modern_engine_level:
+                self.menu_modern_engine_level = len(level_dict) - 1
+            msg = sorted(level_dict)[self.menu_modern_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
         else:
+            self.res_engine_index = self.menu_modern_engine_index
+            self.res_engine_level = self.menu_modern_engine_level
             text = self.save_choices()
         return text
 
-    def enter_eng_name_level_menu2(self):
+    def enter_retro_eng_name_level_menu(self):
         """Set the menu state."""
-        self.state = MenuState.ENG_NAME_LEVEL2
-        eng2 = self.installed_engines2[self.menu_engine_name2]
-        level_dict2 = eng2['level_dict']
-        if level_dict2:
-            if self.menu_engine_level2 is None or len(level_dict2) <= self.menu_engine_level2:
-                self.menu_engine_level2 = len(level_dict2) - 1
-            msg = sorted(level_dict2)[self.menu_engine_level2]
+        self.state = MenuState.ENG_RETRO_NAME_LEVEL
+        retro_eng = self.installed_retro_engines[self.menu_retro_engine_index]
+        retro_level_dict = retro_eng['level_dict']
+        if retro_level_dict:
+            if self.menu_retro_engine_level is None or len(retro_level_dict) <= self.menu_retro_engine_level:
+                self.menu_retro_engine_level = len(retro_level_dict) - 1
+            msg = sorted(retro_level_dict)[self.menu_retro_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
         else:
+            self.res_engine_index = self.menu_engine_index = len(self.installed_modern_engines) + self.menu_retro_engine_index
+            self.res_engine_level = self.menu_retro_engine_level
             text = self.save_choices()
         return text
+
+    def enter_fav_eng_name_level_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.ENG_FAV_NAME_LEVEL
+        fav_eng = self.installed_fav_engines[self.menu_fav_engine_index]
+        fav_level_dict = fav_eng['level_dict']
+        if fav_level_dict:
+            if self.menu_fav_engine_level is None or len(fav_level_dict) <= self.menu_fav_engine_level:
+                self.menu_fav_engine_level = len(fav_level_dict) - 1
+            msg = sorted(fav_level_dict)[self.menu_fav_engine_level]
+            text = self.dgttranslate.text('B00_level', msg)
+        else:
+            self.res_engine_index = self.menu_engine_index
+            self.res_engine_level = self.menu_engine_level
+            text = self.save_choices()
+        return text
+
+    def enter_engine_menu(self):
+        self.state = MenuState.ENGINE
+        return self.dgttranslate.text(Top.ENGINE.value)
 
     def enter_sys_menu(self):
         """Set the menu state."""
@@ -1228,7 +1266,7 @@ class DgtMenu(object):
         return False
 
     def main_up(self):
-        """Change the menu state after UP action."""
+        """Change the menu state after UP action == LEFT arrow button in web interface."""
         text = self.dgttranslate.text('Y00_errormenu')
         if False:  # switch-case
             pass
@@ -1294,23 +1332,35 @@ class DgtMenu(object):
         elif self.state == MenuState.BOOK_NAME:
             text = self.enter_book_menu()
 
-        elif self.state == MenuState.ENG:
+        elif self.state == MenuState.ENGINE:
             text = self.enter_top_menu()
 
-        elif self.state == MenuState.ENG_NAME:
-            text = self.enter_eng_menu()
+        elif self.state == MenuState.ENG_MODERN:
+            text = self.enter_engine_menu()
 
-        elif self.state == MenuState.ENG_NAME_LEVEL:
-            text = self.enter_eng_name_menu()
+        elif self.state == MenuState.ENG_MODERN_NAME:
+            text = self.enter_modern_eng_menu()
 
-        elif self.state == MenuState.ENG2:
-            text = self.enter_top_menu()
+        elif self.state == MenuState.ENG_MODERN_NAME_LEVEL:
+            text = self.enter_eng_modern_name_menu()
 
-        elif self.state == MenuState.ENG_NAME2:
-            text = self.enter_eng_menu2()
+        elif self.state == MenuState.ENG_RETRO:
+            text = self.enter_engine_menu()
 
-        elif self.state == MenuState.ENG_NAME_LEVEL2:
-            text = self.enter_eng_name_menu2()
+        elif self.state == MenuState.ENG_RETRO_NAME:
+            text = self.enter_retro_eng_menu()
+
+        elif self.state == MenuState.ENG_RETRO_NAME_LEVEL:
+            text = self.enter_eng_retro_name_menu()
+
+        elif self.state == MenuState.ENG_FAV:
+            text = self.enter_engine_menu()
+
+        elif self.state == MenuState.ENG_FAV_NAME:
+            text = self.enter_fav_eng_menu()
+
+        elif self.state == MenuState.ENG_FAV_NAME_LEVEL:
+            text = self.enter_eng_fav_name_menu()
 
         elif self.state == MenuState.SYS:
             text = self.enter_top_menu()
@@ -1501,7 +1551,7 @@ class DgtMenu(object):
         return text
 
     def main_down(self):
-        """Change the menu state after DOWN action."""
+        """Change the menu state after DOWN action == RIGHT arrow button in web interface."""
         text = self.dgttranslate.text('Y00_errormenu')
         if False:  # switch-case
             pass
@@ -1515,9 +1565,7 @@ class DgtMenu(object):
             if self.menu_top == Top.BOOK:
                 text = self.enter_book_menu()
             if self.menu_top == Top.ENGINE:
-                text = self.enter_eng_menu()
-            if self.menu_top == Top.ENGINE2:
-                text = self.enter_eng_menu2()
+                text = self.enter_engine_menu()
             if self.menu_top == Top.SYSTEM:
                 text = self.enter_sys_menu()
             if self.menu_top == Top.PICOTUTOR:
@@ -1829,15 +1877,14 @@ class DgtMenu(object):
             event = Event.SET_OPENING_BOOK(book=self.all_books[self.menu_book], book_text=book_text, show_ok=True)
             text = self._fire_event(event)
 
-        elif self.state == MenuState.ENG:
-            text = self.enter_eng_name_menu()
+        elif self.state == MenuState.ENG_MODERN:
+            text = self.enter_eng_modern_name_menu()
 
-        elif self.state == MenuState.ENG_NAME:
+        elif self.state == MenuState.ENG_MODERN_NAME:
             # maybe do action!
-            text = self.enter_eng_name_level_menu()
+            text = self.enter_modern_eng_name_level_menu()
             if not text:
-
-                eng = self.installed_engines[self.menu_engine_name]
+                eng = self.installed_modern_engines[self.menu_modern_engine_index]
                 if 'Online' not in str(eng['name']) and 'Remote' not in str(eng['name']) and 'FICS' not in str(eng['name']) and 'lichess' not in str(eng['name']) and 'PGN' not in str(eng['name']):
                     write_picochess_ini('engine-level', None)
                 eng_text = self.dgttranslate.text('B10_okengine')
@@ -1845,14 +1892,14 @@ class DgtMenu(object):
                 Observable.fire(event)
                 self.engine_restart = True
 
-        elif self.state == MenuState.ENG_NAME_LEVEL:
+        elif self.state == MenuState.ENG_MODERN_NAME_LEVEL:
             # do action!
-            eng = self.installed_engines[self.menu_engine_name]
-            logging.debug('molli: installed engines in level: %s', str(eng))
+            eng = self.installed_modern_engines[self.menu_modern_engine_index]
+            logging.debug('installed engines in level: %s', str(eng))
 
             level_dict = eng['level_dict']
             if level_dict:
-                msg = sorted(level_dict)[self.menu_engine_level]
+                msg = sorted(level_dict)[self.menu_modern_engine_level]
                 options = level_dict[msg]
                 if 'Online' not in str(eng['name']) and 'Remote' not in str(eng['name']) and 'FICS' not in str(eng['name']) and 'lichess' not in str(eng['name']) and 'PGN' not in str(eng['name']):
                     write_picochess_ini('engine-level', msg)
@@ -1865,40 +1912,84 @@ class DgtMenu(object):
             event = Event.NEW_ENGINE(eng=eng, eng_text=eng_text, options=options, show_ok=True)
             text = self._fire_event(event)
             self.engine_restart = True
+            self.res_engine_index = self.menu_engine_index = self.menu_modern_engine_index
+            self.res_engine_level = self.menu_modern_engine_level
 
-        elif self.state == MenuState.ENG2:
-            text = self.enter_eng_name_menu2()
+        elif self.state == MenuState.ENG_RETRO:
+            text = self.enter_eng_retro_name_menu()
 
-        elif self.state == MenuState.ENG_NAME2:
+        elif self.state == MenuState.ENG_RETRO_NAME:
             # maybe do action!
-            text = self.enter_eng_name_level_menu2()
+            text = self.enter_retro_eng_name_level_menu()
             if not text:
-                eng2 = self.installed_engines2[self.menu_engine_name2]
-                if 'Online' not in str(eng2['name']) and 'Remote' not in str(eng2['name']) and 'FICS' not in str(eng2['name']) and 'lichess' not in str(eng2['name']) and 'PGN' not in str(eng2['name']):
+                retro_eng = self.installed_retro_engines[self.menu_retro_engine_index]
+                if 'Online' not in str(retro_eng['name']) and 'Remote' not in str(retro_eng['name']) and 'FICS' not in str(retro_eng['name']) and 'lichess' not in str(retro_eng['name']) and 'PGN' not in str(retro_eng['name']):
                     write_picochess_ini('engine-level', None)
                 eng_text = self.dgttranslate.text('B10_okengine')
-                event = Event.NEW_ENGINE(eng=eng2, eng_text=eng_text, options={}, show_ok=True)
+                event = Event.NEW_ENGINE(eng=retro_eng, eng_text=eng_text, options={}, show_ok=True)
                 Observable.fire(event)
                 self.engine_restart = True
 
-        elif self.state == MenuState.ENG_NAME_LEVEL2:
+        elif self.state == MenuState.ENG_RETRO_NAME_LEVEL:
             # do action!
-            eng2 = self.installed_engines2[self.menu_engine_name2]
-            level_dict2 = eng2['level_dict']
-            if level_dict2:
-                msg = sorted(level_dict2)[self.menu_engine_level2]
-                options = level_dict2[msg]
-                if 'Online' not in str(eng2['name']) and 'Remote' not in str(eng2['name']) and 'FICS' not in str(eng2['name']) and 'lichess' not in str(eng2['name']) and 'PGN' not in str(eng2['name']):
+            retro_eng = self.installed_retro_engines[self.menu_retro_engine_index]
+            retro_level_dict = retro_eng['level_dict']
+            if retro_level_dict:
+                msg = sorted(retro_level_dict)[self.menu_retro_engine_level]
+                options = retro_level_dict[msg]
+                if 'Online' not in str(retro_eng['name']) and 'Remote' not in str(retro_eng['name']) and 'FICS' not in str(retro_eng['name']) and 'lichess' not in str(retro_eng['name']) and 'PGN' not in str(retro_eng['name']):
                     write_picochess_ini('engine-level', msg)
-
                 event = Event.LEVEL(options={}, level_text=self.dgttranslate.text('B10_level', msg), level_name=msg)
                 Observable.fire(event)
             else:
                 options = {}
             eng_text = self.dgttranslate.text('B10_okengine')
-            event = Event.NEW_ENGINE(eng=eng2, eng_text=eng_text, options=options, show_ok=True)
+            event = Event.NEW_ENGINE(eng=retro_eng, eng_text=eng_text, options=options, show_ok=True)
             text = self._fire_event(event)
             self.engine_restart = True
+            self.res_engine_index = self.menu_engine_index = len(self.installed_modern_engines) + self.menu_retro_engine_index
+            self.res_engine_level = self.menu_retro_engine_level
+
+        elif self.state == MenuState.ENG_FAV:
+            text = self.enter_eng_fav_name_menu()
+
+        elif self.state == MenuState.ENG_FAV_NAME:
+            # maybe do action!
+            text = self.enter_fav_eng_name_level_menu()
+            if not text:
+                retro_eng = self.installed_fav_engines[self.menu_fav_engine_index]
+                if 'Online' not in str(retro_eng['name']) and 'Remote' not in str(retro_eng['name']) and 'FICS' not in str(retro_eng['name']) and 'lichess' not in str(retro_eng['name']) and 'PGN' not in str(retro_eng['name']):
+                    write_picochess_ini('engine-level', None)
+                eng_text = self.dgttranslate.text('B10_okengine')
+                event = Event.NEW_ENGINE(eng=retro_eng, eng_text=eng_text, options={}, show_ok=True)
+                Observable.fire(event)
+                self.engine_restart = True
+
+        elif self.state == MenuState.ENG_FAV_NAME_LEVEL:
+            # do action!
+            fav_eng = self.installed_fav_engines[self.menu_fav_engine_index]
+            fav_level_dict = fav_eng['level_dict']
+            if fav_level_dict:
+                msg = sorted(fav_level_dict)[self.menu_fav_engine_level]
+                options = fav_level_dict[msg]
+                if 'Online' not in str(fav_eng['name']) and 'Remote' not in str(fav_eng['name']) and 'FICS' not in str(fav_eng['name']) and 'lichess' not in str(fav_eng['name']) and 'PGN' not in str(fav_eng['name']):
+                    write_picochess_ini('engine-level', msg)
+                event = Event.LEVEL(options={}, level_text=self.dgttranslate.text('B10_level', msg), level_name=msg)
+                Observable.fire(event)
+            else:
+                options = {}
+            eng_text = self.dgttranslate.text('B10_okengine')
+            event = Event.NEW_ENGINE(eng=fav_eng, eng_text=eng_text, options=options, show_ok=True)
+            text = self._fire_event(event)
+            self.engine_restart = True
+
+        elif self.state == MenuState.ENGINE:
+            if self.menu_engine == EngineTop.MODERN_ENGINE:
+                text = self.enter_modern_eng_menu()
+            elif self.menu_engine == EngineTop.RETRO_ENGINE:
+                text = self.enter_retro_eng_menu()
+            elif self.menu_engine == EngineTop.FAV_ENGINE:
+                text = self.enter_fav_eng_menu()
 
         elif self.state == MenuState.SYS:
             if self.menu_system == System.INFO:
@@ -2396,38 +2487,58 @@ class DgtMenu(object):
             self.menu_book = (self.menu_book - 1) % len(self.all_books)
             text = self._get_current_book_name()
 
-        elif self.state == MenuState.ENG:
+        elif self.state == MenuState.ENGINE:
             self.state = MenuState.BOOK
             self.menu_top = TopLoop.prev(self.menu_top)
             text = self.dgttranslate.text(self.menu_top.value)
 
-        elif self.state == MenuState.ENG_NAME:
-            self.menu_engine_name = (self.menu_engine_name - 1) % len(self.installed_engines)
-            text = self._get_current_engine_name()
+        elif self.state == MenuState.ENG_MODERN:
+            self.state = MenuState.ENG_FAV
+            self.menu_engine = EngineTopLoop.prev(self.menu_engine)
+            text = self.dgttranslate.text(self.menu_engine.value)
 
-        elif self.state == MenuState.ENG_NAME_LEVEL:
-            level_dict = self.installed_engines[self.menu_engine_name]['level_dict']
-            self.menu_engine_level = (self.menu_engine_level - 1) % len(level_dict)
-            msg = sorted(level_dict)[self.menu_engine_level]
+        elif self.state == MenuState.ENG_MODERN_NAME:
+            self.menu_modern_engine_index = (self.menu_modern_engine_index - 1) % len(self.installed_modern_engines)
+            text = self._get_current_modern_engine_name()
+
+        elif self.state == MenuState.ENG_MODERN_NAME_LEVEL:
+            level_dict = self.installed_modern_engines[self.menu_modern_engine_index]['level_dict']
+            self.menu_modern_engine_level = (self.menu_modern_engine_level - 1) % len(level_dict)
+            msg = sorted(level_dict)[self.menu_modern_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
 
-        elif self.state == MenuState.ENG2:
-            self.state = MenuState.ENG
-            self.menu_top = TopLoop.prev(self.menu_top)
-            text = self.dgttranslate.text(self.menu_top.value)
+        elif self.state == MenuState.ENG_RETRO:
+            self.state = MenuState.ENG_MODERN
+            self.menu_engine = EngineTopLoop.prev(self.menu_engine)
+            text = self.dgttranslate.text(self.menu_engine.value)
 
-        elif self.state == MenuState.ENG_NAME2:
-            self.menu_engine_name2 = (self.menu_engine_name2 - 1) % len(self.installed_engines2)
-            text = self._get_current_engine_name2()
+        elif self.state == MenuState.ENG_RETRO_NAME:
+            self.menu_retro_engine_index = (self.menu_retro_engine_index - 1) % len(self.installed_retro_engines)
+            text = self._get_current_retro_engine_name()
 
-        elif self.state == MenuState.ENG_NAME_LEVEL2:
-            level_dict2 = self.installed_engines2[self.menu_engine_name2]['level_dict']
-            self.menu_engine_level2 = (self.menu_engine_level2 - 1) % len(level_dict2)
-            msg = sorted(level_dict2)[self.menu_engine_level2]
+        elif self.state == MenuState.ENG_RETRO_NAME_LEVEL:
+            retro_level_dict = self.installed_retro_engines[self.menu_retro_engine_index]['level_dict']
+            self.menu_retro_engine_level = (self.menu_retro_engine_level - 1) % len(retro_level_dict)
+            msg = sorted(retro_level_dict)[self.menu_retro_engine_level]
+            text = self.dgttranslate.text('B00_level', msg)
+
+        elif self.state == MenuState.ENG_FAV:
+            self.state = MenuState.ENG_RETRO
+            self.menu_engine = EngineTopLoop.prev(self.menu_engine)
+            text = self.dgttranslate.text(self.menu_engine.value)
+
+        elif self.state == MenuState.ENG_FAV_NAME:
+            self.menu_fav_engine_index = (self.menu_fav_engine_index - 1) % len(self.installed_fav_engines)
+            text = self._get_current_fav_engine_name()
+
+        elif self.state == MenuState.ENG_FAV_NAME_LEVEL:
+            retro_level_dict = self.installed_fav_engines[self.menu_fav_engine_index]['level_dict']
+            self.menu_fav_engine_level = (self.menu_fav_engine_level - 1) % len(retro_level_dict)
+            msg = sorted(retro_level_dict)[self.menu_fav_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
 
         elif self.state == MenuState.SYS:
-            self.state = MenuState.ENG2
+            self.state = MenuState.ENGINE
             self.menu_top = TopLoop.prev(self.menu_top)
             text = self.dgttranslate.text(self.menu_top.value)
 
@@ -2825,7 +2936,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text('B00_tc_depth', self.tc_depth_list[self.menu_time_depth])
 
         elif self.state == MenuState.BOOK:
-            self.state = MenuState.ENG
+            self.state = MenuState.ENGINE
             self.menu_top = TopLoop.next(self.menu_top)
             text = self.dgttranslate.text(self.menu_top.value)
 
@@ -2833,34 +2944,54 @@ class DgtMenu(object):
             self.menu_book = (self.menu_book + 1) % len(self.all_books)
             text = self._get_current_book_name()
 
-        elif self.state == MenuState.ENG:
-            self.state = MenuState.ENG2
-            self.menu_top = TopLoop.next(self.menu_top)
-            text = self.dgttranslate.text(self.menu_top.value)
-
-        elif self.state == MenuState.ENG_NAME:
-            self.menu_engine_name = (self.menu_engine_name + 1) % len(self.installed_engines)
-            text = self._get_current_engine_name()
-
-        elif self.state == MenuState.ENG_NAME_LEVEL:
-            level_dict = self.installed_engines[self.menu_engine_name]['level_dict']
-            self.menu_engine_level = (self.menu_engine_level + 1) % len(level_dict)
-            msg = sorted(level_dict)[self.menu_engine_level]
-            text = self.dgttranslate.text('B00_level', msg)
-
-        elif self.state == MenuState.ENG2:
+        elif self.state == MenuState.ENGINE:
             self.state = MenuState.SYS
             self.menu_top = TopLoop.next(self.menu_top)
             text = self.dgttranslate.text(self.menu_top.value)
 
-        elif self.state == MenuState.ENG_NAME2:
-            self.menu_engine_name2 = (self.menu_engine_name2 + 1) % len(self.installed_engines2)
-            text = self._get_current_engine_name2()
+        elif self.state == MenuState.ENG_MODERN:
+            self.state = MenuState.ENG_RETRO
+            self.menu_engine = EngineTopLoop.next(self.menu_engine)
+            text = self.dgttranslate.text(self.menu_engine.value)
 
-        elif self.state == MenuState.ENG_NAME_LEVEL2:
-            level_dict2 = self.installed_engines2[self.menu_engine_name2]['level_dict']
-            self.menu_engine_level2 = (self.menu_engine_level2 + 1) % len(level_dict2)
-            msg = sorted(level_dict2)[self.menu_engine_level2]
+        elif self.state == MenuState.ENG_MODERN_NAME:
+            self.menu_modern_engine_index = (self.menu_modern_engine_index + 1) % len(self.installed_modern_engines)
+            text = self._get_current_modern_engine_name()
+
+        elif self.state == MenuState.ENG_MODERN_NAME_LEVEL:
+            level_dict = self.installed_modern_engines[self.menu_modern_engine_index]['level_dict']
+            self.menu_modern_engine_level = (self.menu_modern_engine_level + 1) % len(level_dict)
+            msg = sorted(level_dict)[self.menu_modern_engine_level]
+            text = self.dgttranslate.text('B00_level', msg)
+
+        elif self.state == MenuState.ENG_RETRO:
+            self.state = MenuState.ENG_FAV
+            self.menu_engine = EngineTopLoop.next(self.menu_engine)
+            text = self.dgttranslate.text(self.menu_engine.value)
+
+        elif self.state == MenuState.ENG_RETRO_NAME:
+            self.menu_retro_engine_index = (self.menu_retro_engine_index + 1) % len(self.installed_retro_engines)
+            text = self._get_current_retro_engine_name()
+
+        elif self.state == MenuState.ENG_RETRO_NAME_LEVEL:
+            retro_level_dict = self.installed_retro_engines[self.menu_retro_engine_index]['level_dict']
+            self.menu_retro_engine_level = (self.menu_retro_engine_level + 1) % len(retro_level_dict)
+            msg = sorted(retro_level_dict)[self.menu_retro_engine_level]
+            text = self.dgttranslate.text('B00_level', msg)
+
+        elif self.state == MenuState.ENG_FAV:
+            self.state = MenuState.ENG_MODERN
+            self.menu_engine = EngineTopLoop.next(self.menu_engine)
+            text = self.dgttranslate.text(self.menu_engine.value)
+
+        elif self.state == MenuState.ENG_FAV_NAME:
+            self.menu_fav_engine_index = (self.menu_fav_engine_index + 1) % len(self.installed_fav_engines)
+            text = self._get_current_fav_engine_name()
+
+        elif self.state == MenuState.ENG_FAV_NAME_LEVEL:
+            retro_level_dict = self.installed_fav_engines[self.menu_fav_engine_index]['level_dict']
+            self.menu_fav_engine_level = (self.menu_fav_engine_level + 1) % len(retro_level_dict)
+            msg = sorted(retro_level_dict)[self.menu_fav_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
 
         elif self.state == MenuState.SYS:

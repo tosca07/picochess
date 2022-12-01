@@ -93,8 +93,10 @@ class UciEngine(object):
             self.res = None
             self.level_support = False
 
-            self.installed_engines = read_engine_ini()
-            self.installed_engines2 = read_engine_ini(filename='favorites.ini')
+            self.modern_engines = read_engine_ini(filename='engines.ini')
+            self.retro_engines = read_engine_ini(filename='retro.ini')
+            self.favorite_engines = read_engine_ini(filename='favorites.ini')
+            self.installed_engines = self.modern_engines + self.retro_engines
 
         except OSError:
             logging.exception('OS error in starting engine')
@@ -158,9 +160,17 @@ class UciEngine(object):
         """Get installed engines."""
         return self.installed_engines
 
-    def get_installed_engines2(self):
-        """Get installed engines."""
-        return self.installed_engines2
+    def get_modern_engines(self):
+        """Get modern engines."""
+        return self.modern_engines
+
+    def get_retro_engines(self):
+        """Get retro engines."""
+        return self.retro_engines
+
+    def get_favorite_engines(self):
+        """Get favorite engines."""
+        return self.favorite_engines
 
     def position(self, game: Board):
         """Set position."""

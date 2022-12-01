@@ -2136,9 +2136,11 @@ def main() -> None:
                                                'books': all_books, 'book_index': book_index,
                                                'level_text': level_text, 'level_name': level_name,
                                                'tc_init': state.time_control.get_parameters(), 'time_text': time_text}))
-    # Favorites
-    state.dgtmenu.set_favorite_engines(engine.get_installed_engines2())
 
+    # engines setup
+    state.dgtmenu.set_modern_engines(engine.get_modern_engines())
+    state.dgtmenu.set_retro_engines(engine.get_retro_engines())
+    state.dgtmenu.set_favorite_engines(engine.get_favorite_engines())
     DisplayMsg.show(Message.ENGINE_STARTUP(installed_engines=engine.get_installed_engines(), file=engine.get_file(), level_index=level_index, has_960=engine.has_chess960(), has_ponder=engine.has_ponder()))
 
     # set timecontrol restore data set for normal engines after leaving emulation mode
@@ -2177,10 +2179,10 @@ def main() -> None:
 
     ModeInfo.set_game_ending(result='*')
 
-    state.dgtmenu.set_state_eng()
-    text: Dgt.DISPLAY_TEXT = state.dgtmenu.enter_eng_name_menu()
+    state.dgtmenu.set_state_current_engine()
+    text: Dgt.DISPLAY_TEXT = state.dgtmenu.get_current_engine_name()
     state.engine_text = str(text.large_text)
-    state.dgtmenu.exit_menu()
+    state.dgtmenu.enter_top_menu()
 
     # Event loop
     logging.info('evt_queue ready')
@@ -2381,7 +2383,7 @@ def main() -> None:
                     set_wait_state(msg, state, not engine_fallback)
                     if state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):   # engine isnt started/searching => stop the clock
                         state.stop_clock()
-                    state.engine_text = state.dgtmenu.enter_eng_name_menu().large_text
+                    state.engine_text = state.dgtmenu.get_current_engine_name().large_text
                     state.dgtmenu.exit_menu()
                     if state.dgtmenu.get_enginename():
                         DisplayMsg.show(Message.ENGINE_NAME(engine_name=state.engine_text))

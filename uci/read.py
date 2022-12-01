@@ -22,12 +22,10 @@ import os
 from dgt.api import Dgt
 
 
-def read_engine_ini(engine_shell=None, engine_path=None, filename=''):
-    """Read engine.ini and creates a library list out of it."""
-    if filename == '':
+def read_engine_ini(engine_shell=None, engine_path=None, filename=None):
+    """Read engine.ini and create a library list out of it."""
+    if filename is None:
         filename = 'engines.ini'
-    else:
-        filename = 'favorites.ini'
     config = configparser.ConfigParser()
     config.optionxform = str
     try:
@@ -35,10 +33,10 @@ def read_engine_ini(engine_shell=None, engine_path=None, filename=''):
             if not engine_path:
                 program_path = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
                 engine_path = program_path + os.sep + 'engines' + os.sep + platform.machine()
-            logging.debug('molli: complete path without shell: %s', str(engine_path + os.sep + filename))
+            logging.debug('complete path without shell: %s', str(engine_path + os.sep + filename))
             config.read(engine_path + os.sep + filename)
         else:
-            logging.debug('molli: complete path: %s', str(engine_path + os.sep + filename))
+            logging.debug('complete path: %s', str(engine_path + os.sep + filename))
             with engine_shell.open(engine_path + os.sep + filename, 'r') as file:
                 config.read_file(file)
     except FileNotFoundError:

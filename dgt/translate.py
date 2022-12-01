@@ -900,13 +900,27 @@ class DgtTranslate(object):
             frtxt = Dgt.DISPLAY_TEXT(large_text='Moteur     ', medium_text='Moteur  ', small_text='moteur')
             estxt = Dgt.DISPLAY_TEXT(large_text='Motor      ', medium_text='Motor   ', small_text='motor ')
             ittxt = Dgt.DISPLAY_TEXT(large_text='Motore     ', medium_text='Motore  ', small_text='motore')
-        if text_id == 'top_engine_menu2':
+        if text_id == 'engine_menu_modern':
+            entxt = Dgt.DISPLAY_TEXT(large_text='Modern Engines', medium_text='Modern  ', small_text='modern')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'engine_menu_retro':
+            entxt = Dgt.DISPLAY_TEXT(large_text='Retro Engines', medium_text='Retro   ', small_text='retro ')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'engine_menu_favorites':
             entxt = Dgt.DISPLAY_TEXT(large_text='Favorites  ', medium_text='Favorite', small_text='favor.')
             detxt = Dgt.DISPLAY_TEXT(large_text='Favoriten  ', medium_text='Favorite', small_text='Favor.')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
-            ittxt = Dgt.DISPLAY_TEXT(large_text='Motore     ', medium_text='Motore  ', small_text='motore')
+            ittxt = entxt
         if text_id == 'top_system_menu':
             entxt = Dgt.DISPLAY_TEXT(large_text='System     ', medium_text='System  ', small_text='system')
             detxt = Dgt.DISPLAY_TEXT(large_text='System     ', medium_text='System  ', small_text='system')
