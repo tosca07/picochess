@@ -2521,7 +2521,7 @@ def main() -> None:
 
                     state.game = chess.Board()
                     state.game.turn = chess.WHITE
-                    state.play_mode = PlayMode.USER_WHITE
+                    
                     if uci960:
                         state.game.set_chess960_pos(event.pos960)
                                 
@@ -2600,7 +2600,7 @@ def main() -> None:
                         state.stop_clock()
 
                         state.game.turn = chess.WHITE
-                        state.play_mode = PlayMode.USER_WHITE
+                    
                         if uci960:
                             state.game.set_chess960_pos(event.pos960)
                             
