@@ -1439,14 +1439,11 @@ def main() -> None:
             state.done_move = legal_moves[legal_fens_pico.index(fen)]
             state.best_move_posted = False
             state.best_move_displayed = None
-            time.sleep(3)
-            DisplayMsg.show(Message.WRONG_FEN())  # display set pieces/pico's move
-            time.sleep(3)  # display set pieces again and accept new players move as pico's move
             if computer_move:
                 DisplayMsg.show(Message.COMPUTER_MOVE(move=computer_move, ponder=False, game=state.game.copy(), wait=False))
                 time.sleep(3)
             DisplayMsg.show(Message.ALTERNATIVE_MOVE(game=state.game.copy(), play_mode=state.play_mode))
-            time.sleep(2)
+            time.sleep(3)
             if state.done_move:
                 DisplayMsg.show(Message.COMPUTER_MOVE(move=state.done_move, ponder=False, game=state.game.copy(), wait=False))
                 time.sleep(1.5)
