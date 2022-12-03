@@ -116,7 +116,7 @@ var boardStatusEl = $('#BoardStatus'),
     moveListEl = $('#moveList')
 
 var gameHistory, fenHash, currentPosition;
-const SERVER_NAME = 'picochess.local'
+const SERVER_NAME = location.hostname
 const OBOCK_SERVER_PREFIX = 'http://' + SERVER_NAME + ':7777';
 const GAMES_SERVER_PREFIX = 'http://' + SERVER_NAME + ':7778';
 
