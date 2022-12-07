@@ -160,6 +160,14 @@ class ChessBoardHandler(ServerRequestHandler):
         self.render('web/picoweb/templates/clock.html', theme=self.theme)
 
 
+class HelpHandler(ServerRequestHandler):
+    def initialize(self, theme='dark'):
+        self.theme = theme
+
+    def get(self):
+        self.render('web/picoweb/templates/help.html', theme=self.theme)
+
+
 class WebServer(threading.Thread):
     def __init__(self, port: int, dgtboard: EBoard, theme: str):
         shared: dict = {}
@@ -174,6 +182,7 @@ class WebServer(threading.Thread):
             (r'/event', EventHandler, dict(shared=shared)),
             (r'/dgt', DGTHandler, dict(shared=shared)),
             (r'/info', InfoHandler, dict(shared=shared)),
+            (r'/help', HelpHandler, dict(theme=theme)),
 
             (r'/channel', ChannelHandler, dict(shared=shared)),
             (r'.*', tornado.web.FallbackHandler, {'fallback': wsgi_app})
