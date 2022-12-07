@@ -1,1 +1,0 @@
-To maintain the layout you need to install the provided ChessAlpha2 font
