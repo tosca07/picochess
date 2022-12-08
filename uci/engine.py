@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Optional
 import logging
 import configparser
 import spur  # type: ignore
@@ -27,6 +28,8 @@ import chess.uci  # type: ignore
 from chess import Board  # type: ignore
 from uci.informer import Informer
 from uci.read import read_engine_ini
+from uci.rating import Rating, Result
+from utilities import write_picochess_ini
 
 
 class UciShell(object):
@@ -66,6 +69,8 @@ class UciEngine(object):
         super(UciEngine, self).__init__()
         logging.info('parameter retrospeed=' + retrospeed)
         try:
+            self.is_adaptive = False
+            self.engine_rating = -1
             self.shell = uci_shell.get()
             logging.info('file ' + file)
             if file.find('/engines/armv7l/mame') > 0:
@@ -296,7 +301,7 @@ class UciEngine(object):
         """Set engine mode."""
         self.engine.setoption({'Ponder': ponder, 'UCI_AnalyseMode': analyse})
 
-    def startup(self, options: dict, show=True):
+    def startup(self, options: dict, rating: Optional[Rating] = None):
         """Startup engine."""
         parser = configparser.ConfigParser()
 
@@ -315,9 +320,45 @@ class UciEngine(object):
 
         self.level_support = bool(options)
 
-        logging.debug('setting engine with options %s', options)
-        self.options = options
+        self.options = options.copy()
+        self._engine_rating(rating)
+        logging.debug('setting engine with options %s', self.options)
         self.send()
-        if show:
-            logging.debug('Loaded engine [%s]', self.get_name())
-            logging.debug('Supported options [%s]', self.get_options())
+
+        logging.debug('Loaded engine [%s]', self.get_name())
+        logging.debug('Supported options [%s]', self.get_options())
+
+    def _engine_rating(self, rating: Optional[Rating] = None):
+        """
+        Set engine_rating; replace UCI_Elo 'auto' value with rating.
+        Delete UCI_Elo from the options if no rating is given.
+        """
+        if 'UCI_Elo' in self.options:
+            if self.options['UCI_Elo'].strip().lower() == 'auto':
+                if rating is not None:
+                    self.engine_rating = self._round_engine_rating(int(rating.rating))
+                    self.options['UCI_Elo'] = str(int(self.engine_rating))
+                    self.is_adaptive = True
+                else:
+                    del self.options['UCI_Elo']
+            else:
+                self.engine_rating = int(self.options['UCI_Elo'])
+
+    def _round_engine_rating(self, value: int):
+        """ Round the value up to the next 50, minimum=500 """
+        return max(500, int(value / 50 + 1) * 50)
+
+    def update_rating(self, rating: Rating, result: Result) -> Rating:
+        """ Send the new ELO value to the engine and save the ELO and rating deviation """
+        if not self.is_adaptive or result is None or self.engine_rating < 0:
+            return rating
+        new_rating = rating.rate(Rating(self.engine_rating, 0), result)
+        self._save_rating(new_rating)
+        self.option('UCI_Elo', str(int(new_rating.rating)))
+        self.send()
+        self.engine_rating = self._round_engine_rating(int(new_rating.rating))
+        return new_rating
+
+    def _save_rating(self, new_rating: Rating):
+        write_picochess_ini('pgn-elo', max(500, int(new_rating.rating)))
+        write_picochess_ini('rating-deviation', int(new_rating.rating_deviation))

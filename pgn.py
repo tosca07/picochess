@@ -528,11 +528,14 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             pass
 
         elif isinstance(message, Message.SYSTEM_INFO):
-            self.engine_name = message.info['engine_name']
-            self.old_engine = self.engine_name
-            self.user_name = message.info['user_name']
-            self.user_name_orig = message.info['user_name']
-            self.user_elo = message.info['user_elo']
+            if 'engine_name' in message.info:
+                self.engine_name = message.info['engine_name']
+                self.old_engine = self.engine_name
+            if 'user_name' in message.info:
+                self.user_name = message.info['user_name']
+                self.user_name_orig = message.info['user_name']
+            if 'user_elo' in message.info:
+                self.user_elo = message.info['user_elo']
 
         elif isinstance(message, Message.IP_INFO):
             self.location = message.info['location']

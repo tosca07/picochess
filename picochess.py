@@ -20,7 +20,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from configparser import ConfigParser
 import sys
 import os
 import threading
@@ -36,6 +35,7 @@ import math
 from typing import Optional, Set, Tuple
 
 from uci.engine import UciShell, UciEngine
+from uci.rating import Rating, determine_result
 from uci.read import read_engine_ini
 import chess  # type: ignore
 import chess.pgn  # type: ignore
@@ -176,6 +176,7 @@ class PicochessState:
         self.tc_init_last = None
         self.think_time = 0
         self.time_control: TimeControl = None
+        self.rating: Rating = None
 
     def start_clock(self):
         """Start the clock."""
@@ -1166,6 +1167,7 @@ def main() -> None:
                 msg = Message.USER_MOVE_DONE(move=move, fen=fen, turn=turn, game=state.game.copy())
                 game_end = state.check_game_state()
                 if game_end:
+                    update_elo(state, game_end.result)
                     # molli: for online/emulation mode we have to publish this move as well to the engine
                     if online_mode():
                         logging.info('starting think()')
@@ -1242,6 +1244,16 @@ def main() -> None:
                         DisplayMsg.show(Message.SHOW_TEXT(text_string=game_comment))
                         time.sleep(0.7)
             state.takeback_active = False
+
+    def update_elo(state, result):
+        if engine.is_adaptive:
+            state.rating = engine.update_rating(state.rating, determine_result(result, state.play_mode,
+                                                state.game.turn == chess.WHITE))
+
+    def update_elo_display(state):
+        if engine.is_adaptive:
+            DisplayMsg.show(Message.SYSTEM_INFO(
+                info={'user_elo': int(state.rating.rating), 'engine_elo': engine.engine_rating}))
 
     def process_fen(fen: str, state: PicochessState):
         """Process given fen like doMove, undoMove, takebackPosition, handleSliding."""
@@ -1514,6 +1526,7 @@ def main() -> None:
 
             game_end = state.check_game_state()
             if game_end:
+                update_elo(state, game_end.result)
                 state.legal_fens = []
                 state.legal_fens_after_cmove = []
                 if online_mode():
@@ -1868,7 +1881,8 @@ def main() -> None:
     parser.add_argument('-lf', '--log-file', type=str, help='log to the given file')
     parser.add_argument('-pf', '--pgn-file', type=str, help='pgn file used to store the games', default='games.pgn')
     parser.add_argument('-pu', '--pgn-user', type=str, help='user name for the pgn file', default=None)
-    parser.add_argument('-pe', '--pgn-elo', type=str, help='user elo for the pgn file', default='-')
+    parser.add_argument('-pe', '--pgn-elo', type=str,
+                        help='user elo for the pgn file, also used for auto-adjusting the elo', default='-')
     parser.add_argument('-w', '--web-server', dest='web_server_port', nargs='?', const=80, type=int, metavar='PORT',
                         help='launch web server')
     parser.add_argument('-m', '--email', type=str, help='email used to send pgn/log files', default=None)
@@ -1917,7 +1931,7 @@ def main() -> None:
     parser.add_argument('-teng', '--tutor-engine', type=str, default='/opt/picochess/engines/armv7l/a-stockf', help='engine used for PicoTutor analysis')
     parser.add_argument('-watc', '--tutor-watcher', action='store_true', help='Pico Watcher: atomatic move evaluation, blunder warning & move suggestion, default is off')
     parser.add_argument('-coch', '--tutor-coach', action='store_true', help='Pico Coach: move and position evaluation, move suggestion etc. on demand, default is off')
-    parser.add_argument('-open', '--tutor-explorer', action='store_true', help='Pico Opening Explorrer: shows the name(s) of the opening (based on ECO file), default is off')
+    parser.add_argument('-open', '--tutor-explorer', action='store_true', help='Pico Opening Explorer: shows the name(s) of the opening (based on ECO file), default is off')
     parser.add_argument('-tcom', '--tutor-comment', type=str, default='off', help='show game comments based on specific engines (=single) or in general (=all). Default value is off')
     parser.add_argument('-loc', '--location', type=str, default='auto', help='determine automatically location for pgn file if set to auto, otherwise the location string which is set will be used')
     parser.add_argument('-dtcs', '--def-timectrl', type=str, default='5 0', help='default time control setting when leaving an emulation engine after startup')
@@ -1926,6 +1940,7 @@ def main() -> None:
     parser.add_argument('-board', '--board-type', type=str, default='dgt', help='Type of e-board: "dgt", "certabo", "chesslink" or "chessnut", default is "dgt"')
     parser.add_argument('-theme', '--theme', type=str, default='dark', help='Web theme, "light", "dark" or blank, default is "dark", leave blank for another light theme')
     parser.add_argument('-rspeed', '--rspeed', type=str, default='-speed 1.0', help='Speedbar, -nothrottle for fullspeed or any other value from 0.2 to 1.0')
+    parser.add_argument('-ratdev', '--rating-deviation', type=str, help='Player rating deviation for automatic adjustment of ELO', default=350)
     args, unknown = parser.parse_known_args()
 
     # Enable logging
@@ -2113,9 +2128,11 @@ def main() -> None:
     bookreader = chess.polyglot.open_reader(all_books[book_index]['file'])
     state.searchmoves = AlternativeMover()
 
+    if args.pgn_elo and args.pgn_elo.isnumeric() and args.rating_deviation:
+        state.rating = Rating(float(args.pgn_elo), float(args.rating_deviation))
     args.engine_level = None if args.engine_level == 'None' else args.engine_level
     engine_opt, level_index = get_engine_level_dict(args.engine_level)
-    engine.startup(engine_opt)
+    engine.startup(engine_opt, state.rating)
 
     # Startup - external
     level_name = args.engine_level
@@ -2139,6 +2156,7 @@ def main() -> None:
     state.dgtmenu.set_retro_engines(engine.get_retro_engines())
     state.dgtmenu.set_favorite_engines(engine.get_favorite_engines())
     DisplayMsg.show(Message.ENGINE_STARTUP(installed_engines=engine.get_installed_engines(), file=engine.get_file(), level_index=level_index, has_960=engine.has_chess960(), has_ponder=engine.has_ponder()))
+    update_elo_display(state)
 
     # set timecontrol restore data set for normal engines after leaving emulation mode
     pico_time = args.def_timectrl
@@ -2208,7 +2226,7 @@ def main() -> None:
 
             elif isinstance(event, Event.LEVEL):
                 if event.options:
-                    engine.startup(event.options, False)
+                    engine.startup(event.options, state.rating)
                 DisplayMsg.show(Message.LEVEL(level_text=event.level_text, level_name=event.level_name,
                                               do_speak=bool(event.options)))
                 state.stop_fen_timer()
@@ -2292,7 +2310,7 @@ def main() -> None:
                                 engine = UciEngine(file=old_file, uci_shell=uci_remote_shell, retrospeed=engine_speed)
                             else:
                                 engine = UciEngine(file=old_file, uci_shell=uci_local_shell, retrospeed=engine_speed)
-                            engine.startup(old_options)
+                            engine.startup(old_options, state.rating)
                             engine.newgame(state.game.copy())
                             try:
                                 engine_name = engine.get_name()
@@ -2305,7 +2323,7 @@ def main() -> None:
                             logging.error('engine shutdown failure')
                             DisplayMsg.show(Message.ENGINE_FAIL())
 
-                    engine.startup(event.options)
+                    engine.startup(event.options, state.rating)
 
                     if online_mode():
                         state.stop_clock()
@@ -2337,7 +2355,7 @@ def main() -> None:
                                 DisplayMsg.show(Message.ENGINE_FAIL())
                                 time.sleep(3)
                                 sys.exit(-1)
-                            engine.startup(event.options)
+                            engine.startup(event.options, state.rating)
                         else:
                             time.sleep(2)
                     elif emulation_mode() or pgn_mode():
@@ -2452,6 +2470,8 @@ def main() -> None:
                 else:
                     ModeInfo.set_pgn_mode(mode=False)
 
+                update_elo_display(state)
+
             elif isinstance(event, Event.SETUP_POSITION):
                 logging.debug('setting up custom fen: %s', event.fen)
                 uci960 = event.uci960
@@ -2520,10 +2540,10 @@ def main() -> None:
 
                     state.game = chess.Board()
                     state.game.turn = chess.WHITE
-                    
+
                     if uci960:
                         state.game.set_chess960_pos(event.pos960)
-                                
+
                     if state.play_mode != PlayMode.USER_WHITE:
                         state.play_mode = PlayMode.USER_WHITE
                         msg = Message.PLAY_MODE(play_mode=state.play_mode,
@@ -2559,6 +2579,7 @@ def main() -> None:
                     state.best_move_posted = False
                     state.searchmoves.reset()
                     state.game_declared = False
+                    update_elo_display(state)
 
                     if online_mode():
                         time.sleep(0.5)
@@ -2599,16 +2620,16 @@ def main() -> None:
                         state.stop_clock()
 
                         state.game.turn = chess.WHITE
-                    
+
                         if uci960:
                             state.game.set_chess960_pos(event.pos960)
-                            
+
                         if state.play_mode != PlayMode.USER_WHITE:
                             state.play_mode = PlayMode.USER_WHITE
                             msg = Message.PLAY_MODE(play_mode=state.play_mode,
                                                     play_mode_text=state.dgttranslate.text(str(state.play_mode.value)))
                             DisplayMsg.show(msg)
-                        
+
                         # see setup_position
                         stop_search_and_clock()
                         state.stop_fen_timer()
@@ -2880,6 +2901,7 @@ def main() -> None:
                     state.game_declared = True
                     state.stop_fen_timer()
                     state.legal_fens_after_cmove = []
+                    update_elo(state, event.result)
 
             elif isinstance(event, Event.REMOTE_MOVE):
                 flag_startup = False
@@ -3327,6 +3349,7 @@ def main() -> None:
                     result = GameResult.OUT_OF_TIME
                     DisplayMsg.show(Message.GAME_ENDS(tc_init=state.time_control.get_parameters(), result=result, play_mode=state.play_mode, game=state.game.copy()))
                     is_out_of_time_already = True
+                    update_elo(state, result)
 
             elif isinstance(event, Event.SHUTDOWN):
                 stop_search()

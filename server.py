@@ -494,7 +494,8 @@ class WebDisplay(DisplayMsg, threading.Thread):
             _send_title()
 
         elif isinstance(message, Message.SYSTEM_INFO):
-            self.shared['system_info'] = message.info
+            self._create_system_info()
+            self.shared['system_info'].update(message.info)
             self.shared['system_info']['old_engine'] = self.shared['system_info']['engine_name']
             self.shared['system_info']['user_name_orig'] = self.shared['system_info']['user_name']
             _build_headers()
