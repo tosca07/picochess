@@ -1254,6 +1254,12 @@ def main() -> None:
         if engine.is_adaptive:
             DisplayMsg.show(Message.SYSTEM_INFO(
                 info={'user_elo': int(state.rating.rating), 'engine_elo': engine.engine_rating}))
+        elif engine.engine_rating > 0:
+            user_elo = args.pgn_elo
+            if state.rating is not None:
+                user_elo = str(int(state.rating.rating))
+            DisplayMsg.show(Message.SYSTEM_INFO(
+                info={'user_elo': user_elo, 'engine_elo': engine.engine_rating}))
 
     def process_fen(fen: str, state: PicochessState):
         """Process given fen like doMove, undoMove, takebackPosition, handleSliding."""

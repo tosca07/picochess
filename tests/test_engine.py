@@ -72,3 +72,11 @@ class TestEngine(unittest.TestCase):
         self.assertFalse(eng.is_adaptive)
         self.assertEqual(1234, eng.engine_rating)
         self.assertEqual('1234', eng.engine.get_elo())
+
+    def test_engine_has_rating_as_information_when_not_adaptive(self):
+        eng = UciEngine('some_engine', UciShell(), '')
+        eng.engine = MockEngine()
+        eng.startup({'UCI_Elo': '1234'}, None)
+        self.assertFalse(eng.is_adaptive)
+        self.assertEqual(1234, eng.engine_rating)
+        self.assertEqual('1234', eng.engine.get_elo())
