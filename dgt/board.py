@@ -698,10 +698,10 @@ class DgtBoard(EBoard):
                         self.bt_state = -1
                         return True
                 # rfcomm failed
-                # if unable to connect to a previously paired board, remove it from the list but don't remove it
-                # from paired-devices (it may not be turned ON).
+                # if unable to connect to a previously paired board, remove it from paired-devices
                 if self.bt_rfcomm.poll() is not None:
                     logging.debug('BT rfcomm failed')
+                    self.btctl.stdin.write('remove ' + self.bt_mac_list[self.bt_current_device] + "\n")
                     if self.bt_current_device > 0:
                         logging.debug('Removing device from list: %s %s', self.bt_mac_list[self.bt_current_device], self.bt_name_list[self.bt_current_device])
                         self.bt_mac_list.remove(self.bt_mac_list[self.bt_current_device])
