@@ -2406,8 +2406,6 @@ def main() -> None:
                         state.stop_clock()
                     state.engine_text = state.dgtmenu.get_current_engine_name().large_text
                     state.dgtmenu.exit_menu()
-                    if state.dgtmenu.get_enginename():
-                        DisplayMsg.show(Message.ENGINE_NAME(engine_name=state.engine_text))
                 else:
                     logging.error('engine shutdown failure')
                     DisplayMsg.show(Message.ENGINE_FAIL())
