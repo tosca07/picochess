@@ -28,7 +28,7 @@ class TestDgtMenu(unittest.TestCase):
     @patch('platform.machine')
     def test_engine_menu_traversal(self, machine_mock):
         menu = self.create_menu(machine_mock)
-        menu.set_state_current_engine()
+        menu.set_state_current_engine('')
         text = menu.get_current_engine_name()
         self.assertEqual('Lc0', text.large_text)
         menu.enter_top_menu()
@@ -149,7 +149,7 @@ class TestDgtMenu(unittest.TestCase):
     @patch('platform.machine')
     def test_modern_engine_retrieval(self, machine_mock):
         menu = self.create_menu(machine_mock)
-        menu.set_state_current_engine()
+        menu.set_state_current_engine('')
         menu.enter_top_menu()
         self.assertEqual('Engine', menu.main_down().medium_text.strip())
         self.assertEqual('Modern', menu.main_down().medium_text.strip())
@@ -166,7 +166,7 @@ class TestDgtMenu(unittest.TestCase):
     @patch('platform.machine')
     def test_retro_engine_retrieval(self, machine_mock):
         menu = self.create_menu(machine_mock)
-        menu.set_state_current_engine()
+        menu.set_state_current_engine('')
         menu.enter_top_menu()
         self.assertEqual('Engine', menu.main_down().medium_text.strip())
         self.assertEqual('Modern', menu.main_down().medium_text.strip())
@@ -183,7 +183,7 @@ class TestDgtMenu(unittest.TestCase):
     @patch('platform.machine')
     def test_retro_engine_level_selection(self, machine_mock):
         menu = self.create_menu(machine_mock)
-        menu.set_state_current_engine()
+        menu.set_state_current_engine('')
         menu.enter_top_menu()
         self.assertEqual('Engine', menu.main_down().medium_text.strip())
         self.assertEqual('Modern', menu.main_down().medium_text.strip())
@@ -205,7 +205,7 @@ class TestDgtMenu(unittest.TestCase):
     def test_modern_engine_after_retro(self, machine_mock):
         # select modern engine
         menu = self.create_menu(machine_mock)
-        menu.set_state_current_engine()
+        menu.set_state_current_engine('')
         menu.enter_top_menu()
         self.assertEqual('Engine', menu.main_down().medium_text.strip())
         self.assertEqual('Modern', menu.main_down().medium_text.strip())
@@ -229,3 +229,31 @@ class TestDgtMenu(unittest.TestCase):
         self.assertEqual('Retro', menu.main_down().medium_text.strip())
         self.assertEqual('Modern', menu.main_left().medium_text.strip())
         self.assertEqual('zurichess', menu.main_down().large_text)  # previous modern engine
+
+    @patch('platform.machine')
+    def test_set_state_current_engine_modern(self, machine_mock):
+        menu = self.create_menu(machine_mock)
+        menu.set_state_current_engine('zurich')
+        menu.enter_top_menu()
+        self.assertEqual('Engine', menu.main_down().medium_text.strip())
+        self.assertEqual('Modern', menu.main_down().medium_text.strip())
+        self.assertEqual('zurichess', menu.main_down().large_text)
+
+    @patch('platform.machine')
+    def test_set_state_current_engine_retro(self, machine_mock):
+        menu = self.create_menu(machine_mock)
+        menu.set_state_current_engine('mame/milano')
+        menu.enter_top_menu()
+        self.assertEqual('Engine', menu.main_down().medium_text.strip())
+        self.assertEqual('Retro', menu.main_down().medium_text.strip())
+        self.assertEqual('Mep. Milano', menu.main_down().large_text)
+
+    @patch('platform.machine')
+    def test_set_state_current_engine_favorite(self, machine_mock):
+        menu = self.create_menu(machine_mock)
+        menu.set_state_current_engine('mame/milano')
+        menu.enter_top_menu()
+        self.assertEqual('Engine', menu.main_down().medium_text.strip())
+        self.assertEqual('Retro', menu.main_down().medium_text.strip())
+        self.assertEqual('Favorite', menu.main_right().medium_text.strip())
+        self.assertEqual('Mephisto Milano', menu.main_down().large_text)

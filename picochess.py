@@ -2200,7 +2200,7 @@ def main() -> None:
 
     ModeInfo.set_game_ending(result='*')
 
-    state.dgtmenu.set_state_current_engine()
+    state.dgtmenu.set_state_current_engine(engine_file)
     text: Dgt.DISPLAY_TEXT = state.dgtmenu.get_current_engine_name()
     state.engine_text = str(text.large_text)
     state.dgtmenu.enter_top_menu()

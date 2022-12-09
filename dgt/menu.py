@@ -203,15 +203,15 @@ class DgtMenu(object):
         self.engine_restart = False
 
         self.installed_engines: List[Dict[str, str]] = []  # list of all engines available, sum of modern+retro engines
-        self.menu_engine_index = 0
+        self.menu_engine_index = 0  # index of the currently selected engine within installed_engines
         self.menu_engine_level = 0
-        self.menu_modern_engine_index = 0
+        self.menu_modern_engine_index = 0  # index of the currently selected engine within installed_modern_engines
         self.menu_modern_engine_level = 0
         self.installed_modern_engines: List[Dict[str, str]] = []  # list of all modern engines
-        self.menu_retro_engine_index = 0
+        self.menu_retro_engine_index = 0  # index of the currently selected engine within installed_retro_engines
         self.menu_retro_engine_level = 0
         self.installed_retro_engines: List[Dict[str, str]] = []  # list of all retro engines
-        self.menu_fav_engine_index = 0
+        self.menu_fav_engine_index = 0  # index of the currently selected engine within installed_fav_engines
         self.menu_fav_engine_level = 0
         self.installed_fav_engines: List[Dict[str, str]] = []  # favorites, selection from all available engines
         self.menu_engine = EngineTop.MODERN_ENGINE
@@ -339,8 +339,31 @@ class DgtMenu(object):
         self.battery = '-NA'  # standard value: NotAvailable (discharging)
         self.inside_room = False
 
-    def set_state_current_engine(self):
+    def set_state_current_engine(self, current_engine_file_name: str):
+        """Set engine menu index to the one that contains the current engine file name """
+        for index, eng in enumerate(self.installed_engines):
+           if eng['file'].endswith(current_engine_file_name):
+               self.menu_engine_index = index
+               break
+        self.res_engine_index = self.menu_engine_index
+        current_engine = self.installed_engines[self.menu_engine_index]
         self.state = MenuState.ENG_MODERN_NAME
+        for index, eng in enumerate(self.installed_modern_engines):
+           if current_engine['file'] == eng['file']:
+               self.state = MenuState.ENG_MODERN_NAME
+               self.menu_modern_engine_index = index
+               self.menu_engine = EngineTop.MODERN_ENGINE
+               break
+        for index, eng in enumerate(self.installed_retro_engines):
+           if current_engine['file'] == eng['file']:
+               self.state = MenuState.ENG_RETRO_NAME
+               self.menu_retro_engine_index = index
+               self.menu_engine = EngineTop.RETRO_ENGINE
+               break
+        for index, eng in enumerate(self.installed_fav_engines):
+           if current_engine['file'] == eng['file']:
+               self.menu_fav_engine_index = index
+               break
         self.menu_top = Top.ENGINE
 
     def inside_updt_menu(self):
