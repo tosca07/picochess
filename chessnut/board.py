@@ -56,7 +56,6 @@ class ChessnutBoard(EBoard):
         result = {}
         wait_counter = 0
         waitchars = ['/', '-', '\\', '|']
-        bwait = 'Board' + waitchars[wait_counter]
         while 'cmd' not in result or (result['cmd'] == 'agent_state' and result['state'] == 'offline'):
             try:
                 result = self.appque.get(block=False)
@@ -70,36 +69,50 @@ class ChessnutBoard(EBoard):
 
         if result['state'] != 'offline':
             logging.info('incoming_board ready')
+        self._process_after_connection()
 
+    def _process_after_connection(self):
         last_battery_request = time.time()
         while True:
             if self.agent is not None:
                 try:
                     result = self.appque.get(block=False)
                     if 'cmd' in result and result['cmd'] == 'agent_state' and 'state' in result and 'message' in result:
-                        if result['state'] == 'offline':
-                            text = self._display_text(result['message'], 'no/', bwait)
-                        else:
-                            self.agent.realtime_mode()
-                            text = Dgt.DISPLAY_TIME(force=True, wait=True, devs={'ser', 'i2c', 'web'})
-                        DisplayMsg.show(Message.DGT_NO_EBOARD_ERROR(text=text))
+                        self._process_board_state(result)
                     elif 'cmd' in result and result['cmd'] == 'raw_board_position' and 'fen' in result:
-                        fen = result['fen'].split(' ')[0]
-                        DisplayMsg.show(Message.DGT_FEN(fen=fen, raw=True))
+                        self._process_board_position(result)
                     elif 'cmd' in result and result['cmd'] == 'battery' and 'message' in result:
-                        if Battery.LOW.name in result['message'] or Battery.EXHAUSTED.name in result['message']:
-                            text = self._display_text(result['message'], 'batt', bwait)
-                        else:
-                            text = Dgt.DISPLAY_TIME(force=True, wait=True, devs={'ser', 'i2c', 'web'})
-                        DisplayMsg.show(Message.DGT_NO_EBOARD_ERROR(text=text))
+                        self._process_battery_state(result)
+
                 except queue.Empty:
                     pass
                 current_time = time.time()
-                if current_time - last_battery_request > 30:
+                if current_time - last_battery_request > 30:  # request battery state every 30 seconds
                     last_battery_request = current_time
                     self.agent.request_battery_status()
 
             time.sleep(0.1)
+
+    def _process_board_state(self, result):
+        if result['state'] == 'offline':
+            text = self._display_text(result['message'], 'no Board', 'no brd')
+        else:
+            self.agent.realtime_mode()
+            text = Dgt.DISPLAY_TIME(force=True, wait=True, devs={'ser', 'i2c', 'web'})
+        DisplayMsg.show(Message.DGT_NO_EBOARD_ERROR(text=text))
+
+    def _process_board_position(self, result):
+        fen = result['fen'].split(' ')[0]
+        DisplayMsg.show(Message.DGT_FEN(fen=fen, raw=True))
+
+    def _process_battery_state(self, result):
+        if Battery.LOW.name in result['message'] or Battery.EXHAUSTED.name in result['message']:
+            text = self._display_text('Battery ' + result['message'], 'batt low', 'batlow')
+            DisplayMsg.show(Message.DGT_NO_EBOARD_ERROR(text=text))
+        else:
+            battery_str = result['message'].split()[1]
+            if battery_str.isnumeric():
+                DisplayMsg.show(Message.BATTERY(percent=int(battery_str)))
 
     def _connect(self):
         logging.info('connecting to board')

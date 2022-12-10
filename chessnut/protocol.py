@@ -208,7 +208,7 @@ class Protocol(ParserCallback):
             self.last_fen = short_fen
 
     def battery(self, percent: int, status: Battery):
-        msg = f'Battery {status.name} ({percent}%)'
+        msg = f'{status.name} {percent}'
         self.appque.put({'cmd': 'battery', 'message': msg})
 
     def reversed(self, value: bool):
