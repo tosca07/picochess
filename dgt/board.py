@@ -537,23 +537,7 @@ class DgtBoard(EBoard):
 
     def _open_bluetooth(self):
         if self.bt_state == -1:
-            # Check to see if bluetooth is running, if not restart it.
-            status = subprocess.call('systemctl is-active --quiet bluetooth', shell=True)
-            if status != 0:
-                logging.warning('Bluetooth Service is not running, Restarting...')
-                subprocess.call('systemctl restart bluetooth', shell=True)
-            else:
-                logging.info('Bluetooth Service is running...')
-
-            # Check to see if hciuart is running, if not restart it.
-            status = subprocess.call('systemctl is-active --quiet hciuart', shell=True)
-            if status != 0:
-                logging.warning('hciuart Service is not running or failed, Restarting...')
-                subprocess.call('systemctl restart hciuart', shell=True)
-                time.sleep(5)
-            else:
-                logging.info('hciuart Service is running...')
-
+            # only for jessie upwards
             if path.exists('/usr/bin/bluetoothctl'):
                 self.bt_state = 0
 
@@ -598,7 +582,7 @@ class DgtBoard(EBoard):
                     self.bt_state = 1
                     self.btctl.stdin.write("agent on\n")
                     self.btctl.stdin.flush()
-                elif 'Agent registered' in self.bt_line or 'Agent is already registered' in self.bt_line:
+                elif 'Agent registered' in self.bt_line:
                     self.bt_state = 2
                     self.btctl.stdin.write("default-agent\n")
                     self.btctl.stdin.flush()
@@ -698,23 +682,14 @@ class DgtBoard(EBoard):
                         self.bt_state = -1
                         return True
                 # rfcomm failed
-                # if unable to connect to a previously paired board, remove it from paired-devices
                 if self.bt_rfcomm.poll() is not None:
                     logging.debug('BT rfcomm failed')
                     self.btctl.stdin.write('remove ' + self.bt_mac_list[self.bt_current_device] + "\n")
-                    if self.bt_current_device > 0:
-                        logging.debug('Removing device from list: %s %s', self.bt_mac_list[self.bt_current_device], self.bt_name_list[self.bt_current_device])
-                        self.bt_mac_list.remove(self.bt_mac_list[self.bt_current_device])
-                        self.bt_name_list.remove(self.bt_name_list[self.bt_current_device])
-                        self.bt_current_device -= 1
-                    else:
-                        self.btctl.stdin.write("quit\n")
-                        self.btctl.stdin.flush()
-                        self.bt_state = -1
-                        self.bt_mac_list = []
-                        self.bt_name_list = []
-                        time.sleep(0.5)
-                        logging.debug('Restarting bluetoothctl')
+                    self.bt_mac_list.remove(self.bt_mac_list[self.bt_current_device])
+                    self.bt_name_list.remove(self.bt_name_list[self.bt_current_device])
+                    self.bt_current_device -= 1
+                    self.btctl.stdin.flush()
+                    self.bt_state = 4
         return False
 
     def _open_serial(self, device: str):
