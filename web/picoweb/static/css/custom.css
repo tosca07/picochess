@@ -189,6 +189,7 @@ div.dataTables_wrapper div.dataTables_length select {
     overflow: auto;
     padding-right: 12px;
     margin-left: 0px;
+    overflow-y: scroll;
 } 
 
 .card-header {
@@ -253,6 +254,7 @@ td.result {
 
 #analyzeBtn {
     margin-left: 10px;
+    min-width: 114px;
 }
 
 .list-group-item {
