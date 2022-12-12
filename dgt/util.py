@@ -495,7 +495,7 @@ class Voice(MyEnum):
 
     @classmethod
     def items(cls):
-        return [Voice.SPEED, Voice.USER, Voice.COMP, Voice.VOLUME]
+        return [Voice.SPEED, Voice.COMP, Voice.USER, Voice.VOLUME]
 
 
 class VoiceLoop(object):

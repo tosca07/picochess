@@ -1181,8 +1181,11 @@ class DgtMenu(object):
 
     def set_volume_voice(self, volume_factor):
         """ Set the Volume-Voice."""
-        logging.debug('amixer sset Headphone ' + str(volume_factor * 5 + 50) + '%')
-        os.system('amixer sset Headphone ' + str(volume_factor * 5 + 50) + '%')  # PulseAudio Fix for DGTPi -RR
+        factor = str(volume_factor * 5 + 50)
+        for channel in ('Headphone', 'Master', 'HDMI'):
+            volume_cmd = f'amixer sset {channel} {factor}%'
+            logging.debug(volume_cmd)
+            os.system(volume_cmd)
         return
 
     def enter_sys_disp_menu(self):
