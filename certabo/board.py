@@ -15,7 +15,6 @@ import time
 import logging
 from threading import Thread
 import queue
-import inspect
 
 from eboard import EBoard
 from utilities import DisplayMsg
@@ -96,12 +95,8 @@ class CertaboBoard(EBoard):
         return True
 
     def _display_text(self, large, medium, small):
-        if 'large_text' in inspect.signature(Dgt.DISPLAY_TEXT).parameters:
-            return Dgt.DISPLAY_TEXT(large_text=large, medium_text=medium, small_text=small,
-                                    wait=True, beep=False, maxtime=0.1, devs={'i2c', 'web'})
-        else:
-            return Dgt.DISPLAY_TEXT(l=large, m=medium, s=small,
-                                    wait=True, beep=False, maxtime=0.1, devs={'i2c', 'web'})
+        return Dgt.DISPLAY_TEXT(large_text=large, medium_text=medium, small_text=small,
+                                wait=True, beep=False, maxtime=0.1, devs={'i2c', 'web'})
 
     def run(self):
         connect_thread = Thread(target=self._connect)

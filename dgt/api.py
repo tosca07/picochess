@@ -15,11 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from dataclasses import dataclass, field
-from typing import Set
-
-from dgt.util import ClockIcons
-
 
 class BaseClass(object):
 
@@ -211,20 +206,7 @@ class Dgt():
     """Used to define tasks for the communication towards the dgt hardware."""
 
     DISPLAY_MOVE = ClassFactory(DgtApi.DISPLAY_MOVE, ['move', 'fen', 'uci960', 'side', 'lang', 'capital', 'long', 'beep', 'maxtime', 'devs', 'wait', 'ld', 'rd'])
-    # DISPLAY_TEXT = ClassFactory(DgtApi.DISPLAY_TEXT, ['l', 'm', 's', 'beep', 'maxtime', 'devs', 'wait', 'ld', 'rd'])
-
-    @dataclass
-    class DISPLAY_TEXT:
-        large_text: str = ''
-        medium_text: str = ''
-        small_text: str = ''
-        beep: bool = False
-        maxtime: float = 0
-        devs: Set[str] = field(default_factory=set)
-        wait: bool = False
-        ld: ClockIcons = ClockIcons.NONE
-        rd: ClockIcons = ClockIcons.NONE
-
+    DISPLAY_TEXT = ClassFactory(DgtApi.DISPLAY_TEXT, ['large_text', 'medium_text', 'small_text', 'beep', 'maxtime', 'devs', 'wait', 'ld', 'rd'])
     DISPLAY_TIME = ClassFactory(DgtApi.DISPLAY_TIME, ['wait', 'force', 'devs'])
     LIGHT_CLEAR = ClassFactory(DgtApi.LIGHT_CLEAR, ['devs'])
     LIGHT_SQUARES = ClassFactory(DgtApi.LIGHT_SQUARES, ['uci_move', 'devs'])
