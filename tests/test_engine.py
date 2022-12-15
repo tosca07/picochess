@@ -16,7 +16,7 @@
 import unittest
 
 from uci.engine import UciEngine, UciShell
-from uci.rating import Rating
+from uci.rating import Rating, Result
 
 
 class MockEngine(object):
@@ -80,3 +80,74 @@ class TestEngine(unittest.TestCase):
         self.assertFalse(eng.is_adaptive)
         self.assertEqual(1234, eng.engine_rating)
         self.assertEqual('1234', eng.engine.get_elo())
+
+    def test_invalid_value_for_uci_elo(self):
+        eng = UciEngine('some_engine', UciShell(), '')
+        eng.engine = MockEngine()
+        eng.startup({'UCI_Elo': 'XXX'}, Rating(450.5, 123.0))
+        self.assertEqual(None, eng.engine.get_elo())
+        self.assertEqual(-1, eng.engine_rating)
+
+    def test_engine_does_not_eval_for_no_rating(self):
+        eng = UciEngine('some_engine', UciShell(), '')
+        eng.engine = MockEngine()
+        eng.startup({'UCI_Elo': 'max(auto, 800)'}, None)
+        self.assertEqual(None, eng.engine.get_elo())
+        self.assertEqual(-1, eng.engine_rating)
+
+    def test_engine_uses_eval_for_rating(self):
+        eng = UciEngine('some_engine', UciShell(), '')
+        eng.engine = MockEngine()
+        eng.startup({'UCI_Elo': 'max(auto, 800)'}, Rating(450.5, 123.0))
+        self.assertEqual('800', eng.engine.get_elo())
+        self.assertEqual(800, eng.engine_rating)
+
+    def test_simple_eval(self):
+        eng = UciEngine('some_engine', UciShell(), '')
+        eng.engine = MockEngine()
+        eng.startup({'UCI_Elo': 'auto + 100'}, Rating(850.5, 123.0))
+        self.assertEqual('950', eng.engine.get_elo())
+        self.assertEqual(950, eng.engine_rating)
+
+    def test_fancy_eval(self):
+        eng = UciEngine('some_engine', UciShell(), '')
+        eng.engine = MockEngine()
+        eng.startup({'UCI_Elo': 'exec("import random; random.seed();") or max(800, (auto + random.randint(10,80)))'},
+                    Rating(850.5, 123.0))
+        self.assertGreater(eng.engine_rating, 859)
+        self.assertLess(eng.engine_rating, 931)
+
+    def test_eval_syntax_error(self):
+        eng = UciEngine('some_engine', UciShell(), '')
+        eng.engine = MockEngine()
+        eng.startup({'UCI_Elo': 'max(auto,'}, Rating(450.5, 123.0))
+        self.assertEqual(None, eng.engine.get_elo())
+        self.assertEqual(-1, eng.engine_rating)
+
+    def test_eval_error(self):
+        eng = UciEngine('some_engine', UciShell(), '')
+        eng.engine = MockEngine()
+        eng.startup({'UCI_Elo': 'max(auto, "abc")'}, Rating(450.5, 123.0))
+        self.assertEqual(None, eng.engine.get_elo())
+        self.assertEqual(-1, eng.engine_rating)
+
+    def test_udpate_rating(self):
+        eng = UciEngine('some_engine', UciShell(), '')
+        eng.engine = MockEngine()
+        eng.startup({'UCI_Elo': 'auto'}, Rating(849.5, 123.0))
+        self.assertEqual('850', eng.engine.get_elo())
+        self.assertEqual(850, eng.engine_rating)
+        eng.update_rating(Rating(850.5, 123.0), Result.WIN)
+        self.assertEqual('900', eng.engine.get_elo())
+        self.assertEqual(900, eng.engine_rating)
+
+    def test_udpate_rating_with_eval(self):
+        eng = UciEngine('some_engine', UciShell(), '')
+        eng.engine = MockEngine()
+        eng.startup({'UCI_Elo': 'auto + 11'}, Rating(850.5, 123.0))
+        self.assertEqual('861', eng.engine.get_elo())
+        self.assertEqual(861, eng.engine_rating)
+        new_rating = eng.update_rating(Rating(850.5, 123.0), Result.WIN)
+        self.assertEqual(890, int(new_rating.rating))
+        self.assertEqual('901', eng.engine.get_elo())
+        self.assertEqual(901, eng.engine_rating)

@@ -71,6 +71,7 @@ class UciEngine(object):
         try:
             self.is_adaptive = False
             self.engine_rating = -1
+            self.uci_elo_eval_fn = None  # saved UCI_Elo eval function
             self.shell = uci_shell.get()
             logging.info('file ' + file)
             if file.find('/engines/armv7l/mame') > 0:
@@ -334,17 +335,33 @@ class UciEngine(object):
         Delete UCI_Elo from the options if no rating is given.
         """
         if 'UCI_Elo' in self.options:
-            if self.options['UCI_Elo'].strip().lower() == 'auto':
-                if rating is not None:
-                    self.engine_rating = self._round_engine_rating(int(rating.rating))
-                    self.options['UCI_Elo'] = str(int(self.engine_rating))
-                    self.is_adaptive = True
-                else:
+            uci_elo_option = self.options['UCI_Elo'].strip()
+            if uci_elo_option.lower() == 'auto' and rating is not None:
+                self._set_rating(self._round_engine_rating(int(rating.rating)))
+            elif uci_elo_option.isnumeric():
+                self.engine_rating = int(uci_elo_option)
+            elif 'auto' in uci_elo_option and rating is not None:
+                uci_elo_with_rating = uci_elo_option.replace('auto', str(int(rating.rating)))
+                try:
+                    evaluated = eval(uci_elo_with_rating)
+                    if str(evaluated).isnumeric():
+                        self._set_rating(int(evaluated))
+                        self.uci_elo_eval_fn = uci_elo_option  # save evaluation function for updating engine ELO later
+                    else:
+                        del self.options['UCI_Elo']
+                except Exception as e:  # noqa - catch all exceptions for eval()
+                    print(f'invalid option set for UCI_Elo={uci_elo_with_rating}, exception={e}')
+                    logging.error(f'invalid option set for UCI_Elo={uci_elo_with_rating}, exception={e}')
                     del self.options['UCI_Elo']
             else:
-                self.engine_rating = int(self.options['UCI_Elo'])
+                del self.options['UCI_Elo']
 
-    def _round_engine_rating(self, value: int):
+    def _set_rating(self, value: int):
+        self.engine_rating = value
+        self.options['UCI_Elo'] = str(int(self.engine_rating))
+        self.is_adaptive = True
+
+    def _round_engine_rating(self, value: int) -> int:
         """ Round the value up to the next 50, minimum=500 """
         return max(500, int(value / 50 + 1) * 50)
 
@@ -353,10 +370,14 @@ class UciEngine(object):
         if not self.is_adaptive or result is None or self.engine_rating < 0:
             return rating
         new_rating = rating.rate(Rating(self.engine_rating, 0), result)
+        if self.uci_elo_eval_fn is not None:
+            # evaluation function instead of auto?
+            self.engine_rating = eval(self.uci_elo_eval_fn.replace('auto', str(int(new_rating.rating))))
+        else:
+            self.engine_rating = self._round_engine_rating(int(new_rating.rating))
         self._save_rating(new_rating)
-        self.option('UCI_Elo', str(int(new_rating.rating)))
+        self.option('UCI_Elo', str(self.engine_rating))
         self.send()
-        self.engine_rating = self._round_engine_rating(int(new_rating.rating))
         return new_rating
 
     def _save_rating(self, new_rating: Rating):
