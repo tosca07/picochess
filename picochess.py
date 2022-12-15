@@ -842,7 +842,6 @@ def main() -> None:
                 bit_board = chess.Board(fen1)
                 bit_board.set_fen(bit_board.fen())
                 if bit_board.is_valid():
-                    DisplayMsg.show(Message.SHOW_TEXT(text_string='NEW_POSITION'))
                     state.game = chess.Board(bit_board.fen())
                     stop_search_and_clock()
                     engine.newgame(state.game.copy())
@@ -853,6 +852,7 @@ def main() -> None:
                     state.legal_fens = compute_legal_fens(state.game.copy())
                     state.legal_fens_after_cmove = []
                     state.last_legal_fens = []
+                    set_wait_state(Message.START_NEW_GAME(game=state.game.copy(), newgame=True), state)
                     assert engine.is_waiting(), 'engine not waiting! thinking status: %s' % engine.is_thinking()
                     engine.position(copy.deepcopy(state.game))
                     engine.ponder()
@@ -861,7 +861,6 @@ def main() -> None:
                     bit_board = chess.Board(fen2)
                     bit_board.set_fen(bit_board.fen())
                     if bit_board.is_valid():
-                        DisplayMsg.show(Message.SHOW_TEXT(text_string='NEW_POSITION'))
                         state.game = chess.Board(bit_board.fen())
                         stop_search_and_clock()
                         engine.newgame(state.game.copy())
@@ -872,6 +871,7 @@ def main() -> None:
                         state.legal_fens = compute_legal_fens(state.game.copy())
                         state.legal_fens_after_cmove = []
                         state.last_legal_fens = []
+                        set_wait_state(Message.START_NEW_GAME(game=state.game.copy(), newgame=True), state)
                         assert engine.is_waiting(), 'engine not waiting! thinking status: %s' % engine.is_thinking()
                         engine.position(copy.deepcopy(state.game))
                         engine.ponder()
