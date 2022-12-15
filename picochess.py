@@ -44,7 +44,7 @@ import chess.uci  # type: ignore
 
 from timecontrol import TimeControl
 from utilities import get_location, update_picochess, get_opening_books, shutdown, reboot, checkout_tag
-from utilities import Observable, DisplayMsg, version, evt_queue, write_picochess_ini, hms_time, RepeatedTimer
+from utilities import Observable, DisplayMsg, version, evt_queue, write_picochess_ini, hms_time
 from pgn import Emailer, PgnDisplay, ModeInfo
 from server import WebServer
 from talker.picotalker import PicoTalkerDisplay
@@ -482,10 +482,6 @@ def compute_legal_fens(game_copy: chess.Board):
         fens.append(game_copy.board_fen())
         game_copy.pop()
     return fens
-
-
-def _dgt_serial_nr():
-    DisplayMsg.show(Message.DGT_SERIAL_NR(number='dont_use'))
 
 
 def main() -> None:
@@ -2041,7 +2037,6 @@ def main() -> None:
 
     if args.enable_console:
         logging.debug('starting PicoChess in console mode')
-        RepeatedTimer(1, _dgt_serial_nr).start()  # simulate the dgtboard watchdog
     else:
         # Connect to DGT board
         logging.debug('starting PicoChess in board mode')

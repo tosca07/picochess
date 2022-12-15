@@ -23,7 +23,7 @@ import queue
 import threading
 
 import chess  # type: ignore
-from utilities import DisplayMsg, Observable, DispatchDgt, write_picochess_ini
+from utilities import DisplayMsg, Observable, DispatchDgt, RepeatedTimer, write_picochess_ini
 from dgt.translate import DgtTranslate
 from dgt.menu import DgtMenu
 from dgt.util import ClockSide, ClockIcons, BeepLevel, Mode, GameResult, TimeMode, PlayMode
@@ -58,6 +58,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self.low_time = False
         self.c_last_player = ''
         self.c_time_counter = 0
+        RepeatedTimer(1, self._process_once_per_second).start()
 
     def _convert_pico_string(self, pico_string):
         # print routine for longer text output like opening name, comments
@@ -803,7 +804,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         side = ClockSide.LEFT if (message.turn == chess.WHITE) != self.dgtmenu.get_flip_board() else ClockSide.RIGHT
         self._set_clock(side=side, devs=message.devs)
 
-    def _process_dgt_serial_nr(self):
+    def _process_once_per_second(self):
         # logging.debug('Serial number {}'.format(message.number))  # actually used for watchdog (once a second)
         # molli: rolling display
         if not self._inside_main_menu():
@@ -1068,7 +1069,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
                 logging.debug('time too low, disable confirm - w: %i, b: %i', message.time_white, message.time_black)
 
         elif isinstance(message, Message.DGT_SERIAL_NR):
-            self._process_dgt_serial_nr()
+            pass
 
         elif isinstance(message, Message.DGT_JACK_CONNECTED_ERROR):  # only working in case of 2 clocks connected!
             DispatchDgt.fire(self.dgttranslate.text('Y00_errorjack'))
