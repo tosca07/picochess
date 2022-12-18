@@ -163,6 +163,11 @@ function figurinizeMove(move) {
     return move;
 }
 
+function isLightTheme() {
+    var bgcolor = $('body').css("background-color")
+    return bgcolor == 'rgb(231, 231, 231)';
+}
+
 var bookDataTable = $('#BookTable').DataTable({
     'processing': false,
     'paging': false,
@@ -211,8 +216,7 @@ var bookDataTable = $('#BookTable').DataTable({
 
                 ctx = $(canvas).get(0).getContext("2d");
                 ctx.fillStyle = '#bfbfbf'; // border color for dark theme
-                var bgcolor = $('body').css("background-color")
-                if (bgcolor == 'rgb(255, 255, 255)') {
+                if (isLightTheme()) {
                     // border color for light theme
                     ctx.fillStyle = '#4f4f4f';
                 }
@@ -622,11 +626,10 @@ var updateStatus = function() {
 
     var strippedFen = stripFen(fen);
 
-    var bgcolor = $('body').css("background-color")
     // squares for dark mode
     var whiteSquare = 'fa-square-o'
     var blackSquare = 'fa-square'
-    if (bgcolor == 'rgb(255, 255, 255)') {
+    if (isLightTheme()) {
         // squares for light mode
         whiteSquare = 'fa-square';
         blackSquare = 'fa-square-o';
