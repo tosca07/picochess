@@ -36,7 +36,7 @@ from ctypes import cdll
 from configobj import ConfigObj, ConfigObjError, DuplicateError  # type: ignore
 
 # picochess version
-version = '3'
+version = '3.1'
 
 evt_queue: queue.Queue = queue.Queue()
 dispatch_queue: queue.Queue = queue.Queue()
