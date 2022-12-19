@@ -165,7 +165,8 @@ function figurinizeMove(move) {
 
 function isLightTheme() {
     var bgcolor = $('body').css("background-color")
-    return bgcolor == 'rgb(231, 231, 231)';
+    const [r,g,b,a] = bgcolor.match(/[\d\.]+/g).map(Number);
+    return r > 127 && g > 127 && b > 127;
 }
 
 var bookDataTable = $('#BookTable').DataTable({
