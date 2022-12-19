@@ -247,6 +247,7 @@ var gameDataTable = $('#GameTable').DataTable({
     'paging': false,
     'info': false,
     'searching': false,
+    'sScrollY': '197px',
     'ordering': false,
     'select': { items: 'row', style: 'single', toggleable: false },
     'columnDefs': [{
