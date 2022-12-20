@@ -1645,7 +1645,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.GAME_GAMEALTMOVE_ONOFF:
             # do action!
-            config = ConfigObj('picochess.ini')
+            config = ConfigObj('picochess.ini', default_encoding='utf8')
             if self.menu_game_altmove:
                 config['alt-move'] = self.menu_game_altmove
             elif 'alt-move' in config:
@@ -1661,7 +1661,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.GAME_GAMECONTLAST_ONOFF:
             # do action!
-            config = ConfigObj('picochess.ini')
+            config = ConfigObj('picochess.ini', default_encoding='utf8')
             if self.menu_game_contlast:
                 config['continue-game'] = self.menu_game_contlast
             elif 'continue-game' in config:
@@ -1726,7 +1726,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.PICOTUTOR_PICOWATCHER_ONOFF:
             # do action!
-            config = ConfigObj('picochess.ini')
+            config = ConfigObj('picochess.ini', default_encoding='utf8')
             if self.menu_picotutor_picowatcher:
                 config['tutor-watcher'] = self.menu_picotutor_picowatcher
             elif 'tutor-watcher' in config:
@@ -1742,7 +1742,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.PICOTUTOR_PICOCOACH_ONOFF:
             # do action!
-            config = ConfigObj('picochess.ini')
+            config = ConfigObj('picochess.ini', default_encoding='utf8')
             if self.menu_picotutor_picocoach:
                 config['tutor-coach'] = self.menu_picotutor_picocoach
             elif 'tutor-coach' in config:
@@ -1758,7 +1758,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.PICOTUTOR_PICOEXPLORER_ONOFF:
             # do action!
-            config = ConfigObj('picochess.ini')
+            config = ConfigObj('picochess.ini', default_encoding='utf8')
             if self.menu_picotutor_picoexplorer:
                 config['tutor-explorer'] = self.menu_picotutor_picoexplorer
             elif 'tutor-explorer' in config:
@@ -1779,7 +1779,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_OFF:
             # do action!
-            config = ConfigObj('picochess.ini')
+            config = ConfigObj('picochess.ini', default_encoding='utf8')
             config['tutor-comment'] = 'off'
 
             config.write()
@@ -1791,7 +1791,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ENG:
             # do action!
-            config = ConfigObj('picochess.ini')
+            config = ConfigObj('picochess.ini', default_encoding='utf8')
             config['tutor-comment'] = 'single'
 
             config.write()
@@ -1803,7 +1803,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ALL:
             # do action!
-            config = ConfigObj('picochess.ini')
+            config = ConfigObj('picochess.ini', default_encoding='utf8')
             config['tutor-comment'] = 'all'
 
             config.write()
@@ -2121,7 +2121,7 @@ class DgtMenu(object):
             if self.menu_system_voice_user_active:
                 text = self.enter_sys_voice_user_mute_lang_menu()
             else:
-                config = ConfigObj('picochess.ini')
+                config = ConfigObj('picochess.ini', default_encoding='utf8')
                 if 'user-voice' in config:
                     del config['user-voice']
                     config.write()
@@ -2136,7 +2136,7 @@ class DgtMenu(object):
             # do action!
             vkey = self.voices_conf.keys()[self.menu_system_voice_user_lang]
             speakers = self.voices_conf[vkey].keys()
-            config = ConfigObj('picochess.ini')
+            config = ConfigObj('picochess.ini', default_encoding='utf8')
             skey = speakers[self.menu_system_voice_user_speak]
             config['user-voice'] = vkey + ':' + skey
             config.write()
@@ -2150,7 +2150,7 @@ class DgtMenu(object):
             if self.menu_system_voice_comp_active:
                 text = self.enter_sys_voice_comp_mute_lang_menu()
             else:
-                config = ConfigObj('picochess.ini')
+                config = ConfigObj('picochess.ini', default_encoding='utf8')
                 if 'computer-voice' in config:
                     del config['computer-voice']
                     config.write()
@@ -2165,7 +2165,7 @@ class DgtMenu(object):
             # do action!
             vkey = self.voices_conf.keys()[self.menu_system_voice_comp_lang]
             speakers = self.voices_conf[vkey].keys()
-            config = ConfigObj('picochess.ini')
+            config = ConfigObj('picochess.ini', default_encoding='utf8')
             skey = speakers[self.menu_system_voice_comp_speak]
             config['computer-voice'] = vkey + ':' + skey
             config.write()
@@ -2218,7 +2218,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_DISP_CONFIRM_YESNO:
             # do action!
-            config = ConfigObj('picochess.ini')
+            config = ConfigObj('picochess.ini', default_encoding='utf8')
             if self.menu_system_display_confirm:
                 config['disable-confirm-message'] = self.menu_system_display_confirm
             elif 'disable-confirm-message' in config:
@@ -2231,7 +2231,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_DISP_ENGINENAME_YESNO:
             # do action!
-            config = ConfigObj('picochess.ini')
+            config = ConfigObj('picochess.ini', default_encoding='utf8')
             if not self.menu_system_display_enginename:
                 config['show-engine'] = self.menu_system_display_enginename
             elif 'show-engine' in config:
@@ -2255,7 +2255,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_DISP_CAPTIAL_YESNO:
             # do action!
-            config = ConfigObj('picochess.ini')
+            config = ConfigObj('picochess.ini', default_encoding='utf8')
             if self.menu_system_display_capital:
                 config['enable-capital-letters'] = self.menu_system_display_capital
             elif 'enable-capital-letters' in config:
@@ -2268,7 +2268,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_DISP_NOTATION_MOVE:
             # do-action!
-            config = ConfigObj('picochess.ini')
+            config = ConfigObj('picochess.ini', default_encoding='utf8')
             if self.menu_system_display_notation:
                 config['disable-short-notation'] = self.menu_system_display_notation
             elif 'disable-short-notation' in config:
