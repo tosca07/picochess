@@ -263,6 +263,9 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         self.location = '?'
         self.level_text: Optional[Dgt.DISPLAY_TEXT] = None
         self.level_name = ''
+        self.old_level_name = ''
+        self.old_level_text = None
+        self.old_engine_elo = '-'
         self.user_elo = '-'
         self.engine_elo = '-'
         self.mode = ''
@@ -531,6 +534,9 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             if 'engine_name' in message.info:
                 self.engine_name = message.info['engine_name']
                 self.old_engine = self.engine_name
+                self.old_level_name = self.level_name
+                self.old_level_text = self.level_text
+                self.old_engine_elo = self.engine_elo
             if 'user_name' in message.info:
                 self.user_name = message.info['user_name']
                 self.user_name_orig = message.info['user_name']
@@ -543,22 +549,35 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         elif isinstance(message, Message.STARTUP_INFO):
             self.level_text = message.info['level_text']
             self.level_name = message.info['level_name']
+            self.old_level_name = self.level_name
+            self.old_level_text = self.level_text
+            self.old_engine_elo = self.engine_elo
 
         elif isinstance(message, Message.LEVEL):
             self.level_text = message.level_text
             self.level_name = message.level_name
+            self.old_level_name = self.level_name
+            self.old_level_text = self.level_text
+            self.old_engine_elo = self.engine_elo
 
         elif isinstance(message, Message.INTERACTION_MODE):
             self.mode = message.mode
             if message.mode == Mode.REMOTE:
                 self.old_engine = self.engine_name
                 self.engine_name = 'Remote Player'
+                self.level_text = ''
+                self.level_name = ''
             elif message.mode == Mode.OBSERVE:
                 self.old_engine = self.engine_name
                 self.engine_name = 'Player B'
                 self.user_name = 'Player A'
+                self.level_text = ''
+                self.level_name = ''
             else:
                 self.engine_name = self.old_engine
+                self.level_name = self.old_level_name
+                self.level_text = self.old_level_text
+                self.engine_elo = self.old_engine_elo
                 self.user_name = self.user_name_orig
 
         elif isinstance(message, Message.ENGINE_STARTUP):
@@ -574,6 +593,10 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             if not message.has_levels:
                 self.level_text = None
                 self.level_name = ''
+
+            self.old_level_name = self.level_name
+            self.old_level_text = self.level_text
+            self.old_engine_elo = self.engine_elo
 
         elif isinstance(message, Message.GAME_ENDS):
             if message.game.move_stack and not ModeInfo.get_pgn_mode() and self.mode != Mode.PONDER:
