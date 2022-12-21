@@ -442,6 +442,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
                 try:
                     self.dgtmenu.set_engine_index(engine_map.index(fen))
                     eng = self.dgtmenu.get_engine()
+                    self.dgtmenu.set_state_current_engine(eng['file'])
                     level_dict = eng['level_dict']
                     logging.debug('map: Engine name [%s]', eng['name'])
                     eng_text = eng['text']
