@@ -488,6 +488,20 @@ class DgtTranslate(object):
                 frtxt = entxt
                 estxt = entxt
                 ittxt = entxt
+        if text_id == 'analysis_score':
+            entxt = Dgt.DISPLAY_TEXT(large_text='Score      ', medium_text='Score   ', small_text='score ')
+            detxt = Dgt.DISPLAY_TEXT(large_text='Wert       ', medium_text='Wert    ', small_text='Wert  ')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'analysis_depth':
+            entxt = Dgt.DISPLAY_TEXT(large_text='Depth      ', medium_text='Depth   ', small_text='depth ')
+            detxt = Dgt.DISPLAY_TEXT(large_text='Tiefe      ', medium_text='Tiefe   ', small_text='Tiefe ')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
         if text_id == 'login':
             entxt = Dgt.DISPLAY_TEXT(large_text='login...   ', medium_text='login...', small_text='login ')
             detxt = Dgt.DISPLAY_TEXT(large_text='login...   ', medium_text='login...', small_text='login ')
