@@ -130,6 +130,7 @@ fen_error_occured = False
 position_mode = False
 start_time_cmove_done = 0.0
 reset_auto = False
+newgame_happened = False
 
 
 class PicochessState:
@@ -498,6 +499,7 @@ def main() -> None:
     global fen_error_occured
     global position_mode
     global start_time_cmove_done
+    global newgame_happened
 
     def det_pgn_guess_tctrl(state: PicochessState):
         state.max_guess_white = 0
@@ -804,6 +806,7 @@ def main() -> None:
         global seeking_flag
         global fen_error_occured
         global position_mode
+        global newgame_happened
         fen_i = ''
         game_fen = ''
 
@@ -827,39 +830,21 @@ def main() -> None:
                 l_pgn_file_name = 'last_game.pgn'
                 read_pgn_file(l_pgn_file_name, state)
 
-            elif (state.interaction_mode == Mode.PONDER and game_fen != chess.STARTING_BOARD_FEN and state.flag_flexible_ponder):
-                # molli: no error in analysis(ponder) mode => start new game with current fen
-                # and try to keep same player to play (white or black) but check
-                # if it is a legal position (otherwise switch sides or return error)
-                fen1 = state.error_fen
-                fen2 = state.error_fen
-                if state.game.turn == chess.WHITE:
-                    fen1 += ' w KQkq - 0 1'
-                    fen2 += ' b KQkq - 0 1'
-                else:
-                    fen1 += ' b KQkq - 0 1'
-                    fen2 += ' w KQkq - 0 1'
-                # ask python-chess to correct the castling string
-                bit_board = chess.Board(fen1)
-                bit_board.set_fen(bit_board.fen())
-                if bit_board.is_valid():
-                    state.game = chess.Board(bit_board.fen())
-                    stop_search_and_clock()
-                    engine.newgame(state.game.copy())
-                    state.done_computer_fen = None
-                    state.done_move = state.pb_move = chess.Move.null()
-                    state.searchmoves.reset()
-                    state.game_declared = False
-                    state.legal_fens = compute_legal_fens(state.game.copy())
-                    state.legal_fens_after_cmove = []
-                    state.last_legal_fens = []
-                    set_wait_state(Message.START_NEW_GAME(game=state.game.copy(), newgame=True), state)
-                    assert engine.is_waiting(), 'engine not waiting! thinking status: %s' % engine.is_thinking()
-                    engine.position(copy.deepcopy(state.game))
-                    engine.ponder()
-                else:
+            elif (state.interaction_mode == Mode.PONDER and state.flag_flexible_ponder):
+                if (not newgame_happened) or flag_startup:
+                    # molli: no error in analysis(ponder) mode => start new game with current fen
+                    # and try to keep same player to play (white or black) but check
+                    # if it is a legal position (otherwise switch sides or return error)
+                    fen1 = state.error_fen
+                    fen2 = state.error_fen
+                    if state.game.turn == chess.WHITE:
+                        fen1 += ' w KQkq - 0 1'
+                        fen2 += ' b KQkq - 0 1'
+                    else:
+                        fen1 += ' b KQkq - 0 1'
+                        fen2 += ' w KQkq - 0 1'
                     # ask python-chess to correct the castling string
-                    bit_board = chess.Board(fen2)
+                    bit_board = chess.Board(fen1)
                     bit_board.set_fen(bit_board.fen())
                     if bit_board.is_valid():
                         state.game = chess.Board(bit_board.fen())
@@ -872,13 +857,34 @@ def main() -> None:
                         state.legal_fens = compute_legal_fens(state.game.copy())
                         state.legal_fens_after_cmove = []
                         state.last_legal_fens = []
-                        set_wait_state(Message.START_NEW_GAME(game=state.game.copy(), newgame=True), state)
+                        DisplayMsg.show(Message.SHOW_TEXT(text_string='NEW_POSITION'))
+                        set_wait_state(Message.START_NEW_GAME(game=state.game.copy(), newgame=False), state)
                         assert engine.is_waiting(), 'engine not waiting! thinking status: %s' % engine.is_thinking()
                         engine.position(copy.deepcopy(state.game))
                         engine.ponder()
                     else:
-                        logging.info('wrong fen %s for 4 secs', state.error_fen)
-                        DisplayMsg.show(Message.WRONG_FEN())
+                        # ask python-chess to correct the castling string
+                        bit_board = chess.Board(fen2)
+                        bit_board.set_fen(bit_board.fen())
+                        if bit_board.is_valid():
+                            state.game = chess.Board(bit_board.fen())
+                            stop_search_and_clock()
+                            engine.newgame(state.game.copy())
+                            state.done_computer_fen = None
+                            state.done_move = state.pb_move = chess.Move.null()
+                            state.searchmoves.reset()
+                            state.game_declared = False
+                            state.legal_fens = compute_legal_fens(state.game.copy())
+                            state.legal_fens_after_cmove = []
+                            state.last_legal_fens = []
+                            DisplayMsg.show(Message.SHOW_TEXT(text_string='NEW_POSITION'))
+                            set_wait_state(Message.START_NEW_GAME(game=state.game.copy(), newgame=False), state)
+                            assert engine.is_waiting(), 'engine not waiting! thinking status: %s' % engine.is_thinking()
+                            engine.position(copy.deepcopy(state.game))
+                            engine.ponder()
+                        else:
+                            logging.info('wrong fen %s for 4 secs', state.error_fen)
+                            DisplayMsg.show(Message.WRONG_FEN())
             else:
                 logging.info('wrong fen %s for 4 secs', state.error_fen)
 
@@ -941,6 +947,7 @@ def main() -> None:
                         DisplayMsg.show(Message.EXIT_MENU())
                 fen_error_occured = True  # to be reset in fen_handling
         flag_startup = False
+        newgame_happened = False
 
     def start_fen_timer(state: PicochessState):
         """Start the fen timer in case an unhandled fen string been received from board."""
@@ -1264,6 +1271,7 @@ def main() -> None:
         global fen_error_occured
         global position_mode
         global start_time_cmove_done
+        global newgame_happened
 
         handled_fen = True
         state.error_fen = None
@@ -1438,6 +1446,7 @@ def main() -> None:
         # standard legal move
         elif fen in state.legal_fens:
             logging.info('standard move detected')
+            newgame_happened = False
             legal_moves = list(state.game.legal_moves)
             move = legal_moves[state.legal_fens.index(fen)]
             user_move(move, sliding=False, state=state)
@@ -1580,6 +1589,7 @@ def main() -> None:
                             get_next_pgn_move(state)
 
             state.last_legal_fens = []
+            newgame_happened = False
 
             if state.game.fullmove_number < 1:
                 ModeInfo.reset_opening()
@@ -1619,6 +1629,7 @@ def main() -> None:
             move = legal_moves[state.legal_fens.index(fen)]
             user_move(move, sliding=False, state=state)
             state.last_legal_fens = state.legal_fens
+            newgame_happened = False
             if state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING):
                 state.legal_fens = []
             else:
@@ -2516,6 +2527,7 @@ def main() -> None:
                 engine_name = engine.get_name()
                 position_mode = False
                 fen_error_occured = False
+                newgame_happened = True
                 newgame = state.game.move_stack or (state.game.chess960_pos() != event.pos960)
 
                 if newgame:
@@ -3179,6 +3191,8 @@ def main() -> None:
                     msg = Message.INTERACTION_MODE(mode=state.interaction_mode, mode_text=mode_text, show_ok=False)
                     DisplayMsg.show(msg)
                 else:
+                    if event.mode == Mode.BRAIN:
+                        newgame_happened = False
                     stop_search_and_clock()
                     state.interaction_mode = event.mode
                     engine_mode()
