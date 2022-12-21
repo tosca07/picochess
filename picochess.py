@@ -43,6 +43,7 @@ import chess.polyglot  # type: ignore
 import chess.uci  # type: ignore
 
 from timecontrol import TimeControl
+from theme import calc_theme
 from utilities import get_location, update_picochess, get_opening_books, shutdown, reboot, checkout_tag
 from utilities import Observable, DisplayMsg, version, evt_queue, write_picochess_ini, hms_time
 from pgn import Emailer, PgnDisplay, ModeInfo
@@ -1940,7 +1941,7 @@ def main() -> None:
     parser.add_argument('-altm', '--alt-move', action='store_true', help='Playing direct alternative move for pico: default is off')
     parser.add_argument('-odec', '--online-decrement', type=float, default=2.0, help='Seconds to be subtracted after each own online move in order to sync with server times')
     parser.add_argument('-board', '--board-type', type=str, default='dgt', help='Type of e-board: "dgt", "certabo", "chesslink" or "chessnut", default is "dgt"')
-    parser.add_argument('-theme', '--theme', type=str, default='dark', help='Web theme, "light", "dark" or blank, default is "dark", leave blank for another light theme')
+    parser.add_argument('-theme', '--theme', type=str, default='dark', help='Web theme, "light", "dark" , "auto" or blank, default is "dark", leave blank for another light theme, or auto for a sunrise/sunset dependent theme setting')
     parser.add_argument('-rspeed', '--rspeed', type=str, default='-speed 1.0', help='Speedbar, -nothrottle for fullspeed or any other value from 0.2 to 1.0')
     parser.add_argument('-ratdev', '--rating-deviation', type=str, help='Player rating deviation for automatic adjustment of ELO', default=350)
     args, unknown = parser.parse_known_args()
@@ -2032,7 +2033,7 @@ def main() -> None:
 
     # Launch web server
     if args.web_server_port:
-        WebServer(args.web_server_port, dgtboard, args.theme).start()
+        WebServer(args.web_server_port, dgtboard, calc_theme(args.theme)).start()
         dgtdispatcher.register('web')
 
     if args.enable_console:
