@@ -15,7 +15,7 @@ class TestDgtMenu(unittest.TestCase):
         modern_engines = read_engine_ini(filename='engines.ini')
         retro_engines = read_engine_ini(filename='retro.ini')
         favorite_engines = read_engine_ini(filename='favorites.ini')
-        installed_engines = modern_engines + retro_engines
+        installed_engines = modern_engines + retro_engines + favorite_engines
 
         trans = DgtTranslate('none', 0, 'en', 'version')
         menu = DgtMenu(False, 0, '', '', 0, False, False, '', None, False, 0, 'dgt', False, False, trans)
@@ -257,3 +257,15 @@ class TestDgtMenu(unittest.TestCase):
         self.assertEqual('Retro', menu.main_down().medium_text.strip())
         self.assertEqual('Favorite', menu.main_right().medium_text.strip())
         self.assertEqual('Mephisto Milano', menu.main_down().large_text)
+
+    @patch('platform.machine')
+    def test_engine_not_in_modern_nor_in_retro(self, machine_mock):
+        menu = self.create_menu(machine_mock)
+        menu.set_state_current_engine('mame/tascr30_king')
+        menu.enter_top_menu()
+        self.assertEqual('Engine', menu.main_down().medium_text.strip())
+        self.assertEqual('Retro', menu.main_down().medium_text.strip())
+        self.assertEqual('Favorite', menu.main_right().medium_text.strip())
+        self.assertEqual('Tasc R30 V2.5', menu.main_down().large_text)
+        self.assertEqual('someEngine', menu.main_right().large_text)
+        self.assertEqual('Stockfish 15', menu.main_right().large_text)

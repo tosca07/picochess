@@ -202,7 +202,7 @@ class DgtMenu(object):
         self.engine_has_ponder = False
         self.engine_restart = False
 
-        self.installed_engines: List[Dict[str, str]] = []  # list of all engines available, sum of modern+retro engines
+        self.installed_engines: List[Dict[str, str]] = []  # list of all engines available, sum of modern+retro+favorite
         self.menu_engine_index = 0  # index of the currently selected engine within installed_engines
         self.menu_engine_level = 0
         self.menu_modern_engine_index = 0  # index of the currently selected engine within installed_modern_engines
