@@ -22,10 +22,10 @@ import astral.geocoder  # type: ignore
 import utilities
 
 
-def calc_theme(theme_in: str) -> str:
+def calc_theme(theme_in: str, location_setting: str) -> str:
     theme_out = theme_in
     if theme_in == 'auto':
-        location, _, _ = utilities.get_location()
+        location = utilities.get_location()[0] if location_setting == 'auto' else location_setting
         try:
             location_info = astral.geocoder.lookup(location, astral.geocoder.database())
         except KeyError:

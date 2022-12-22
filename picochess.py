@@ -2044,7 +2044,7 @@ def main() -> None:
 
     # Launch web server
     if args.web_server_port:
-        WebServer(args.web_server_port, dgtboard, calc_theme(args.theme)).start()
+        WebServer(args.web_server_port, dgtboard, calc_theme(args.theme, state.set_location)).start()
         dgtdispatcher.register('web')
 
     if args.enable_console:
