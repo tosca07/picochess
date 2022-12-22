@@ -52,7 +52,7 @@ def _theme_according_to_current_time() -> str:
     return _theme_for_time(now, sunrise, sunset)
 
 
-def _theme_from_location_info(location_info: LocationInfo) -> str:
+def _theme_from_location_info(location_info) -> str:
     datetime_now = datetime.datetime.now()
     local_time = _local_time(datetime_now, location_info)
     sun_info = sun(location_info.observer, date=datetime_now, tzinfo=location_info.timezone)
@@ -67,12 +67,12 @@ def _theme_for_time(current_time: datetime.datetime, sunrise: datetime.datetime,
     return theme
 
 
-def _local_time(datetime_now: datetime.datetime, location_info: LocationInfo) -> datetime.datetime:
+def _local_time(datetime_now: datetime.datetime, location_info) -> datetime.datetime:
     tz_loc = pytz.timezone(location_info.timezone)
     return tz_loc.localize(datetime_now)
 
 
-def _location_info_from_location(location: str) -> Optional[LocationInfo]:
+def _location_info_from_location(location: str):
     location_info = None
     geolocator = Nominatim(user_agent='Picochess')
     loc = geolocator.geocode(location)
