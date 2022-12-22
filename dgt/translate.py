@@ -942,6 +942,27 @@ class DgtTranslate(object):
             frtxt = Dgt.DISPLAY_TEXT(large_text='Systeme    ', medium_text='Systeme ', small_text='system')
             estxt = Dgt.DISPLAY_TEXT(large_text='Sistema    ', medium_text='Sistema ', small_text='sistem')
             ittxt = Dgt.DISPLAY_TEXT(large_text='Sistema    ', medium_text='Sistema ', small_text='sistem')
+        if text_id == 'system_power_menu':
+            entxt = Dgt.DISPLAY_TEXT(large_text='Power      ', medium_text='Power   ', small_text='power ')
+            detxt = Dgt.DISPLAY_TEXT(large_text='Ein/Aus    ', medium_text='Ein/Aus ', small_text='power ')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'power_shut_down_menu':
+            entxt = Dgt.DISPLAY_TEXT(large_text='Shut down  ', medium_text='Shutdown', small_text='off   ')
+            detxt = Dgt.DISPLAY_TEXT(large_text='Ausschalten', medium_text='Aus     ', small_text='aus   ')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'power_restart_menu':
+            entxt = Dgt.DISPLAY_TEXT(large_text='Restart    ', medium_text='Restart ', small_text='restrt')
+            detxt = Dgt.DISPLAY_TEXT(large_text='Neu starten', medium_text='Neustart', small_text='restrt')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
         if text_id == 'top_game_menu':
             entxt = Dgt.DISPLAY_TEXT(large_text='Game SetUp ', medium_text='GameSet.', small_text='game  ')
             detxt = Dgt.DISPLAY_TEXT(large_text='Partie     ', medium_text='Partie  ', small_text='partie')

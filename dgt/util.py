@@ -329,6 +329,7 @@ class System(MyEnum):
 
     """System Class."""
 
+    POWER = 'B00_system_power_menu'
     INFO = 'B00_system_info_menu'
     SOUND = 'B00_system_sound_menu'
     LANGUAGE = 'B00_system_language_menu'
@@ -339,7 +340,8 @@ class System(MyEnum):
 
     @classmethod
     def items(cls):
-        return [System.INFO, System.SOUND, System.LANGUAGE, System.LOGFILE, System.VOICE, System.DISPLAY, System.EBOARD]
+        return [System.POWER, System.INFO, System.SOUND, System.LANGUAGE, System.LOGFILE, System.VOICE, System.DISPLAY,
+                System.EBOARD]
 
 
 class SystemLoop(object):
@@ -360,8 +362,29 @@ class SystemLoop(object):
         return prev_item(System.items(), item, 'errSystPrev')
 
 
-class EBoard(MyEnum):
+class Power(MyEnum):
+    SHUT_DOWN = 'B00_power_shut_down_menu'
+    RESTART = 'B00_power_restart_menu'
 
+    @classmethod
+    def items(cls):
+        return [Power.SHUT_DOWN, Power.RESTART]
+
+
+class PowerLoop(object):
+    def __init__(self):
+        super(PowerLoop, self).__init__()
+
+    @staticmethod
+    def next(item: Power):
+        return next_item(Power.items(), item, 'errPowerNext')
+
+    @staticmethod
+    def prev(item: Power):
+        return prev_item(Power.items(), item, 'errPowerPrev')
+
+
+class EBoard(MyEnum):
     CERTABO = 'B00_eboard_certabo_menu'
     CHESSLINK = 'B00_eboard_chesslink_menu'
     CHESSNUT = 'B00_eboard_chessnut_menu'
