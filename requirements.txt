@@ -10,7 +10,5 @@ requests==2.21.0
 spur==0.3.21
 tornado==4.5.1
 configobj==5.0.6
-timezonefinder==6.1.9
-pytz==2022.7
 geopy==2.3.0
 astral==3.2

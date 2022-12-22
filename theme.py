@@ -12,8 +12,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import timezonefinder  # type: ignore
-import pytz
 from geopy.geocoders import Nominatim  # type: ignore
 from astral import LocationInfo  # type: ignore
 from astral.sun import sun  # type: ignore
@@ -52,9 +50,8 @@ def _theme_according_to_current_time() -> str:
 
 
 def _theme_from_location_info(location_info) -> str:
-    datetime_now = datetime.datetime.now()
-    local_time = _local_time(datetime_now, location_info)
-    sun_info = sun(location_info.observer, date=datetime_now, tzinfo=location_info.timezone)
+    local_time = datetime.datetime.now(datetime.datetime.now().astimezone().tzinfo)
+    sun_info = sun(location_info.observer, tzinfo=datetime.datetime.now().astimezone().tzinfo)
     return _theme_for_time(local_time, sun_info['sunrise'], sun_info['sunset'])
 
 
@@ -66,18 +63,11 @@ def _theme_for_time(current_time: datetime.datetime, sunrise: datetime.datetime,
     return theme
 
 
-def _local_time(datetime_now: datetime.datetime, location_info) -> datetime.datetime:
-    tz_loc = pytz.timezone(location_info.timezone)
-    return tz_loc.localize(datetime_now)
-
-
 def _location_info_from_location(location: str):
     location_info = None
     geolocator = Nominatim(user_agent='Picochess')
     loc = geolocator.geocode(location)
     if loc is not None:
-        tf = timezonefinder.TimezoneFinder()
-        timezone_str = tf.certain_timezone_at(lat=loc.latitude, lng=loc.longitude)
-        if timezone_str is not None:
-            location_info = LocationInfo(location, '', timezone_str, loc.latitude, loc.longitude)
+        location_info = LocationInfo(location, '', datetime.datetime.now().astimezone().tzname(),
+                                     loc.latitude, loc.longitude)
     return location_info
