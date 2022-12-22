@@ -103,6 +103,11 @@ class UciEngine(object):
             self.retro_engines = read_engine_ini(filename='retro.ini')
             self.favorite_engines = read_engine_ini(filename='favorites.ini')
             self.installed_engines = self.modern_engines + self.retro_engines + self.favorite_engines
+            # set retro/favorite engines to the list of modern engines in case retro.ini or favorites.ini is empty
+            if not self.retro_engines:
+                self.retro_engines = self.modern_engines
+            if not self.favorite_engines:
+                self.favorite_engines = self.modern_engines
 
         except OSError:
             logging.exception('OS error in starting engine')
