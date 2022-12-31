@@ -1157,7 +1157,7 @@ class DgtMenu(object):
 
     def _get_current_speaker(self, speakers, index: int):
         speaker = speakers[list(speakers)[index]]
-        text = Dgt.DISPLAY_TEXT(large_text=speaker['large'], medium_text=speaker['medium'], small_text=speaker['small'])
+        text = Dgt.DISPLAY_TEXT(web_text=speaker['web'], large_text=speaker['large'], medium_text=speaker['medium'], small_text=speaker['small'])
         text.beep = self.dgttranslate.bl(BeepLevel.BUTTON)
         text.wait = False
         text.maxtime = 0
@@ -2124,6 +2124,13 @@ class DgtMenu(object):
             # do action!
             self.dgttranslate.set_beep(self.menu_system_sound)
             write_picochess_ini('beep-config', self.dgttranslate.beep_to_config(self.menu_system_sound))
+            # set system beep for picochessweb
+            if self.dgttranslate.beep_to_config(self.menu_system_sound) == 'none':
+                event = Event.SET_VOICE(type=Voice.BEEPER, lang='en', speaker='mute', speed=2)
+            else:
+                event = Event.SET_VOICE(type=Voice.BEEPER, lang='en', speaker='beeper',
+                                    speed=2)
+            Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okbeep'))
 
         elif self.state == MenuState.SYS_LANG:

@@ -515,6 +515,7 @@ class Voice(MyEnum):
     USER = 'B00_voice_user_menu'
     COMP = 'B00_voice_comp_menu'
     VOLUME = 'B00_voice_volume_menu'
+    BEEPER = 'B00_voice_beeper_menu'  # non-functional menu
 
     @classmethod
     def items(cls):

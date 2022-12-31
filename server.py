@@ -280,7 +280,10 @@ class WebVr(DgtIface):
 
     def display_text_on_clock(self, message: Dgt.DISPLAY_TEXT):
         """Display a text on the web clock."""
-        text = message.large_text
+        if message.web_text != '':
+            text = message.web_text
+        else:
+            text = message.large_text
         if self.get_name() not in message.devs:
             logging.debug('ignored %s - devs: %s', text, message.devs)
             return True
@@ -488,7 +491,9 @@ class WebDisplay(DisplayMsg, threading.Thread):
             result = {'pgn': pgn_str, 'fen': fen, 'event': 'Game', 'move': '0000', 'play': 'newgame'}
             self.shared['last_dgt_move_msg'] = result
             EventHandler.write_to_clients(result)
-            _send_headers()  # don't need _build_headers()
+            _build_headers()
+            _send_headers()
+            _send_title()
 
         elif isinstance(message, Message.IP_INFO):
             self.shared['ip_info'] = message.info

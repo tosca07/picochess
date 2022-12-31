@@ -35,10 +35,15 @@ class Rev2Info():
     is_revelation = False
     is_pi = False
     is_dgtpi = False
+    is_web_only = None
 
     @classmethod
     def set_revelation(cls, rev):
         Rev2Info.is_revelation = rev
+        
+    @classmethod
+    def set_dgtpi(cls, dgtpi):
+        Rev2Info.is_dgtpi = dgtpi
 
     @classmethod
     def set_pi_mode(cls, pi_mode):
@@ -54,6 +59,20 @@ class Rev2Info():
             return True
         else:
             return False
+            
+    @classmethod
+    def get_web_only(cls):
+        if Rev2Info.is_web_only is None:
+            if Rev2Info.is_dgtpi:
+                Rev2Info.is_web_only = False
+            else:
+                if Rev2Info.get_pi_mode():
+                    Rev2Info.is_web_only = False
+                elif Rev2Info.get_new_rev2_mode():
+                    Rev2Info.is_web_only = False
+                else:
+                    Rev2Info.is_web_only = True
+        return Rev2Info.is_web_only
 
 
 class DgtBoard(EBoard):
@@ -228,7 +247,7 @@ class DgtBoard(EBoard):
                     text_l, text_m, text_s = 'BT e-Board', 'BT board', 'ok bt'
                 self.channel = 'BT'
                 self.ask_battery_status()
-            self.bconn_text = Dgt.DISPLAY_TEXT(large_text=text_l, medium_text=text_m, small_text=text_s,
+            self.bconn_text = Dgt.DISPLAY_TEXT(web_text=text_l, large_text=text_l, medium_text=text_m, small_text=text_s,
                                                wait=True, beep=False, maxtime=1.1,
                                                devs={'i2c', 'web'})  # serial clock lateron
             DisplayMsg.show(Message.DGT_EBOARD_VERSION(text=self.bconn_text, channel=self.channel))
@@ -725,10 +744,9 @@ class DgtBoard(EBoard):
                             return _success(dev)
                 if self._open_bluetooth():
                     return _success('/dev/rfcomm123')
-
-        # text = self.dgttranslate.text('N00_noboard', 'Board' + waitchars[self.wait_counter])
+                    
         bwait = 'Board' + waitchars[self.wait_counter]
-        text = Dgt.DISPLAY_TEXT(large_text='no e-' + bwait, medium_text='no' + bwait, small_text=bwait, wait=True, beep=False, maxtime=0.1,
+        text = Dgt.DISPLAY_TEXT(web_text='no e-' + bwait, large_text='no e-' + bwait, medium_text='no' + bwait, small_text=bwait, wait=True, beep=False, maxtime=0.1,
                                 devs={'i2c', 'web'})
         DisplayMsg.show(Message.DGT_NO_EBOARD_ERROR(text=text))
         self.wait_counter = (self.wait_counter + 1) % len(waitchars)
@@ -762,7 +780,6 @@ class DgtBoard(EBoard):
     def set_text_3k(self, text: bytes, beep: int):
         """Display a text on a 3000 Clock."""
         self._wait_for_clock('SetText3K()')
-        Rev2Info.set_pi_mode(True)
         res = self.write_command([DgtCmd.DGT_CLOCK_MESSAGE, 0x0c, DgtClk.DGT_CMD_CLOCK_START_MESSAGE,
                                   DgtClk.DGT_CMD_CLOCK_ASCII,
                                   text[0], text[1], text[2], text[3], text[4], text[5], text[6], text[7], beep,

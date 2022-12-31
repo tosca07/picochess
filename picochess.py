@@ -57,7 +57,7 @@ from dgt.hw import DgtHw
 from dgt.pi import DgtPi
 from dgt.display import DgtDisplay
 from eboard import EBoard
-from dgt.board import DgtBoard
+from dgt.board import DgtBoard,Rev2Info
 from chesslink.board import ChessLinkBoard
 from chessnut.board import ChessnutBoard
 from certabo.board import CertaboBoard
@@ -1973,6 +1973,7 @@ def main() -> None:
     if unknown:
         logging.warning('invalid parameter given %s', unknown)
 
+    Rev2Info.set_dgtpi(args.dgtpi)
     flag_pgn_game_over = False
     state.flag_flexible_ponder = args.flexible_analysis
     state.flag_premove = args.premove
@@ -2034,7 +2035,11 @@ def main() -> None:
     state.com_factor = args.comment_factor
     logging.debug('molli: probability factor for game comments args.comment_factor %s', state.com_factor)
     state.com_factor = args.comment_factor
-    PicoTalkerDisplay(args.user_voice, args.computer_voice, args.speed_voice, args.enable_setpieces_voice, state.com_factor).start()
+    if Rev2Info.get_web_only() and args.beep_config != None and args.beep_config != 'none':
+        beeper = True
+    else:
+        beeper = False
+    PicoTalkerDisplay(args.user_voice, args.computer_voice, args.speed_voice, args.enable_setpieces_voice, state.com_factor, beeper).start()
 
     # Set up the volume for the speech output according to the settings from picochess.ini#WD
     volume_factor = int(args.volume_voice)
@@ -3191,7 +3196,7 @@ def main() -> None:
                     msg = Message.INTERACTION_MODE(mode=state.interaction_mode, mode_text=mode_text, show_ok=False)
                     DisplayMsg.show(msg)
                 else:
-                    if event.mode == Mode.BRAIN:
+                    if event.mode == Mode.PONDER:
                         newgame_happened = False
                     stop_search_and_clock()
                     state.interaction_mode = event.mode

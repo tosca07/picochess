@@ -152,7 +152,7 @@ def get_opening_books():
 
     library = []
     for section in config.sections():
-        text = Dgt.DISPLAY_TEXT(large_text=config[section]['large'], medium_text=config[section]['medium'], small_text=config[section]['small'],
+        text = Dgt.DISPLAY_TEXT(web_text=config[section]['large'], large_text=config[section]['large'], medium_text=config[section]['medium'], small_text=config[section]['small'],
                                 wait=True, beep=False, maxtime=0, devs={'ser', 'i2c', 'web'})
         library.append(
             {

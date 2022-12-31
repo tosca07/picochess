@@ -61,7 +61,7 @@ class ChessLinkBoard(EBoard):
             except queue.Empty:
                 pass
             bwait = 'Board' + waitchars[wait_counter]
-            text = self._display_text('no e-' + bwait, 'no' + bwait, bwait)
+            text = self._display_text('no e-' + bwait, 'no e-' + bwait, 'no' + bwait, bwait)
             DisplayMsg.show(Message.DGT_NO_EBOARD_ERROR(text=text))
             wait_counter = (wait_counter + 1) % len(waitchars)
             time.sleep(1.0)
@@ -75,7 +75,7 @@ class ChessLinkBoard(EBoard):
                     result = self.appque.get(block=False)
                     if 'cmd' in result and result['cmd'] == 'agent_state' and 'state' in result and 'message' in result:
                         if result['state'] == 'offline':
-                            text = self._display_text(result['message'], 'no/', bwait)
+                            text = self._display_text(result['message'], result['message'], 'no/', bwait)
                         else:
                             text = Dgt.DISPLAY_TIME(force=True, wait=True, devs={'ser', 'i2c', 'web'})
                         DisplayMsg.show(Message.DGT_NO_EBOARD_ERROR(text=text))
@@ -93,8 +93,8 @@ class ChessLinkBoard(EBoard):
     def set_text_rp(self, text: bytes, beep: int):
         return True
 
-    def _display_text(self, large, medium, small):
-        return Dgt.DISPLAY_TEXT(large_text=large, medium_text=medium, small_text=small,
+    def _display_text(self, web, large, medium, small):
+        return Dgt.DISPLAY_TEXT(web_text=web, large_text=large, medium_text=medium, small_text=small,
                                 wait=True, beep=False, maxtime=0.1, devs={'i2c', 'web'})
 
     def run(self):

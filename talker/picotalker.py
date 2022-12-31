@@ -24,6 +24,7 @@
 #        (to be activated via pico voice menue and additional audio files)
 ###########################################################################
 
+from typing import Optional
 import threading
 import logging
 import subprocess
@@ -31,14 +32,13 @@ import queue
 from pathlib import Path
 from shutil import which
 from random import randint
+import os
+import time
 
 import chess  # type: ignore
 from utilities import DisplayMsg
 from dgt.api import Message
 from dgt.util import GameResult, PlayMode, Voice
-
-import os
-import time
 
 
 class PicoTalker(object):
@@ -95,6 +95,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
     USER = 'user'
     COMPUTER = 'computer'
     SYSTEM = 'system'
+    BEEPER = 'beeper'
 
     c_taken = False
     c_castle = False
@@ -110,7 +111,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
     c_draw = False
 
     # add voice comment-factor
-    def __init__(self, user_voice: str, computer_voice: str, speed_factor: int, setpieces_voice: bool, comment_factor: int):
+    def __init__(self, user_voice: str, computer_voice: str, speed_factor: int, setpieces_voice: bool, comment_factor: int, beep=False):
         """
         Initialize a PicoTalkerDisplay with voices for the user and/or computer players.
 
@@ -118,10 +119,12 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         :param computer_voice: The voice to use for the computer (eg. en:christina).
         """
         super(PicoTalkerDisplay, self).__init__()
-        self.speed_factor = (90 + (speed_factor % 10) * 5) / 100  # RR Used by sox.
+        self.user_picotalker = None
+        self.computer_picotalker: Optional[PicoTalker] = None
+        self.beeper_picotalker = None
+        self.speed_factor = (90 + (speed_factor % 10) * 5) / 100  # used by sox
         self.play_mode = PlayMode.USER_WHITE
         self.low_time = False
-        self.user_picotalker = None
         self.play_game = None  # saves the game after a computer move - used for "setpieces" to speak the move again
         self.setpieces_voice = setpieces_voice
         self.c_no_beforecmove = 0
@@ -154,6 +157,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         self.c_no_pawn = 0
 
         self.c_comment_factor = comment_factor
+        self.beep_on = beep
 
         if user_voice:
             logging.debug('creating user voice: [%s]', str(user_voice))
@@ -161,6 +165,10 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         if computer_voice:
             logging.debug('creating computer voice: [%s]', str(computer_voice))
             self.set_computer(PicoTalker(computer_voice, self.speed_factor))
+        if beep:
+            beeper_sound = 'en:beeper'
+            logging.debug('creating beeper sound: [%s]', str(beeper_sound))
+            self.set_beeper(PicoTalker(beeper_sound, self.speed_factor))
 
     def calc_no_group_comments(self, filestring: str):
         """
@@ -168,17 +176,17 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         """
         c_group_no = 0
 
-        path = self.computer_picotalker.voice_path
-
-        for file in os.listdir(path):
-            if file.startswith(filestring):
-                c_group_no += 1
+        if self.computer_picotalker is not None:
+            path = self.computer_picotalker.voice_path
+            for file in os.listdir(path):
+                if file.startswith(filestring):
+                    c_group_no += 1
 
         return c_group_no
 
     def set_computer(self, picotalker):
         """Set the computer talker."""
-        self.computer_picotalker: PicoTalker = picotalker
+        self.computer_picotalker = picotalker
         """molli: set correct number and assign it to voice group comment variables"""
         self.c_no_beforecmove = self.calc_no_group_comments('f_beforecmove')
         self.c_no_beforeumove = self.calc_no_group_comments('f_beforeumove')
@@ -211,7 +219,11 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
     def set_user(self, picotalker):
         """Set the user talker."""
-        self.user_picotalker: PicoTalker = picotalker
+        self.user_picotalker = picotalker
+        
+    def set_beeper(self, picotalker):
+        """Set the beeper talker."""
+        self.beeper_picotalker = picotalker
 
     def set_factor(self, speed_factor):
         """Set speech factor."""
@@ -219,6 +231,8 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
             self.computer_picotalker.set_speed_factor(speed_factor)
         if self.user_picotalker:
             self.user_picotalker.set_speed_factor(speed_factor)
+        if self.beeper_picotalker:
+            self.peeper_picotalker.set_speed_factor(speed_factor)
 
     def talk(self, sounds, dev=SYSTEM):
         if self.low_time:
@@ -231,6 +245,9 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         elif dev == self.COMPUTER:
             if self.computer_picotalker:
                 self.computer_picotalker.talk(sounds)
+        elif dev == self.BEEPER:
+            if self.beeper_picotalker:
+                self.beeper_picotalker.talk(sounds)
         elif dev == self.SYSTEM:
             if self.computer_picotalker:
                 self.computer_picotalker.talk(sounds)
@@ -465,6 +482,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
         sound_file = ''
         voice_parts = []
+        result_str = ''
         rank = fen_result[-2]
         file = fen_result[-1]
         square_str = rank
@@ -532,11 +550,12 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                     last_pos_dir = ''
                     if message.newgame:
                         logging.debug('announcing START_NEW_GAME')
+                        self.talk(['chime.ogg'], self.BEEPER)
                         self.talk(['newgame.ogg'])
                         self.play_game = None
-                        self.comment('newgame')
-                        self.comment('uwhite')
-                        previous_move = chess.Move.null()
+                        self.comment('newgame') ##molli
+                        self.comment('uwhite')  ##molli
+                        previous_move = chess.Move.null() ## molli
 
                 elif isinstance(message, Message.COMPUTER_MOVE):
                     logging.debug('molli: before announcing COMPUTER_MOVE [%s]', message.move)
@@ -547,10 +566,11 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         if message.move != previous_move:
                             logging.debug('announcing COMPUTER_MOVE [%s]', message.move)
                             game_copy.push(message.move)
-                            self.comment('beforecmove')
+                            self.talk(['beep.ogg'], self.BEEPER)
+                            self.comment('beforecmove') ##molli
                             self.talk(self.say_last_move(game_copy), self.COMPUTER)
-                            self.move_comment()
-                            self.comment('cmove')
+                            self.move_comment() ##molli
+                            self.comment('cmove') ##molli
                             previous_move = message.move
                             self.play_game = game_copy
 
@@ -643,7 +663,8 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                     elif message.result == GameResult.FIVEFOLD_REPETITION:
                         logging.debug('announcing GAME_ENDS/FIVEFOLD_REPETITION')
                         self.talk(['repetition.ogg', 'draw.ogg'])
-                        self.comment('draw')
+                        self.comment('draw') ##molli
+                    self.talk(['bell.ogg'], self.BEEPER)
 
                 elif isinstance(message, Message.TAKE_BACK):
                     logging.debug('announcing TAKE_BACK')
@@ -673,6 +694,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
                 elif isinstance(message, Message.ENGINE_READY):
                     logging.debug('announcing ENGINE_READY')
+                    self.talk(['bell.ogg'], self.BEEPER)
                     self.talk(['okengine.ogg'])
 
                 elif isinstance(message, Message.PLAY_MODE):
@@ -688,8 +710,11 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                 elif isinstance(message, Message.STARTUP_INFO):
                     self.play_mode = message.info['play_mode']
                     logging.debug('announcing PICOCHESS')
-                    self.talk(['picoChess.ogg'])
-                    previous_move = chess.Move.null()
+                    if self.beep_on:
+                        self.talk(['picoChess.ogg'], self.BEEPER)
+                    else:
+                        self.talk(['picoChess.ogg'])
+                    previous_move = chess.Move.null() ##molli
                     last_pos_dir = ''
                     self.comment('start')
                     self.comment('name')
@@ -772,6 +797,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                             pass
 
                 elif isinstance(message, Message.PICOTUTOR_MSG):
+                    self.talk(['bell.ogg'], self.BEEPER)
                     if '??' == message.eval_str:
                         self.talk(['picotutor_notify.ogg'])
                         self.talk(['verybadmove.ogg'])
@@ -865,7 +891,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                 elif isinstance(message, Message.TIMECONTROL_CHECK):
                     logging.debug('timecontrol check')
                     self.talk(['picotutor_notify.ogg'])
-                    if message.player is True:
+                    if message.player:
                         self.talk(['timecontrol_check_player.ogg'])
                     else:
                         self.talk(['timecontrol_check_opp.ogg'])
@@ -878,7 +904,8 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
                 elif isinstance(message, Message.SHOW_TEXT):
                     if message.text_string == 'NEW_POSITION':
-                        if self.setpieces_voice:
+                        self.talk(['set_pieces_sound.ogg'], self.BEEPER)
+                        if not self.beep_on:
                             self.talk(['set_pieces_sound.ogg'])
 
                 elif isinstance(message, Message.PICOWATCHER):
@@ -932,14 +959,25 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         self.set_computer(PicoTalker(localisation_id_voice, self.speed_factor))
                     if message.type == Voice.SPEED:
                         self.set_factor(self.speed_factor)
+                    if message.type == Voice.BEEPER:
+                        self.set_beeper(PicoTalker(localisation_id_voice, self.speed_factor))
+                    self.talk(['bell.ogg'], self.BEEPER)
                     self.talk(['ok.ogg'])
 
                 elif isinstance(message, Message.WRONG_FEN):
+                    self.talk(['set_pieces_sound.ogg'], self.BEEPER)
                     if self.setpieces_voice:
-                        self.talk(['set_pieces_sound.ogg'])
-                    if self.play_game and self.setpieces_voice:
+                        self.talk(['setpieces.ogg'])
+                    else:
+                        if not self.beep_on:
+                            self.talk(['set_pieces_sound.ogg'])
+                    if self.play_game:
                         self.talk(self.say_last_move(self.play_game), self.COMPUTER)
 
+                elif isinstance(message, Message.DGT_BUTTON):
+                    self.talk(['click.ogg'], self.BEEPER)
+                else:  # Default
+                    pass
             except queue.Empty:
                 pass
 

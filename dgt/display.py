@@ -21,17 +21,15 @@ import logging
 import copy
 import queue
 import threading
-
+import time
 import chess  # type: ignore
 from utilities import DisplayMsg, Observable, DispatchDgt, RepeatedTimer, write_picochess_ini
-from dgt.translate import DgtTranslate
 from dgt.menu import DgtMenu
 from dgt.util import ClockSide, ClockIcons, BeepLevel, Mode, GameResult, TimeMode, PlayMode
 from dgt.api import Dgt, Event, Message
 from timecontrol import TimeControl
 from dgt.board import Rev2Info
-
-import time
+from dgt.translate import DgtTranslate
 
 
 class DgtDisplay(DisplayMsg, threading.Thread):
@@ -62,16 +60,18 @@ class DgtDisplay(DisplayMsg, threading.Thread):
 
     def _convert_pico_string(self, pico_string):
         # print routine for longer text output like opening name, comments
-        text_length = 0
         result_list = []
         result = ''
-
-        if Rev2Info.get_new_rev2_mode():
-            text_length = 11
-        elif Rev2Info.get_pi_mode():
-            text_length = 8
+        if Rev2Info.get_web_only():
+            text_length = 35
         else:
-            text_length = 11
+            text_length = 0
+            if Rev2Info.get_new_rev2_mode():
+                text_length = 11
+            elif Rev2Info.get_pi_mode():
+                text_length = 8
+            else:
+                text_length = 11
 
         if pico_string:
             op_list = pico_string.split()
@@ -145,8 +145,14 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self.score = self.dgttranslate.text('N10_score', None)
         self.depth = 0
 
-    def _combine_depth_and_score(self) -> Dgt.DISPLAY_TEXT:
-        def _score_to_string(score_val, length):
+    @staticmethod
+    def _score_to_string(score_val, length='l'):
+        if Rev2Info.get_web_only():
+            try:
+                return '{:9.2f}'.format(int(score_val) / 100), False
+            except ValueError:
+                return score_val, True
+        else:
             if Rev2Info.get_new_rev2_mode():
                 if length == 's':
                     return '{:5.2f}'.format(int(score_val) / 100)
@@ -161,23 +167,71 @@ class DgtDisplay(DisplayMsg, threading.Thread):
                     return '{:7.2f}'.format(int(score_val) / 100).replace('.', '')
                 if length == 'l':
                     return '{:9.2f}'.format(int(score_val) / 100).replace('.', '')
+                    
+    def _combine_depth_and_score(self) -> Dgt.DISPLAY_TEXT:
         score = copy.copy(self.score)
+        text_depth = self.dgttranslate.text('B10_analysis_depth')
+        text_score = self.dgttranslate.text('B10_analysis_score')
+        if Rev2Info.get_web_only():
+            try:
+                score_val, is_string = self._score_to_string(score.large_text[-15:])
+                if is_string:
+                    text_score.small_text = ''
+                    score.web_text = text_depth.small_text + ' ' + str(
+                    self.depth) + ' | ' + text_score.small_text + ' ' + score_val
+                score.large_text = text_depth.small_text + ' ' + str(
+                    self.depth) + ' | ' + text_score.small_text + ' ' + score_val
+            except ValueError:
+                score.web_text = text_depth + ' - | ' + text_score + ' - '
+                score.large_text = text_depth + ' - | ' + text_score + ' - '
+            return score
+        else:
+            try:
+                if int(score.small_text) <= -1000:
+                    score.small_text = '-999'
+                if int(score.small_text) >= 1000:
+                    score.small_text = '999'
+                if Rev2Info.get_new_rev2_mode():
+                    score.web_text = '{:2d}{:s}'.format(self.depth, self._score_to_string(score.large_text[-8:], 'l'))
+                    score.large_text = '{:2d}{:s}'.format(self.depth, self._score_to_string(score.large_text[-8:], 'l'))
+                    score.medium_text = '{:2d}{:s}'.format(self.depth % 100, self._score_to_string(score.medium_text[-6:], 'm'))
+                    score.small_text = '{:2d}{:s}'.format(self.depth % 100, self._score_to_string(score.small_text[-4:], 's'))
+                else:
+                    score.web_text = '{:3d}{:s}'.format(self.depth, self._score_to_string(score.large_text[-8:], 'l'))
+                    score.large_text = '{:3d}{:s}'.format(self.depth, self._score_to_string(score.large_text[-8:], 'l'))
+                    score.medium_text = '{:2d}{:s}'.format(self.depth % 100, self._score_to_string(score.medium_text[-6:], 'm'))
+                    score.small_text = '{:2d}{:s}'.format(self.depth % 100, self._score_to_string(score.small_text[-4:], 's'))
+                score.rd = ClockIcons.DOT
+            except ValueError:
+                pass
+            return score
+
+    def _combine_depth_and_score_and_hint(self) -> Dgt.DISPLAY_TEXT:
+        score = copy.copy(self.score)
+        text_depth = self.dgttranslate.text('B10_analysis_depth')
+        text_score = self.dgttranslate.text('B10_analysis_score')
         try:
-            if int(score.small_text) <= -1000:
-                score.small_text = '-999'
-            if int(score.small_text) >= 1000:
-                score.small_text = '999'
-            if Rev2Info.get_new_rev2_mode():
-                score.large_text = '{:2d}{:s}'.format(self.depth, _score_to_string(score.large_text[-8:], 'l'))
-                score.medium_text = '{:2d}{:s}'.format(self.depth % 100, _score_to_string(score.medium_text[-6:], 'm'))
-                score.small_text = '{:2d}{:s}'.format(self.depth % 100, _score_to_string(score.small_text[-4:], 's'))
-            else:
-                score.large_text = '{:3d}{:s}'.format(self.depth, _score_to_string(score.large_text[-8:], 'l'))
-                score.medium_text = '{:2d}{:s}'.format(self.depth % 100, _score_to_string(score.medium_text[-6:], 'm'))
-                score.small_text = '{:2d}{:s}'.format(self.depth % 100, _score_to_string(score.small_text[-4:], 's'))
-            score.rd = ClockIcons.DOT
+            score_val, is_string = self._score_to_string(score.large_text[-15:])
+            if is_string:
+                text_score.small_text = ''
+            evaluation = text_depth.small_text + ' ' + str(self.depth) + ' | ' + text_score.small_text + ' ' + score_val
         except ValueError:
-            pass
+            evaluation = text_depth + ' - | ' + text_score + ' - '
+
+        if self.hint_move:
+            bit_board = chess.Board(self.hint_fen)
+            side = self._get_clock_side(self.hint_turn)
+            beep = self.dgttranslate.bl(BeepLevel.NO)
+            text = Dgt.DISPLAY_MOVE(move=self.hint_move, fen=self.hint_fen, side=side, wait=True, maxtime=1,
+                                    beep=beep, devs={'ser', 'i2c', 'web'}, uci960=self.uci960,
+                                    lang=self.dgttranslate.language, capital=self.dgttranslate.capital,
+                                    long=self.dgttranslate.notation)
+            move_text = bit_board.san(text.move)
+        else:
+            move_text = ' - '
+        score.web_text = evaluation + ' | ' + move_text
+        score.large_text = evaluation + ' | ' + move_text
+        score.rd = ClockIcons.DOT
         return score
 
     @classmethod
@@ -810,21 +864,26 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         # molli: rolling display
         if not self._inside_main_menu():
             if self.dgtmenu.get_mode() == Mode.PONDER:
-                if self.show_move_or_value >= self.dgtmenu.get_ponderinterval():
-                    if self.hint_move:
-                        side = self._get_clock_side(self.hint_turn)
-                        beep = self.dgttranslate.bl(BeepLevel.NO)
-                        text = Dgt.DISPLAY_MOVE(move=self.hint_move, fen=self.hint_fen, side=side, wait=True, maxtime=1,
-                                                beep=beep, devs={'ser', 'i2c', 'web'}, uci960=self.uci960,
-                                                lang=self.dgttranslate.language, capital=self.dgttranslate.capital,
-                                                long=self.dgttranslate.notation)
+                if not Rev2Info.get_web_only():
+                    if self.show_move_or_value >= self.dgtmenu.get_ponderinterval():
+                        if self.hint_move:
+                            side = self._get_clock_side(self.hint_turn)
+                            beep = self.dgttranslate.bl(BeepLevel.NO)
+                            text = Dgt.DISPLAY_MOVE(move=self.hint_move, fen=self.hint_fen, side=side, wait=True, maxtime=1,
+                                                    beep=beep, devs={'ser', 'i2c', 'web'}, uci960=self.uci960,
+                                                    lang=self.dgttranslate.language, capital=self.dgttranslate.capital,
+                                                    long=self.dgttranslate.notation)
+                        else:
+                            text = self.dgttranslate.text('N10_nomove')
                     else:
-                        text = self.dgttranslate.text('N10_nomove')
+                        text = self._combine_depth_and_score()
+                    text.wait = True
+                    DispatchDgt.fire(text)
+                    self.show_move_or_value = (self.show_move_or_value + 1) % (self.dgtmenu.get_ponderinterval() * 2)
                 else:
-                    text = self._combine_depth_and_score()
-                text.wait = True
-                DispatchDgt.fire(text)
-                self.show_move_or_value = (self.show_move_or_value + 1) % (self.dgtmenu.get_ponderinterval() * 2)
+                    text = self._combine_depth_and_score_and_hint()
+                    text.wait = True
+                    DispatchDgt.fire(text)
             elif (self.dgtmenu.get_mode() == Mode.BRAIN and self.dgtmenu.get_rolldispbrain()) or (self.dgtmenu.get_mode() == Mode.NORMAL and self.dgtmenu.get_rolldispnorm()):
                 # molli: allow rolling information display (time/score/hint_move) in BRAIN mode according to
                 #      ponder interval
