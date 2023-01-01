@@ -550,7 +550,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                     last_pos_dir = ''
                     if message.newgame:
                         logging.debug('announcing START_NEW_GAME')
-                        self.talk(['chime.ogg'], self.BEEPER)
+                        self.talk(['new_game.ogg'], self.BEEPER)
                         self.talk(['newgame.ogg'])
                         self.play_game = None
                         self.comment('newgame') ##molli
@@ -566,7 +566,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         if message.move != previous_move:
                             logging.debug('announcing COMPUTER_MOVE [%s]', message.move)
                             game_copy.push(message.move)
-                            self.talk(['beep.ogg'], self.BEEPER)
+                            self.talk(['computer_move.ogg'], self.BEEPER)
                             self.comment('beforecmove') ##molli
                             self.talk(self.say_last_move(game_copy), self.COMPUTER)
                             self.move_comment() ##molli
@@ -582,6 +582,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                     if message.move and message.game and message.move != previous_move:
                         logging.debug('announcing USER_MOVE_DONE [%s]', message.move)
                         self.comment('beforeumove')
+                        self.talk(['player_move.ogg'], self.BEEPER)
                         self.talk(self.say_last_move(message.game), self.USER)
                         previous_move = message.move
                         self.play_game = None
@@ -591,6 +592,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                 elif isinstance(message, Message.REVIEW_MOVE_DONE):
                     if message.move and message.game and message.move != previous_move:
                         logging.debug('announcing REVIEW_MOVE_DONE [%s]', message.move)
+                        self.talk(['player_move.ogg'], self.BEEPER)
                         self.talk(self.say_last_move(message.game), self.USER)
                         previous_move = message.move
                         self.play_game = None  # @todo why thats not set in dgtdisplay?
@@ -675,6 +677,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
                 elif isinstance(message, Message.TIME_CONTROL):
                     logging.debug('announcing TIME_CONTROL')
+                    self.talk(['confirm.ogg'], self.BEEPER)
                     self.talk(['oktime.ogg'])
 
                 elif isinstance(message, Message.INTERACTION_MODE):
@@ -694,7 +697,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
                 elif isinstance(message, Message.ENGINE_READY):
                     logging.debug('announcing ENGINE_READY')
-                    self.talk(['bell.ogg'], self.BEEPER)
+                    self.talk(['confirm.ogg'], self.BEEPER)
                     self.talk(['okengine.ogg'])
 
                 elif isinstance(message, Message.PLAY_MODE):
@@ -710,10 +713,8 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                 elif isinstance(message, Message.STARTUP_INFO):
                     self.play_mode = message.info['play_mode']
                     logging.debug('announcing PICOCHESS')
-                    if self.beep_on:
-                        self.talk(['picoChess.ogg'], self.BEEPER)
-                    else:
-                        self.talk(['picoChess.ogg'])
+                    self.talk(['picoChess.ogg'], self.BEEPER)
+                    self.talk(['picoChess.ogg'])
                     previous_move = chess.Move.null() ##molli
                     last_pos_dir = ''
                     self.comment('start')
@@ -797,7 +798,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                             pass
 
                 elif isinstance(message, Message.PICOTUTOR_MSG):
-                    self.talk(['bell.ogg'], self.BEEPER)
+                    self.talk(['picotutor.ogg'], self.BEEPER)
                     if '??' == message.eval_str:
                         self.talk(['picotutor_notify.ogg'])
                         self.talk(['verybadmove.ogg'])
@@ -833,6 +834,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         self.talk(self.say_tutor_move(message.game))
                     elif 'POSOK' in message.eval_str:
                         last_pos_dir = ''
+                        self.talk(['confirm.ogg'], self.BEEPER)
                         self.talk(['ok.ogg'])
                     elif 'POS' in message.eval_str:
                         score = message.score
@@ -961,7 +963,11 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         self.set_factor(self.speed_factor)
                     if message.type == Voice.BEEPER:
                         self.set_beeper(PicoTalker(localisation_id_voice, self.speed_factor))
-                    self.talk(['bell.ogg'], self.BEEPER)
+                    if message.speaker == 'mute':
+                        self.beep_on = False
+                    else:
+                        self.beep_on = True
+                    self.talk(['confirm.ogg'], self.BEEPER)
                     self.talk(['ok.ogg'])
 
                 elif isinstance(message, Message.WRONG_FEN):
@@ -975,7 +981,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         self.talk(self.say_last_move(self.play_game), self.COMPUTER)
 
                 elif isinstance(message, Message.DGT_BUTTON):
-                    self.talk(['click.ogg'], self.BEEPER)
+                    self.talk(['button_click.ogg'], self.BEEPER)
                 else:  # Default
                     pass
             except queue.Empty:

@@ -234,7 +234,7 @@ def update_picochess(dgtpi: bool, auto_reboot: bool, dgttranslate: DgtTranslate)
 def shutdown(dgtpi: bool, dev: str):
     """Shutdown picochess."""
     logging.debug('shutting down system requested by (%s)', dev)
-    time.sleep(3)  # give some time to send out the pgn file or speak the event
+    time.sleep(5)  # give some time to send out the pgn file or speak the event
     if platform.system() == 'Windows':
         os.system('shutdown /s')
     elif dgtpi:
@@ -249,7 +249,7 @@ def shutdown(dgtpi: bool, dev: str):
 def reboot(dgtpi: bool, dev: str):
     """Reboot picochess."""
     logging.debug('rebooting system requested by (%s)', dev)
-    time.sleep(3)  # give some time to send out the pgn file or speak the event
+    time.sleep(5)  # give some time to send out the pgn file or speak the event
     if platform.system() == 'Windows':
         os.system('shutdown /r')
     elif dgtpi:
