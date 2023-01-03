@@ -55,6 +55,7 @@ class ModeInfo:
         ModeInfo.opening_name = op_name
         ModeInfo.opening_eco = op_eco
         ModeInfo.book_in_use = book_in_use
+        ModeInfo.opening_name = ModeInfo.opening_name.strip()
         ModeInfo.opening_name.replace('\n', '')
         ModeInfo.opening_name.replace('\r', '')
         ModeInfo.opening_name.replace('\t', '')
@@ -62,6 +63,7 @@ class ModeInfo:
         ModeInfo.opening_name.replace(']', '')
         ModeInfo.opening_name.replace('(', '')
         ModeInfo.opening_name.replace(')', '')
+        ModeInfo.opening_name = ModeInfo.opening_name.strip()
         ModeInfo.opening_eco.replace('\n', '')
         ModeInfo.opening_eco.replace('\r', '')
         ModeInfo.opening_eco.replace('\t', '')
@@ -349,6 +351,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         l_timectrl = TimeControl(**l_tc_init)
 
         pgn_game.headers['PicoDepth'] = str(l_timectrl.depth)
+        pgn_game.headers['PicoNode'] = str(l_timectrl.node)
 
         # Timecontrol
 
@@ -481,6 +484,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         l_timectrl = TimeControl(**l_tc_init)
 
         pgn_game.headers['PicoDepth'] = str(l_timectrl.depth)
+        pgn_game.headers['PicoNode'] = str(l_timectrl.node)
 
         # Timecontrol
         if l_timectrl.moves_to_go_orig > 0:

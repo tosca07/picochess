@@ -1273,8 +1273,15 @@ class DgtTranslate(object):
             frtxt = entxt
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='LiveTorneo', medium_text='LivTorneo', small_text='torneo')
+        if text_id == 'timemode_node_menu':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Search Nodes', large_text='SearchNodes', medium_text='Nodes   ', small_text='Nodes ')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Such-Knoten', large_text='Such-Knoten', medium_text='Knoten  ', small_text='Knoten')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Profondita ', medium_text='Profondi', small_text='profon')
         if text_id == 'timemode_depth_menu':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='SearchDepth', medium_text='Depth   ', small_text='Depth ')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Search Depth', large_text='SearchDepth', medium_text='Depth   ', small_text='Depth ')
             detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Suchtiefe  ', medium_text='Suchtief', small_text='tiefe ')
             nltxt = entxt
             frtxt = entxt
@@ -1823,6 +1830,13 @@ class DgtTranslate(object):
         if text_id == 'tc_depth':  # support of depth per move search
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Depth ' + msg, medium_text='Depth ' + msg, small_text='dep ' + msg)
             detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Suchtiefe ' + msg, medium_text='Tiefe ' + msg, small_text='tief' + msg)
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Profo ' + msg, medium_text='Profo ' + msg, small_text='pro ' + msg)
+        if text_id == 'tc_node':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Nodes' + msg, large_text='Nodes ' + msg, medium_text='Nodes' + msg, small_text='node' + msg)
+            detxt = Dgt.DISPLAY_TEXT(web_text='Such-Knoten', large_text='Such-Knoten' + msg, medium_text='Knoten' + msg, small_text='knot' + msg)
             nltxt = entxt
             frtxt = entxt
             estxt = entxt

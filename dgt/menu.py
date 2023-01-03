@@ -53,10 +53,12 @@ class MenuState(object):
     TIME_FISCH_CTRL = 421000
     TIME_FIXED = 430000
     TIME_FIXED_CTRL = 431000
-    TIME_TOURN = 440000         # molli: tournament
-    TIME_TOURN_CTRL = 441000    # molli: tournament
-    TIME_DEPTH = 450000         # molli: search depth
-    TIME_DEPTH_CTRL = 451000    # molli: search depth
+    TIME_TOURN = 440000
+    TIME_TOURN_CTRL = 441000
+    TIME_DEPTH = 450000
+    TIME_DEPTH_CTRL = 451000
+    TIME_NODE = 460000          # molli: search nodes NNUE
+    TIME_NODE_CTRL = 461000     # molli: search nodes NNUE
 
     BOOK = 500000
     BOOK_NAME = 510000
@@ -268,12 +270,14 @@ class DgtMenu(object):
         self.menu_time_fisch = 0
         self.menu_time_tourn = 0
         self.menu_time_depth = 0
+        self.menu_time_node  = 0
 
         self.tc_fixed_list = [' 1', ' 3', ' 5', '10', '15', '30', '60', '90']
         self.tc_blitz_list = [' 1', ' 3', ' 5', '10', '15', '30', '60', '90']
         self.tc_fisch_list = [' 1  1', ' 3  2', ' 5  3', '10  5', '15 10', '30 15', '60 20', '90 30', ' 0  5', ' 0 10', ' 0 15', ' 0 20', ' 0 30', ' 0 60', ' 0 90']
         self.tc_tourn_list = ['10 10 0 5', '20 15 0 15', '30 40 0 15', '40 120 0 90', '40 60 15 30', '40 60 30 30', '40 90 30 30', '40 90 15 60', '40 90 30 60']
         self.tc_depth_list = [' 1', ' 2', ' 3', ' 4', '10', '15', '20', '25']
+        self.tc_node_list  = [' 1', ' 2', ' 3', ' 4', '10', '15', '20', '25']
 
         self.tc_fixed_map = OrderedDict([
             ('rnbqkbnr/pppppppp/Q7/8/8/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=1)),
@@ -328,6 +332,15 @@ class DgtMenu(object):
              ('rnbqkbnr/pppppppp/8/8/4Q2q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, depth=15)),
              ('rnbqkbnr/pppppppp/8/8/5Q1q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, depth=20)),
              ('rnbqkbnr/pppppppp/8/8/6Qq/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, depth=25))])
+        self.tc_node_map = OrderedDict([
+             ('rbbqkbnr/pppppppp/8/8/Qq6/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, node=1)),
+             ('rbbqkbnr/pppppppp/8/8/Q6q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, node=2)),
+             ('rbbqkbnr/pppppppp/8/8/1Q5q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, node=3)),
+             ('rbbqkbnr/pppppppp/8/8/2Q4q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, node=4)),
+             ('rbbqkbnr/pppppppp/8/8/3Q3q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, node=10)),
+             ('rbbqkbnr/pppppppp/8/8/4Q2q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, node=15)),
+             ('rbbqkbnr/pppppppp/8/8/5Q1q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, node=20)),
+             ('rbbqkbnr/pppppppp/8/8/6Qq/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, node=25))])
 
         # setup the result vars for api (dgtdisplay)
         self.save_choices()
@@ -408,6 +421,7 @@ class DgtMenu(object):
         self.res_time_fisch = self.menu_time_fisch
         self.res_time_tourn = self.menu_time_tourn
         self.res_time_depth = self.menu_time_depth
+        self.res_time_node = self.menu_time_node
 
         self.res_book_name = self.menu_book
 
@@ -420,14 +434,13 @@ class DgtMenu(object):
         self.res_picotutor_picocoach = self.menu_picotutor_picocoach
         self.res_picotutor_picowatcher = self.menu_picotutor_picowatcher
         self.res_picotutor_picoexplorer = self.menu_picotutor_picoexplorer
+        self.res_picotutor_picocomment = self.menu_picotutor_picocomment
         self.res_picotutor = self.menu_picotutor
 
         self.res_game_game_save = self.menu_game_save
         self.res_game_game_read = self.menu_game_read
         self.res_game_altmove = self.menu_game_altmove
         self.res_game_contlast = self.menu_game_contlast
-
-        self.res_picotutor_picocomment = self.menu_picotutor_picocomment
 
         self.dgttranslate.set_capital(self.menu_system_display_capital)
         self.dgttranslate.set_notation(self.menu_system_display_notation)
@@ -611,10 +624,18 @@ class DgtMenu(object):
     def set_time_depth(self, index: int):
         """Set the flag."""
         self.res_time_depth = self.menu_time_depth = index
+        
+    def set_time_node(self, index: int):
+        """Set the flag."""
+        self.res_time_node = self.menu_time_node = index
 
     def get_time_depth(self):
         """Get the flag."""
         return self.res_time_depth
+        
+    def get_time_node(self):
+        """Get the flag."""
+        return self.res_time_node
 
     def set_position_reverse_flipboard(self, flip_board):
         """Set the flag."""
@@ -907,6 +928,18 @@ class DgtMenu(object):
         """Set the menu state."""
         self.state = MenuState.TIME_DEPTH_CTRL
         text = self.dgttranslate.text('B00_tc_depth', self.tc_depth_list[self.menu_time_depth])
+        return text
+        
+    def enter_time_node_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.TIME_NODE
+        text = self.dgttranslate.text(self.menu_time_mode.value)
+        return text
+
+    def enter_time_node_ctrl_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.TIME_NODE_CTRL
+        text = self.dgttranslate.text('B00_tc_node', self.tc_node_list[self.menu_time_node])
         return text
 
     def enter_book_menu(self):
@@ -1374,6 +1407,12 @@ class DgtMenu(object):
 
         elif self.state == MenuState.TIME_DEPTH_CTRL:
             text = self.enter_time_depth_menu()
+            
+        elif self.state == MenuState.TIME_NODE:
+            text = self.enter_time_menu()
+            
+        elif self.state == MenuState.TIME_NODE_CTRL:
+            text = self.enter_time_node_menu()
 
         elif self.state == MenuState.BOOK:
             text = self.enter_top_menu()
@@ -1890,6 +1929,8 @@ class DgtMenu(object):
                 text = self.enter_time_tourn_menu()
             if self.menu_time_mode == TimeMode.DEPTH:
                 text = self.enter_time_depth_menu()
+            if self.menu_time_mode == TimeMode.NODE:
+                text = self.enter_time_node_menu()
 
         elif self.state == MenuState.TIME_BLITZ:
             text = self.enter_time_blitz_ctrl_menu()
@@ -1925,6 +1966,13 @@ class DgtMenu(object):
         elif self.state == MenuState.TIME_DEPTH_CTRL:
             # do action!
             text = self._fire_timectrl(self.tc_depth_map[list(self.tc_depth_map)[self.menu_time_depth]])
+            
+        elif self.state == MenuState.TIME_NODE:
+            text = self.enter_time_node_ctrl_menu()
+            
+        elif self.state == MenuState.TIME_NODE_CTRL:
+            # do action!
+            text = self._fire_timectrl(self.tc_node_map[list(self.tc_node_map)[self.menu_time_node]])
 
         elif self.state == MenuState.BOOK:
             text = self.enter_book_name_menu()
@@ -2533,7 +2581,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text('B00_tc_fisch', self.tc_fisch_list[self.menu_time_fisch])
 
         elif self.state == MenuState.TIME_FIXED:
-            self.state = MenuState.TIME_DEPTH
+            self.state = MenuState.TIME_NODE
             self.menu_time_mode = TimeModeLoop.prev(self.menu_time_mode)
             text = self.dgttranslate.text(self.menu_time_mode.value)
 
@@ -2558,6 +2606,15 @@ class DgtMenu(object):
         elif self.state == MenuState.TIME_DEPTH_CTRL:
             self.menu_time_depth = (self.menu_time_depth - 1) % len(self.tc_depth_map)
             text = self.dgttranslate.text('B00_tc_depth', self.tc_depth_list[self.menu_time_depth])
+            
+        elif self.state == MenuState.TIME_NODE:
+            self.state = MenuState.TIME_DEPTH
+            self.menu_time_mode = TimeModeLoop.prev(self.menu_time_mode)
+            text = self.dgttranslate.text(self.menu_time_mode.value)
+
+        elif self.state == MenuState.TIME_NODE_CTRL:
+            self.menu_time_node = (self.menu_time_node - 1) % len(self.tc_node_map)
+            text = self.dgttranslate.text('B00_tc_node', self.tc_node_list[self.menu_time_node])
 
         elif self.state == MenuState.BOOK:
             self.state = MenuState.TIME
@@ -3023,13 +3080,22 @@ class DgtMenu(object):
             text = self.dgttranslate.text('B00_tc_tourn', self.tc_tourn_list[self.menu_time_tourn])
 
         elif self.state == MenuState.TIME_DEPTH:
-            self.state = MenuState.TIME_FIXED
+            self.state = MenuState.TIME_NODE
             self.menu_time_mode = TimeModeLoop.next(self.menu_time_mode)
             text = self.dgttranslate.text(self.menu_time_mode.value)
 
         elif self.state == MenuState.TIME_DEPTH_CTRL:
             self.menu_time_depth = (self.menu_time_depth + 1) % len(self.tc_depth_map)
             text = self.dgttranslate.text('B00_tc_depth', self.tc_depth_list[self.menu_time_depth])
+            
+        elif self.state == MenuState.TIME_NODE:
+            self.state = MenuState.TIME_FIXED
+            self.menu_time_mode = TimeModeLoop.next(self.menu_time_mode)
+            text = self.dgttranslate.text(self.menu_time_mode.value)
+
+        elif self.state == MenuState.TIME_NODE_CTRL:
+            self.menu_time_node = (self.menu_time_node + 1) % len(self.tc_node_map)
+            text = self.dgttranslate.text('B00_tc_node', self.tc_node_list[self.menu_time_node])
 
         elif self.state == MenuState.BOOK:
             self.state = MenuState.ENGINE

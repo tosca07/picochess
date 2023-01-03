@@ -32,7 +32,7 @@ class TimeControl(object):
 
     """Control the picochess internal clock."""
 
-    def __init__(self, mode=TimeMode.FIXED, fixed=0, blitz=0, fischer=0, moves_to_go=0, blitz2=0, depth=0, internal_time=None):
+    def __init__(self, mode=TimeMode.FIXED, fixed=0, blitz=0, fischer=0, moves_to_go=0, blitz2=0, depth=0, node=0, internal_time=None):
         super(TimeControl, self).__init__()
         self.mode = mode
         self.move_time = fixed
@@ -42,12 +42,24 @@ class TimeControl(object):
         self.moves_to_go_orig = moves_to_go
         self.game_time2 = blitz2
         self.depth = depth
+        self.node = node
         self.internal_time = internal_time
 
         if depth > 0:
             self.mode = TimeMode.FIXED
             self.move_time = 671
             self.depth = depth
+            self.node = 0
+            self.game_time = 0
+            self.fisch_inc = 0
+            self.moves_to_go_orig = 0
+            self.moves_to_go = 0
+            
+        if node > 0:
+            self.mode = TimeMode.FIXED
+            self.move_time = 671
+            self.depth = 0
+            self.node = node
             self.game_time = 0
             self.fisch_inc = 0
             self.moves_to_go_orig = 0
@@ -73,12 +85,12 @@ class TimeControl(object):
         return chk_mode and chk_secs and chk_mins and chk_finc
 
     def __hash__(self):
-        value = str(self.mode) + str(self.move_time) + str(self.game_time) + str(self.fisch_inc) + str(self.moves_to_go_orig) + str(self.game_time2) + str(self.depth)
+        value = str(self.mode) + str(self.move_time) + str(self.game_time) + str(self.fisch_inc) + str(self.moves_to_go_orig) + str(self.game_time2) + str(self.depth) + str(self.node)
         return hash(value)
 
     def get_parameters(self):
         """Return the state of this class for generating a new instance."""
-        return {'mode': self.mode, 'fixed': self.move_time, 'blitz': self.game_time, 'fischer': self.fisch_inc, 'moves_to_go': self.moves_to_go_orig, 'blitz2': self.game_time2, 'depth': self.depth, 'internal_time': self.internal_time}
+        return {'mode': self.mode, 'fixed': self.move_time, 'blitz': self.game_time, 'fischer': self.fisch_inc, 'moves_to_go': self.moves_to_go_orig, 'blitz2': self.game_time2, 'depth': self.depth, 'node': self.node, 'internal_time': self.internal_time}
 
     def get_list_text(self):
         """Get the clock list text for the current time setting."""
@@ -89,6 +101,8 @@ class TimeControl(object):
                 return '{:2d} {:3d} {:2d}'.format(self.moves_to_go_orig, self.game_time, self.game_time2)
         if self.depth > 0:
             return '{:3d}'.format(self.depth)
+        if self.node > 0:
+            return '{:3d}'.format(self.node)
         if self.mode == TimeMode.FIXED:
             return '{:3d}'.format(self.move_time)
         if self.mode == TimeMode.BLITZ:
@@ -279,7 +293,8 @@ class TimeControl(object):
         uci_dict = {}
         if self.depth > 0:
             uci_dict['depth'] = str(self.depth)
-
+        elif self.node > 0:
+            uci_dict['nodes'] = str(self.node)
         elif self.mode in (TimeMode.BLITZ, TimeMode.FISCHER):
             uci_dict['wtime'] = str(int(self.internal_time[chess.WHITE] * 1000))
             uci_dict['btime'] = str(int(self.internal_time[chess.BLACK] * 1000))

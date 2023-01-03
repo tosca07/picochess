@@ -51,6 +51,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self.play_turn = self.hint_turn = self.last_turn = None
         self.score: Dgt.DISPLAY_TEXT = self.dgttranslate.text('N10_score', None)
         self.depth = 0
+        self.node = 0
         self.uci960 = False
         self.play_mode = PlayMode.USER_WHITE
         self.low_time = False
@@ -574,6 +575,14 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             text.wait = self._exit_menu()
             timectrl = self.dgtmenu.tc_depth_map[fen]  # type: TimeControl
             Observable.fire(Event.SET_TIME_CONTROL(tc_init=timectrl.get_parameters(), time_text=text, show_ok=False))
+        elif fen in self.dgtmenu.tc_node_map:
+            logging.debug('map: Time control node')
+            self.dgtmenu.set_time_mode(TimeMode.NODE)
+            self.dgtmenu.set_time_node(list(self.dgtmenu.tc_node_map.keys()).index(fen))
+            text = self.dgttranslate.text('M10_tc_node', self.dgtmenu.tc_node_list[self.dgtmenu.get_time_node()])
+            text.wait = self._exit_menu()
+            timectrl = self.dgtmenu.tc_node_map[fen]  # type: TimeControl
+            Observable.fire(Event.SET_TIME_CONTROL(tc_init=timectrl.get_parameters(), time_text=text, show_ok=False))
         elif fen in shutdown_map:
             logging.debug('map: shutdown')
             self._power_off()
@@ -789,6 +798,8 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             l_timemode = TimeMode.TOURN
         elif int(timectrl.depth) > 0:
             l_timemode = TimeMode.DEPTH
+        elif int(timectrl.node) > 0:
+            l_timemode = TimeMode.NODE
         else:
             l_timemode = timectrl.mode
 
@@ -853,6 +864,18 @@ class DgtDisplay(DisplayMsg, threading.Thread):
                 self.dgtmenu.tc_depth_map.update({('', timectrl)})
                 self.dgtmenu.tc_depth_list.append(timectrl.get_list_text())
                 self.dgtmenu.set_time_depth(index)
+        elif l_timemode == TimeMode.NODE:
+            logging.debug('molli: startup info Timemode Node')
+            for val in self.dgtmenu.tc_node_map.values():
+                if val.node == timectrl.node:
+                    self.dgtmenu.set_time_node(index)
+                    isnew = False
+                    break
+                index += 1
+            if isnew:
+                self.dgtmenu.tc_node_map.update({('', timectrl)})
+                self.dgtmenu.tc_node_list.append(timectrl.get_list_text())
+                self.dgtmenu.set_time_node(index)
 
     def _process_clock_start(self, message):
         self.time_control = TimeControl(**message.tc_init)

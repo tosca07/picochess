@@ -287,17 +287,20 @@ class PicochessState:
         except ValueError:
             return 1
 
-    def transfer_time(self, time_list: list, depth=0):
+    def transfer_time(self, time_list: list, depth=0, node=0):
         """Transfer the time list to a TimeControl Object and a Text Object."""
         i_depth = self._num(depth)
+        i_node = self._num(node)
 
         if i_depth > 0:
             fixed = 671
             timec = TimeControl(TimeMode.FIXED, fixed=fixed, depth=i_depth)
             textc = self.dgttranslate.text('B00_tc_depth', timec.get_list_text())
-            return timec, textc
-
-        if len(time_list) == 1:
+        elif i_node > 0:
+            fixed = 671
+            timec = TimeControl(TimeMode.FIXED, fixed=fixed, node=i_node)
+            textc = self.dgttranslate.text('B00_tc_node', timec.get_list_text())
+        elif len(time_list) == 1:
             fixed = self._num(time_list[0])
             timec = TimeControl(TimeMode.FIXED, fixed=fixed)
             textc = self.dgttranslate.text('B00_tc_fixed', timec.get_list_text())
@@ -545,6 +548,7 @@ def main() -> None:
         tc_init['blitz2'] = 0
         tc_init['moves_to_go'] = 0
         tc_init['depth'] = 0
+        tc_init['node'] = 0
 
         state.stop_clock()
         text = state.dgttranslate.text('N00_oktime')
@@ -557,6 +561,7 @@ def main() -> None:
         logging.debug('molli: set_emulation_tctrl')
         if emulation_mode():
             pico_depth = 0
+            pico_node = 0
             pico_tctrl_str = ''
 
             state.stop_clock()
@@ -576,10 +581,16 @@ def main() -> None:
                     pico_depth = int(uci_options["PicoDepth"])
             except IndexError:
                 pico_depth = 0
+                
+            try:
+                if "PicoNode" in uci_options:
+                    pico_node = int(uci_options["PicoNode"])
+            except IndexError:
+                pico_node = 0
 
             if pico_tctrl_str:
                 logging.debug('molli: set_emulation_tctrl input %s', pico_tctrl_str)
-                state.time_control, time_text = state.transfer_time(pico_tctrl_str.split(), depth=pico_depth)
+                state.time_control, time_text = state.transfer_time(pico_tctrl_str.split(), depth=pico_depth, node=pico_node)
                 tc_init = state.time_control.get_parameters()
                 text = state.dgttranslate.text('N00_oktime')
                 Observable.fire(Event.SET_TIME_CONTROL(tc_init=tc_init, time_text=text, show_ok=True))
@@ -748,10 +759,15 @@ def main() -> None:
                 l_pico_depth = int(l_game_pgn.headers['PicoDepth'])
             else:
                 l_pico_depth = 0
+                
+            if l_game_pgn.headers['PicoNode']:
+                l_pico_node = int(l_game_pgn.headers['PicoNode'])
+            else:
+                l_pico_node = 0
 
             if l_game_pgn.headers['PicoTimeControl']:
                 l_pico_tc = str(l_game_pgn.headers['PicoTimeControl'])
-                state.time_control, time_text = state.transfer_time(l_pico_tc.split(), depth=l_pico_depth)
+                state.time_control, time_text = state.transfer_time(l_pico_tc.split(), depth=l_pico_depth, node=l_pico_node)
 
             if l_game_pgn.headers['PicoRemTimeW']:
                 lt_white = int(l_game_pgn.headers['PicoRemTimeW'])
@@ -1183,9 +1199,10 @@ def main() -> None:
                         DisplayMsg.show(game_end)
                         state.legal_fens_after_cmove = []  # molli
                     else:
-                        DisplayMsg.show(msg)
-                        DisplayMsg.show(game_end)
-                        state.legal_fens_after_cmove = []  # molli
+                        if not pgn_mode():
+                            DisplayMsg.show(msg)
+                            DisplayMsg.show(game_end)
+                            state.legal_fens_after_cmove = []  # molli
                 else:
                     if state.interaction_mode in (Mode.NORMAL, Mode.TRAINING) or not ponder_hit:
                         if not state.check_game_state():
@@ -1487,7 +1504,7 @@ def main() -> None:
                     state.picotutor.reset()
                     state.picotutor.set_position(state.game.fen(), i_turn=state.game.turn)
 
-            if game_end:
+            if game_end and not pgn_mode():
                 state.legal_fens = []
                 state.legal_fens_after_cmove = []
                 if online_mode():
@@ -1537,7 +1554,7 @@ def main() -> None:
                 start_time_cmove_done = 0
 
             game_end = state.check_game_state()
-            if game_end:
+            if game_end and not pgn_mode():
                 update_elo(state, game_end.result)
                 state.legal_fens = []
                 state.legal_fens_after_cmove = []
@@ -1850,19 +1867,16 @@ def main() -> None:
             state.time_control.reset()
 
         state.legal_fens = []
-        game_end = state.check_game_state()
-        if game_end:
-            DisplayMsg.show(msg)
+        
+        cond1 = state.game.turn == chess.WHITE and state.play_mode == PlayMode.USER_BLACK
+        cond2 = state.game.turn == chess.BLACK and state.play_mode == PlayMode.USER_WHITE
+        if cond1 or cond2:
+            state.time_control.reset_start_time()
+            think(state.game, state.time_control, msg, state)
         else:
-            cond1 = state.game.turn == chess.WHITE and state.play_mode == PlayMode.USER_BLACK
-            cond2 = state.game.turn == chess.BLACK and state.play_mode == PlayMode.USER_WHITE
-            if cond1 or cond2:
-                state.time_control.reset_start_time()
-                think(state.game, state.time_control, msg, state)
-            else:
-                DisplayMsg.show(msg)
-                state.start_clock()
-                state.legal_fens = compute_legal_fens(state.game.copy())
+            DisplayMsg.show(msg)
+            state.start_clock()
+            state.legal_fens = compute_legal_fens(state.game.copy())
 
     # Enable garbage collection - needed for engne swapping as objects orphaned
     gc.enable()
@@ -1889,6 +1903,7 @@ def main() -> None:
                         help="Time settings <FixSec> or <StMin IncSec> like '10'(move) or '5 0'(game) or '3 2'(fischer) or '40 120 60' (tournament). \
                         All values must be below 999")
     parser.add_argument('-dept', '--depth', type=int, default=0, choices=range(0, 99), help="searchdepth per move for the engine")
+    parser.add_argument('-node', '--node', type=int, default=0, choices=range(0, 99), help="search nodes per move for the engine")
     parser.add_argument('-norl', '--disable-revelation-leds', action='store_true', help='disable Revelation leds')
     parser.add_argument('-l', '--log-level', choices=['notset', 'debug', 'info', 'warning', 'error', 'critical'],
                         default='warning', help='logging level')
@@ -2021,9 +2036,9 @@ def main() -> None:
     state.dgtmenu.set_game_contlast(args.continue_game)
     state.dgtmenu.set_game_altmove(args.alt_move)
 
-    logging.debug('molli: depth %s', args.depth)
+    logging.debug('node %s', args.node)
 
-    state.time_control, time_text = state.transfer_time(args.time.split(), depth=args.depth)
+    state.time_control, time_text = state.transfer_time(args.time.split(), depth=args.depth, node=args.node)
     state.tc_init_last = state.time_control.get_parameters()
     time_text.beep = False
 
@@ -2181,7 +2196,7 @@ def main() -> None:
 
     if emulation_mode():
         flag_last_engine_emu = True
-        time_control_l, time_text_l = state.transfer_time(pico_time.split(), depth=0)
+        time_control_l, time_text_l = state.transfer_time(pico_time.split(), depth=0, node=0)
         state.tc_init_last = time_control_l.get_parameters()
 
     if pgn_mode():
@@ -2846,29 +2861,26 @@ def main() -> None:
                             state.picotutor.pop_last_move()
 
                     state.legal_fens = []
-                    game_end = state.check_game_state()
-                    if game_end:
-                        DisplayMsg.show(msg)
-                    else:
-                        if pgn_mode():  # molli change pgn guessing game sides
-                            if state.max_guess_black > 0:
-                                state.max_guess_white = state.max_guess_black
-                                state.max_guess_black = 0
-                            elif state.max_guess_white > 0:
-                                state.max_guess_black = state.max_guess_white
-                                state.max_guess_white = 0
-                            state.no_guess_black = 1
-                            state.no_guess_white = 1
+                   
+                    if pgn_mode():  # molli change pgn guessing game sides
+                        if state.max_guess_black > 0:
+                            state.max_guess_white = state.max_guess_black
+                            state.max_guess_black = 0
+                        elif state.max_guess_white > 0:
+                            state.max_guess_black = state.max_guess_white
+                            state.max_guess_white = 0
+                        state.no_guess_black = 1
+                        state.no_guess_white = 1
 
-                        cond1 = state.game.turn == chess.WHITE and state.play_mode == PlayMode.USER_BLACK
-                        cond2 = state.game.turn == chess.BLACK and state.play_mode == PlayMode.USER_WHITE
-                        if cond1 or cond2:
-                            state.time_control.reset_start_time()
-                            think(state.game, state.time_control, msg, state)
-                        else:
-                            DisplayMsg.show(msg)
-                            state.start_clock()
-                            state.legal_fens = compute_legal_fens(state.game.copy())
+                    cond1 = state.game.turn == chess.WHITE and state.play_mode == PlayMode.USER_BLACK
+                    cond2 = state.game.turn == chess.BLACK and state.play_mode == PlayMode.USER_WHITE
+                    if cond1 or cond2:
+                        state.time_control.reset_start_time()
+                        think(state.game, state.time_control, msg, state)
+                    else:
+                        DisplayMsg.show(msg)
+                        state.start_clock()
+                        state.legal_fens = compute_legal_fens(state.game.copy())
 
                     if state.best_move_displayed:
                         DisplayMsg.show(Message.SWITCH_SIDES(game=state.game.copy(), move=move))
@@ -3325,6 +3337,11 @@ def main() -> None:
                         write_picochess_ini('depth', '{:d}'.format(tc_init['depth']))
                     else:
                         write_picochess_ini('depth', '{:d}'.format(0))
+                        
+                    if state.time_control.node > 0:
+                        write_picochess_ini('node', '{:d}'.format(tc_init['node']))
+                    else:
+                        write_picochess_ini('node', '{:d}'.format(0))
 
                 text = Message.TIME_CONTROL(time_text=event.time_text, show_ok=event.show_ok, tc_init=tc_init)
                 DisplayMsg.show(text)

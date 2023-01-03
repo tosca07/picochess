@@ -274,11 +274,11 @@ class TimeMode(MyEnum):
     FISCHER = 'B00_timemode_fischer_menu'  # Fischer increment
     TOURN = 'B00_timemode_tourn_menu'  # tournament
     DEPTH = 'B00_timemode_depth_menu'  # search depth
+    NODE = 'B00_timemode_node_menu'  # search noodes
 
     @classmethod
     def items(cls):
-        return [TimeMode.FIXED, TimeMode.BLITZ, TimeMode.FISCHER, TimeMode.TOURN, TimeMode.DEPTH]
-
+        return [TimeMode.FIXED, TimeMode.BLITZ, TimeMode.FISCHER, TimeMode.TOURN, TimeMode.DEPTH, TimeMode.NODE]
 
 class TimeModeLoop(object):
 
