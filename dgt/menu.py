@@ -313,34 +313,31 @@ class DgtMenu(object):
             ('8/8/8/8/4k1K1/8/8/8', TimeControl(TimeMode.FISCHER, blitz=0, fischer=30)),
             ('8/8/8/8/5k1K/8/8/8', TimeControl(TimeMode.FISCHER, blitz=0, fischer=60)),
             ('8/8/8/8/k2K4/8/8/8', TimeControl(TimeMode.FISCHER, blitz=0, fischer=90))])
-        self.tc_tourn_map = OrderedDict([
-            ('rnbqkbnr/pppppppp/8/8/8/Qq6/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.BLITZ, blitz=10, fischer=0, moves_to_go=10, blitz2=5)),
-            ('rnbqkbnr/pppppppp/8/8/8/Q6q/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.BLITZ, blitz=15, fischer=0, moves_to_go=20, blitz2=15)),
-            ('rnbqkbnr/pppppppp/8/8/8/1Q5q/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.BLITZ, blitz=30, fischer=0, moves_to_go=40, blitz2=15)),
-            ('rnbqkbnr/pppppppp/8/8/8/2Q4q/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.BLITZ, blitz=120, fischer=0, moves_to_go=40, blitz2=90)),
-            ('rnbqkbnr/pppppppp/8/8/8/3Q3q/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FISCHER, blitz=60, fischer=15, moves_to_go=40, blitz2=30)),
-            ('rnbqkbnr/pppppppp/8/8/8/4Q2q/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FISCHER, blitz=60, fischer=30, moves_to_go=40, blitz2=30)),
-            ('rnbqkbnr/ppppppp1/p7/8/8/5Q1q/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FISCHER, blitz=90, fischer=30, moves_to_go=40, blitz2=30)),
-            ('rnbqkbnr/pppppppp/8/8/8/5Q1q/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FISCHER, blitz=90, fischer=15, moves_to_go=40, blitz2=60)),
-            ('rnbqkbnr/pppppppp/8/8/8/6Qq/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FISCHER, blitz=90, fischer=30, moves_to_go=40, blitz2=60))])
-        self.tc_depth_map = OrderedDict([
-             ('rnbqkbnr/pppppppp/8/8/Qq6/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, depth=1)),
-             ('rnbqkbnr/pppppppp/8/8/Q6q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, depth=2)),
-             ('rnbqkbnr/pppppppp/8/8/1Q5q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, depth=3)),
-             ('rnbqkbnr/pppppppp/8/8/2Q4q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, depth=4)),
-             ('rnbqkbnr/pppppppp/8/8/3Q3q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, depth=10)),
-             ('rnbqkbnr/pppppppp/8/8/4Q2q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, depth=15)),
-             ('rnbqkbnr/pppppppp/8/8/5Q1q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, depth=20)),
-             ('rnbqkbnr/pppppppp/8/8/6Qq/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, depth=25))])
-        self.tc_node_map = OrderedDict([
-             ('rbbqkbnr/pppppppp/8/8/Qq6/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, node=1)),
-             ('rbbqkbnr/pppppppp/8/8/Q6q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, node=2)),
-             ('rbbqkbnr/pppppppp/8/8/1Q5q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, node=3)),
-             ('rbbqkbnr/pppppppp/8/8/2Q4q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, node=4)),
-             ('rbbqkbnr/pppppppp/8/8/3Q3q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, node=10)),
-             ('rbbqkbnr/pppppppp/8/8/4Q2q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, node=15)),
-             ('rbbqkbnr/pppppppp/8/8/5Q1q/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, node=20)),
-             ('rbbqkbnr/pppppppp/8/8/6Qq/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=900, node=25))])
+        self.tc_tournaments = [TimeControl(TimeMode.BLITZ, blitz=10, fischer=0, moves_to_go=10, blitz2=5),
+                               TimeControl(TimeMode.BLITZ, blitz=15, fischer=0, moves_to_go=20, blitz2=15),
+                               TimeControl(TimeMode.BLITZ, blitz=30, fischer=0, moves_to_go=40, blitz2=15),
+                               TimeControl(TimeMode.BLITZ, blitz=120, fischer=0, moves_to_go=40, blitz2=90),
+                               TimeControl(TimeMode.FISCHER, blitz=60, fischer=15, moves_to_go=40, blitz2=30),
+                               TimeControl(TimeMode.FISCHER, blitz=60, fischer=30, moves_to_go=40, blitz2=30),
+                               TimeControl(TimeMode.FISCHER, blitz=90, fischer=30, moves_to_go=40, blitz2=30),
+                               TimeControl(TimeMode.FISCHER, blitz=90, fischer=15, moves_to_go=40, blitz2=60),
+                               TimeControl(TimeMode.FISCHER, blitz=90, fischer=30, moves_to_go=40, blitz2=60)]
+        self.tc_depths = [TimeControl(TimeMode.FIXED, fixed=900, depth=1),
+                          TimeControl(TimeMode.FIXED, fixed=900, depth=2),
+                          TimeControl(TimeMode.FIXED, fixed=900, depth=3),
+                          TimeControl(TimeMode.FIXED, fixed=900, depth=4),
+                          TimeControl(TimeMode.FIXED, fixed=900, depth=10),
+                          TimeControl(TimeMode.FIXED, fixed=900, depth=15),
+                          TimeControl(TimeMode.FIXED, fixed=900, depth=20),
+                          TimeControl(TimeMode.FIXED, fixed=900, depth=25)]
+        self.tc_nodes = [TimeControl(TimeMode.FIXED, fixed=900, node=1),
+                         TimeControl(TimeMode.FIXED, fixed=900, node=2),
+                         TimeControl(TimeMode.FIXED, fixed=900, node=3),
+                         TimeControl(TimeMode.FIXED, fixed=900, node=4),
+                         TimeControl(TimeMode.FIXED, fixed=900, node=10),
+                         TimeControl(TimeMode.FIXED, fixed=900, node=15),
+                         TimeControl(TimeMode.FIXED, fixed=900, node=20),
+                         TimeControl(TimeMode.FIXED, fixed=900, node=25)]
 
         # setup the result vars for api (dgtdisplay)
         self.save_choices()
@@ -1958,21 +1955,21 @@ class DgtMenu(object):
 
         elif self.state == MenuState.TIME_TOURN_CTRL:
             # do action!
-            text = self._fire_timectrl(self.tc_tourn_map[list(self.tc_tourn_map)[self.menu_time_tourn]])
+            text = self._fire_timectrl(self.tc_tournaments[self.menu_time_tourn])
 
         elif self.state == MenuState.TIME_DEPTH:
             text = self.enter_time_depth_ctrl_menu()
 
         elif self.state == MenuState.TIME_DEPTH_CTRL:
             # do action!
-            text = self._fire_timectrl(self.tc_depth_map[list(self.tc_depth_map)[self.menu_time_depth]])
+            text = self._fire_timectrl(self.tc_depths[self.menu_time_depth])
             
         elif self.state == MenuState.TIME_NODE:
             text = self.enter_time_node_ctrl_menu()
             
         elif self.state == MenuState.TIME_NODE_CTRL:
             # do action!
-            text = self._fire_timectrl(self.tc_node_map[list(self.tc_node_map)[self.menu_time_node]])
+            text = self._fire_timectrl(self.tc_nodes[self.menu_time_node])
 
         elif self.state == MenuState.BOOK:
             text = self.enter_book_name_menu()
@@ -2595,7 +2592,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_time_mode.value)
 
         elif self.state == MenuState.TIME_TOURN_CTRL:
-            self.menu_time_tourn = (self.menu_time_tourn - 1) % len(self.tc_tourn_map)
+            self.menu_time_tourn = (self.menu_time_tourn - 1) % len(self.tc_tournaments)
             text = self.dgttranslate.text('B00_tc_tourn', self.tc_tourn_list[self.menu_time_tourn])
 
         elif self.state == MenuState.TIME_DEPTH:
@@ -2604,7 +2601,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_time_mode.value)
 
         elif self.state == MenuState.TIME_DEPTH_CTRL:
-            self.menu_time_depth = (self.menu_time_depth - 1) % len(self.tc_depth_map)
+            self.menu_time_depth = (self.menu_time_depth - 1) % len(self.tc_depths)
             text = self.dgttranslate.text('B00_tc_depth', self.tc_depth_list[self.menu_time_depth])
             
         elif self.state == MenuState.TIME_NODE:
@@ -2613,7 +2610,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_time_mode.value)
 
         elif self.state == MenuState.TIME_NODE_CTRL:
-            self.menu_time_node = (self.menu_time_node - 1) % len(self.tc_node_map)
+            self.menu_time_node = (self.menu_time_node - 1) % len(self.tc_nodes)
             text = self.dgttranslate.text('B00_tc_node', self.tc_node_list[self.menu_time_node])
 
         elif self.state == MenuState.BOOK:
@@ -3076,7 +3073,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_time_mode.value)
 
         elif self.state == MenuState.TIME_TOURN_CTRL:
-            self.menu_time_tourn = (self.menu_time_tourn + 1) % len(self.tc_tourn_map)
+            self.menu_time_tourn = (self.menu_time_tourn + 1) % len(self.tc_tournaments)
             text = self.dgttranslate.text('B00_tc_tourn', self.tc_tourn_list[self.menu_time_tourn])
 
         elif self.state == MenuState.TIME_DEPTH:
@@ -3085,7 +3082,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_time_mode.value)
 
         elif self.state == MenuState.TIME_DEPTH_CTRL:
-            self.menu_time_depth = (self.menu_time_depth + 1) % len(self.tc_depth_map)
+            self.menu_time_depth = (self.menu_time_depth + 1) % len(self.tc_depths)
             text = self.dgttranslate.text('B00_tc_depth', self.tc_depth_list[self.menu_time_depth])
             
         elif self.state == MenuState.TIME_NODE:
@@ -3094,7 +3091,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_time_mode.value)
 
         elif self.state == MenuState.TIME_NODE_CTRL:
-            self.menu_time_node = (self.menu_time_node + 1) % len(self.tc_node_map)
+            self.menu_time_node = (self.menu_time_node + 1) % len(self.tc_nodes)
             text = self.dgttranslate.text('B00_tc_node', self.tc_node_list[self.menu_time_node])
 
         elif self.state == MenuState.BOOK:

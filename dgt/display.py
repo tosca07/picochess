@@ -559,30 +559,6 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             text.wait = self._exit_menu()
             timectrl = self.dgtmenu.tc_fisch_map[fen]  # type: TimeControl
             Observable.fire(Event.SET_TIME_CONTROL(tc_init=timectrl.get_parameters(), time_text=text, show_ok=False))
-        elif fen in self.dgtmenu.tc_tourn_map:
-            logging.debug('map: Time control tourn')
-            self.dgtmenu.set_time_mode(TimeMode.TOURN)
-            self.dgtmenu.set_time_tourn(list(self.dgtmenu.tc_tourn_map.keys()).index(fen))
-            text = self.dgttranslate.text('M10_tc_tourn', self.dgtmenu.tc_tourn_list[self.dgtmenu.get_time_tourn()])
-            text.wait = self._exit_menu()
-            timectrl = self.dgtmenu.tc_tourn_map[fen]  # type: TimeControl
-            Observable.fire(Event.SET_TIME_CONTROL(tc_init=timectrl.get_parameters(), time_text=text, show_ok=False))
-        elif fen in self.dgtmenu.tc_depth_map:
-            logging.debug('map: Time control depth')
-            self.dgtmenu.set_time_mode(TimeMode.DEPTH)
-            self.dgtmenu.set_time_depth(list(self.dgtmenu.tc_depth_map.keys()).index(fen))
-            text = self.dgttranslate.text('M10_tc_depth', self.dgtmenu.tc_depth_list[self.dgtmenu.get_time_depth()])
-            text.wait = self._exit_menu()
-            timectrl = self.dgtmenu.tc_depth_map[fen]  # type: TimeControl
-            Observable.fire(Event.SET_TIME_CONTROL(tc_init=timectrl.get_parameters(), time_text=text, show_ok=False))
-        elif fen in self.dgtmenu.tc_node_map:
-            logging.debug('map: Time control node')
-            self.dgtmenu.set_time_mode(TimeMode.NODE)
-            self.dgtmenu.set_time_node(list(self.dgtmenu.tc_node_map.keys()).index(fen))
-            text = self.dgttranslate.text('M10_tc_node', self.dgtmenu.tc_node_list[self.dgtmenu.get_time_node()])
-            text.wait = self._exit_menu()
-            timectrl = self.dgtmenu.tc_node_map[fen]  # type: TimeControl
-            Observable.fire(Event.SET_TIME_CONTROL(tc_init=timectrl.get_parameters(), time_text=text, show_ok=False))
         elif fen in shutdown_map:
             logging.debug('map: shutdown')
             self._power_off()
@@ -842,38 +818,38 @@ class DgtDisplay(DisplayMsg, threading.Thread):
                 self.dgtmenu.tc_fisch_list.append(timectrl.get_list_text())
                 self.dgtmenu.set_time_fisch(index)
         elif l_timemode == TimeMode.TOURN:
-            for val in self.dgtmenu.tc_tourn_map.values():
+            for val in self.dgtmenu.tc_tournaments:
                 if val == timectrl:
                     self.dgtmenu.set_time_tourn(index)
                     isnew = False
                     break
                 index += 1
             if isnew:
-                self.dgtmenu.tc_tourn_map.update({('', timectrl)})
+                self.dgtmenu.tc_tournaments.append(timectrl)
                 self.dgtmenu.tc_tourn_list.append(timectrl.get_list_text())
                 self.dgtmenu.set_time_tourn(index)
         elif l_timemode == TimeMode.DEPTH:
             logging.debug('molli: startup info Timemode Depth')
-            for val in self.dgtmenu.tc_depth_map.values():
+            for val in self.dgtmenu.tc_depths:
                 if val.depth == timectrl.depth:
                     self.dgtmenu.set_time_depth(index)
                     isnew = False
                     break
                 index += 1
             if isnew:
-                self.dgtmenu.tc_depth_map.update({('', timectrl)})
+                self.dgtmenu.tc_depths.append(timectrl)
                 self.dgtmenu.tc_depth_list.append(timectrl.get_list_text())
                 self.dgtmenu.set_time_depth(index)
         elif l_timemode == TimeMode.NODE:
             logging.debug('molli: startup info Timemode Node')
-            for val in self.dgtmenu.tc_node_map.values():
+            for val in self.dgtmenu.tc_nodes:
                 if val.node == timectrl.node:
                     self.dgtmenu.set_time_node(index)
                     isnew = False
                     break
                 index += 1
             if isnew:
-                self.dgtmenu.tc_node_map.update({('', timectrl)})
+                self.dgtmenu.tc_nodes.append(timectrl)
                 self.dgtmenu.tc_node_list.append(timectrl.get_list_text())
                 self.dgtmenu.set_time_node(index)
 
