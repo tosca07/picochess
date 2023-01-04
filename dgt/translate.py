@@ -1821,7 +1821,7 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'tc_tourn':  # molli tournament time control
-            entxt = Dgt.DISPLAY_TEXT(web_text=msg[:38], large_text=msg[:11], medium_text=msg[:8], small_text=msg[:6])
+            entxt = Dgt.DISPLAY_TEXT(web_text='Tournament ' + msg, large_text=msg[:11], medium_text=msg[:8], small_text=msg[:6])
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
@@ -1829,14 +1829,14 @@ class DgtTranslate(object):
             ittxt = entxt
         if text_id == 'tc_depth':  # support of depth per move search
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Depth ' + msg, medium_text='Depth ' + msg, small_text='dep ' + msg)
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Suchtiefe ' + msg, medium_text='Tiefe ' + msg, small_text='tief' + msg)
+            detxt = Dgt.DISPLAY_TEXT(web_text='Suchtiefe ', large_text='Suchtiefe' + msg, medium_text='Tiefe ' + msg, small_text='tief' + msg)
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Profo ' + msg, medium_text='Profo ' + msg, small_text='pro ' + msg)
         if text_id == 'tc_node':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Nodes' + msg, large_text='Nodes ' + msg, medium_text='Nodes' + msg, small_text='node' + msg)
-            detxt = Dgt.DISPLAY_TEXT(web_text='Such-Knoten', large_text='Such-Knoten' + msg, medium_text='Knoten' + msg, small_text='knot' + msg)
+            entxt = Dgt.DISPLAY_TEXT(web_text='Nodes ' + msg, large_text='Nodes ' + msg, medium_text='Nodes' + msg, small_text='node' + msg)
+            detxt = Dgt.DISPLAY_TEXT(web_text='Such-Knoten ', large_text='Knoten ' + msg, medium_text='Knoten' + msg, small_text='knot' + msg)
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
