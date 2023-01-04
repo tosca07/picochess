@@ -1199,10 +1199,9 @@ def main() -> None:
                         DisplayMsg.show(game_end)
                         state.legal_fens_after_cmove = []  # molli
                     else:
-                        if not pgn_mode():
-                            DisplayMsg.show(msg)
-                            DisplayMsg.show(game_end)
-                            state.legal_fens_after_cmove = []  # molli
+                        DisplayMsg.show(msg)
+                        DisplayMsg.show(game_end)
+                        state.legal_fens_after_cmove = []  # molli
                 else:
                     if state.interaction_mode in (Mode.NORMAL, Mode.TRAINING) or not ponder_hit:
                         if not state.check_game_state():
@@ -1504,7 +1503,7 @@ def main() -> None:
                     state.picotutor.reset()
                     state.picotutor.set_position(state.game.fen(), i_turn=state.game.turn)
 
-            if game_end and not pgn_mode():
+            if game_end:
                 state.legal_fens = []
                 state.legal_fens_after_cmove = []
                 if online_mode():
@@ -1535,8 +1534,7 @@ def main() -> None:
         elif fen == state.done_computer_fen:
             logging.info('done move detected')
             assert state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING), 'wrong mode: %s' % state.interaction_mode
-            if not pgn_mode():
-                DisplayMsg.show(Message.COMPUTER_MOVE_DONE())
+            DisplayMsg.show(Message.COMPUTER_MOVE_DONE())
 
             state.best_move_posted = False
             state.game.push(state.done_move)
@@ -1554,7 +1552,7 @@ def main() -> None:
                 start_time_cmove_done = 0
 
             game_end = state.check_game_state()
-            if game_end and not pgn_mode():
+            if game_end:
                 update_elo(state, game_end.result)
                 state.legal_fens = []
                 state.legal_fens_after_cmove = []
@@ -1562,7 +1560,6 @@ def main() -> None:
                     stop_search_and_clock()
                     state.stop_fen_timer()
                 stop_search_and_clock()
-                DisplayMsg.show(game_end)
             else:
                 state.searchmoves.reset()
 

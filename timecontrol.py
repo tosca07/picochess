@@ -225,7 +225,7 @@ class TimeControl(object):
                 logging.info('start internal time w:%s - b:%s [ign]', w_hms, b_hms)
                 logging.info('received clock time w:%s - b:%s [use]',
                              hms_time(self.clock_time[chess.WHITE]), hms_time(self.clock_time[chess.BLACK]))
-            if Rev2Info.get_web_only():
+            if not Rev2Info.get_web_only():
                 # hack to make picochess work WITH DGT board but WITHOUT a clock attached to it
                 # delta should be zero for non-attached / not running clock (with correction for fischer increment)
                 deltaBW = self.clock_time[chess.WHITE] - self.clock_time[chess.BLACK]
