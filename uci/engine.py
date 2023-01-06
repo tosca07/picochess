@@ -74,7 +74,7 @@ class UciEngine(object):
             self.uci_elo_eval_fn = None  # saved UCI_Elo eval function
             self.shell = uci_shell.get()
             logging.info('file ' + file)
-            if file.find('/engines/armv7l/mame') > 0:
+            if '/mame/' in file:
                 mfile = [file, retrospeed]
                 logging.info(mfile)
             else:
