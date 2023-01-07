@@ -220,7 +220,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
     def set_user(self, picotalker):
         """Set the user talker."""
         self.user_picotalker = picotalker
-        
+
     def set_beeper(self, picotalker):
         """Set the beeper talker."""
         self.beeper_picotalker = picotalker
@@ -374,9 +374,9 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
             # don't use factor for these events
             c_prob = c_prob
         else:
-            c_prob = round(c_prob * (self.c_comment_factor/100))
+            c_prob = round(c_prob * (self.c_comment_factor / 100))
 
-        c_number = round(c_total*(100/c_prob))
+        c_number = round(c_total * (100 / c_prob))
 
         if c_number > 1:
             c_rand = randint(1, c_number)
@@ -482,7 +482,6 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
         sound_file = ''
         voice_parts = []
-        result_str = ''
         rank = fen_result[-2]
         file = fen_result[-1]
         square_str = rank
@@ -553,9 +552,9 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         self.talk(['new_game.ogg'], self.BEEPER)
                         self.talk(['newgame.ogg'])
                         self.play_game = None
-                        self.comment('newgame') ##molli
-                        self.comment('uwhite')  ##molli
-                        previous_move = chess.Move.null() ## molli
+                        self.comment('newgame')
+                        self.comment('uwhite')
+                        previous_move = chess.Move.null()
 
                 elif isinstance(message, Message.COMPUTER_MOVE):
                     logging.debug('molli: before announcing COMPUTER_MOVE [%s]', message.move)
@@ -567,10 +566,10 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                             logging.debug('announcing COMPUTER_MOVE [%s]', message.move)
                             game_copy.push(message.move)
                             self.talk(['computer_move.ogg'], self.BEEPER)
-                            self.comment('beforecmove') ##molli
+                            self.comment('beforecmove')
                             self.talk(self.say_last_move(game_copy), self.COMPUTER)
-                            self.move_comment() ##molli
-                            self.comment('cmove') ##molli
+                            self.move_comment()
+                            self.comment('cmove')
                             previous_move = message.move
                             self.play_game = game_copy
 
@@ -665,7 +664,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                     elif message.result == GameResult.FIVEFOLD_REPETITION:
                         logging.debug('announcing GAME_ENDS/FIVEFOLD_REPETITION')
                         self.talk(['repetition.ogg', 'draw.ogg'])
-                        self.comment('draw') ##molli
+                        self.comment('draw')
                     self.talk(['bell.ogg'], self.BEEPER)
 
                 elif isinstance(message, Message.TAKE_BACK):
@@ -715,7 +714,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                     logging.debug('announcing PICOCHESS')
                     self.talk(['picoChess.ogg'], self.BEEPER)
                     self.talk(['picoChess.ogg'])
-                    previous_move = chess.Move.null() ##molli
+                    previous_move = chess.Move.null()
                     last_pos_dir = ''
                     self.comment('start')
                     self.comment('name')

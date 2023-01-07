@@ -113,7 +113,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
                     result = result[text_length:]
 
                 result_list.append(result)
-        return(result_list)
+        return result_list
 
     def _exit_menu(self):
         if self.dgtmenu.exit_menu():
@@ -168,7 +168,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
                     return '{:7.2f}'.format(int(score_val) / 100).replace('.', '')
                 if length == 'l':
                     return '{:9.2f}'.format(int(score_val) / 100).replace('.', '')
-                    
+
     def _combine_depth_and_score(self) -> Dgt.DISPLAY_TEXT:
         score = copy.copy(self.score)
         text_depth = self.dgttranslate.text('B10_analysis_depth')
@@ -179,7 +179,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
                 if is_string:
                     text_score.small_text = ''
                     score.web_text = text_depth.small_text + ' ' + str(
-                    self.depth) + ' | ' + text_score.small_text + ' ' + score_val
+                        self.depth) + ' | ' + text_score.small_text + ' ' + score_val
                 score.large_text = text_depth.small_text + ' ' + str(
                     self.depth) + ' | ' + text_score.small_text + ' ' + score_val
             except ValueError:

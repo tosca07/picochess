@@ -22,7 +22,6 @@ import csv
 import chess  # type: ignore
 import chess.uci  # type: ignore
 import chess.engine  # type: ignore
-from pathlib import Path
 from random import randint
 from dgt.util import PicoComment
 from typing import Tuple
@@ -150,7 +149,7 @@ class PicoTutor:
 
         if com_factor == 0:
             return ''
-        range_fac = round(100/com_factor)
+        range_fac = round(100 / com_factor)
         max_range = self.comment_no * range_fac
         max_range_all = self.comment_all_no * range_fac
 
@@ -158,7 +157,7 @@ class PicoTutor:
             # get a comment by pure chance
             if self.comments and self.comment_no > 0:
                 index = randint(0, max_range)
-                if index > self.comment_no-1:
+                if index > self.comment_no - 1:
                     return ''
                 return self.comments[index]
             else:
@@ -167,13 +166,13 @@ class PicoTutor:
             # get a comment by pure chance
             if self.comments and self.comment_no > 0:
                 index = randint(0, max_range)
-                if index > self.comment_no-1:
+                if index > self.comment_no - 1:
                     return ''
                 return self.comments[index]
             else:
                 if self.comments_all and self.comment_all_no > 0:
                     index = randint(0, max_range_all)
-                    if index > self.comment_all_no-1:
+                    if index > self.comment_all_no - 1:
                         return ''
                     return self.comments_all[index]
                 else:
@@ -213,7 +212,7 @@ class PicoTutor:
         opening_name = moves = eco = ''
 
         if self.op == [] or diff > 2:
-            return(eco, opening_name, moves, inside_book_opening)
+            return eco, opening_name, moves, inside_book_opening
 
         played = '%s' % (' '.join(self.op))
 
@@ -242,13 +241,13 @@ class PicoTutor:
             else:
                 inside_book_opening = False
 
-        return(eco, opening_name, moves, inside_book_opening)
+        return eco, opening_name, moves, inside_book_opening
 
     def get_fen_opening(self):
         fen = self.board.board_fen()
 
         if not fen:
-            return("", False)
+            return "", False
 
         index = 0
         opening_name = ''
@@ -256,14 +255,14 @@ class PicoTutor:
         for line in self.book_fen_data:
             line_list = line.split()
             if line_list[0] == fen:
-                opening_name = self.book_fen_data[index+1]
+                opening_name = self.book_fen_data[index + 1]
                 break
             index = index + 1
 
         if opening_name:
-            return (opening_name, True)
+            return opening_name, True
         else:
-            return ("", False)
+            return "", False
 
     def reset(self):
         self.pos = False
@@ -326,10 +325,10 @@ class PicoTutor:
             self.start()
 
     def get_user_color(self):
-        return(self.user_color)
+        return self.user_color
 
     def set_position(self, i_fen, i_turn=chess.WHITE):
-        if not(self.coach_on or self.watcher_on):
+        if not (self.coach_on or self.watcher_on):
             return
         self.reset()
 
@@ -349,13 +348,13 @@ class PicoTutor:
 
     def push_move(self, i_uci_move):
         if i_uci_move not in self.board.legal_moves:
-            return(False)
+            return False
 
         self.op.append(self.board.san(i_uci_move))
         self.board.push(i_uci_move)
 
-        if not(self.coach_on or self.watcher_on):
-            return(True)
+        if not (self.coach_on or self.watcher_on):
+            return True
 
         self.pause()
         self.engine.position(self.board)
@@ -374,7 +373,7 @@ class PicoTutor:
             self.eval_user_move(i_uci_move)  # determine & save evaluation of user move
             self.eval_user_move2(i_uci_move)  # determine & save evaluation of user move
 
-        return(True)
+        return True
 
     def _update_internal_history_after_pop(self, poped_move: chess.Move) -> None:
         try:
@@ -396,7 +395,7 @@ class PicoTutor:
         except IndexError:
             pass
 
-        if not(self.coach_on or self.watcher_on):
+        if not (self.coach_on or self.watcher_on):
             return chess.Move.null()
 
         self.pause()
@@ -426,10 +425,10 @@ class PicoTutor:
         return poped_move
 
     def get_stack(self):
-        return(self.board.move_stack)
+        return self.board.move_stack
 
     def get_move_counter(self):
-        return(self.board.fullmove_number)
+        return self.board.fullmove_number
 
     def start(self):
         # after newgame event
@@ -470,7 +469,7 @@ class PicoTutor:
             print(self.info_handler.info["score"])
 
     def eval_user_move(self, user_move):
-        if not(self.coach_on or self.watcher_on):
+        if not (self.coach_on or self.watcher_on):
             return
         pv_no = 0
         eval = 0
@@ -494,7 +493,7 @@ class PicoTutor:
             self.pv_user_move = []
 
     def eval_user_move2(self, user_move):
-        if not(self.coach_on or self.watcher_on):
+        if not (self.coach_on or self.watcher_on):
             return
         pv_no = 0
         eval = 0
@@ -533,7 +532,7 @@ class PicoTutor:
                 score = 0
                 mate = 0
                 if score_val.cp:
-                    score = score_val.cp/100
+                    score = score_val.cp / 100
                 if pv_list[0]:
                     move = pv_list[0]
                 if score_val.mate:
@@ -549,7 +548,7 @@ class PicoTutor:
         return best_score
 
     def eval_legal_moves(self):
-        if not(self.coach_on or self.watcher_on):
+        if not (self.coach_on or self.watcher_on):
             return
         self.legal_moves = []
         self.alt_best_moves = []
@@ -568,7 +567,7 @@ class PicoTutor:
                         self.alt_best_moves.append(move)
 
     def eval_legal_moves2(self):
-        if not(self.coach_on or self.watcher_on):
+        if not (self.coach_on or self.watcher_on):
             return
         self.legal_moves2 = []
 
@@ -580,7 +579,7 @@ class PicoTutor:
         self.legal_moves2.sort(key=self.sort_score, reverse=True)
 
     def get_user_move_eval(self):
-        if not(self.coach_on or self.watcher_on):
+        if not (self.coach_on or self.watcher_on):
             return
         eval_string = ''
         best_mate = 0
@@ -591,7 +590,8 @@ class PicoTutor:
         # user move score and previoues score
         if len(self.history) > 1:
             try:
-                current_pv, current_move, current_score, current_mate = self.history[-1]  # last evaluation = for current user move
+                # last evaluation = for current user move
+                current_pv, current_move, current_score, current_mate = self.history[-1]
             except IndexError:
                 current_score = 0.0
                 current_mate = ''
@@ -672,7 +672,8 @@ class PicoTutor:
             eval_string2 = '!'
 
         # interesting move
-        elif best_deep_diff < c.INTERESTING_TH and abs(deep_low_diff) > c.UNCLEAR_DIFF and score_hist_diff < c.POS_DECREASE:
+        elif best_deep_diff < c.INTERESTING_TH and abs(
+                deep_low_diff) > c.UNCLEAR_DIFF and score_hist_diff < c.POS_DECREASE:
             eval_string2 = '!?'
 
         if eval_string2 != '':
@@ -688,12 +689,12 @@ class PicoTutor:
         return eval_string, self.mate, self.hint_move
 
     def get_user_move_info(self):
-        if not(self.coach_on or self.watcher_on):
+        if not (self.coach_on or self.watcher_on):
             return
         return self.mate, self.hint_move, self.pv_best_move, self.pv_user_move
 
     def get_pos_analysis(self):
-        if not(self.coach_on or self.watcher_on):
+        if not (self.coach_on or self.watcher_on):
             return
         # calculate material / position / mobility / development / threats / best move / best score
         # call a picotalker method with these information
@@ -714,7 +715,7 @@ class PicoTutor:
             best_score = 0
 
         if best_score.cp:
-            score = best_score.cp/100
+            score = best_score.cp / 100
         if best_score.mate:
             mate = best_score.mate
 

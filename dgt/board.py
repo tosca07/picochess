@@ -40,7 +40,7 @@ class Rev2Info():
     @classmethod
     def set_revelation(cls, rev):
         Rev2Info.is_revelation = rev
-        
+
     @classmethod
     def set_dgtpi(cls, dgtpi):
         Rev2Info.is_dgtpi = dgtpi
@@ -59,7 +59,7 @@ class Rev2Info():
             return True
         else:
             return False
-            
+
     @classmethod
     def get_web_only(cls):
         if Rev2Info.is_web_only is None:
@@ -744,7 +744,7 @@ class DgtBoard(EBoard):
                             return _success(dev)
                 if self._open_bluetooth():
                     return _success('/dev/rfcomm123')
-                    
+
         bwait = 'Board' + waitchars[self.wait_counter]
         text = Dgt.DISPLAY_TEXT(web_text='no e-' + bwait, large_text='no e-' + bwait, medium_text='no' + bwait, small_text=bwait, wait=True, beep=False, maxtime=0.1,
                                 devs={'i2c', 'web'})

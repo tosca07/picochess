@@ -79,7 +79,7 @@ class MenuState(object):
 
     RETROSPEED = 660000
     RETROSPEED_FACTOR = 661000
-    
+
     SYS = 700000
     SYS_POWER = 705000
     SYS_POWER_SHUT_DOWN = 706000
@@ -270,14 +270,14 @@ class DgtMenu(object):
         self.menu_time_fisch = 0
         self.menu_time_tourn = 0
         self.menu_time_depth = 0
-        self.menu_time_node  = 0
+        self.menu_time_node = 0
 
         self.tc_fixed_list = [' 1', ' 3', ' 5', '10', '15', '30', '60', '90']
         self.tc_blitz_list = [' 1', ' 3', ' 5', '10', '15', '30', '60', '90']
         self.tc_fisch_list = [' 1  1', ' 3  2', ' 5  3', '10  5', '15 10', '30 15', '60 20', '90 30', ' 0  5', ' 0 10', ' 0 15', ' 0 20', ' 0 30', ' 0 60', ' 0 90']
         self.tc_tourn_list = ['10 10 0 5', '20 15 0 15', '30 40 0 15', '40 120 0 90', '40 60 15 30', '40 60 30 30', '40 90 30 30', '40 90 15 60', '40 90 30 60']
         self.tc_depth_list = [' 1', ' 2', ' 3', ' 4', '10', '15', '20', '25']
-        self.tc_node_list  = [' 1', ' 2', ' 3', ' 4', '10', '15', '20', '25']
+        self.tc_node_list = [' 1', ' 2', ' 3', ' 4', '10', '15', '20', '25']
 
         self.retrospeed_list = ['25', '50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '1000', 'max.']
         self.menu_engine_retrospeed_idx = self.retrospeed_list.index('100')
@@ -373,28 +373,28 @@ class DgtMenu(object):
     def set_state_current_engine(self, current_engine_file_name: str):
         """Set engine menu index to the one that contains the current engine file name """
         for index, eng in enumerate(self.installed_engines):
-           if eng['file'].endswith(current_engine_file_name):
-               self.menu_engine_index = index
-               break
+            if eng['file'].endswith(current_engine_file_name):
+                self.menu_engine_index = index
+                break
         self.res_engine_index = self.menu_engine_index
         current_engine = self.installed_engines[self.menu_engine_index]
         self.state = MenuState.ENG_MODERN_NAME
         for index, eng in enumerate(self.installed_modern_engines):
-           if current_engine['file'] == eng['file']:
-               self.state = MenuState.ENG_MODERN_NAME
-               self.menu_modern_engine_index = index
-               self.menu_engine = EngineTop.MODERN_ENGINE
-               break
+            if current_engine['file'] == eng['file']:
+                self.state = MenuState.ENG_MODERN_NAME
+                self.menu_modern_engine_index = index
+                self.menu_engine = EngineTop.MODERN_ENGINE
+                break
         for index, eng in enumerate(self.installed_retro_engines):
-           if current_engine['file'] == eng['file']:
-               self.state = MenuState.ENG_RETRO_NAME
-               self.menu_retro_engine_index = index
-               self.menu_engine = EngineTop.RETRO_ENGINE
-               break
+            if current_engine['file'] == eng['file']:
+                self.state = MenuState.ENG_RETRO_NAME
+                self.menu_retro_engine_index = index
+                self.menu_engine = EngineTop.RETRO_ENGINE
+                break
         for index, eng in enumerate(self.installed_fav_engines):
-           if current_engine['file'] == eng['file']:
-               self.menu_fav_engine_index = index
-               break
+            if current_engine['file'] == eng['file']:
+                self.menu_fav_engine_index = index
+                break
         self.menu_top = Top.ENGINE
 
     def inside_updt_menu(self):
@@ -458,7 +458,7 @@ class DgtMenu(object):
         self.dgttranslate.set_capital(self.menu_system_display_capital)
         self.dgttranslate.set_notation(self.menu_system_display_notation)
         return False
-        
+
     def get_engine_rspeed(self):
         """Get the flag."""
         return self.res_engine_retrospeed
@@ -641,7 +641,7 @@ class DgtMenu(object):
     def set_time_depth(self, index: int):
         """Set the flag."""
         self.res_time_depth = self.menu_time_depth = index
-        
+
     def set_time_node(self, index: int):
         """Set the flag."""
         self.res_time_node = self.menu_time_node = index
@@ -649,7 +649,7 @@ class DgtMenu(object):
     def get_time_depth(self):
         """Get the flag."""
         return self.res_time_depth
-        
+
     def get_time_node(self):
         """Get the flag."""
         return self.res_time_node
@@ -946,13 +946,13 @@ class DgtMenu(object):
         self.state = MenuState.TIME_DEPTH_CTRL
         text = self.dgttranslate.text('B00_tc_depth', self.tc_depth_list[self.menu_time_depth])
         return text
-        
+
     def enter_retrospeed_menu(self):
         """Set the menu state."""
         self.state = MenuState.RETROSPEED
         text = self.dgttranslate.text(EngineTop.RETROSPEED.value)
         return text
-        
+
     def enter_retrospeed_factor_menu(self):
         """Set the menu state."""
         l_speed = ''
@@ -1443,10 +1443,10 @@ class DgtMenu(object):
 
         elif self.state == MenuState.TIME_DEPTH_CTRL:
             text = self.enter_time_depth_menu()
-            
+
         elif self.state == MenuState.TIME_NODE:
             text = self.enter_time_menu()
-            
+
         elif self.state == MenuState.TIME_NODE_CTRL:
             text = self.enter_time_node_menu()
 
@@ -1485,7 +1485,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.ENG_FAV_NAME_LEVEL:
             text = self.enter_eng_fav_name_menu()
-            
+
         elif self.state == MenuState.RETROSPEED:
             text = self.enter_engine_menu()
 
@@ -2008,10 +2008,10 @@ class DgtMenu(object):
         elif self.state == MenuState.TIME_DEPTH_CTRL:
             # do action!
             text = self._fire_timectrl(self.tc_depths[self.menu_time_depth])
-            
+
         elif self.state == MenuState.TIME_NODE:
             text = self.enter_time_node_ctrl_menu()
-            
+
         elif self.state == MenuState.TIME_NODE_CTRL:
             # do action!
             text = self._fire_timectrl(self.tc_nodes[self.menu_time_node])
@@ -2235,8 +2235,7 @@ class DgtMenu(object):
             if self.dgttranslate.beep_to_config(self.menu_system_sound) == 'none':
                 event = Event.SET_VOICE(type=Voice.BEEPER, lang='en', speaker='mute', speed=2)
             else:
-                event = Event.SET_VOICE(type=Voice.BEEPER, lang='en', speaker='beeper',
-                                    speed=2)
+                event = Event.SET_VOICE(type=Voice.BEEPER, lang='en', speaker='beeper', speed=2)
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okbeep'))
 
@@ -2665,7 +2664,7 @@ class DgtMenu(object):
         elif self.state == MenuState.TIME_DEPTH_CTRL:
             self.menu_time_depth = (self.menu_time_depth - 1) % len(self.tc_depths)
             text = self.dgttranslate.text('B00_tc_depth', self.tc_depth_list[self.menu_time_depth])
-            
+
         elif self.state == MenuState.TIME_NODE:
             self.state = MenuState.TIME_DEPTH
             self.menu_time_mode = TimeModeLoop.prev(self.menu_time_mode)
@@ -2733,12 +2732,12 @@ class DgtMenu(object):
             self.menu_fav_engine_level = (self.menu_fav_engine_level - 1) % len(retro_level_dict)
             msg = sorted(retro_level_dict)[self.menu_fav_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
-            
+
         elif self.state == MenuState.RETROSPEED:
             self.state = MenuState.ENG_RETRO
             self.menu_engine = EngineTopLoop.prev(self.menu_engine)
             text = self.dgttranslate.text(self.menu_engine.value)
-            
+
         elif self.state == MenuState.RETROSPEED_FACTOR:
             l_speed = ''
             self.menu_engine_retrospeed_idx = (self.menu_engine_retrospeed_idx - 1) % len(self.retrospeed_list)
@@ -3162,7 +3161,7 @@ class DgtMenu(object):
         elif self.state == MenuState.TIME_DEPTH_CTRL:
             self.menu_time_depth = (self.menu_time_depth + 1) % len(self.tc_depths)
             text = self.dgttranslate.text('B00_tc_depth', self.tc_depth_list[self.menu_time_depth])
-            
+
         elif self.state == MenuState.TIME_NODE:
             self.state = MenuState.TIME_FIXED
             self.menu_time_mode = TimeModeLoop.next(self.menu_time_mode)
@@ -3230,12 +3229,12 @@ class DgtMenu(object):
             self.menu_fav_engine_level = (self.menu_fav_engine_level + 1) % len(retro_level_dict)
             msg = sorted(retro_level_dict)[self.menu_fav_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
-            
+
         elif self.state == MenuState.RETROSPEED:
             self.state = MenuState.ENG_FAV
             self.menu_engine = EngineTopLoop.next(self.menu_engine)
             text = self.dgttranslate.text(self.menu_engine.value)
-            
+
         elif self.state == MenuState.RETROSPEED_FACTOR:
             l_speed = ''
             self.menu_engine_retrospeed_idx = (self.menu_engine_retrospeed_idx + 1) % len(self.retrospeed_list)

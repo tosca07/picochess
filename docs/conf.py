@@ -198,8 +198,8 @@ latex_elements: Dict[str, str] = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'PicoChess.tex', 'PicoChess Documentation',
-   'Jean-Francois Romang, Shivkumar Shivaji', 'Jürgen Précour', 'manual'),
+    ('index', 'PicoChess.tex', 'PicoChess Documentation',
+     'Jean-Francois Romang, Shivkumar Shivaji', 'Jürgen Précour', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -242,9 +242,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'PicoChess', 'PicoChess Documentation',
-   'Jean-Francois Romang, Shivkumar Shivaji', 'Jürgen Précour', 'PicoChess',
-   'Stand alone chess computer based on Raspberry Pi and DGT electronic chess board.', 'Miscellaneous'),
+    ('index', 'PicoChess', 'PicoChess Documentation',
+     'Jean-Francois Romang, Shivkumar Shivaji', 'Jürgen Précour', 'PicoChess',
+     'Stand alone chess computer based on Raspberry Pi and DGT electronic chess board.', 'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.
