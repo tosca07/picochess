@@ -54,7 +54,7 @@ class TimeControl(object):
             self.fisch_inc = 0
             self.moves_to_go_orig = 0
             self.moves_to_go = 0
-            
+
         if node > 0:
             self.mode = TimeMode.FIXED
             self.move_time = 671

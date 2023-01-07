@@ -45,7 +45,7 @@ import chess.uci  # type: ignore
 from timecontrol import TimeControl
 from theme import calc_theme
 from utilities import get_location, update_picochess, get_opening_books, shutdown, reboot, checkout_tag
-from utilities import Observable, DisplayMsg, version, evt_queue, write_picochess_ini, hms_time
+from utilities import Observable, DisplayMsg, version, evt_queue, write_picochess_ini, hms_time, get_engine_rspeed_par
 from pgn import Emailer, PgnDisplay, ModeInfo
 from server import WebServer
 from talker.picotalker import PicoTalkerDisplay
@@ -57,7 +57,7 @@ from dgt.hw import DgtHw
 from dgt.pi import DgtPi
 from dgt.display import DgtDisplay
 from eboard import EBoard
-from dgt.board import DgtBoard,Rev2Info
+from dgt.board import DgtBoard, Rev2Info
 from chesslink.board import ChessLinkBoard
 from chessnut.board import ChessnutBoard
 from certabo.board import CertaboBoard
@@ -581,7 +581,7 @@ def main() -> None:
                     pico_depth = int(uci_options["PicoDepth"])
             except IndexError:
                 pico_depth = 0
-                
+
             try:
                 if "PicoNode" in uci_options:
                     pico_node = int(uci_options["PicoNode"])
@@ -759,7 +759,7 @@ def main() -> None:
                 l_pico_depth = int(l_game_pgn.headers['PicoDepth'])
             else:
                 l_pico_depth = 0
-                
+
             if l_game_pgn.headers['PicoNode']:
                 l_pico_node = int(l_game_pgn.headers['PicoNode'])
             else:
@@ -1560,6 +1560,8 @@ def main() -> None:
                     stop_search_and_clock()
                     state.stop_fen_timer()
                 stop_search_and_clock()
+                if not pgn_mode():
+                    DisplayMsg.show(game_end)
             else:
                 state.searchmoves.reset()
 
@@ -1864,7 +1866,7 @@ def main() -> None:
             state.time_control.reset()
 
         state.legal_fens = []
-        
+
         cond1 = state.game.turn == chess.WHITE and state.play_mode == PlayMode.USER_BLACK
         cond2 = state.game.turn == chess.BLACK and state.play_mode == PlayMode.USER_WHITE
         if cond1 or cond2:
@@ -1965,7 +1967,7 @@ def main() -> None:
     parser.add_argument('-odec', '--online-decrement', type=float, default=2.0, help='Seconds to be subtracted after each own online move in order to sync with server times')
     parser.add_argument('-board', '--board-type', type=str, default='dgt', help='Type of e-board: "dgt", "certabo", "chesslink" or "chessnut", default is "dgt"')
     parser.add_argument('-theme', '--theme', type=str, default='dark', help='Web theme, "light", "dark" , "auto" or blank, default is "dark", leave blank for another light theme, or auto for a sunrise/sunset dependent theme setting')
-    parser.add_argument('-rspeed', '--rspeed', type=str, default='-speed 1.0', help='Speedbar, -nothrottle for fullspeed or any other value from 0.2 to 1.0')
+    parser.add_argument('-rspeed', '--rspeed', type=str, default='1.0', help='RetroSpeed factor for mame eingines, 0.0 for fullspeed, 1.0 for original speed, 0.5 for half of the original speed or any other value from 0.0 to 7.0')
     parser.add_argument('-ratdev', '--rating-deviation', type=str, help='Player rating deviation for automatic adjustment of ELO', default=350)
     args, unknown = parser.parse_known_args()
 
@@ -1997,9 +1999,6 @@ def main() -> None:
     state.set_location = args.location
     state.online_decrement = args.online_decrement
 
-    logging.debug('molli: flexible_ponder %s', str(state.flag_flexible_ponder))
-    logging.debug('molli: premove %s', str(state.flag_premove))
-
     # wire some dgt classes
     if args.board_type.lower() == 'chesslink':
         dgtboard: EBoard = ChessLinkBoard()
@@ -2013,7 +2012,7 @@ def main() -> None:
     state.dgtmenu = DgtMenu(args.disable_confirm_message, args.ponder_interval,
                             args.user_voice, args.computer_voice, args.speed_voice, args.enable_capital_letters,
                             args.disable_short_notation, args.log_file, args.engine_remote_server,
-                            args.rolling_display_normal, args.volume_voice, args.board_type,
+                            args.rolling_display_normal, args.volume_voice, args.board_type, round(float(args.rspeed), 2),
                             args.rolling_display_ponder, args.show_engine, state.dgttranslate)
 
     dgtdispatcher = Dispatcher(state.dgtmenu)
@@ -2047,7 +2046,7 @@ def main() -> None:
     state.com_factor = args.comment_factor
     logging.debug('molli: probability factor for game comments args.comment_factor %s', state.com_factor)
     state.com_factor = args.comment_factor
-    if Rev2Info.get_web_only() and args.beep_config != None and args.beep_config != 'none':
+    if Rev2Info.get_web_only() and args.beep_config is not None and args.beep_config != 'none':
         beeper = True
     else:
         beeper = False
@@ -2110,7 +2109,6 @@ def main() -> None:
 
     # try the given engine first and if that fails the first/second from "engines.ini" then crush
     engine_file = args.engine
-    engine_speed = args.rspeed
 
     engine_home = engine_file
     engine_remote_home = args.engine_remote_home.rstrip(os.sep)
@@ -2127,7 +2125,8 @@ def main() -> None:
             engine_file = eng_ini[engine_tries]['file']
             engine_tries += 1
 
-        engine = UciEngine(file=engine_file, uci_shell=uci_local_shell, retrospeed=engine_speed)
+        engine = UciEngine(file=engine_file, uci_shell=uci_local_shell,
+                           retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
         try:
             engine_name = engine.get_name()
             break
@@ -2302,10 +2301,11 @@ def main() -> None:
                 if engine.quit():
                     # Load the new one and send args.
                     if remote_engine_mode() and flag_eng and uci_remote_shell:
-                        engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell, retrospeed=engine_speed)
+                        engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell,
+                                           retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
                     else:
-                        engine = UciEngine(file=engine_file, uci_shell=uci_local_shell, retrospeed=engine_speed)
-
+                        engine = UciEngine(file=engine_file, uci_shell=uci_local_shell,
+                                           retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
                     try:
                         engine_name = engine.get_name()
                     except AttributeError:
@@ -2318,10 +2318,11 @@ def main() -> None:
                         remote_file = engine_remote_home + os.sep + help_str
 
                         if remote_engine_mode() and flag_eng and uci_remote_shell:
-                            engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell, retrospeed=engine_speed)
+                            engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell,
+                                               retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
                         else:
-                            engine = UciEngine(file=old_file, uci_shell=uci_local_shell, retrospeed=engine_speed)
-
+                            engine = UciEngine(file=old_file, uci_shell=uci_local_shell,
+                                               retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
                         try:
                             engine_name = engine.get_name()
                         except AttributeError:
@@ -2337,9 +2338,11 @@ def main() -> None:
                         engine_fallback = True
                         if engine.quit():
                             if remote_engine_mode() and flag_eng and uci_remote_shell:
-                                engine = UciEngine(file=old_file, uci_shell=uci_remote_shell, retrospeed=engine_speed)
+                                engine = UciEngine(file=old_file, uci_shell=uci_remote_shell,
+                                                   retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
                             else:
-                                engine = UciEngine(file=old_file, uci_shell=uci_local_shell, retrospeed=engine_speed)
+                                engine = UciEngine(file=old_file, uci_shell=uci_local_shell,
+                                                   retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
                             engine.startup(old_options, state.rating)
                             engine.newgame(state.game.copy())
                             try:
@@ -2373,10 +2376,11 @@ def main() -> None:
                             remote_file = engine_remote_home + os.sep + help_str
 
                             if remote_engine_mode() and flag_eng and uci_remote_shell:
-                                engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell, retrospeed=engine_speed)
+                                engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell,
+                                                   retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
                             else:
-                                engine = UciEngine(file=old_file, uci_shell=uci_local_shell, retrospeed=engine_speed)
-
+                                engine = UciEngine(file=old_file, uci_shell=uci_local_shell,
+                                                   retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
                             try:
                                 engine_name = engine.get_name()
                             except AttributeError:
@@ -2858,7 +2862,7 @@ def main() -> None:
                             state.picotutor.pop_last_move()
 
                     state.legal_fens = []
-                   
+
                     if pgn_mode():  # molli change pgn guessing game sides
                         if state.max_guess_black > 0:
                             state.max_guess_white = state.max_guess_black
@@ -3334,7 +3338,7 @@ def main() -> None:
                         write_picochess_ini('depth', '{:d}'.format(tc_init['depth']))
                     else:
                         write_picochess_ini('depth', '{:d}'.format(0))
-                        
+
                     if state.time_control.node > 0:
                         write_picochess_ini('node', '{:d}'.format(tc_init['node']))
                     else:

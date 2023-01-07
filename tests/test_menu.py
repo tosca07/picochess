@@ -18,7 +18,7 @@ class TestDgtMenu(unittest.TestCase):
         installed_engines = modern_engines + retro_engines + favorite_engines
 
         trans = DgtTranslate('none', 0, 'en', 'version')
-        menu = DgtMenu(False, 0, '', '', 0, False, False, '', None, False, 0, 'dgt', False, False, trans)
+        menu = DgtMenu(False, 0, '', '', 0, False, False, '', None, False, 0, 'dgt', 1.0, False, False, trans)
         menu.set_modern_engines(modern_engines)
         menu.set_retro_engines(retro_engines)
         menu.set_favorite_engines(favorite_engines)
@@ -57,6 +57,8 @@ class TestDgtMenu(unittest.TestCase):
         menu.main_down()
         self.assertEqual(MenuState.ENG_RETRO, menu.state)
         menu.main_right()
+        self.assertEqual(MenuState.RETROSPEED, menu.state)
+        menu.main_right()
         self.assertEqual(MenuState.ENG_FAV, menu.state)
         menu.main_up()
         self.assertEqual(MenuState.ENGINE, menu.state)
@@ -66,6 +68,8 @@ class TestDgtMenu(unittest.TestCase):
         self.assertEqual(MenuState.ENG_MODERN, menu.state)
         menu.main_left()
         self.assertEqual(MenuState.ENG_FAV, menu.state)
+        menu.main_left()
+        self.assertEqual(MenuState.RETROSPEED, menu.state)
         menu.main_left()
         self.assertEqual(MenuState.ENG_RETRO, menu.state)
         menu.main_left()
@@ -92,6 +96,8 @@ class TestDgtMenu(unittest.TestCase):
         self.assertEqual('Mep.Academy', retro_engine_name.large_text)
         menu.main_up()
         self.assertEqual(MenuState.ENG_RETRO, menu.state)
+        menu.main_right()
+        self.assertEqual(MenuState.RETROSPEED, menu.state)
         menu.main_right()
         # favorite engines
         self.assertEqual(MenuState.ENG_FAV, menu.state)
@@ -255,6 +261,7 @@ class TestDgtMenu(unittest.TestCase):
         menu.enter_top_menu()
         self.assertEqual('Engine', menu.main_down().medium_text.strip())
         self.assertEqual('Retro', menu.main_down().medium_text.strip())
+        self.assertEqual('R.-Speed', menu.main_right().medium_text.strip())
         self.assertEqual('Favorite', menu.main_right().medium_text.strip())
         self.assertEqual('Mephisto Milano', menu.main_down().large_text)
 
@@ -265,6 +272,7 @@ class TestDgtMenu(unittest.TestCase):
         menu.enter_top_menu()
         self.assertEqual('Engine', menu.main_down().medium_text.strip())
         self.assertEqual('Retro', menu.main_down().medium_text.strip())
+        self.assertEqual('R.-Speed', menu.main_right().medium_text.strip())
         self.assertEqual('Favorite', menu.main_right().medium_text.strip())
         self.assertEqual('Tasc R30 V2.5', menu.main_down().large_text)
         self.assertEqual('someEngine', menu.main_right().large_text)

@@ -280,6 +280,7 @@ class TimeMode(MyEnum):
     def items(cls):
         return [TimeMode.FIXED, TimeMode.BLITZ, TimeMode.FISCHER, TimeMode.TOURN, TimeMode.DEPTH, TimeMode.NODE]
 
+
 class TimeModeLoop(object):
 
     """TimeModeLoop Class."""
@@ -302,11 +303,12 @@ class EngineTop(MyEnum):
 
     MODERN_ENGINE = 'B00_engine_menu_modern'
     RETRO_ENGINE = 'B00_engine_menu_retro'
+    RETROSPEED = 'B00_engine_menu_retrospeed'
     FAV_ENGINE = 'B00_engine_menu_favorites'
 
     @classmethod
     def items(cls):
-        return [EngineTop.MODERN_ENGINE, EngineTop.RETRO_ENGINE, EngineTop.FAV_ENGINE]
+        return [EngineTop.MODERN_ENGINE, EngineTop.RETRO_ENGINE, EngineTop.RETROSPEED, EngineTop.FAV_ENGINE]
 
 
 class EngineTopLoop(object):

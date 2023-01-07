@@ -286,3 +286,11 @@ def write_picochess_ini(key: str, value):
         config.write()
     except (ConfigObjError, DuplicateError) as conf_exc:
         logging.exception(conf_exc)
+
+
+def get_engine_rspeed_par(engine_rspeed: float):
+    if engine_rspeed < 0.01:
+        engine_rspeed_par = '-nothrottle'
+    else:
+        engine_rspeed_par = '-speed ' + str(engine_rspeed)
+    return engine_rspeed_par

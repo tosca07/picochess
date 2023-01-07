@@ -936,23 +936,22 @@ class DgtTranslate(object):
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
-        #WD1
-        if text_id == 'engine_menu_speedbar':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Retro-Speed', medium_text='Speedbar', small_text='speed')
+        if text_id == 'engine_menu_retrospeed':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Retro-Speed Setting', large_text='Retro-Speed', medium_text='R.-Speed', small_text='rspeed')
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
-        if text_id == 'engine_speedbar':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='CPU ' + msg, medium_text='speed   ' + msg, small_text='speed' + msg)
+        if text_id == 'retrospeed':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Retro-Speed ' + msg, large_text='Speed ' + msg, medium_text='speed   ' + msg, small_text='speed' + msg)
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
-        if text_id == 'okcpuspeed':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok CPUspeed', medium_text='ok speed  ', small_text='ok UCI')
+        if text_id == 'okrspeed':
+            entxt = Dgt.DISPLAY_TEXT(web_text='ok Retro-Speed', large_text='ok R-Speed', medium_text='ok speed  ', small_text='ok')
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
