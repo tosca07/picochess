@@ -353,21 +353,28 @@ class DgtMenu(object):
         self.res_engine_index = self.menu_engine_index
         current_engine = self.installed_engines[self.menu_engine_index]
         self.state = MenuState.ENG_MODERN_NAME
+        is_modern_engine = False
+        is_retro_engine = False
         for index, eng in enumerate(self.installed_modern_engines):
            if current_engine['file'] == eng['file']:
                self.state = MenuState.ENG_MODERN_NAME
                self.menu_modern_engine_index = index
                self.menu_engine = EngineTop.MODERN_ENGINE
+               is_modern_engine = True
                break
         for index, eng in enumerate(self.installed_retro_engines):
            if current_engine['file'] == eng['file']:
                self.state = MenuState.ENG_RETRO_NAME
                self.menu_retro_engine_index = index
                self.menu_engine = EngineTop.RETRO_ENGINE
+               is_retro_engine = True
                break
         for index, eng in enumerate(self.installed_fav_engines):
            if current_engine['file'] == eng['file']:
                self.menu_fav_engine_index = index
+               if not is_modern_engine and not is_retro_engine:
+                   self.state = MenuState.ENG_FAV_NAME
+                   self.menu_engine = EngineTop.FAV_ENGINE
                break
         self.menu_top = Top.ENGINE
 
