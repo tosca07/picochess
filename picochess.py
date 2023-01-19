@@ -35,8 +35,8 @@ import math
 from typing import Optional, Set, Tuple
 
 from uci.engine import UciShell, UciEngine
+from uci.engine_provider import EngineProvider
 from uci.rating import Rating, determine_result
-from uci.read import read_engine_ini
 import chess  # type: ignore
 import chess.pgn  # type: ignore
 import chess.polyglot  # type: ignore
@@ -1772,8 +1772,7 @@ def main() -> None:
 
     def get_engine_level_dict(engine_level):
         """Transfer an engine level to its level_dict plus an index."""
-        installed_engines = engine.get_installed_engines()
-        for eng in installed_engines:
+        for eng in EngineProvider.installed_engines:
             if eng['file'] == engine.get_file():
                 level_list = sorted(eng['level_dict'])
                 try:
@@ -2012,25 +2011,15 @@ def main() -> None:
     state.dgtmenu = DgtMenu(args.disable_confirm_message, args.ponder_interval,
                             args.user_voice, args.computer_voice, args.speed_voice, args.enable_capital_letters,
                             args.disable_short_notation, args.log_file, args.engine_remote_server,
-                            args.rolling_display_normal, args.volume_voice, args.board_type, args.theme, round(float(args.rspeed), 2),
-                            args.rolling_display_ponder, args.show_engine, state.dgttranslate)
+                            args.rolling_display_normal, max(0, min(10, args.volume_voice)), args.board_type, args.theme, round(float(args.rspeed), 2),
+                            args.rolling_display_ponder, args.show_engine, args.tutor_coach, args.tutor_watcher,
+                            args.tutor_explorer, PicoComment.from_str(args.tutor_comment),
+                            args.continue_game, args.alt_move,
+                            state.dgttranslate)
 
     dgtdispatcher = Dispatcher(state.dgtmenu)
 
     tutor_engine = args.tutor_engine
-    state.dgtmenu.set_picocoach(args.tutor_coach)
-    state.dgtmenu.set_picowatcher(args.tutor_watcher)
-    state.dgtmenu.set_picoexplorer(args.tutor_explorer)
-
-    if args.tutor_comment == 'off':
-        state.dgtmenu.set_picocomment(PicoComment.COM_OFF)
-    elif args.tutor_comment == 'single':
-        state.dgtmenu.set_picocomment(PicoComment.COM_ON_ENG)
-    elif args.tutor_comment == 'all':
-        state.dgtmenu.set_picocomment(PicoComment.COM_ON_ALL)
-
-    state.dgtmenu.set_game_contlast(args.continue_game)
-    state.dgtmenu.set_game_altmove(args.alt_move)
 
     logging.debug('node %s', args.node)
 
@@ -2051,12 +2040,6 @@ def main() -> None:
     else:
         beeper = False
     PicoTalkerDisplay(args.user_voice, args.computer_voice, args.speed_voice, args.enable_setpieces_voice, state.com_factor, beeper).start()
-
-    # Set up the volume for the speech output according to the settings from picochess.ini#WD
-    volume_factor = int(args.volume_voice)
-    if volume_factor > 10:
-        volume_factor = 10
-        state.dgtmenu.set_volume_voice(volume_factor)
 
     # Launch web server
     if args.web_server_port:
@@ -2107,34 +2090,25 @@ def main() -> None:
     state.fen_timer_running = False
     ###########################################
 
-    # try the given engine first and if that fails the first/second from "engines.ini" then crush
+    # try the given engine first and if that fails the first from "engines.ini" then exit
     engine_file = args.engine
 
-    engine_home = engine_file
     engine_remote_home = args.engine_remote_home.rstrip(os.sep)
 
-    engine_tries = 0
     engine_name = None
     uci_remote_shell = None
 
     uci_local_shell = UciShell(hostname='', username='', key_file='', password='')
 
-    while engine_tries < 2:
-        if engine_file is None:
-            eng_ini = read_engine_ini(uci_local_shell.get(), engine_home)
-            engine_file = eng_ini[engine_tries]['file']
-            engine_tries += 1
+    if engine_file is None:
+        engine_file = EngineProvider.installed_engines[0]['file']
 
-        engine = UciEngine(file=engine_file, uci_shell=uci_local_shell,
-                           retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
-        try:
-            engine_name = engine.get_name()
-            break
-        except AttributeError:
-            logging.error('engine %s not started', engine_file)
-            engine_file = None
-
-    if engine_tries == 2:
+    engine = UciEngine(file=engine_file, uci_shell=uci_local_shell,
+                       retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
+    try:
+        engine_name = engine.get_name()
+    except AttributeError:
+        logging.error('engine %s not started', engine_file)
         time.sleep(3)
         DisplayMsg.show(Message.ENGINE_FAIL())
         time.sleep(2)
@@ -2181,10 +2155,7 @@ def main() -> None:
                                                'tc_init': state.time_control.get_parameters(), 'time_text': time_text}))
 
     # engines setup
-    state.dgtmenu.set_modern_engines(engine.get_modern_engines())
-    state.dgtmenu.set_retro_engines(engine.get_retro_engines())
-    state.dgtmenu.set_favorite_engines(engine.get_favorite_engines())
-    DisplayMsg.show(Message.ENGINE_STARTUP(installed_engines=engine.get_installed_engines(), file=engine.get_file(), level_index=level_index, has_960=engine.has_chess960(), has_ponder=engine.has_ponder()))
+    DisplayMsg.show(Message.ENGINE_STARTUP(installed_engines=EngineProvider.installed_engines, file=engine.get_file(), level_index=level_index, has_960=engine.has_chess960(), has_ponder=engine.has_ponder()))
     update_elo_display(state)
 
     # set timecontrol restore data set for normal engines after leaving emulation mode
@@ -2415,9 +2386,9 @@ def main() -> None:
                     if engine_fallback:
                         msg = Message.ENGINE_FAIL()
                         # molli: in case of engine fail, set correct old engine display settings
-                        for index in range(0, len(state.dgtmenu.installed_engines)):
-                            logging.debug('molli dgtmenu.installed_engines:%s', state.dgtmenu.installed_engines[index]['file'])
-                            if state.dgtmenu.installed_engines[index]['file'] == old_file:
+                        for index in range(0, len(EngineProvider.installed_engines)):
+                            logging.debug('EngineProvider.installed_engines:%s', EngineProvider.installed_engines[index]['file'])
+                            if EngineProvider.installed_engines[index]['file'] == old_file:
                                 logging.debug('molli index:%s', str(index))
                                 state.dgtmenu.set_engine_index(index)
                     else:
@@ -2537,9 +2508,6 @@ def main() -> None:
                 set_wait_state(Message.START_NEW_GAME(game=state.game.copy(), newgame=True), state)
 
             elif isinstance(event, Event.NEW_GAME):
-                # molli LED Rev2 bug
-                if state.dgtmenu.get_position_reverse_flipboard():
-                    dgtboard.set_reverse(True)
                 last_move_no = state.game.fullmove_number
                 state.takeback_active = False
                 flag_startup = False

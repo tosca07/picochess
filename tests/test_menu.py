@@ -5,24 +5,24 @@ from unittest.mock import patch
 
 from dgt.menu import DgtMenu, MenuState
 from dgt.translate import DgtTranslate
+from dgt.util import PicoComment
 from uci.read import read_engine_ini
+from uci.engine_provider import EngineProvider
 
 
 class TestDgtMenu(unittest.TestCase):
 
     def create_menu(self, machine_mock):
         machine_mock.return_value = '..' + os.sep + 'tests'  # return the tests path as the platform engine path
-        modern_engines = read_engine_ini(filename='engines.ini')
-        retro_engines = read_engine_ini(filename='retro.ini')
-        favorite_engines = read_engine_ini(filename='favorites.ini')
-        installed_engines = modern_engines + retro_engines + favorite_engines
+        EngineProvider.modern_engines = read_engine_ini(filename='engines.ini')
+        EngineProvider.retro_engines = read_engine_ini(filename='retro.ini')
+        EngineProvider.favorite_engines = read_engine_ini(filename='favorites.ini')
+        EngineProvider.installed_engines = list(
+            EngineProvider.modern_engines + EngineProvider.retro_engines + EngineProvider.favorite_engines)
 
         trans = DgtTranslate('none', 0, 'en', 'version')
-        menu = DgtMenu(False, 0, '', '', 0, False, False, '', None, False, 0, 'dgt', 'dark', 1.0, False, False, trans)
-        menu.set_modern_engines(modern_engines)
-        menu.set_retro_engines(retro_engines)
-        menu.set_favorite_engines(favorite_engines)
-        menu.installed_engines = installed_engines
+        menu = DgtMenu(False, 0, '', '', 0, False, False, '', None, False, 0, 'dgt', 'dark', 1.0, False, False,
+                       False, False, False, PicoComment.COM_OFF, False, False, trans)
         return menu
 
     @patch('platform.machine')

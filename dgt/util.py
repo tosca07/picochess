@@ -201,6 +201,15 @@ class PicoComment(MyEnum):
     def items(cls):
         return [PicoComment.COM_OFF, PicoComment.COM_ON_ENG, PicoComment.COM_ON_ALL]
 
+    @classmethod
+    def from_str(cls, s):
+        if s == 'single':
+            return PicoComment.COM_ON_ENG
+        elif s == 'all':
+            return PicoComment.COM_ON_ALL
+        else:
+            return PicoComment.COM_OFF
+
 
 class PicoCommentLoop(object):
 

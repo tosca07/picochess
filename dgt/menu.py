@@ -29,6 +29,7 @@ from dgt.util import System, SystemLoop, Display, DisplayLoop, ClockIcons, Voice
 from dgt.util import Power, PowerLoop
 from dgt.api import Dgt, Event
 from dgt.translate import DgtTranslate
+from uci.engine_provider import EngineProvider
 
 
 class MenuState(object):
@@ -158,7 +159,11 @@ class DgtMenu(object):
                  user_voice: str, comp_voice: str, speed_voice: int, enable_capital_letters: bool,
                  disable_short_move: bool, log_file, engine_server, rol_disp_norm: bool,
                  volume_voice: int, board_type: str, theme_type: str, rspeed: float,
-                 rol_disp_brain: bool, show_enginename: bool, dgttranslate: DgtTranslate):
+                 rol_disp_brain: bool, show_enginename: bool,
+                 picocoach: bool, picowatcher: bool, picoexplorer: bool,
+                 picocomment: PicoComment,
+                 contlast: bool, altmove: bool,
+                 dgttranslate: DgtTranslate):
         super(DgtMenu, self).__init__()
 
         self.current_text = None  # save the current text
@@ -168,16 +173,16 @@ class DgtMenu(object):
         self.menu_system_display_enginename = show_enginename
 
         self.menu_picotutor = PicoTutor.WATCHER
-        self.menu_picotutor_picowatcher = False
-        self.menu_picotutor_picocoach = False
-        self.menu_picotutor_picoexplorer = False
-        self.menu_picotutor_picocomment = PicoComment.COM_OFF
+        self.menu_picotutor_picowatcher = picowatcher
+        self.menu_picotutor_picocoach = picocoach
+        self.menu_picotutor_picoexplorer = picoexplorer
+        self.menu_picotutor_picocomment = picocomment
 
         self.menu_game = Game.SAVE
         self.menu_game_save = GameSave.GAME1
         self.menu_game_read = GameRead.GAMELAST
-        self.menu_game_altmove = True
-        self.menu_game_contlast = True
+        self.menu_game_altmove = altmove
+        self.menu_game_contlast = contlast
 
         self.menu_system_display_confirm = disable_confirm
         self.menu_system_display_ponderinterval = ponder_interval
@@ -210,18 +215,14 @@ class DgtMenu(object):
         self.engine_has_ponder = False
         self.engine_restart = False
 
-        self.installed_engines: List[Dict[str, str]] = []  # list of all engines available, sum of modern+retro+favorite
-        self.menu_engine_index = 0  # index of the currently selected engine within installed_engines
+        self.menu_engine_index = 0  # index of the currently selected engine within installed engines
         self.menu_engine_level = 0
-        self.menu_modern_engine_index = 0  # index of the currently selected engine within installed_modern_engines
+        self.menu_modern_engine_index = 0  # index of the currently selected engine within installed modern engines
         self.menu_modern_engine_level = 0
-        self.installed_modern_engines: List[Dict[str, str]] = []  # list of all modern engines
-        self.menu_retro_engine_index = 0  # index of the currently selected engine within installed_retro_engines
+        self.menu_retro_engine_index = 0  # index of the currently selected engine within installed retro engines
         self.menu_retro_engine_level = 0
-        self.installed_retro_engines: List[Dict[str, str]] = []  # list of all retro engines
-        self.menu_fav_engine_index = 0  # index of the currently selected engine within installed_fav_engines
+        self.menu_fav_engine_index = 0  # index of the currently selected engine within installed fav engines
         self.menu_fav_engine_level = 0
-        self.installed_fav_engines: List[Dict[str, str]] = []  # favorites, selection from all available engines
         self.menu_engine = EngineTop.MODERN_ENGINE
 
         self.menu_book = 0
@@ -255,6 +256,7 @@ class DgtMenu(object):
 
         self.menu_system_voice_speedfactor = speed_voice
         self.menu_system_voice_volumefactor = volume_voice
+        self._set_volume_voice(volume_voice)
 
         self.board_type = board_type
         eboards = {'certabo': EBoard.CERTABO, 'chesslink': EBoard.CHESSLINK, 'chessnut': EBoard.CHESSNUT,
@@ -378,30 +380,30 @@ class DgtMenu(object):
 
     def set_state_current_engine(self, current_engine_file_name: str):
         """Set engine menu index to the one that contains the current engine file name """
-        for index, eng in enumerate(self.installed_engines):
+        for index, eng in enumerate(EngineProvider.installed_engines):
             if eng['file'].endswith(current_engine_file_name):
                 self.menu_engine_index = index
                 break
         self.res_engine_index = self.menu_engine_index
-        current_engine = self.installed_engines[self.menu_engine_index]
+        current_engine = EngineProvider.installed_engines[self.menu_engine_index]
         self.state = MenuState.ENG_MODERN_NAME
         is_modern_engine = False
         is_retro_engine = False
-        for index, eng in enumerate(self.installed_modern_engines):
+        for index, eng in enumerate(EngineProvider.modern_engines):
             if current_engine['file'] == eng['file']:
                 self.state = MenuState.ENG_MODERN_NAME
                 self.menu_modern_engine_index = index
                 self.menu_engine = EngineTop.MODERN_ENGINE
                 is_modern_engine = True
                 break
-        for index, eng in enumerate(self.installed_retro_engines):
+        for index, eng in enumerate(EngineProvider.retro_engines):
             if current_engine['file'] == eng['file']:
                 self.state = MenuState.ENG_RETRO_NAME
                 self.menu_retro_engine_index = index
                 self.menu_engine = EngineTop.RETRO_ENGINE
                 is_retro_engine = True
                 break
-        for index, eng in enumerate(self.installed_fav_engines):
+        for index, eng in enumerate(EngineProvider.favorite_engines):
             if current_engine['file'] == eng['file']:
                 self.menu_fav_engine_index = index
                 if not is_modern_engine and not is_retro_engine:
@@ -521,7 +523,7 @@ class DgtMenu(object):
         self.res_mode = self.menu_mode = mode
 
     def get_engine(self):
-        return self.installed_engines[self.res_engine_index]
+        return EngineProvider.installed_engines[self.res_engine_index]
 
     def set_engine_index(self, index: int):
         self.res_engine_index = self.menu_engine_index = index
@@ -532,15 +534,6 @@ class DgtMenu(object):
     def set_engine_level(self, level: int):
         self.res_engine_level = self.menu_engine_level = level
 
-    def set_modern_engines(self, modern_engines):
-        self.installed_modern_engines = modern_engines
-
-    def set_retro_engines(self, retro_engines):
-        self.installed_retro_engines = retro_engines
-
-    def set_favorite_engines(self, fav_engines):
-        self.installed_fav_engines = fav_engines
-
     def set_enginename(self, showname: bool):
         """Set the flag."""
         self.res_system_display_enginename = showname
@@ -549,55 +542,25 @@ class DgtMenu(object):
         """Get the flag."""
         return self.res_system_display_enginename
 
-    def set_picowatcher(self, picowatcher: bool):
-        """Set the flag."""
-        self.res_picotutor_picowatcher = picowatcher
-        self.menu_picotutor_picowatcher = picowatcher
-
     def get_picowatcher(self):
         """Get the flag."""
         return self.res_picotutor_picowatcher
-
-    def set_picocoach(self, picocoach: bool):
-        """Set the flag."""
-        self.res_picotutor_picocoach = picocoach
-        self.menu_picotutor_picocoach = picocoach
 
     def get_picocoach(self):
         """Get the flag."""
         return self.res_picotutor_picocoach
 
-    def set_picocomment(self, picocomment: PicoComment):
-        """Set the flag."""
-        self.res_picotutor_picocomment = picocomment
-        self.menu_picotutor_picocomment = picocomment
-
     def get_picocomment(self):
         """Get the flag."""
         return self.res_picotutor_picocomment
-
-    def set_picoexplorer(self, picoexplorer: bool):
-        """Set the flag."""
-        self.res_picotutor_picoexplorer = picoexplorer
-        self.menu_picotutor_picoexplorer = picoexplorer
 
     def get_picoexplorer(self):
         """Get the flag."""
         return self.res_picotutor_picoexplorer
 
-    def set_game_altmove(self, altmove: bool):
-        """Set the flag."""
-        self.res_game_altmove = altmove
-        self.menu_game_altmove = altmove
-
     def get_game_altmove(self):
         """Get the flag."""
         return self.res_game_altmove
-
-    def set_game_contlast(self, contlast: bool):
-        """Set the flag."""
-        self.res_game_contlast = contlast
-        self.menu_game_contlast = contlast
 
     def get_game_contlast(self):
         """Get the flag."""
@@ -1026,23 +989,23 @@ class DgtMenu(object):
         return text
 
     def _get_current_modern_engine_name(self):
-        text = self.installed_engines[self.menu_modern_engine_index]['text']
+        text = EngineProvider.installed_engines[self.menu_modern_engine_index]['text']
         text.beep = self.dgttranslate.bl(BeepLevel.BUTTON)
         return text
 
     def _get_current_retro_engine_name(self):
-        text = self.installed_retro_engines[self.menu_retro_engine_index]['text']
+        text = EngineProvider.retro_engines[self.menu_retro_engine_index]['text']
         text.beep = self.dgttranslate.bl(BeepLevel.BUTTON)
         return text
 
     def _get_current_fav_engine_name(self):
-        text = self.installed_fav_engines[self.menu_fav_engine_index]['text']
+        text = EngineProvider.favorite_engines[self.menu_fav_engine_index]['text']
         text.beep = self.dgttranslate.bl(BeepLevel.BUTTON)
         return text
 
     def get_current_engine_name(self):
         """Get current engine name."""
-        text = self.installed_engines[self.menu_engine_index]['text']
+        text = EngineProvider.installed_engines[self.menu_engine_index]['text']
         text.beep = self.dgttranslate.bl(BeepLevel.BUTTON)
         return text
 
@@ -1064,7 +1027,7 @@ class DgtMenu(object):
     def enter_modern_eng_name_level_menu(self):
         """Set the menu state."""
         self.state = MenuState.ENG_MODERN_NAME_LEVEL
-        eng = self.installed_engines[self.menu_modern_engine_index]
+        eng = EngineProvider.installed_engines[self.menu_modern_engine_index]
         level_dict = eng['level_dict']
         if level_dict:
             if self.menu_modern_engine_level is None or len(level_dict) <= self.menu_modern_engine_level:
@@ -1080,7 +1043,7 @@ class DgtMenu(object):
     def enter_retro_eng_name_level_menu(self):
         """Set the menu state."""
         self.state = MenuState.ENG_RETRO_NAME_LEVEL
-        retro_eng = self.installed_retro_engines[self.menu_retro_engine_index]
+        retro_eng = EngineProvider.retro_engines[self.menu_retro_engine_index]
         retro_level_dict = retro_eng['level_dict']
         if retro_level_dict:
             if self.menu_retro_engine_level is None or len(retro_level_dict) <= self.menu_retro_engine_level:
@@ -1088,7 +1051,7 @@ class DgtMenu(object):
             msg = sorted(retro_level_dict)[self.menu_retro_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
         else:
-            self.res_engine_index = self.menu_engine_index = len(self.installed_modern_engines) + self.menu_retro_engine_index
+            self.res_engine_index = self.menu_engine_index = len(EngineProvider.modern_engines) + self.menu_retro_engine_index
             self.res_engine_level = self.menu_retro_engine_level
             text = self.save_choices()
         return text
@@ -1096,7 +1059,7 @@ class DgtMenu(object):
     def enter_fav_eng_name_level_menu(self):
         """Set the menu state."""
         self.state = MenuState.ENG_FAV_NAME_LEVEL
-        fav_eng = self.installed_fav_engines[self.menu_fav_engine_index]
+        fav_eng = EngineProvider.favorite_engines[self.menu_fav_engine_index]
         fav_level_dict = fav_eng['level_dict']
         if fav_level_dict:
             if self.menu_fav_engine_level is None or len(fav_level_dict) <= self.menu_fav_engine_level:
@@ -1284,7 +1247,7 @@ class DgtMenu(object):
         text = self.dgttranslate.text('B00_voice_volume', str(self.menu_system_voice_volumefactor))
         return text
 
-    def set_volume_voice(self, volume_factor):
+    def _set_volume_voice(self, volume_factor):
         """ Set the Volume-Voice."""
         factor = str(volume_factor * 5 + 50)
         for channel in ('Headphone', 'Master', 'HDMI'):
@@ -2063,7 +2026,7 @@ class DgtMenu(object):
             # maybe do action!
             text = self.enter_modern_eng_name_level_menu()
             if not text:
-                eng = self.installed_modern_engines[self.menu_modern_engine_index]
+                eng = EngineProvider.modern_engines[self.menu_modern_engine_index]
                 if 'Online' not in str(eng['name']) and 'Remote' not in str(eng['name']) and 'FICS' not in str(eng['name']) and 'lichess' not in str(eng['name']) and 'PGN' not in str(eng['name']):
                     write_picochess_ini('engine-level', None)
                 eng_text = self.dgttranslate.text('B10_okengine')
@@ -2073,7 +2036,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.ENG_MODERN_NAME_LEVEL:
             # do action!
-            eng = self.installed_modern_engines[self.menu_modern_engine_index]
+            eng = EngineProvider.modern_engines[self.menu_modern_engine_index]
             logging.debug('installed engines in level: %s', str(eng))
 
             level_dict = eng['level_dict']
@@ -2101,7 +2064,7 @@ class DgtMenu(object):
             # maybe do action!
             text = self.enter_retro_eng_name_level_menu()
             if not text:
-                retro_eng = self.installed_retro_engines[self.menu_retro_engine_index]
+                retro_eng = EngineProvider.retro_engines[self.menu_retro_engine_index]
                 if 'Online' not in str(retro_eng['name']) and 'Remote' not in str(retro_eng['name']) and 'FICS' not in str(retro_eng['name']) and 'lichess' not in str(retro_eng['name']) and 'PGN' not in str(retro_eng['name']):
                     write_picochess_ini('engine-level', None)
                 eng_text = self.dgttranslate.text('B10_okengine')
@@ -2111,7 +2074,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.ENG_RETRO_NAME_LEVEL:
             # do action!
-            retro_eng = self.installed_retro_engines[self.menu_retro_engine_index]
+            retro_eng = EngineProvider.retro_engines[self.menu_retro_engine_index]
             retro_level_dict = retro_eng['level_dict']
             if retro_level_dict:
                 msg = sorted(retro_level_dict)[self.menu_retro_engine_level]
@@ -2126,7 +2089,7 @@ class DgtMenu(object):
             event = Event.NEW_ENGINE(eng=retro_eng, eng_text=eng_text, options=options, show_ok=True)
             text = self._fire_event(event)
             self.engine_restart = True
-            self.res_engine_index = self.menu_engine_index = len(self.installed_modern_engines) + self.menu_retro_engine_index
+            self.res_engine_index = self.menu_engine_index = len(EngineProvider.modern_engines) + self.menu_retro_engine_index
             self.res_engine_level = self.menu_retro_engine_level
 
         elif self.state == MenuState.ENG_FAV:
@@ -2136,7 +2099,7 @@ class DgtMenu(object):
             # maybe do action!
             text = self.enter_fav_eng_name_level_menu()
             if not text:
-                retro_eng = self.installed_fav_engines[self.menu_fav_engine_index]
+                retro_eng = EngineProvider.favorite_engines[self.menu_fav_engine_index]
                 if 'Online' not in str(retro_eng['name']) and 'Remote' not in str(retro_eng['name']) and 'FICS' not in str(retro_eng['name']) and 'lichess' not in str(retro_eng['name']) and 'PGN' not in str(retro_eng['name']):
                     write_picochess_ini('engine-level', None)
                 eng_text = self.dgttranslate.text('B10_okengine')
@@ -2146,7 +2109,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.ENG_FAV_NAME_LEVEL:
             # do action!
-            fav_eng = self.installed_fav_engines[self.menu_fav_engine_index]
+            fav_eng = EngineProvider.favorite_engines[self.menu_fav_engine_index]
             fav_level_dict = fav_eng['level_dict']
             if fav_level_dict:
                 msg = sorted(fav_level_dict)[self.menu_fav_engine_level]
@@ -2390,7 +2353,7 @@ class DgtMenu(object):
             # do action!
             assert self.menu_system_voice == Voice.VOLUME, 'menu item is not Voice.VOLUME: %s' % self.menu_system_voice
             write_picochess_ini('volume-voice', str(self.menu_system_voice_volumefactor))
-            text = self.set_volume_voice(self.menu_system_voice_volumefactor)
+            text = self._set_volume_voice(self.menu_system_voice_volumefactor)
             event = Event.SET_VOICE(type=self.menu_system_voice, lang='en', speaker='mute',     # WD00
                                     speed=self.menu_system_voice_speedfactor)                   # WD00
             Observable.fire(event)
@@ -2740,11 +2703,11 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_engine.value)
 
         elif self.state == MenuState.ENG_MODERN_NAME:
-            self.menu_modern_engine_index = (self.menu_modern_engine_index - 1) % len(self.installed_modern_engines)
+            self.menu_modern_engine_index = (self.menu_modern_engine_index - 1) % len(EngineProvider.modern_engines)
             text = self._get_current_modern_engine_name()
 
         elif self.state == MenuState.ENG_MODERN_NAME_LEVEL:
-            level_dict = self.installed_modern_engines[self.menu_modern_engine_index]['level_dict']
+            level_dict = EngineProvider.modern_engines[self.menu_modern_engine_index]['level_dict']
             self.menu_modern_engine_level = (self.menu_modern_engine_level - 1) % len(level_dict)
             msg = sorted(level_dict)[self.menu_modern_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
@@ -2755,11 +2718,11 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_engine.value)
 
         elif self.state == MenuState.ENG_RETRO_NAME:
-            self.menu_retro_engine_index = (self.menu_retro_engine_index - 1) % len(self.installed_retro_engines)
+            self.menu_retro_engine_index = (self.menu_retro_engine_index - 1) % len(EngineProvider.retro_engines)
             text = self._get_current_retro_engine_name()
 
         elif self.state == MenuState.ENG_RETRO_NAME_LEVEL:
-            retro_level_dict = self.installed_retro_engines[self.menu_retro_engine_index]['level_dict']
+            retro_level_dict = EngineProvider.retro_engines[self.menu_retro_engine_index]['level_dict']
             self.menu_retro_engine_level = (self.menu_retro_engine_level - 1) % len(retro_level_dict)
             msg = sorted(retro_level_dict)[self.menu_retro_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
@@ -2770,11 +2733,11 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_engine.value)
 
         elif self.state == MenuState.ENG_FAV_NAME:
-            self.menu_fav_engine_index = (self.menu_fav_engine_index - 1) % len(self.installed_fav_engines)
+            self.menu_fav_engine_index = (self.menu_fav_engine_index - 1) % len(EngineProvider.favorite_engines)
             text = self._get_current_fav_engine_name()
 
         elif self.state == MenuState.ENG_FAV_NAME_LEVEL:
-            retro_level_dict = self.installed_fav_engines[self.menu_fav_engine_index]['level_dict']
+            retro_level_dict = EngineProvider.favorite_engines[self.menu_fav_engine_index]['level_dict']
             self.menu_fav_engine_level = (self.menu_fav_engine_level - 1) % len(retro_level_dict)
             msg = sorted(retro_level_dict)[self.menu_fav_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
@@ -3246,11 +3209,11 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_engine.value)
 
         elif self.state == MenuState.ENG_MODERN_NAME:
-            self.menu_modern_engine_index = (self.menu_modern_engine_index + 1) % len(self.installed_modern_engines)
+            self.menu_modern_engine_index = (self.menu_modern_engine_index + 1) % len(EngineProvider.modern_engines)
             text = self._get_current_modern_engine_name()
 
         elif self.state == MenuState.ENG_MODERN_NAME_LEVEL:
-            level_dict = self.installed_modern_engines[self.menu_modern_engine_index]['level_dict']
+            level_dict = EngineProvider.modern_engines[self.menu_modern_engine_index]['level_dict']
             self.menu_modern_engine_level = (self.menu_modern_engine_level + 1) % len(level_dict)
             msg = sorted(level_dict)[self.menu_modern_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
@@ -3261,11 +3224,11 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_engine.value)
 
         elif self.state == MenuState.ENG_RETRO_NAME:
-            self.menu_retro_engine_index = (self.menu_retro_engine_index + 1) % len(self.installed_retro_engines)
+            self.menu_retro_engine_index = (self.menu_retro_engine_index + 1) % len(EngineProvider.retro_engines)
             text = self._get_current_retro_engine_name()
 
         elif self.state == MenuState.ENG_RETRO_NAME_LEVEL:
-            retro_level_dict = self.installed_retro_engines[self.menu_retro_engine_index]['level_dict']
+            retro_level_dict = EngineProvider.retro_engines[self.menu_retro_engine_index]['level_dict']
             self.menu_retro_engine_level = (self.menu_retro_engine_level + 1) % len(retro_level_dict)
             msg = sorted(retro_level_dict)[self.menu_retro_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
@@ -3276,11 +3239,11 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_engine.value)
 
         elif self.state == MenuState.ENG_FAV_NAME:
-            self.menu_fav_engine_index = (self.menu_fav_engine_index + 1) % len(self.installed_fav_engines)
+            self.menu_fav_engine_index = (self.menu_fav_engine_index + 1) % len(EngineProvider.favorite_engines)
             text = self._get_current_fav_engine_name()
 
         elif self.state == MenuState.ENG_FAV_NAME_LEVEL:
-            retro_level_dict = self.installed_fav_engines[self.menu_fav_engine_index]['level_dict']
+            retro_level_dict = EngineProvider.favorite_engines[self.menu_fav_engine_index]['level_dict']
             self.menu_fav_engine_level = (self.menu_fav_engine_level + 1) % len(retro_level_dict)
             msg = sorted(retro_level_dict)[self.menu_fav_engine_level]
             text = self.dgttranslate.text('B00_level', msg)

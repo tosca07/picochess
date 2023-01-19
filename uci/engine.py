@@ -27,7 +27,6 @@ from utilities import Observable
 import chess.uci  # type: ignore
 from chess import Board  # type: ignore
 from uci.informer import Informer
-from uci.read import read_engine_ini
 from uci.rating import Rating, Result
 from utilities import write_picochess_ini
 
@@ -100,17 +99,6 @@ class UciEngine(object):
 
             self.res = None
             self.level_support = False
-
-            self.modern_engines = read_engine_ini(filename='engines.ini')
-            self.retro_engines = read_engine_ini(filename='retro.ini')
-            self.favorite_engines = read_engine_ini(filename='favorites.ini')
-            self.installed_engines = self.modern_engines + self.retro_engines + self.favorite_engines
-            # set retro/favorite engines to the list of modern engines in case retro.ini or favorites.ini is empty
-            if not self.retro_engines:
-                self.retro_engines = self.modern_engines
-            if not self.favorite_engines:
-                self.favorite_engines = self.modern_engines
-
         except OSError:
             logging.exception('OS error in starting engine')
         except TypeError:
@@ -168,22 +156,6 @@ class UciEngine(object):
     def get_file(self):
         """Get File."""
         return self.file
-
-    def get_installed_engines(self):
-        """Get installed engines."""
-        return self.installed_engines
-
-    def get_modern_engines(self):
-        """Get modern engines."""
-        return self.modern_engines
-
-    def get_retro_engines(self):
-        """Get retro engines."""
-        return self.retro_engines
-
-    def get_favorite_engines(self):
-        """Get favorite engines."""
-        return self.favorite_engines
 
     def position(self, game: Board):
         """Set position."""
