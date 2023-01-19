@@ -655,7 +655,7 @@ def main() -> None:
 
     def emulation_mode():
         emulation = False
-        if '(mame' in engine_name or '(mess' in engine_name:
+        if '(mame' in engine_name or '(mess' in engine_name or engine.is_mame:
             emulation = True
         return (emulation)
 
@@ -1922,7 +1922,7 @@ def main() -> None:
     parser.add_argument('-mf', '--smtp-from', type=str, help='From email', default='no-reply@picochess.org')
     parser.add_argument('-mk', '--mailgun-key', type=str, help='key used to send emails via Mailgun Webservice',
                         default=None)
-    parser.add_argument('-bc', '--beep-config', choices=['none', 'some', 'all'], help='sets standard beep config',
+    parser.add_argument('-bc', '--beep-config', choices=['none', 'some', 'all', 'sample'], help='sets standard beep config',
                         default='some')
     parser.add_argument('-bs', '--beep-some-level', type=int, default=0x03,
                         help='sets (some-)beep level from 0(=no beeps) to 15(=all beeps)')
@@ -2012,7 +2012,7 @@ def main() -> None:
     state.dgtmenu = DgtMenu(args.disable_confirm_message, args.ponder_interval,
                             args.user_voice, args.computer_voice, args.speed_voice, args.enable_capital_letters,
                             args.disable_short_notation, args.log_file, args.engine_remote_server,
-                            args.rolling_display_normal, args.volume_voice, args.board_type, round(float(args.rspeed), 2),
+                            args.rolling_display_normal, args.volume_voice, args.board_type, args.theme, round(float(args.rspeed), 2),
                             args.rolling_display_ponder, args.show_engine, state.dgttranslate)
 
     dgtdispatcher = Dispatcher(state.dgtmenu)
@@ -2046,7 +2046,7 @@ def main() -> None:
     state.com_factor = args.comment_factor
     logging.debug('molli: probability factor for game comments args.comment_factor %s', state.com_factor)
     state.com_factor = args.comment_factor
-    if Rev2Info.get_web_only() and args.beep_config is not None and args.beep_config != 'none':
+    if args.beep_config == 'sample':
         beeper = True
     else:
         beeper = False

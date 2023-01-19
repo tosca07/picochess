@@ -70,11 +70,13 @@ class UciEngine(object):
         logging.info('parameter retrospeed=' + retrospeed)
         try:
             self.is_adaptive = False
+            self.is_mame = False
             self.engine_rating = -1
             self.uci_elo_eval_fn = None  # saved UCI_Elo eval function
             self.shell = uci_shell.get()
             logging.info('file ' + file)
             if '/mame/' in file:
+                self.is_mame = True
                 mfile = [file, retrospeed]
                 logging.info(mfile)
             else:

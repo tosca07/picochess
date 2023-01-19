@@ -24,7 +24,7 @@ from typing import Dict, List, Set
 import chess  # type: ignore
 from timecontrol import TimeControl
 from utilities import Observable, DispatchDgt, get_tags, version, write_picochess_ini
-from dgt.util import TimeMode, TimeModeLoop, Top, TopLoop, Mode, ModeLoop, Language, LanguageLoop, BeepLevel, BeepLoop, EBoard, EBoardLoop, EngineTop, EngineTopLoop
+from dgt.util import TimeMode, TimeModeLoop, Top, TopLoop, Mode, ModeLoop, Language, LanguageLoop, BeepLevel, BeepLoop, EBoard, EBoardLoop, Theme, ThemeLoop, EngineTop, EngineTopLoop
 from dgt.util import System, SystemLoop, Display, DisplayLoop, ClockIcons, Voice, VoiceLoop, Info, InfoLoop, PicoTutor, Game, GameLoop, GameSave, GameSaveLoop, GameRead, GameReadLoop, PicoComment, PicoCommentLoop
 from dgt.util import Power, PowerLoop
 from dgt.api import Dgt, Event
@@ -119,6 +119,8 @@ class MenuState(object):
     SYS_DISP_ENGINENAME_YESNO = 765100  # yes,no ## molli v3
     SYS_EBOARD = 770000
     SYS_EBOARD_TYPE = 771000  # dgt, chesslink, ...
+    SYS_THEME = 780000
+    SYS_THEME_TYPE = 781000
 
     PICOTUTOR = 800000
     PICOTUTOR_PICOWATCHER = 810000
@@ -155,7 +157,7 @@ class DgtMenu(object):
     def __init__(self, disable_confirm: bool, ponder_interval: int,
                  user_voice: str, comp_voice: str, speed_voice: int, enable_capital_letters: bool,
                  disable_short_move: bool, log_file, engine_server, rol_disp_norm: bool,
-                 volume_voice: int, board_type: str, rspeed: float,
+                 volume_voice: int, board_type: str, theme_type: str, rspeed: float,
                  rol_disp_brain: bool, show_enginename: bool, dgttranslate: DgtTranslate):
         super(DgtMenu, self).__init__()
 
@@ -259,6 +261,10 @@ class DgtMenu(object):
                    'dgt': EBoard.DGT}
         self.menu_system_eboard_type = eboards[board_type]
 
+        self.theme_type = theme_type
+        themes = {'light': Theme.LIGHT, 'dark': Theme.DARK, 'auto': Theme.AUTO}
+        self.menu_system_theme_type = themes[theme_type]
+
         self.menu_system_display = Display.PONDER
         self.menu_system_info = Info.VERSION
         self.menu_system_power = Power.SHUT_DOWN
@@ -277,7 +283,7 @@ class DgtMenu(object):
         self.tc_fisch_list = [' 1  1', ' 3  2', ' 5  3', '10  5', '15 10', '30 15', '60 20', '90 30', ' 0  5', ' 0 10', ' 0 15', ' 0 20', ' 0 30', ' 0 60', ' 0 90']
         self.tc_tourn_list = ['10 10 0 5', '20 15 0 15', '30 40 0 15', '40 120 0 90', '40 60 15 30', '40 60 30 30', '40 90 30 30', '40 90 15 60', '40 90 30 60']
         self.tc_depth_list = [' 1', ' 2', ' 3', ' 4', '10', '15', '20', '25']
-        self.tc_node_list = [' 1', ' 2', ' 3', ' 4', '10', '15', '20', '25']
+        self.tc_node_list = [' 1', ' 5', ' 10', ' 25', '50', '100', '250', '500']
 
         self.retrospeed_list = ['25', '50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '1000', 'max.']
         self.menu_engine_retrospeed_idx = self.retrospeed_list.index('100')
@@ -347,13 +353,13 @@ class DgtMenu(object):
                           TimeControl(TimeMode.FIXED, fixed=900, depth=20),
                           TimeControl(TimeMode.FIXED, fixed=900, depth=25)]
         self.tc_nodes = [TimeControl(TimeMode.FIXED, fixed=900, node=1),
-                         TimeControl(TimeMode.FIXED, fixed=900, node=2),
-                         TimeControl(TimeMode.FIXED, fixed=900, node=3),
-                         TimeControl(TimeMode.FIXED, fixed=900, node=4),
+                         TimeControl(TimeMode.FIXED, fixed=900, node=5),
                          TimeControl(TimeMode.FIXED, fixed=900, node=10),
-                         TimeControl(TimeMode.FIXED, fixed=900, node=15),
-                         TimeControl(TimeMode.FIXED, fixed=900, node=20),
-                         TimeControl(TimeMode.FIXED, fixed=900, node=25)]
+                         TimeControl(TimeMode.FIXED, fixed=900, node=25),
+                         TimeControl(TimeMode.FIXED, fixed=900, node=50),
+                         TimeControl(TimeMode.FIXED, fixed=900, node=100),
+                         TimeControl(TimeMode.FIXED, fixed=900, node=250),
+                         TimeControl(TimeMode.FIXED, fixed=900, node=500)]
 
         # setup the result vars for api (dgtdisplay)
         self.save_choices()
@@ -1369,6 +1375,18 @@ class DgtMenu(object):
         text = self.dgttranslate.text(self.menu_system_eboard_type.value)
         return text
 
+    def enter_sys_theme_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.SYS_THEME
+        text = self.dgttranslate.text(self.menu_system.value)
+        return text
+
+    def enter_sys_theme_type_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.SYS_THEME_TYPE
+        text = self.dgttranslate.text(self.menu_system_theme_type.value)
+        return text
+
     def _fire_event(self, event: Event):
         Observable.fire(event)
         return self.save_choices()
@@ -1615,6 +1633,12 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_EBOARD_TYPE:
             text = self.enter_sys_eboard_menu()
+
+        elif self.state == MenuState.SYS_THEME:
+            text = self.enter_sys_menu()
+
+        elif self.state == MenuState.SYS_THEME_TYPE:
+            text = self.enter_sys_theme_menu()
 
         elif self.state == MenuState.PICOTUTOR:
             text = self.enter_top_menu()
@@ -2180,6 +2204,8 @@ class DgtMenu(object):
                 text = self.enter_sys_disp_menu()
             elif self.menu_system == System.EBOARD:
                 text = self.enter_sys_eboard_menu()
+            elif self.menu_system == System.THEME:
+                text = self.enter_sys_theme_menu()
 
         elif self.state == MenuState.SYS_POWER:
             if self.menu_system_power == Power.SHUT_DOWN:
@@ -2239,10 +2265,11 @@ class DgtMenu(object):
             self.dgttranslate.set_beep(self.menu_system_sound)
             write_picochess_ini('beep-config', self.dgttranslate.beep_to_config(self.menu_system_sound))
             # set system beep for picochessweb
-            if self.dgttranslate.beep_to_config(self.menu_system_sound) == 'none':
-                event = Event.SET_VOICE(type=Voice.BEEPER, lang='en', speaker='mute', speed=2)
-            else:
+            if self.dgttranslate.beep_to_config(self.menu_system_sound) == 'sample':
                 event = Event.SET_VOICE(type=Voice.BEEPER, lang='en', speaker='beeper', speed=2)
+            else:
+                event = Event.SET_VOICE(type=Voice.BEEPER, lang='en', speaker='mute', speed=2)
+
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okbeep'))
 
@@ -2455,6 +2482,18 @@ class DgtMenu(object):
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okeboard'))
             if eboard_type != self.board_type:
                 # only reboot if e-board type is different from the current e-board type
+                self._fire_event(Event.REBOOT(dev='menu'))
+
+        elif self.state == MenuState.SYS_THEME:
+            text = self.enter_sys_theme_type_menu()
+
+        elif self.state == MenuState.SYS_THEME_TYPE:
+            themes = {Theme.LIGHT: 'light', Theme.DARK: 'dark', Theme.AUTO: 'auto'}
+            theme_type = themes[self.menu_system_theme_type]
+            write_picochess_ini('theme', theme_type)
+            text = self._fire_dispatchdgt(self.dgttranslate.text('B10_oktheme'))
+            if theme_type != self.theme_type:
+                # only reboot if theme type is different from the current theme type
                 self._fire_event(Event.REBOOT(dev='menu'))
 
         else:  # Default
@@ -2762,7 +2801,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_top.value)
 
         elif self.state == MenuState.SYS_POWER:
-            self.state = MenuState.SYS_EBOARD
+            self.state = MenuState.SYS_THEME
             self.menu_system = SystemLoop.prev(self.menu_system)
             text = self.dgttranslate.text(self.menu_system.value)
 
@@ -2948,6 +2987,15 @@ class DgtMenu(object):
         elif self.state == MenuState.SYS_EBOARD_TYPE:
             self.menu_system_eboard_type = EBoardLoop.prev(self.menu_system_eboard_type)
             text = self.dgttranslate.text(self.menu_system_eboard_type.value)
+
+        elif self.state == MenuState.SYS_THEME:
+            self.state = MenuState.SYS_EBOARD
+            self.menu_system = SystemLoop.prev(self.menu_system)
+            text = self.dgttranslate.text(self.menu_system.value)
+
+        elif self.state == MenuState.SYS_THEME_TYPE:
+            self.menu_system_theme_type = ThemeLoop.prev(self.menu_system_theme_type)
+            text = self.dgttranslate.text(self.menu_system_theme_type.value)
 
         else:  # Default
             pass
@@ -3438,13 +3486,22 @@ class DgtMenu(object):
             text = self.dgttranslate.text('B00_notation_' + msg)
 
         elif self.state == MenuState.SYS_EBOARD:
-            self.state = MenuState.SYS_POWER
+            self.state = MenuState.SYS_THEME
             self.menu_system = SystemLoop.next(self.menu_system)
             text = self.dgttranslate.text(self.menu_system.value)
 
         elif self.state == MenuState.SYS_EBOARD_TYPE:
             self.menu_system_eboard_type = EBoardLoop.next(self.menu_system_eboard_type)
             text = self.dgttranslate.text(self.menu_system_eboard_type.value)
+
+        elif self.state == MenuState.SYS_THEME:
+            self.state = MenuState.SYS_POWER
+            self.menu_system = SystemLoop.next(self.menu_system)
+            text = self.dgttranslate.text(self.menu_system.value)
+
+        elif self.state == MenuState.SYS_THEME_TYPE:
+            self.menu_system_theme_type = ThemeLoop.next(self.menu_system_theme_type)
+            text = self.dgttranslate.text(self.menu_system_theme_type.value)
 
         else:  # Default
             pass

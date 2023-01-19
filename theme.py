@@ -13,6 +13,7 @@
 
 import datetime
 from geopy.geocoders import Nominatim  # type: ignore
+from geopy.exc import GeopyError  # type: ignore
 from astral import LocationInfo  # type: ignore
 from astral.sun import sun  # type: ignore
 import astral.geocoder  # type: ignore
@@ -66,7 +67,10 @@ def _theme_for_time(current_time: datetime.datetime, sunrise: datetime.datetime,
 def _location_info_from_location(location: str):
     location_info = None
     geolocator = Nominatim(user_agent='Picochess')
-    loc = geolocator.geocode(location)
+    try:
+        loc = geolocator.geocode(location)
+    except GeopyError:
+        loc = None
     if loc is not None:
         location_info = LocationInfo(location, '', datetime.datetime.now().astimezone().tzname(),
                                      loc.latitude, loc.longitude)

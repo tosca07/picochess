@@ -24,7 +24,7 @@ class DgtTranslate(object):
 
     """Handle translations for clock texts or moves."""
     def __init__(self, beep_config: str, beep_level: int, language: str, picochess_version: str):
-        self.ConfigToBeep = {'all': Beep.ON, 'none': Beep.OFF, 'some': Beep.SOME}
+        self.ConfigToBeep = {'all': Beep.ON, 'none': Beep.OFF, 'some': Beep.SOME, 'sample': Beep.SAMPLE}
         self.beep = self.ConfigToBeep[beep_config]
         self.beep_level = beep_level
         self.language = language
@@ -41,6 +41,8 @@ class DgtTranslate(object):
         if self.beep == Beep.ON:
             return True
         if self.beep == Beep.OFF:
+            return False
+        if self.beep == Beep.SAMPLE:
             return False
         return bool(self.beep_level & beeplevel.value)
 
@@ -184,7 +186,7 @@ class DgtTranslate(object):
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
-            ittxt = Dgt.DISPLAY_TEXT(web_text='Watcher on', large_text='Watcher no ', medium_text='Watch no', small_text='w no  ')
+            ittxt = Dgt.DISPLAY_TEXT(web_text='Watcher no', large_text='Watcher no ', medium_text='Watch no', small_text='w no  ')
         if text_id == 'picocoach':
             entxt = Dgt.DISPLAY_TEXT(web_text='Pico Coach', large_text='Pico Coach  ', medium_text='PCoach  ', small_text='Pcoach')
             detxt = entxt
@@ -221,7 +223,7 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'picoexplorer':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Pico Explorer', medium_text='Explorer', small_text='explor')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Pico Explorer', large_text='PicoExplor', medium_text='Explorer', small_text='explor')
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
@@ -229,7 +231,7 @@ class DgtTranslate(object):
             ittxt = entxt
         if text_id == 'picoexplorer_on':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Explorer on', medium_text='Expl on ', small_text='ex on ')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Explorer ein', medium_text='Expl ein', small_text='ex ein')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Explorer ein', large_text='Explorerein', medium_text='Expl ein', small_text='ex ein')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -311,8 +313,8 @@ class DgtTranslate(object):
                 estxt = entxt
                 ittxt = entxt
             elif msg == 'ACTIVE':
-                entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Pico Tutor on', medium_text='Tutor on', small_text='tut.on')
-                detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Pico Tutor an', medium_text='Tutor an', small_text='tut.an')
+                entxt = Dgt.DISPLAY_TEXT(web_text='Pico Tutor on', large_text='PicTutor on', medium_text='Tutor on', small_text='tut.on')
+                detxt = Dgt.DISPLAY_TEXT(web_text='Pico Tutor an', large_text='PicTutor an', medium_text='Tutor an', small_text='tut.an')
                 nltxt = entxt
                 frtxt = entxt
                 estxt = entxt
@@ -582,7 +584,7 @@ class DgtTranslate(object):
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='mossa errat', medium_text='mossErra', small_text='errat ')
         if text_id == 'goodbye':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Good bye   ', medium_text='Good bye', small_text='bye   ')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Tschüss   ', medium_text='Tschuess', small_text='tschau')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Tschüss', large_text='Tschuess', medium_text='Tschuess', small_text='tschau')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='tot ziens  ', medium_text='totziens', small_text='dag   ')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='au revoir  ', medium_text='a plus  ', small_text='bye   ')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='adios      ', medium_text='adios   ', small_text='adios ')
@@ -673,8 +675,8 @@ class DgtTranslate(object):
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok libro   ', medium_text='ok libro', small_text='oklibr')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok libroape', medium_text='ok libro', small_text='oklibr')
         if text_id == 'noipadr':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='no IP address ', medium_text='no IPadr', small_text='no ip ')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Keine IP Adresse', medium_text='Keine IP', small_text='kn ip ')
+            entxt = Dgt.DISPLAY_TEXT(web_text='no IP address', large_text='no IP addr', medium_text='no IPadr', small_text='no ip ')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Keine IP Adresse', large_text='Keine IPAdr', medium_text='Keine IP', small_text='kn ip ')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Geen IPadr ', medium_text='Geen IP ', small_text='gn ip ')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='pas d IP   ', medium_text='pas d IP', small_text='pd ip ')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='no IP dir  ', medium_text='no IP   ', small_text='no ip ')
@@ -694,7 +696,7 @@ class DgtTranslate(object):
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='error menu ', medium_text='err menu', small_text='errmen')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='errore menu', medium_text='err menu', small_text='errmen')
         if text_id == 'sidewhite':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='side to move White', medium_text='side W  ', small_text='side w')
+            entxt = Dgt.DISPLAY_TEXT(web_text='side to move White', large_text='side to move White', medium_text='side W  ', small_text='side w')
             detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Weiß am Zug   ', medium_text='W am Zug', small_text=' w zug')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='wit aan zet', medium_text='wit zet ', small_text=' w zet')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='aux blancs ', medium_text='mvt bl  ', small_text='mvt bl')
@@ -737,7 +739,7 @@ class DgtTranslate(object):
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok tempo   ', medium_text='ok tempo', small_text='oktemp')
         if text_id == 'okbeep':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok beep    ', medium_text='ok beep ', small_text='okbeep')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok Töne   ', medium_text='ok Toene', small_text='ok ton')
+            detxt = Dgt.DISPLAY_TEXT(web_text='ok Töne', large_text='ok Toene', medium_text='ok Toene', small_text='ok ton')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok piep    ', medium_text='ok piep ', small_text='okpiep')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok sons    ', medium_text='ok sons ', small_text='oksons')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok beep    ', medium_text='ok beep ', small_text='okbeep')
@@ -767,8 +769,8 @@ class DgtTranslate(object):
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok jugada  ', medium_text='okjugada', small_text='ok jug')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='mossa ok   ', medium_text='mossa ok', small_text='ok mos')
         if text_id == 'altmove':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='alternative move  ', medium_text='alt move', small_text='altmov')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='altnativer Zug', medium_text='alt Zug ', small_text='altzug')
+            entxt = Dgt.DISPLAY_TEXT(web_text='alternative move ', large_text='altn move  ', medium_text='alt move', small_text='altmov')
+            detxt = Dgt.DISPLAY_TEXT(web_text='alternativer Zug', large_text='altn. Zug', medium_text='alt Zug ', small_text='altzug')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='andere zet ', medium_text='alt zet ', small_text='altzet')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='autre mouv ', medium_text='alt move', small_text='altmov')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='altn jugada', medium_text='altjugad', small_text='altjug')
@@ -793,7 +795,7 @@ class DgtTranslate(object):
         if text_id == 'takeback':
             wait = True
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='takeback   ', medium_text='takeback', small_text='takbak')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Rücknahme ', medium_text='Rcknahme', small_text='rueckn')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Rücknahme', large_text='Ruecknahme ', medium_text='Rcknahme', small_text='rueckn')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='zet terug  ', medium_text='zetterug', small_text='terug ')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='retour     ', medium_text='retour  ', small_text='retour')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='retrocede  ', medium_text='atras   ', small_text='atras ')
@@ -809,7 +811,7 @@ class DgtTranslate(object):
         if text_id == 'setpieces':
             wait = True
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='set pieces ', medium_text='set pcs ', small_text='setpcs')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Stellung aufbauen', medium_text='aufbauen', small_text='aufbau')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Stellung aufbauen', large_text='Stellgskntr', medium_text='aufbauen', small_text='aufbau')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='zet stukken', medium_text='zet stkn', small_text='zet st')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='placer pcs ', medium_text='set pcs ', small_text='setpcs')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='hasta piez ', medium_text='hasta pz', small_text='hastap')
@@ -916,22 +918,22 @@ class DgtTranslate(object):
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Motor      ', medium_text='Motor   ', small_text='motor ')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Motore     ', medium_text='Motore  ', small_text='motore')
         if text_id == 'engine_menu_modern':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Modern Engines', medium_text='Modern  ', small_text='modern')
-            detxt = entxt
+            entxt = Dgt.DISPLAY_TEXT(web_text='Modern Engines', large_text='Modern Eng.', medium_text='Modern  ', small_text='modern')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Moderne Engines', large_text='Moderne Eng', medium_text='Modern  ', small_text='modern')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_menu_retro':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Retro Engines', medium_text='Retro   ', small_text='retro ')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Retro Engines', large_text='Retro Eng.', medium_text='Retro   ', small_text='retro ')
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_menu_favorites':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Special & Historic Engines', medium_text='Favorite', small_text='favor.')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Spezial & historische Engines', medium_text='Favorite', small_text='Favor.')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Favorites', large_text='Favorites', medium_text='Favorite', small_text='favor.')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Favoriten', large_text='Favoriten', medium_text='Favorite', small_text='Favor.')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -1154,15 +1156,15 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'picotutor_picocomment_menu':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Pico Comments', medium_text='Comment ', small_text='commnt')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Pico Kommentare', medium_text='Komment ', small_text='Kommnt')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Pico Comments', large_text='PicComments', medium_text='Comment ', small_text='commnt')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Pico Kommentare', large_text='Kommentare', medium_text='Komment ', small_text='Kommnt')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
         if text_id == 'picocomment':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Pico Comments', medium_text='Comment ', small_text='commnt')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Pico Kommentare', medium_text='Komment ', small_text='Kommnt')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Pico Comments', large_text='PicComments', medium_text='Comment ', small_text='commnt')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Pico Kommentare', large_text='Kommentare', medium_text='Komment ', small_text='Kommnt')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -1211,7 +1213,7 @@ class DgtTranslate(object):
             ittxt = entxt
         if text_id == 'mode_analysis_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Move hint  ', medium_text='MoveHint', small_text='mvhint')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Zugvorschlag ', medium_text='ZugVor. ', small_text='zugvor')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Zugvorschlag ', large_text='Zugvorschlg', medium_text='ZugVor. ', small_text='zugvor')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -1253,7 +1255,7 @@ class DgtTranslate(object):
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Mossa tempo', medium_text='Mosstemp', small_text='mostem')
         if text_id == 'timemode_blitz_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Game time  ', medium_text='Gametime', small_text='game t')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Spielzeit pro Partie  ', medium_text='Spielz  ', small_text='spielz')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Spielzeit pro Partie', large_text='Spielzeit', medium_text='Spielz  ', small_text='spielz')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Spel tyd   ', medium_text='Spel tyd', small_text='spel  ')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Partie temp', medium_text='Partie  ', small_text='partie')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Partid     ', medium_text='Partid  ', small_text='partid')
@@ -1266,8 +1268,8 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'timemode_tourn_menu':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Tournament Levels', medium_text='Tournamnt', small_text='tourn ')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Turnierstufen', medium_text='Turnier  ', small_text='turnr ')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Tournament Levels', large_text='Tournament', medium_text='Tournamnt', small_text='tourn ')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Turnierstufen', large_text='TurnierLevl', medium_text='Turnier  ', small_text='turnr ')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -1301,15 +1303,15 @@ class DgtTranslate(object):
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='IP dir     ', medium_text='IP dir  ', small_text='ip dir')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ind IP     ', medium_text='ind IP  ', small_text='ind ip')
         if text_id == 'info_battery_menu':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='BT battery status', medium_text='Battery ', small_text='bt bat')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='BT Ladezustand', medium_text='Batterie', small_text='bt bat')
+            entxt = Dgt.DISPLAY_TEXT(web_text='BT battery status', large_text='BT Battery', medium_text='Battery ', small_text='bt bat')
+            detxt = Dgt.DISPLAY_TEXT(web_text='BT Ladezustand', large_text='BT Ladestat', medium_text='Batterie', small_text='bt bat')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='BT batterij', medium_text='batterij', small_text='bt bat')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='BT batterie', medium_text='batterie', small_text='bt bat')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='BT bateria ', medium_text='bateria ', small_text='bt bat')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='BT batteria', medium_text='batteria', small_text='bt bat')
         if text_id == 'system_sound_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Sound      ', medium_text='Sound   ', small_text='sound ')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Töne      ', medium_text='Toene   ', small_text='toene ')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Töne', large_text='Toene      ', medium_text='Toene   ', small_text='toene ')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Geluid     ', medium_text='Geluid  ', small_text='geluid')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Sons       ', medium_text='Sons    ', small_text='sons  ')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Sonido     ', medium_text='Sonido  ', small_text='sonido')
@@ -1384,6 +1386,34 @@ class DgtTranslate(object):
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
+        if text_id == 'system_theme_menu':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Display-Theme', large_text='Theme        ', medium_text='Theme     ', small_text='theme   ')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'theme_light_menu':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Display-Theme: light', large_text='theme light', medium_text='light', small_text='light')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'theme_dark_menu':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Display-Theme: dark', large_text='theme dark', medium_text='dark', small_text='dark')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'theme_auto_menu':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Display-Theme: auto', large_text='theme auto', medium_text='auto', small_text='auto')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
         if text_id == 'gameresult_mate':
             wait = True
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Checkmate  ', medium_text='mate    ', small_text='mate  ')
@@ -1419,15 +1449,15 @@ class DgtTranslate(object):
         if text_id == 'gameresult_moves':
             wait = True
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='75 moves   ', medium_text='75 moves', small_text='75 mov')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='75 Züge    ', medium_text='75 Zuege', small_text='75 zug')
+            detxt = Dgt.DISPLAY_TEXT(web_text='75 Züge Regel', large_text='75 Zuege    ', medium_text='75 Zuege', small_text='75 zug')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='75 zetten  ', medium_text='75zetten', small_text='75 zet')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='75 mouv    ', medium_text='75 mouv ', small_text='75 mvt')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='75 mov     ', medium_text='75 mov  ', small_text='75 mov')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='75 mosse   ', medium_text='75 mosse', small_text='75 mos')
         if text_id == 'gameresult_repetition':
             wait = True
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Threefold repetition ', medium_text='rep pos ', small_text='reppos')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='3fache Stellungswiederholung ', medium_text='Wiederhg', small_text='wdrhlg')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Threefold repetition ', large_text='3Repetition', medium_text='rep pos ', small_text='reppos')
+            detxt = Dgt.DISPLAY_TEXT(web_text='3fache Stellungswiederholung', large_text='3fach Wdhg', medium_text='Wiederhg', small_text='wdrhlg')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='zetherhalin', medium_text='herhalin', small_text='herhal')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='3ieme rep  ', medium_text='3iem rep', small_text=' 3 rep')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='repeticion ', medium_text='repite 3', small_text='rep 3 ')
@@ -1435,7 +1465,7 @@ class DgtTranslate(object):
         if text_id == 'gameresult_abort':
             wait = True
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='abort game ', medium_text='abort   ', small_text='abort ')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Spielabbruch', medium_text='Abbruch ', small_text='abbrch')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Spielabbruch', large_text='Abbruch', medium_text='Abbruch ', small_text='abbrch')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='afbreken   ', medium_text='afbreken', small_text='afbrek')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='sortir     ', medium_text='sortir  ', small_text='sortir')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='abortar    ', medium_text='abortar ', small_text='abort ')
@@ -1551,6 +1581,13 @@ class DgtTranslate(object):
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Toujours   ', medium_text='Toujours', small_text='toujou')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Siempre    ', medium_text='Siempre ', small_text='siempr')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Sempre     ', medium_text='Sempre  ', small_text='sempre')
+        if text_id == 'beep_sample_menu':
+            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Sample', medium_text='Sample', small_text='sample')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
         if text_id == 'oklang':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok language', medium_text='ok lang ', small_text='oklang')
             detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok Sprache ', medium_text='okSprach', small_text='ok spr')
@@ -1565,6 +1602,13 @@ class DgtTranslate(object):
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
+        if text_id == 'oktheme':
+            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok theme', medium_text='ok theme', small_text='ok thm')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
         if text_id == 'oklogfile':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok log file', medium_text='oklogfil', small_text='ok log')
             detxt = entxt
@@ -1574,14 +1618,14 @@ class DgtTranslate(object):
             ittxt = entxt
         if text_id == 'voice_speed_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Voice speed', medium_text='Vc speed', small_text='vspeed')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Stimme - Geschwindigkeit', medium_text='StmGesch', small_text='stmges')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Stimme-Geschwindigkeit', large_text='Geschwkeit', medium_text='StmGesch', small_text='stmges')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Veloci voce', medium_text='Vel voce', small_text='vevoce')
         if text_id == 'voice_speed':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='VoiceSpeed' + msg, medium_text='Vspeed ' + msg, small_text='v spe' + msg)
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Stimme - Geschwindigkeit' + msg, medium_text='StmGes ' + msg, small_text='stm g' + msg)
+            entxt = Dgt.DISPLAY_TEXT(web_text='VoiceSpeed ' + msg, large_text='VSpeed ' + msg, medium_text='Vspeed ' + msg, small_text='v spe' + msg)
+            detxt = Dgt.DISPLAY_TEXT(web_text='Stimme-Geschwindigkeit ' + msg, large_text='Geschwnkt ' + msg, medium_text='StmGes ' + msg, small_text='stm g' + msg)
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -1595,14 +1639,14 @@ class DgtTranslate(object):
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok veloc vo', medium_text='ok veloc', small_text='ok vel')
         if text_id == 'voice_volume_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Voice Volume', medium_text='Vc vol  ', small_text='vs vol')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Lautstärke ', medium_text='Stm Vol ', small_text='st vol')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Lautstärke ', large_text='Lautstaerke ', medium_text='Stm Vol ', small_text='st vol')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Volume voce', medium_text='Vol voce', small_text='vovoce')
         if text_id == 'voice_volume':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Voice Volume ' + msg, medium_text='Volume' + msg, small_text='vol ' + msg)
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Lautstärke   ' + msg, medium_text='Volume' + msg, small_text='vol ' + msg)
+            entxt = Dgt.DISPLAY_TEXT(web_text='Voice Volume ' + msg, large_text='VoiceVol ' + msg, medium_text='Volume' + msg, small_text='vol ' + msg)
+            detxt = Dgt.DISPLAY_TEXT(web_text='Lautstärke ' + msg, large_text='Lautst.' + msg, medium_text='Lauts' + msg, small_text='vol ' + msg)
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -1616,14 +1660,14 @@ class DgtTranslate(object):
             ittxt = entxt
         if text_id == 'voice_user_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='User voice ', medium_text='UserVoic', small_text='user v')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Spieler Stimme', medium_text='Splr Stm', small_text='splr s')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Spieler Stimme', large_text='Spieler St', medium_text='Splr Stm', small_text='splr s')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Speler Stem', medium_text='SplrStem', small_text='splr s')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Joueur Voix', medium_text='JourVoix', small_text='jour v')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Jugador Voz', medium_text='JugadVoz', small_text='juga v')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Giocat Voce', medium_text='GiocVoce', small_text='gioc v')
         if text_id == 'voice_comp_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Pico voice ', medium_text='PicoVoic', small_text='pico v')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='PicoChess Stimme', medium_text='Pico Stm', small_text='pico v')
+            detxt = Dgt.DISPLAY_TEXT(web_text='PicoChess Stimme', large_text='PicoChStimm', medium_text='Pico Stm', small_text='pico v')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='PicoChsStem', medium_text='PicoStem', small_text='pico s')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='PicoChsVoix', medium_text='PicoVoix', small_text='pico v')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='PicoChs Voz', medium_text='Pico Voz', small_text='pico v')
@@ -1652,14 +1696,14 @@ class DgtTranslate(object):
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Voce spenta', medium_text='Voce spe', small_text='vc spe')
         if text_id == 'okvolume':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok Volume  ', medium_text='okVolume', small_text='ok vol')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok Lautstärke ', medium_text='okLautst', small_text='ok Lau')
+            detxt = Dgt.DISPLAY_TEXT(web_text='ok Lautstärke', large_text='ok Lautst.', medium_text='okLautst', small_text='ok Lau')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
         if text_id == 'voice_volume_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Voice Volume', medium_text='VoiceVol', small_text='voivol')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Lautstärke', medium_text='Lautstr ', small_text='lautst')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Lautstärke ', large_text='Lautstaerke', medium_text='Lautstr ', small_text='lautst')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -1687,7 +1731,7 @@ class DgtTranslate(object):
             ittxt = entxt
         if text_id == 'display_confirm_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Confirm msg', medium_text='Confirm ', small_text='confrm')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Zugbestätigung', medium_text='Zugbestg', small_text='zugbes')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Zugbestätigung', large_text='Zugbestaet.', medium_text='Zugbestg', small_text='zugbes')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -1708,21 +1752,21 @@ class DgtTranslate(object):
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Notazione m', medium_text='Notazion', small_text='notazi')
         if text_id == 'okconfirm':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok confirm ', medium_text='okConfrm', small_text='okconf')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok Zugbestätigung ', medium_text='okZugbes', small_text='ok bes')
+            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok Zugbest.', medium_text='okZugbes', small_text='ok bes')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok conferma', medium_text='okConfrm', small_text='okconf')
         if text_id == 'confirm_on':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Confirm  on', medium_text='Conf  on', small_text='cnf on')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Zugbestätigung ein', medium_text='Best ein', small_text='besein')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Confirmation on', large_text='Confirm on', medium_text='Conf  on', small_text='cnf on')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Zugbestätigung ein', large_text='Zugbest.ein', medium_text='Best ein', small_text='besein')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Conferma si', medium_text='Conf  si', small_text='cnf si')
         if text_id == 'confirm_off':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Confirm off', medium_text='Conf off', small_text='cnfoff')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Zugbestätigung aus', medium_text='Best aus', small_text='besaus')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Confirmation off', large_text='Confirm off', medium_text='Conf off', small_text='cnfoff')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Zugbestätigung aus', large_text='Zugbest.aus', medium_text='Best aus', small_text='besaus')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -1828,14 +1872,14 @@ class DgtTranslate(object):
             ittxt = entxt
         if text_id == 'tc_depth':  # support of depth per move search
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Depth ' + msg, medium_text='Depth ' + msg, small_text='dep ' + msg)
-            detxt = Dgt.DISPLAY_TEXT(web_text='Suchtiefe ', large_text='Suchtiefe' + msg, medium_text='Tiefe ' + msg, small_text='tief' + msg)
+            detxt = Dgt.DISPLAY_TEXT(web_text='Suchtiefe ' + msg, large_text='Suchtiefe' + msg, medium_text='Tiefe ' + msg, small_text='tief' + msg)
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Profo ' + msg, medium_text='Profo ' + msg, small_text='pro ' + msg)
         if text_id == 'tc_node':
             entxt = Dgt.DISPLAY_TEXT(web_text='Nodes ' + msg, large_text='Nodes ' + msg, medium_text='Nodes' + msg, small_text='node' + msg)
-            detxt = Dgt.DISPLAY_TEXT(web_text='Such-Knoten ', large_text='Knoten ' + msg, medium_text='Knoten' + msg, small_text='knot' + msg)
+            detxt = Dgt.DISPLAY_TEXT(web_text='Such-Knoten ' + msg, large_text='Knoten ' + msg, medium_text='Knoten' + msg, small_text='knot' + msg)
             nltxt = entxt
             frtxt = entxt
             estxt = entxt

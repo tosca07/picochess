@@ -232,7 +232,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         if self.user_picotalker:
             self.user_picotalker.set_speed_factor(speed_factor)
         if self.beeper_picotalker:
-            self.peeper_picotalker.set_speed_factor(speed_factor)
+            self.beeper_picotalker.set_speed_factor(speed_factor)
 
     def talk(self, sounds, dev=SYSTEM):
         if self.low_time:
@@ -797,8 +797,8 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                             pass
 
                 elif isinstance(message, Message.PICOTUTOR_MSG):
-                    self.talk(['picotutor.ogg'], self.BEEPER)
                     if '??' == message.eval_str:
+                        self.talk(['picotutor.ogg'], self.BEEPER)
                         self.talk(['picotutor_notify.ogg'])
                         self.talk(['verybadmove.ogg'])
                     elif '?' == message.eval_str:
@@ -962,10 +962,10 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         self.set_factor(self.speed_factor)
                     if message.type == Voice.BEEPER:
                         self.set_beeper(PicoTalker(localisation_id_voice, self.speed_factor))
-                    if message.speaker == 'mute':
-                        self.beep_on = False
-                    else:
-                        self.beep_on = True
+                        if message.speaker == 'mute':
+                            self.beep_on = False
+                        else:
+                            self.beep_on = True
                     self.talk(['confirm.ogg'], self.BEEPER)
                     self.talk(['ok.ogg'])
 

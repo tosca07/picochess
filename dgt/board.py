@@ -62,16 +62,15 @@ class Rev2Info():
 
     @classmethod
     def get_web_only(cls):
-        if Rev2Info.is_web_only is None:
-            if Rev2Info.is_dgtpi:
+        if Rev2Info.is_dgtpi:
+            Rev2Info.is_web_only = False
+        else:
+            if Rev2Info.get_pi_mode():
+                Rev2Info.is_web_only = False
+            elif Rev2Info.get_new_rev2_mode():
                 Rev2Info.is_web_only = False
             else:
-                if Rev2Info.get_pi_mode():
-                    Rev2Info.is_web_only = False
-                elif Rev2Info.get_new_rev2_mode():
-                    Rev2Info.is_web_only = False
-                else:
-                    Rev2Info.is_web_only = True
+                Rev2Info.is_web_only = True
         return Rev2Info.is_web_only
 
 

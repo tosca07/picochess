@@ -339,11 +339,12 @@ class System(MyEnum):
     VOICE = 'B00_system_voice_menu'
     DISPLAY = 'B00_system_display_menu'
     EBOARD = 'B00_system_eboard_menu'
+    THEME = 'B00_system_theme_menu'
 
     @classmethod
     def items(cls):
         return [System.POWER, System.INFO, System.SOUND, System.LANGUAGE, System.LOGFILE, System.VOICE, System.DISPLAY,
-                System.EBOARD]
+                System.EBOARD, System.THEME]
 
 
 class SystemLoop(object):
@@ -411,6 +412,32 @@ class EBoardLoop(object):
     def prev(item: EBoard):
         """Get previous item."""
         return prev_item(EBoard.items(), item, 'errEboardPrev')
+
+
+class Theme(MyEnum):
+    LIGHT = 'B00_theme_light_menu'
+    DARK = 'B00_theme_dark_menu'
+    AUTO = 'B00_theme_auto_menu'
+
+    @classmethod
+    def items(cls):
+        return [Theme.LIGHT, Theme.DARK, Theme.AUTO]
+
+
+class ThemeLoop(object):
+
+    def __init__(self):
+        super(ThemeLoop, self).__init__()
+
+    @staticmethod
+    def next(item: Theme):
+        """Get next item."""
+        return next_item(Theme.items(), item, 'errThemeNext')
+
+    @staticmethod
+    def prev(item: Theme):
+        """Get previous item."""
+        return prev_item(Theme.items(), item, 'errThemePrev')
 
 
 class Info(MyEnum):
@@ -485,10 +512,11 @@ class Beep(MyEnum):
     OFF = 'B00_beep_off_menu'
     SOME = 'B00_beep_some_menu'
     ON = 'B00_beep_on_menu'
+    SAMPLE = 'B00_beep_sample_menu'
 
     @classmethod
     def items(cls):
-        return [Beep.OFF, Beep.SOME, Beep.ON]
+        return [Beep.OFF, Beep.SOME, Beep.ON, Beep.SAMPLE]
 
 
 class BeepLoop(object):

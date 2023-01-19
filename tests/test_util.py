@@ -9,13 +9,15 @@ class TestSystemLoop(unittest.TestCase):
         loop = SystemLoop()
         self.assertEqual(System.SOUND, loop.next(System.INFO))
         self.assertEqual(System.EBOARD, loop.next(System.DISPLAY))
-        self.assertEqual(System.POWER, loop.next(System.EBOARD))
+        self.assertEqual(System.THEME, loop.next(System.EBOARD))
+        self.assertEqual(System.POWER, loop.next(System.THEME))
         self.assertEqual(System.INFO, loop.next(System.POWER))
         self.assertEqual('errSystNext', loop.next('invalid item'))
 
     def test_prev(self):
         loop = SystemLoop()
-        self.assertEqual(System.EBOARD, loop.prev(System.POWER))
+        self.assertEqual(System.THEME, loop.prev(System.POWER))
+        self.assertEqual(System.EBOARD, loop.prev(System.THEME))
         self.assertEqual(System.POWER, loop.prev(System.INFO))
         self.assertEqual(System.DISPLAY, loop.prev(System.EBOARD))
         self.assertEqual(System.SOUND, loop.prev(System.LANGUAGE))
