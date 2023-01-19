@@ -117,6 +117,3 @@ class CertaboBoard(EBoard):
 
     def end_text(self):
         pass
-
-    def set_reverse(self, flag):
-        pass

@@ -86,7 +86,6 @@ class DgtBoard(EBoard):
         self.disable_revelation_leds = disable_revelation_leds
         self.enable_revelation_pi = False
         self.is_revelation = False
-        self.reverse = False
 
         self.is_pi = is_pi
         self.disable_end = disable_end  # @todo for test - XL needs a "end_text" maybe!
@@ -123,12 +122,6 @@ class DgtBoard(EBoard):
 
         self.in_settime = False  # this is true between set_clock and clock_start => use set values instead of clock
         self.low_time = False  # This is set from picochess.py and used to limit the field timer
-
-    def set_reverse(self, flag):
-        self.reverse = flag
-
-    def get_reverse(self):
-        return self.reverse
 
     def expired_field_timer(self):
         """Board position hasnt changed for some time."""

@@ -58,8 +58,3 @@ class EBoard(Protocol):
     def end_text(self):
         """Return the clock display to time display."""
         raise NotImplementedError
-
-    @abstractmethod
-    def set_reverse(self, flag):
-        """Set the reverse flag."""
-        raise NotImplementedError
