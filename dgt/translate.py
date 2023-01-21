@@ -932,8 +932,8 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_menu_favorites':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Favorites Engines', large_text='Favorites', medium_text='Favorites', small_text='fav')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Favooiten Engines', large_text='Favoriten', medium_text='Favoriten', small_text='fav')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Favorites Engines', large_text='Favorites', medium_text='Favorite', small_text='fav')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Favooiten Engines', large_text='Favoriten', medium_text='Favorite', small_text='fav')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
