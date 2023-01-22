@@ -575,6 +575,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
                 elif isinstance(message, Message.COMPUTER_MOVE_DONE):
                     self.play_game = None
+                    self.talk(['player_move.ogg'], self.BEEPER)
                     self.comment('chat')
 
                 elif isinstance(message, Message.USER_MOVE_DONE):
