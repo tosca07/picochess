@@ -48,7 +48,7 @@ from utilities import get_location, update_picochess, get_opening_books, shutdow
 from utilities import Observable, DisplayMsg, version, evt_queue, write_picochess_ini, hms_time, get_engine_rspeed_par
 from pgn import Emailer, PgnDisplay, ModeInfo
 from server import WebServer
-from talker.picotalker import PicoTalkerDisplay
+from picotalker import PicoTalkerDisplay
 from dispatcher import Dispatcher
 
 from dgt.api import Dgt, Message, Event
