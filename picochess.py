@@ -1986,6 +1986,8 @@ def main() -> None:
     if unknown:
         logging.warning('invalid parameter given %s', unknown)
 
+    EngineProvider.init()
+
     Rev2Info.set_dgtpi(args.dgtpi)
     flag_pgn_game_over = False
     state.flag_flexible_ponder = args.flexible_analysis
