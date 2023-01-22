@@ -16,6 +16,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import subprocess
 import logging
 from configobj import ConfigObj  # type: ignore
 from collections import OrderedDict
@@ -1253,7 +1254,10 @@ class DgtMenu(object):
         for channel in ('Headphone', 'Master', 'HDMI'):
             volume_cmd = f'amixer sset {channel} {factor}%'
             logging.debug(volume_cmd)
-            os.system(volume_cmd)
+            result = subprocess.run(volume_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                    universal_newlines=True, shell=True)
+            if result.stdout:
+                logging.debug(result.stdout)
         return
 
     def enter_sys_disp_menu(self):
