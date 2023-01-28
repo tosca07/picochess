@@ -541,7 +541,7 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='nuoPosizion', medium_text='nuoPosiz', small_text='nuoPos')
         if text_id == 'enginename':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text=msg, medium_text=msg[:8], small_text=msg[:6])
+            entxt = Dgt.DISPLAY_TEXT(web_text=msg.web_text, large_text=msg.large_text, medium_text=msg.medium_text, small_text=msg.small_text)
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
@@ -563,7 +563,7 @@ class DgtTranslate(object):
             ittxt = entxt
         if text_id == 'enginesetup':
             entxt = Dgt.DISPLAY_TEXT(web_text='Engine Setup', large_text='EngineSetup', medium_text='EngSetup', small_text='setup ')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Engine Konfig', large_text='EngineKonfg', medium_text='Eng.konf', small_text='e.konf')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Engine Konfiguration', large_text='EngineKonfg', medium_text='Eng.konf', small_text='e.konf')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -647,8 +647,8 @@ class DgtTranslate(object):
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='sin funcion', medium_text='sin func', small_text='nofunc')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='no funzione', medium_text='no funz ', small_text='nofunz')
         if text_id == 'erroreng':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='err engine ', medium_text='err engn', small_text='erreng')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='err engine ', medium_text='err engn', small_text='erreng')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Engine error', large_text='EngineError', medium_text='err engn', small_text='erreng')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Engine Fehler', large_text='EgineFehler', medium_text='err engn', small_text='erreng')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='fout engine', medium_text='fout eng', small_text='e fout')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='err moteur ', medium_text='err mot ', small_text='errmot')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='error motor', medium_text='err mot ', small_text='errmot')
@@ -932,8 +932,8 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_menu_favorites':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Favorites Engines', large_text='Favorites', medium_text='Favorite', small_text='fav')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Favooiten Engines', large_text='Favoriten', medium_text='Favorite', small_text='fav')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Favorites', large_text='Favorites', medium_text='Favorite', small_text='favor.')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Favoriten', large_text='Favoriten', medium_text='Favorite', small_text='Favor.')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -1473,7 +1473,7 @@ class DgtTranslate(object):
         if text_id == 'gameresult_white':
             wait = True
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='White wins ', medium_text='W wins  ', small_text='w wins')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='W. gewinnt ', medium_text='W Gewinn', small_text=' w gew')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Weiß gewinnt', large_text='W. gewinnt ', medium_text='W Gewinn', small_text=' w gew')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='wit wint   ', medium_text='wit wint', small_text='w wint')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='B gagne    ', medium_text='B gagne ', small_text='b gagn')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='B ganan    ', medium_text='B ganan ', small_text='b gana')
@@ -1481,7 +1481,7 @@ class DgtTranslate(object):
         if text_id == 'gameresult_black':
             wait = True
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Black wins ', medium_text='B wins  ', small_text='b wins')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='S. gewinnt ', medium_text='S Gewinn', small_text=' s gew')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Schwarz gewinnt', large_text='S. gewinnt ', medium_text='S Gewinn', small_text=' s gew')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='zwart wint ', medium_text='zw wint ', small_text='z wint')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='N gagne    ', medium_text='N gagne ', small_text='n gagn')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='N ganan    ', medium_text='N ganan ', small_text='n gana')

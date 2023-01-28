@@ -936,8 +936,6 @@ class DgtMenu(object):
         self.state = MenuState.RETROSPEED_FACTOR
         if self.retrospeed_list[self.menu_engine_retrospeed_idx] == 'max.':
             l_speed = self.retrospeed_list[self.menu_engine_retrospeed_idx]
-        elif self.retrospeed_list[self.menu_engine_retrospeed_idx] == '100':
-            l_speed = 'orig.'
         else:
             l_speed = self.retrospeed_list[self.menu_engine_retrospeed_idx] + '%'
         text = self.dgttranslate.text('B00_retrospeed', l_speed)
@@ -1892,7 +1890,6 @@ class DgtMenu(object):
             # do action!
             config = ConfigObj('picochess.ini', default_encoding='utf8')
             config['tutor-comment'] = 'off'
-
             config.write()
             self.res_picotutor_picocomment = PicoComment.COM_OFF
             self.menu_picotutor_picocomment = PicoComment.COM_OFF
@@ -2030,9 +2027,10 @@ class DgtMenu(object):
             # maybe do action!
             text = self.enter_modern_eng_name_level_menu()
             if not text:
+                # clear old level information
+                event = Event.LEVEL(options={}, level_text=self.dgttranslate.text('N07_default', ''), level_name='')
+                Observable.fire(event)
                 eng = EngineProvider.modern_engines[self.menu_modern_engine_index]
-                if 'Online' not in str(eng['name']) and 'Remote' not in str(eng['name']) and 'FICS' not in str(eng['name']) and 'lichess' not in str(eng['name']) and 'PGN' not in str(eng['name']):
-                    write_picochess_ini('engine-level', None)
                 eng_text = self.dgttranslate.text('B10_okengine')
                 event = Event.NEW_ENGINE(eng=eng, eng_text=eng_text, options={}, show_ok=True)
                 Observable.fire(event)
@@ -2047,9 +2045,6 @@ class DgtMenu(object):
             if level_dict:
                 msg = sorted(level_dict)[self.menu_modern_engine_level]
                 options = level_dict[msg]
-                if 'Online' not in str(eng['name']) and 'Remote' not in str(eng['name']) and 'FICS' not in str(eng['name']) and 'lichess' not in str(eng['name']) and 'PGN' not in str(eng['name']):
-                    write_picochess_ini('engine-level', msg)
-
                 event = Event.LEVEL(options={}, level_text=self.dgttranslate.text('B10_level', msg), level_name=msg)
                 Observable.fire(event)
             else:
@@ -2068,9 +2063,10 @@ class DgtMenu(object):
             # maybe do action!
             text = self.enter_retro_eng_name_level_menu()
             if not text:
+                # clear old level information
+                event = Event.LEVEL(options={}, level_text=self.dgttranslate.text('N07_default', ''), level_name='')
+                Observable.fire(event)
                 retro_eng = EngineProvider.retro_engines[self.menu_retro_engine_index]
-                if 'Online' not in str(retro_eng['name']) and 'Remote' not in str(retro_eng['name']) and 'FICS' not in str(retro_eng['name']) and 'lichess' not in str(retro_eng['name']) and 'PGN' not in str(retro_eng['name']):
-                    write_picochess_ini('engine-level', None)
                 eng_text = self.dgttranslate.text('B10_okengine')
                 event = Event.NEW_ENGINE(eng=retro_eng, eng_text=eng_text, options={}, show_ok=True)
                 Observable.fire(event)
@@ -2083,8 +2079,6 @@ class DgtMenu(object):
             if retro_level_dict:
                 msg = sorted(retro_level_dict)[self.menu_retro_engine_level]
                 options = retro_level_dict[msg]
-                if 'Online' not in str(retro_eng['name']) and 'Remote' not in str(retro_eng['name']) and 'FICS' not in str(retro_eng['name']) and 'lichess' not in str(retro_eng['name']) and 'PGN' not in str(retro_eng['name']):
-                    write_picochess_ini('engine-level', msg)
                 event = Event.LEVEL(options={}, level_text=self.dgttranslate.text('B10_level', msg), level_name=msg)
                 Observable.fire(event)
             else:
@@ -2103,9 +2097,10 @@ class DgtMenu(object):
             # maybe do action!
             text = self.enter_fav_eng_name_level_menu()
             if not text:
+                # clear old level information
+                event = Event.LEVEL(options={}, level_text=self.dgttranslate.text('N07_default', ''), level_name='')
+                Observable.fire(event)
                 retro_eng = EngineProvider.favorite_engines[self.menu_fav_engine_index]
-                if 'Online' not in str(retro_eng['name']) and 'Remote' not in str(retro_eng['name']) and 'FICS' not in str(retro_eng['name']) and 'lichess' not in str(retro_eng['name']) and 'PGN' not in str(retro_eng['name']):
-                    write_picochess_ini('engine-level', None)
                 eng_text = self.dgttranslate.text('B10_okengine')
                 event = Event.NEW_ENGINE(eng=retro_eng, eng_text=eng_text, options={}, show_ok=True)
                 Observable.fire(event)
@@ -2118,8 +2113,6 @@ class DgtMenu(object):
             if fav_level_dict:
                 msg = sorted(fav_level_dict)[self.menu_fav_engine_level]
                 options = fav_level_dict[msg]
-                if 'Online' not in str(fav_eng['name']) and 'Remote' not in str(fav_eng['name']) and 'FICS' not in str(fav_eng['name']) and 'lichess' not in str(fav_eng['name']) and 'PGN' not in str(fav_eng['name']):
-                    write_picochess_ini('engine-level', msg)
                 event = Event.LEVEL(options={}, level_text=self.dgttranslate.text('B10_level', msg), level_name=msg)
                 Observable.fire(event)
             else:
@@ -2142,6 +2135,7 @@ class DgtMenu(object):
                 self.retrospeed_factor = round(float(retrospeed) / 100, 2)
                 self.res_engine_retrospeed = self.retrospeed_factor
             write_picochess_ini('rspeed', self.retrospeed_factor)
+            self._fire_event(Event.PICOCOMMENT(picocomment='RSPEED'))
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okrspeed'))
 
         elif self.state == MenuState.ENGINE:
@@ -2250,6 +2244,7 @@ class DgtMenu(object):
             language = langs[self.menu_system_language]
             self.dgttranslate.set_language(language)
             write_picochess_ini('language', language)
+            self._fire_event(Event.PICOCOMMENT(picocomment='ok'))
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_oklang'))
 
         elif self.state == MenuState.SYS_LOG:
@@ -2259,6 +2254,7 @@ class DgtMenu(object):
                 text = self._fire_dispatchdgt(self.dgttranslate.text('B10_oklogfile'))
             else:
                 text = self._fire_dispatchdgt(self.dgttranslate.text('B10_nofunction'))
+            self._fire_event(Event.PICOCOMMENT(picocomment='ok'))
 
         elif self.state == MenuState.SYS_VOICE:
             if self.menu_system_voice == Voice.USER:
@@ -2410,6 +2406,7 @@ class DgtMenu(object):
         elif self.state == MenuState.SYS_DISP_PONDER_INTERVAL:
             # do action!
             write_picochess_ini('ponder-interval', self.menu_system_display_ponderinterval)
+            self._fire_event(Event.PICOCOMMENT(picocomment='ok'))
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okponder'))
 
         elif self.state == MenuState.SYS_DISP_CAPITAL:
@@ -2423,6 +2420,7 @@ class DgtMenu(object):
             elif 'enable-capital-letters' in config:
                 del config['enable-capital-letters']
             config.write()
+            self._fire_event(Event.PICOCOMMENT(picocomment='ok'))
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okcapital'))
 
         elif self.state == MenuState.SYS_DISP_NOTATION:
@@ -2436,6 +2434,7 @@ class DgtMenu(object):
             elif 'disable-short-notation' in config:
                 del config['disable-short-notation']
             config.write()
+            self._fire_event(Event.PICOCOMMENT(picocomment='ok'))
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_oknotation'))
 
         elif self.state == MenuState.SYS_EBOARD:
@@ -2447,6 +2446,7 @@ class DgtMenu(object):
             eboard_type = eboards[self.menu_system_eboard_type]
             write_picochess_ini('board-type', eboard_type)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okeboard'))
+            self._fire_event(Event.PICOCOMMENT(picocomment='ok'))
             if eboard_type != self.board_type:
                 # only reboot if e-board type is different from the current e-board type
                 self._fire_event(Event.REBOOT(dev='menu'))
@@ -2459,6 +2459,7 @@ class DgtMenu(object):
             theme_type = themes[self.menu_system_theme_type]
             write_picochess_ini('theme', theme_type)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_oktheme'))
+            self._fire_event(Event.PICOCOMMENT(picocomment='ok'))
             if theme_type != self.theme_type:
                 # only reboot if theme type is different from the current theme type
                 self._fire_event(Event.REBOOT(dev='menu'))
@@ -2756,8 +2757,6 @@ class DgtMenu(object):
             self.menu_engine_retrospeed_idx = (self.menu_engine_retrospeed_idx - 1) % len(self.retrospeed_list)
             if self.retrospeed_list[self.menu_engine_retrospeed_idx] == 'max.':
                 l_speed = self.retrospeed_list[self.menu_engine_retrospeed_idx]
-            elif self.retrospeed_list[self.menu_engine_retrospeed_idx] == '100':
-                l_speed = 'orig.'
             else:
                 l_speed = self.retrospeed_list[self.menu_engine_retrospeed_idx] + '%'
             text = self.dgttranslate.text('B00_retrospeed', l_speed)
@@ -3262,8 +3261,6 @@ class DgtMenu(object):
             self.menu_engine_retrospeed_idx = (self.menu_engine_retrospeed_idx + 1) % len(self.retrospeed_list)
             if self.retrospeed_list[self.menu_engine_retrospeed_idx] == 'max.':
                 l_speed = self.retrospeed_list[self.menu_engine_retrospeed_idx]
-            elif self.retrospeed_list[self.menu_engine_retrospeed_idx] == '100':
-                l_speed = 'orig.'
             else:
                 l_speed = self.retrospeed_list[self.menu_engine_retrospeed_idx] + '%'
             text = self.dgttranslate.text('B00_retrospeed', l_speed)

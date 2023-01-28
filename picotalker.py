@@ -932,7 +932,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                     self.talk(['picotutor_ok.ogg'])
 
                 elif isinstance(message, Message.PICOCOMMENT):
-                    self.talk(['picotutor_ok.ogg'])
+                    self.talk(['ok.ogg'])
 
                 elif isinstance(message, Message.SAVE_GAME):
                     self.talk(['save_game.ogg'])

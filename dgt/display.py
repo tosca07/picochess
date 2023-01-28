@@ -64,7 +64,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         result_list = []
         result = ''
         if Rev2Info.get_web_only():
-            text_length = 35
+            text_length = 30
         else:
             text_length = 0
             if Rev2Info.get_new_rev2_mode():

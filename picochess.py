@@ -147,7 +147,10 @@ class PicochessState:
         self.dgttranslate = None
         self.done_computer_fen = None
         self.done_move = chess.Move.null()
-        self.engine_text = ''
+        self.engine_text = None
+        self.engine_level = ''
+        self.new_engine_level = ''
+        self.old_engine_level = ''
         self.error_fen = None
         self.fen_timer = None
         self.fen_timer_running = False
@@ -765,6 +768,11 @@ def main() -> None:
             else:
                 l_pico_node = 0
 
+            if l_game_pgn.headers['PicoRSpeed']:
+                l_pico_rspeed = float(l_game_pgn.headers['PicoRSpeed'])
+            else:
+                l_pico_rspeed = 1.0
+
             if l_game_pgn.headers['PicoTimeControl']:
                 l_pico_tc = str(l_game_pgn.headers['PicoTimeControl'])
                 state.time_control, time_text = state.transfer_time(l_pico_tc.split(), depth=l_pico_depth, node=l_pico_node)
@@ -1271,6 +1279,7 @@ def main() -> None:
                                                 state.game.turn == chess.WHITE))
 
     def update_elo_display(state):
+        DisplayMsg.show(Message.SYSTEM_INFO(info={'rspeed': state.dgtmenu.get_engine_rspeed()}))
         if engine.is_adaptive:
             DisplayMsg.show(Message.SYSTEM_INFO(
                 info={'user_elo': int(state.rating.rating), 'engine_elo': engine.engine_rating}))
@@ -2136,24 +2145,29 @@ def main() -> None:
     if args.pgn_elo and args.pgn_elo.isnumeric() and args.rating_deviation:
         state.rating = Rating(float(args.pgn_elo), float(args.rating_deviation))
     args.engine_level = None if args.engine_level == 'None' else args.engine_level
+    if args.engine_level == '""':
+        args.engine_level = None
     engine_opt, level_index = get_engine_level_dict(args.engine_level)
     engine.startup(engine_opt, state.rating)
 
     # Startup - external
-    level_name = args.engine_level
-    if level_name:
-        level_text = state.dgttranslate.text('B00_level', level_name)
+    state.engine_level = args.engine_level
+    state.old_engine_level = state.engine_level
+    state.new_engine_level = state.engine_level
+
+    if state.engine_level:
+        level_text = state.dgttranslate.text('B00_level', state.engine_level)
         level_text.beep = False
     else:
         level_text = None
-        level_name = ''
+        state.engine_level = ''
 
-    sys_info = {'version': version, 'engine_name': engine_name, 'user_name': user_name, 'user_elo': args.pgn_elo}
+    sys_info = {'version': version, 'engine_name': engine_name, 'user_name': user_name, 'user_elo': args.pgn_elo, 'rspeed': round(float(args.rspeed), 2)}
 
     DisplayMsg.show(Message.SYSTEM_INFO(info=sys_info))
     DisplayMsg.show(Message.STARTUP_INFO(info={'interaction_mode': state.interaction_mode, 'play_mode': state.play_mode,
                                                'books': all_books, 'book_index': book_index,
-                                               'level_text': level_text, 'level_name': level_name,
+                                               'level_text': level_text, 'level_name': state.engine_level,
                                                'tc_init': state.time_control.get_parameters(), 'time_text': time_text}))
 
     # engines setup
@@ -2198,7 +2212,7 @@ def main() -> None:
 
     state.dgtmenu.set_state_current_engine(engine_file)
     text: Dgt.DISPLAY_TEXT = state.dgtmenu.get_current_engine_name()
-    state.engine_text = str(text.large_text)
+    state.engine_text = text
     state.dgtmenu.enter_top_menu()
 
     # Event loop
@@ -2229,17 +2243,14 @@ def main() -> None:
             elif isinstance(event, Event.LEVEL):
                 if event.options:
                     engine.startup(event.options, state.rating)
+                state.new_engine_level = event.level_name
                 DisplayMsg.show(Message.LEVEL(level_text=event.level_text, level_name=event.level_name,
                                               do_speak=bool(event.options)))
-                state.stop_fen_timer()
 
             elif isinstance(event, Event.NEW_ENGINE):
-
                 old_file = engine.get_file()
                 old_options = {}
-                raw_options = engine.get_options()
-                for name, value in raw_options.items():  # transfer Option to string by using the "default" value
-                    old_options[name] = str(value.default)
+                old_options = engine.get_pgn_options()
                 engine_fallback = False
                 # Stop the old engine cleanly
                 if not emulation_mode():
@@ -2266,10 +2277,11 @@ def main() -> None:
                                 logging.info('molli: Remote Mac/UNIX Connection')
                                 uci_remote_shell = UciShell(hostname=args.engine_remote_server, username=args.engine_remote_user, key_file=args.engine_remote_key, password=args.engine_remote_pass)
                     else:
-                        time.sleep(1)
+                        engine_fallback = True
                         DisplayMsg.show(Message.ONLINE_FAILED())
-                        time.sleep(1)
+                        time.sleep(2)
                         DisplayMsg.show(Message.REMOTE_FAIL())
+                        time.sleep(2)
 
                 if engine.quit():
                     # Load the new one and send args.
@@ -2311,7 +2323,7 @@ def main() -> None:
                         engine_fallback = True
                         if engine.quit():
                             if remote_engine_mode() and flag_eng and uci_remote_shell:
-                                engine = UciEngine(file=old_file, uci_shell=uci_remote_shell,
+                                engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell,
                                                    retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
                             else:
                                 engine = UciEngine(file=old_file, uci_shell=uci_local_shell,
@@ -2389,10 +2401,18 @@ def main() -> None:
                         msg = Message.ENGINE_FAIL()
                         # molli: in case of engine fail, set correct old engine display settings
                         for index in range(0, len(EngineProvider.installed_engines)):
-                            logging.debug('EngineProvider.installed_engines:%s', EngineProvider.installed_engines[index]['file'])
                             if EngineProvider.installed_engines[index]['file'] == old_file:
                                 logging.debug('molli index:%s', str(index))
                                 state.dgtmenu.set_engine_index(index)
+                        # in case engine fails, reset level as well
+                        if state.old_engine_level:
+                            level_text = state.dgttranslate.text('B00_level', state.old_engine_level)
+                            level_text.beep = False
+                        else:
+                            level_text = None
+                        DisplayMsg.show(Message.LEVEL(level_text=level_text, level_name=state.old_engine_level,
+                                                      do_speak=False))
+                        state.new_engine_level = state.old_engine_level
                     else:
                         state.searchmoves.reset()
                         msg = Message.ENGINE_READY(eng=event.eng, engine_name=engine_name,
@@ -2405,16 +2425,21 @@ def main() -> None:
                     set_wait_state(msg, state, not engine_fallback)
                     if state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):   # engine isnt started/searching => stop the clock
                         state.stop_clock()
-                    state.engine_text = state.dgtmenu.get_current_engine_name().large_text
+                    state.engine_text = state.dgtmenu.get_current_engine_name()
                     state.dgtmenu.exit_menu()
                 else:
                     logging.error('engine shutdown failure')
                     DisplayMsg.show(Message.ENGINE_FAIL())
 
+                state.old_engine_level = state.new_engine_level
+                state.engine_level = state.new_engine_level
+                state.dgtmenu.set_state_current_engine(engine_file)
+                state.dgtmenu.exit_menu()
                 # here dont care if engine supports pondering, cause Mode.NORMAL from startup
                 if not remote_engine_mode() and not online_mode() and not pgn_mode() and not engine_fallback:
-                    # dont write engine(_level) if remote/online engine or engine failure # wd
+                    # dont write engine(_level) if remote/online engine or engine failure
                     write_picochess_ini('engine', event.eng['file'])
+                    write_picochess_ini('engine-level', state.engine_level)
 
                 if pgn_mode():
                     if not flag_last_engine_pgn:
@@ -3283,7 +3308,30 @@ def main() -> None:
                 DisplayMsg.show(Message.PICOEXPLORER(picoexplorer=event.picoexplorer))
 
             elif isinstance(event, Event.PICOCOMMENT):
+                if event.picocomment == 'RSPEED' and emulation_mode():
+                    # restart engine with new retro speed
+                    old_options = engine.get_pgn_options()
+                    DisplayMsg.show(Message.ENGINE_SETUP())
+                    if engine.quit():
+                        engine = UciEngine(file=engine_file, uci_shell=uci_local_shell,
+                                           retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
+                        engine.startup(old_options, state.rating)
+                        stop_search_and_clock()
+                        state.game = chess.Board()
+                        state.game.turn = chess.WHITE
+                        state.play_mode = PlayMode.USER_WHITE
+                        engine.newgame(state.game.copy())
+                        state.done_computer_fen = None
+                        state.done_move = state.pb_move = chess.Move.null()
+                        state.searchmoves.reset()
+                        state.game_declared = False
+                        state.legal_fens = compute_legal_fens(state.game.copy())
+                        state.last_legal_fens = []
+                        state.legal_fens_after_cmove = []
+                        is_out_of_time_already = False
+                        engine_mode()
                 DisplayMsg.show(Message.PICOCOMMENT(picocomment=event.picocomment))
+                update_elo_display(state)
 
             elif isinstance(event, Event.SET_TIME_CONTROL):
                 state.time_control.stop_internal(log=False)

@@ -401,16 +401,30 @@ class WebDisplay(DisplayMsg, threading.Thread):
         pgn_game.headers['Round'] = '?'
         pgn_game.headers['White'] = '?'
         pgn_game.headers['Black'] = '?'
+        pgn_game.headers['PicoRSpeed'] = '1.0'
 
         user_name = 'User'
         engine_name = 'Picochess'
         user_elo = '-'
         comp_elo = 2500
+        rspeed = 1
+        retro_speed = 100
+        retro_speed_str = ''
+
         if 'system_info' in self.shared:
             if 'user_name' in self.shared['system_info']:
                 user_name = self.shared['system_info']['user_name']
             if 'engine_name' in self.shared['system_info']:
                 engine_name = self.shared['system_info']['engine_name']
+            if 'rspeed' in self.shared['system_info']:
+                rspeed = self.shared['system_info']['rspeed']
+                retro_speed = int(100 * round(float(rspeed), 2))
+                if 'mame' in engine_name or 'MAME' in engine_name or 'mess' in engine_name or 'MESS' in engine_name:
+                    retro_speed_str = ' (' + str(retro_speed) + '%' + ')'
+                    if retro_speed < 20:
+                        retro_speed_str = ' (full speed)'
+                else:
+                    retro_speed_str = ''
             if 'user_elo' in self.shared['system_info']:
                 user_elo = self.shared['system_info']['user_elo']
             if 'engine_elo' in self.shared['system_info']:
@@ -420,6 +434,8 @@ class WebDisplay(DisplayMsg, threading.Thread):
             if 'level_text' in self.shared['game_info']:
                 text: Dgt.DISPLAY_TEXT = self.shared['game_info']['level_text']
                 engine_level = ' ({0})'.format(text.large_text)
+                if text.large_text == '' or text.large_text == ' ':
+                    engine_level = ''
             else:
                 engine_level = ''
             if 'level_name' in self.shared['game_info']:
@@ -430,11 +446,11 @@ class WebDisplay(DisplayMsg, threading.Thread):
             if 'play_mode' in self.shared['game_info']:
                 if self.shared['game_info']['play_mode'] == PlayMode.USER_WHITE:
                     pgn_game.headers['White'] = user_name
-                    pgn_game.headers['Black'] = engine_name + engine_level
+                    pgn_game.headers['Black'] = engine_name + engine_level + retro_speed_str
                     pgn_game.headers['WhiteElo'] = user_elo
                     pgn_game.headers['BlackElo'] = comp_elo
                 else:
-                    pgn_game.headers['White'] = engine_name + engine_level
+                    pgn_game.headers['White'] = engine_name + engine_level + retro_speed_str
                     pgn_game.headers['Black'] = user_name
                     pgn_game.headers['WhiteElo'] = comp_elo
                     pgn_game.headers['BlackElo'] = user_elo
@@ -506,6 +522,8 @@ class WebDisplay(DisplayMsg, threading.Thread):
             self.shared['system_info'].update(message.info)
             if 'engine_name' in self.shared['system_info']:
                 self.shared['system_info']['old_engine'] = self.shared['system_info']['engine_name']
+            if 'rspeed' in self.shared['system_info']:
+                self.shared['system_info']['rspeed_orig'] = self.shared['system_info']['rspeed']
             if 'user_name' in self.shared['system_info']:
                 self.shared['system_info']['user_name_orig'] = self.shared['system_info']['user_name']
             _build_headers()

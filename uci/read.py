@@ -23,6 +23,7 @@ from dgt.api import Dgt
 
 
 def read_engine_ini(engine_shell=None, engine_path=None, filename=None):
+    l_web_text = ''
     """Read engine.ini and create a library list out of it."""
     if filename is None:
         filename = 'engines.ini'
@@ -64,7 +65,8 @@ def read_engine_ini(engine_shell=None, engine_path=None, filename=None):
                     level_dict[p_section][option] = parser[p_section][option]
 
         confsect = config[section]
-        text = Dgt.DISPLAY_TEXT(web_text=confsect['large'], large_text=confsect['large'], medium_text=confsect['medium'], small_text=confsect['small'], wait=True, beep=False,
+        l_web_text = confsect['web'] if 'web' in confsect else confsect['large']
+        text = Dgt.DISPLAY_TEXT(web_text=l_web_text, large_text=confsect['large'], medium_text=confsect['medium'], small_text=confsect['small'], wait=True, beep=False,
                                 maxtime=0, devs={'ser', 'i2c', 'web'})
         library.append(
             {

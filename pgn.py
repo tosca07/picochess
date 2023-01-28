@@ -262,6 +262,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         self.old_engine = '?'
         self.user_name = '?'
         self.user_name_orig = '?'
+        self.rspeed = '1.0'
         self.location = '?'
         self.level_text: Optional[Dgt.DISPLAY_TEXT] = None
         self.level_name = ''
@@ -350,8 +351,13 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         l_tc_init = message.tc_init
         l_timectrl = TimeControl(**l_tc_init)
 
-        pgn_game.headers['PicoDepth'] = str(l_timectrl.depth)
-        pgn_game.headers['PicoNode'] = str(l_timectrl.node)
+        if l_timectrl.depth > 0:
+            pgn_game.headers['PicoDepth'] = str(l_timectrl.depth)
+        if l_timectrl.node > 0:
+            pgn_game.headers['PicoNode'] = str(l_timectrl.node)
+        if 'mame' in self.engine_name or 'mess' in self.engine_name or 'MAME' in self.engine_name or 'MESS' in self.engine_name:
+            rspeed_str = str(round(float(self.rspeed), 2))
+            pgn_game.headers['PicoRSpeed'] = rspeed_str
 
         # Timecontrol
 
@@ -426,7 +432,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         if pgn_game.headers['Result'] == '*':
             pgn_game.headers['Result'] = ModeInfo.get_game_ending()
 
-        if self.level_text is None:
+        if self.level_text.large_text is None or self.level_text.large_text == '' or self.level_text.large_text == '""':
             engine_level = ''
         else:
             engine_level = ' ({})'.format(self.level_text.large_text)
@@ -483,8 +489,13 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         l_tc_init = message.tc_init
         l_timectrl = TimeControl(**l_tc_init)
 
-        pgn_game.headers['PicoDepth'] = str(l_timectrl.depth)
-        pgn_game.headers['PicoNode'] = str(l_timectrl.node)
+        if l_timectrl.depth > 0:
+            pgn_game.headers['PicoDepth'] = str(l_timectrl.depth)
+        if l_timectrl.node > 0:
+            pgn_game.headers['PicoNode'] = str(l_timectrl.node)
+        if 'mame' in self.engine_name or 'mess' in self.engine_name or 'MAME' in self.engine_name or 'MESS' in self.engine_name:
+            rspeed_str = str(round(float(self.rspeed), 2))
+            pgn_game.headers['PicoRSpeed'] = rspeed_str
 
         # Timecontrol
         if l_timectrl.moves_to_go_orig > 0:
@@ -546,6 +557,8 @@ class PgnDisplay(DisplayMsg, threading.Thread):
                 self.user_name_orig = message.info['user_name']
             if 'user_elo' in message.info:
                 self.user_elo = message.info['user_elo']
+            if 'rspeed' in message.info:
+                self.rspeed = message.info['rspeed']
 
         elif isinstance(message, Message.IP_INFO):
             self.location = message.info['location']
