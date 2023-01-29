@@ -768,11 +768,6 @@ def main() -> None:
             else:
                 l_pico_node = 0
 
-            if l_game_pgn.headers['PicoRSpeed']:
-                l_pico_rspeed = float(l_game_pgn.headers['PicoRSpeed'])
-            else:
-                l_pico_rspeed = 1.0
-
             if l_game_pgn.headers['PicoTimeControl']:
                 l_pico_tc = str(l_game_pgn.headers['PicoTimeControl'])
                 state.time_control, time_text = state.transfer_time(l_pico_tc.split(), depth=l_pico_depth, node=l_pico_node)
