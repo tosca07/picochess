@@ -70,6 +70,8 @@ class TopLoop(object):
 class Game(MyEnum):
     """Game Class."""
 
+    NEW = 'B00_game_new_menu'
+    TAKEBACK = 'B00_game_takeback_menu'
     SAVE = 'B00_game_save_menu'
     READ = 'B00_game_read_menu'
     ALTMOVE = 'B00_game_altmove_menu'
@@ -77,7 +79,7 @@ class Game(MyEnum):
 
     @classmethod
     def items(cls):
-        return [Game.SAVE, Game.READ, Game.ALTMOVE, Game.CONTLAST]
+        return [Game.NEW, Game.TAKEBACK, Game.SAVE, Game.READ, Game.ALTMOVE, Game.CONTLAST]
 
 
 class GameLoop(object):
@@ -401,10 +403,11 @@ class EBoard(MyEnum):
     CHESSLINK = 'B00_eboard_chesslink_menu'
     CHESSNUT = 'B00_eboard_chessnut_menu'
     DGT = 'B00_eboard_dgt_menu'
+    NOEBOARD = 'B00_eboard_noeboard_menu'
 
     @classmethod
     def items(cls):
-        return [EBoard.CERTABO, EBoard.CHESSLINK, EBoard.CHESSNUT, EBoard.DGT]
+        return [EBoard.CERTABO, EBoard.CHESSLINK, EBoard.CHESSNUT, EBoard.DGT, EBoard.NOEBOARD]
 
 
 class EBoardLoop(object):

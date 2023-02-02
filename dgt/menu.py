@@ -137,6 +137,9 @@ class MenuState(object):
     PICOTUTOR_PICOCOMMENT_ON_ALL = 843000
 
     GAME = 900000
+    GAME_GAMENEW = 905000
+    GAME_GAMENEW_YESNO = 905100
+    GAME_GAMETAKEBACK = 906000
     GAME_GAMESAVE = 910000
     GAME_GAMESAVE_GAME1 = 911000
     GAME_GAMESAVE_GAME2 = 912000
@@ -179,11 +182,13 @@ class DgtMenu(object):
         self.menu_picotutor_picoexplorer = picoexplorer
         self.menu_picotutor_picocomment = picocomment
 
-        self.menu_game = Game.SAVE
+        self.menu_game = Game.NEW
         self.menu_game_save = GameSave.GAME1
         self.menu_game_read = GameRead.GAMELAST
         self.menu_game_altmove = altmove
         self.menu_game_contlast = contlast
+
+        self.menu_game_new = False
 
         self.menu_system_display_confirm = disable_confirm
         self.menu_system_display_ponderinterval = ponder_interval
@@ -261,7 +266,7 @@ class DgtMenu(object):
 
         self.board_type = board_type
         eboards = {'certabo': EBoard.CERTABO, 'chesslink': EBoard.CHESSLINK, 'chessnut': EBoard.CHESSNUT,
-                   'dgt': EBoard.DGT}
+                   'dgt': EBoard.DGT, 'noeboard': EBoard.NOEBOARD}
         self.menu_system_eboard_type = eboards[board_type]
 
         self.theme_type = theme_type
@@ -826,6 +831,25 @@ class DgtMenu(object):
         self.state = MenuState.GAME_GAMEALTMOVE_ONOFF
         msg = 'on' if self.menu_game_altmove else 'off'
         text = self.dgttranslate.text('B00_game_altmove_' + msg)
+        return text
+
+    def enter_game_new_menu(self):
+        """Set the NEW state."""
+        self.state = MenuState.GAME_GAMENEW
+        text = self.dgttranslate.text('B00_game_new_menu')
+        return text
+
+    def enter_game_takeback_menu(self):
+        """Set the TAKEBACK state."""
+        self.state = MenuState.GAME_GAMETAKEBACK
+        text = self.dgttranslate.text('B00_game_takeback_menu')
+        return text
+
+    def enter_game_new_yesno_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.GAME_GAMENEW_YESNO
+        msg = 'yes' if self.menu_game_new else 'no'
+        text = self.dgttranslate.text('B00_game_new_' + msg)
         return text
 
     def enter_pos_menu(self):
@@ -1674,6 +1698,15 @@ class DgtMenu(object):
         elif self.state == MenuState.GAME_GAMEALTMOVE_ONOFF:
             text = self.enter_game_altmove_menu()
 
+        elif self.state == MenuState.GAME_GAMENEW:
+            text = self.enter_game_menu()
+
+        elif self.state == MenuState.GAME_GAMETAKEBACK:
+            text = self.enter_game_menu()
+
+        elif self.state == MenuState.GAME_GAMENEW_YESNO:
+            text = self.enter_game_new_menu()
+
         elif self.state == MenuState.GAME_GAMECONTLAST:
             text = self.enter_game_menu()
 
@@ -1722,6 +1755,10 @@ class DgtMenu(object):
                 text = self._fire_event(event)
 
         elif self.state == MenuState.GAME:
+            if self.menu_game == Game.NEW:
+                text = self.enter_game_new_menu()
+            if self.menu_game == Game.TAKEBACK:
+                text = self.enter_game_takeback_menu()
             if self.menu_game == Game.SAVE:
                 text = self.enter_game_gamesave_menu()
             if self.menu_game == Game.READ:
@@ -1748,6 +1785,23 @@ class DgtMenu(object):
                 text = self.enter_game_gameread_game2_menu()
             if self.menu_game_read == GameRead.GAME3:
                 text = self.enter_game_gameread_game3_menu()
+
+        elif self.state == MenuState.GAME_GAMENEW:
+            text = self.enter_game_new_yesno_menu()
+
+        elif self.state == MenuState.GAME_GAMETAKEBACK:
+            # do action!
+            self._fire_event(Event.TAKE_BACK(take_back='TAKEBACK'))
+            text = self._fire_dispatchdgt(self.dgttranslate.text('B10_oktakeback'))
+
+        elif self.state == MenuState.GAME_GAMENEW_YESNO:
+            # do action!
+            # NEW_GAME EVENT
+            if self.menu_game_new:
+                pos960 = 518
+                Observable.fire(Event.NEW_GAME(pos960=pos960))
+            text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okgamenew'))
+            self._fire_event(Event.PICOCOMMENT(picocomment='ok'))
 
         elif self.state == MenuState.GAME_GAMEALTMOVE:
             text = self.enter_game_altmove_onoff_menu()
@@ -2135,7 +2189,7 @@ class DgtMenu(object):
                 self.retrospeed_factor = round(float(retrospeed) / 100, 2)
                 self.res_engine_retrospeed = self.retrospeed_factor
             write_picochess_ini('rspeed', self.retrospeed_factor)
-            self._fire_event(Event.PICOCOMMENT(picocomment='RSPEED'))
+            self._fire_event(Event.RSPEED(rspeed=self.retrospeed_factor))
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okrspeed'))
 
         elif self.state == MenuState.ENGINE:
@@ -2442,7 +2496,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_EBOARD_TYPE:
             eboards = {EBoard.CERTABO: 'certabo', EBoard.CHESSLINK: 'chesslink', EBoard.CHESSNUT: 'chessnut',
-                       EBoard.DGT: 'dgt'}
+                       EBoard.DGT: 'dgt', EBoard.NOEBOARD: 'noeboard'}
             eboard_type = eboards[self.menu_system_eboard_type]
             write_picochess_ini('board-type', eboard_type)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okeboard'))
@@ -2477,10 +2531,25 @@ class DgtMenu(object):
             self.menu_top = TopLoop.prev(self.menu_top)
             text = self.dgttranslate.text(self.menu_top.value)
 
-        elif self.state == MenuState.GAME_GAMESAVE:
+        elif self.state == MenuState.GAME_GAMENEW:
             self.state = MenuState.GAME_GAMECONTLAST
             self.menu_game = GameLoop.prev(self.menu_game)
             text = self.dgttranslate.text(self.menu_game.value)
+
+        elif self.state == MenuState.GAME_GAMETAKEBACK:
+            self.state = MenuState.GAME_GAMENEW
+            self.menu_game = GameLoop.prev(self.menu_game)
+            text = self.dgttranslate.text(self.menu_game.value)
+
+        elif self.state == MenuState.GAME_GAMESAVE:
+            self.state = MenuState.GAME_GAMETAKEBACK
+            self.menu_game = GameLoop.prev(self.menu_game)
+            text = self.dgttranslate.text(self.menu_game.value)
+
+        elif self.state == MenuState.GAME_GAMENEW_YESNO:
+            self.menu_game_new = not self.menu_game_new
+            msg = 'yes' if self.menu_game_new else 'no'
+            text = self.dgttranslate.text('B00_game_new_' + msg)
 
         elif self.state == MenuState.GAME_GAMESAVE_GAME1:
             self.state = MenuState.GAME_GAMESAVE_GAME3
@@ -3027,6 +3096,21 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_game_read.value)
 
         elif self.state == MenuState.GAME_GAMECONTLAST:
+            self.state = MenuState.GAME_GAMENEW
+            self.menu_game = GameLoop.next(self.menu_game)
+            text = self.dgttranslate.text(self.menu_game.value)
+
+        elif self.state == MenuState.GAME_GAMENEW:
+            self.state = MenuState.GAME_GAMETAKEBACK
+            self.menu_game = GameLoop.next(self.menu_game)
+            text = self.dgttranslate.text(self.menu_game.value)
+
+        elif self.state == MenuState.GAME_GAMENEW_YESNO:
+            self.menu_game_new = not self.menu_game_new
+            msg = 'yes' if self.menu_game_new else 'no'
+            text = self.dgttranslate.text('B00_game_new_' + msg)
+
+        elif self.state == MenuState.GAME_GAMETAKEBACK:
             self.state = MenuState.GAME_GAMESAVE
             self.menu_game = GameLoop.next(self.menu_game)
             text = self.dgttranslate.text(self.menu_game.value)

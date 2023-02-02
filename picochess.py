@@ -1968,7 +1968,7 @@ def main() -> None:
     parser.add_argument('-dtcs', '--def-timectrl', type=str, default='5 0', help='default time control setting when leaving an emulation engine after startup')
     parser.add_argument('-altm', '--alt-move', action='store_true', help='Playing direct alternative move for pico: default is off')
     parser.add_argument('-odec', '--online-decrement', type=float, default=2.0, help='Seconds to be subtracted after each own online move in order to sync with server times')
-    parser.add_argument('-board', '--board-type', type=str, default='dgt', help='Type of e-board: "dgt", "certabo", "chesslink" or "chessnut", default is "dgt"')
+    parser.add_argument('-board', '--board-type', type=str, default='dgt', help='Type of e-board: "dgt", "certabo", "chesslink", "chessnut" or "noeboard" (for basic web-play only), default is "dgt"')
     parser.add_argument('-theme', '--theme', type=str, default='dark', help='Web theme, "light", "dark" , "auto" or blank, default is "dark", leave blank for another light theme, or auto for a sunrise/sunset dependent theme setting')
     parser.add_argument('-rspeed', '--rspeed', type=str, default='1.0', help='RetroSpeed factor for mame eingines, 0.0 for fullspeed, 1.0 for original speed, 0.5 for half of the original speed or any other value from 0.0 to 7.0')
     parser.add_argument('-ratdev', '--rating-deviation', type=str, help='Player rating deviation for automatic adjustment of ELO', default=350)
@@ -2052,8 +2052,8 @@ def main() -> None:
         WebServer(args.web_server_port, dgtboard, calc_theme(args.theme, state.set_location)).start()
         dgtdispatcher.register('web')
 
-    if args.enable_console:
-        logging.debug('starting PicoChess in console mode')
+    if args.board_type.lower() == 'noeboard':
+        logging.debug('starting PicoChess in no eboard mode')
     else:
         # Connect to DGT board
         logging.debug('starting PicoChess in board mode')
@@ -2165,6 +2165,7 @@ def main() -> None:
                                                'level_text': level_text, 'level_name': state.engine_level,
                                                'tc_init': state.time_control.get_parameters(), 'time_text': time_text}))
 
+    DisplayMsg.show(Message.ENGINE_SETUP())
     # engines setup
     DisplayMsg.show(Message.ENGINE_STARTUP(installed_engines=EngineProvider.installed_engines, file=engine.get_file(), level_index=level_index, has_960=engine.has_chess960(), has_ponder=engine.has_ponder()))
     update_elo_display(state)
@@ -2184,8 +2185,6 @@ def main() -> None:
     else:
         ModeInfo.set_pgn_mode(mode=False)
 
-    DisplayMsg.show(Message.ENGINE_SETUP())
-
     if online_mode():
         ModeInfo.set_online_mode(mode=True)
         set_wait_state(Message.START_NEW_GAME(game=state.game.copy(), newgame=True), state)
@@ -2193,15 +2192,11 @@ def main() -> None:
         ModeInfo.set_online_mode(mode=False)
         engine.newgame(state.game.copy())
 
+    DisplayMsg.show(Message.PICOCOMMENT(picocomment='ok'))
+
     state.comment_file = get_comment_file()
     state.picotutor = PicoTutor(i_engine_path=tutor_engine, i_comment_file=state.comment_file, i_lang=args.language)
     state.picotutor.set_status(state.dgtmenu.get_picowatcher(), state.dgtmenu.get_picocoach(), state.dgtmenu.get_picoexplorer(), state.dgtmenu.get_picocomment())
-
-    if picotutor_mode(state):
-        t_eval_str = 'ACTIVE'
-        t_msg = Message.PICOTUTOR_MSG(eval_str=t_eval_str)
-        DisplayMsg.show(t_msg)
-        time.sleep(1)
 
     ModeInfo.set_game_ending(result='*')
 
@@ -2209,6 +2204,9 @@ def main() -> None:
     text: Dgt.DISPLAY_TEXT = state.dgtmenu.get_current_engine_name()
     state.engine_text = text
     state.dgtmenu.enter_top_menu()
+
+    if state.dgtmenu.get_enginename():
+        DisplayMsg.show(Message.ENGINE_NAME(engine_name=state.engine_text))
 
     # Event loop
     logging.info('evt_queue ready')
@@ -2925,18 +2923,21 @@ def main() -> None:
 
             elif isinstance(event, Event.REMOTE_MOVE):
                 flag_startup = False
-                if state.interaction_mode == Mode.REMOTE and state.is_not_user_turn():
-                    stop_search_and_clock()
-                    DisplayMsg.show(Message.COMPUTER_MOVE(move=event.move, ponder=chess.Move.null(), game=state.game.copy(),
-                                                          wait=False))
-                    game_copy = state.game.copy()
-                    game_copy.push(event.move)
-                    state.done_computer_fen = game_copy.board_fen()
-                    state.done_move = event.move
-                    state.pb_move = chess.Move.null()
-                    state.legal_fens_after_cmove = compute_legal_fens(game_copy)
+                if args.board_type.lower() == 'noeboard':
+                    user_move(event.move, sliding=True, state=state)
                 else:
-                    logging.warning('wrong function call [remote]! mode: %s turn: %s', state.interaction_mode, state.game.turn)
+                    if state.interaction_mode == Mode.REMOTE and state.is_not_user_turn():
+                        stop_search_and_clock()
+                        DisplayMsg.show(Message.COMPUTER_MOVE(move=event.move, ponder=chess.Move.null(), game=state.game.copy(),
+                                                              wait=False))
+                        game_copy = state.game.copy()
+                        game_copy.push(event.move)
+                        state.done_computer_fen = game_copy.board_fen()
+                        state.done_move = event.move
+                        state.pb_move = chess.Move.null()
+                        state.legal_fens_after_cmove = compute_legal_fens(game_copy)
+                    else:
+                        logging.warning('wrong function call [remote]! mode: %s turn: %s', state.interaction_mode, state.game.turn)
 
             elif isinstance(event, Event.BEST_MOVE):
                 flag_startup = False
@@ -3147,6 +3148,94 @@ def main() -> None:
                                     state.no_guess_black = 1
                                 elif state.max_guess_white > 0 and not state.game.turn == chess.WHITE:
                                     state.no_guess_white = 1
+
+                            # molli: noeboard/WEB-Play
+                            if args.board_type.lower() == 'noeboard':
+                                logging.info('done move detected')
+                                assert state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING), 'wrong mode: %s' % state.interaction_mode
+
+                                time.sleep(2)
+                                DisplayMsg.show(Message.COMPUTER_MOVE_DONE())
+
+                                state.best_move_posted = False
+                                state.game.push(state.done_move)
+                                state.done_computer_fen = None
+                                state.done_move = chess.Move.null()
+
+                                if online_mode() or emulation_mode():
+                                    # for online or emulation engine the user time alraedy runs with move announcement
+                                    # => subtract time between announcement and execution
+                                    end_time_cmove_done = time.time()
+                                    cmove_time = math.floor(end_time_cmove_done - start_time_cmove_done)
+                                    if cmove_time > 0:
+                                        state.time_control.sub_online_time(state.game.turn, cmove_time)
+                                    cmove_time = 0
+                                    start_time_cmove_done = 0
+
+                                game_end = state.check_game_state()
+                                if game_end:
+                                    update_elo(state, game_end.result)
+                                    state.legal_fens = []
+                                    state.legal_fens_after_cmove = []
+                                    if online_mode():
+                                        stop_search_and_clock()
+                                        state.stop_fen_timer()
+                                    stop_search_and_clock()
+                                    if not pgn_mode():
+                                        DisplayMsg.show(game_end)
+                                else:
+                                    state.searchmoves.reset()
+
+                                    state.time_control.add_time(not state.game.turn)
+
+                                    # molli new tournament time control
+                                    if state.time_control.moves_to_go_orig > 0 and (state.game.fullmove_number - 1) == state.time_control.moves_to_go_orig:
+                                        state.time_control.add_game2(not state.game.turn)
+                                        t_player = False
+                                        msg = Message.TIMECONTROL_CHECK(player=t_player, movestogo=state.time_control.moves_to_go_orig, time1=state.time_control.game_time, time2=state.time_control.game_time2)
+                                        DisplayMsg.show(msg)
+
+                                    if not online_mode() or state.game.fullmove_number > 1:
+                                        state.start_clock()
+                                    else:
+                                        DisplayMsg.show(Message.EXIT_MENU())  # show clock
+                                        end_time_cmove_done = 0
+
+                                    if state.interaction_mode == Mode.BRAIN:
+                                        brain(state.game, state.time_control, state)
+
+                                    state.legal_fens = compute_legal_fens(state.game.copy())
+
+                                    if pgn_mode():
+                                        log_pgn(state)
+                                        if state.game.turn == chess.WHITE:
+                                            if state.max_guess_white > 0:
+                                                if state.no_guess_white > state.max_guess_white:
+                                                    state.last_legal_fens = []
+                                                    get_next_pgn_move(state)
+                                            else:
+                                                state.last_legal_fens = []
+                                                get_next_pgn_move(state)
+                                        elif state.game.turn == chess.BLACK:
+                                            if state.max_guess_black > 0:
+                                                if state.no_guess_black > state.max_guess_black:
+                                                    state.last_legal_fens = []
+                                                    get_next_pgn_move(state)
+                                            else:
+                                                state.last_legal_fens = []
+                                                get_next_pgn_move(state)
+
+                                state.last_legal_fens = []
+                                newgame_happened = False
+
+                                if state.game.fullmove_number < 1:
+                                    ModeInfo.reset_opening()
+                                if picotutor_mode(state) and state.dgtmenu.get_picoexplorer():
+                                    op_eco, op_name, op_moves, op_in_book = state.picotutor.get_opening()
+                                    if op_in_book and op_name:
+                                        ModeInfo.set_opening(state.book_in_use, str(op_name), op_eco)
+                                        DisplayMsg.show(Message.SHOW_TEXT(text_string=op_name))
+                            # molli end noeboard/Web-Play
                     else:
                         logging.warning('wrong function call [best]! mode: %s turn: %s', state.interaction_mode, state.game.turn)
                 else:
@@ -3302,8 +3391,8 @@ def main() -> None:
                             state.picotutor.stop()
                 DisplayMsg.show(Message.PICOEXPLORER(picoexplorer=event.picoexplorer))
 
-            elif isinstance(event, Event.PICOCOMMENT):
-                if event.picocomment == 'RSPEED' and emulation_mode():
+            elif isinstance(event, Event.RSPEED):
+                if emulation_mode():
                     # restart engine with new retro speed
                     old_options = engine.get_pgn_options()
                     DisplayMsg.show(Message.ENGINE_SETUP())
@@ -3325,8 +3414,52 @@ def main() -> None:
                         state.legal_fens_after_cmove = []
                         is_out_of_time_already = False
                         engine_mode()
+                        DisplayMsg.show(Message.RSPEED(rspeed=event.rspeed))
+                        update_elo_display(state)
+                    else:
+                        logging.error('engine shutdown failure')
+                        DisplayMsg.show(Message.ENGINE_FAIL())
+
+            elif isinstance(event, Event.TAKE_BACK):
+                if not (state.take_back_locked or online_mode() or (emulation_mode() and not state.automatic_takeback)) and state.game.move_stack:
+                    stop_search_and_clock()
+                    l_error = False
+                    try:
+                        state.game.pop()
+                        l_error = False
+                    except Exception:
+                        l_error = True
+                        logging.debug('takeback not possible!')
+
+                    if not l_error:
+                        if picotutor_mode(state):
+                            if state.best_move_posted:
+                                state.picotutor.pop_last_move()
+                                state.best_move_posted = False
+                            state.picotutor.pop_last_move()
+                        state.done_computer_fen = None
+                        state.done_move = state.pb_move = chess.Move.null()
+                        state.searchmoves.reset()
+                        state.takeback_active = True
+                        set_wait_state(Message.TAKE_BACK(game=state.game.copy()), state)
+
+                        if pgn_mode():  # molli pgn
+                            log_pgn(state)
+                            if state.max_guess_white > 0:
+                                if state.game.turn == chess.WHITE:
+                                    if state.no_guess_white > state.max_guess_white:
+                                        get_next_pgn_move(state)
+                            elif state.max_guess_black > 0:
+                                if state.game.turn == chess.BLACK:
+                                    if state.no_guess_black > state.max_guess_black:
+                                        get_next_pgn_move(state)
+
+                        if (state.game.board_fen() == chess.STARTING_BOARD_FEN):
+                            pos960 = 518
+                            Observable.fire(Event.NEW_GAME(pos960=pos960))
+
+            elif isinstance(event, Event.PICOCOMMENT):
                 DisplayMsg.show(Message.PICOCOMMENT(picocomment=event.picocomment))
-                update_elo_display(state)
 
             elif isinstance(event, Event.SET_TIME_CONTROL):
                 state.time_control.stop_internal(log=False)

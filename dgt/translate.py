@@ -959,6 +959,13 @@ class DgtTranslate(object):
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
+        if text_id == 'oktakeback':
+            entxt = Dgt.DISPLAY_TEXT(web_text='ok', large_text='ok', medium_text='ok', small_text='ok')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
         if text_id == 'top_system_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='System     ', medium_text='System  ', small_text='system')
             detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='System     ', medium_text='System  ', small_text='system')
@@ -1071,6 +1078,41 @@ class DgtTranslate(object):
             frtxt = entxt
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok leggiPar', medium_text='ok leggi', small_text='oklegg')
+        if text_id == 'game_takeback_menu':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Takeback last move', large_text='take back', medium_text='takeback', small_text='tkback')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Zugrücknahme', large_text='Ruecknahme', medium_text='Zugrueck', small_text='rueck')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'game_new_menu':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Start New Game', large_text='New Game', medium_text='New Game', small_text='newgme')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Starte eine neue Partie', large_text='Neue Partie', medium_text='neuePart', small_text='npart')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='MossaAltern', medium_text='MossaAlt', small_text='mosalt')
+        if text_id == 'game_new_yes':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Start New Game: yes', large_text='NewGame:yes', medium_text='NewG:yes', small_text='ngyes')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Starte eine neue Partie: ja', large_text='NeuePart:ja', medium_text='NeueP ja', small_text='np ja')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'game_new_no':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Start New Game: no', large_text='NewGame:no', medium_text='NewG:yes', small_text='ng no')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Starte eine neue Partie: nein', large_text='NePart nein', medium_text='NeP nein', small_text='npnein')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'okgamenew':
+            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok', medium_text='ok', small_text='ok')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
         if text_id == 'game_altmove_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='Alternative Move', large_text='Altern Move', medium_text='Alt.Move', small_text='altmov')
             detxt = Dgt.DISPLAY_TEXT(web_text='Alternativer Zug', large_text='Altern Zug ', medium_text='Alt. Zug', small_text='altzug')
@@ -1382,6 +1424,13 @@ class DgtTranslate(object):
         if text_id == 'eboard_chessnut_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Chessnut   ', medium_text='Chessnut', small_text='chesnt')
             detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'eboard_noeboard_menu':
+            entxt = Dgt.DISPLAY_TEXT(web_text='no E-Board (Web-Play)', large_text='no E-Board', medium_text='noeboard', small_text='none')
+            detxt = Dgt.DISPLAY_TEXT(web_text='kein E-Board (Web-Play)', large_text='kein EBoard', medium_text='ohneEB', small_text='ohne')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt

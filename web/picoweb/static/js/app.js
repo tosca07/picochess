@@ -1,3 +1,9 @@
+// if you don't want the last move of each player side to be "highlighted", set the variable highlight_move to
+// HIGHLIGHT_OFF
+const HIGHLIGHT_OFF = 0;
+const HIGHLIGHT_ON = 1;
+var highlight_move = HIGHLIGHT_ON;
+
 const NAG_NULL = 0;
 const NAG_GOOD_MOVE = 1;
 //"""A good move. Can also be indicated by ``!`` in PGN notation."""
@@ -136,10 +142,23 @@ var chessGameType = 0; // 0=Standard ; 1=Chess960
 var computerside = ""; // color played by the computer
 
 function removeHighlights() {
-    chessground1.setShapes([]);
+    if (highlight_move == HIGHLIGHT_ON) {
+        chessground1.set({ lastMove: [] });
+    }
 }
 
 function highlightBoard(ucimove, play) {
+    if (highlight_move == HIGHLIGHT_ON) {
+        var move = ucimove.match(/.{2}/g);
+        chessground1.set({ lastMove: [move[0], move[1]] });
+    }
+}
+
+function removeArrow() {
+    chessground1.setShapes([]);
+}
+
+function addArrow(ucimove, play) {
     var move = ucimove.match(/.{2}/g);
     var brush = 'green';
     if (play === 'computer') {
@@ -1041,6 +1060,8 @@ function newBoard(fen) {
 
     updateChessGround();
     updateStatus();
+    removeHighlights();
+    removeArrorw();
 }
 
 function clockButton0() {
@@ -1095,6 +1116,7 @@ function goToGameFen() {
 }
 
 function goToStart() {
+    removeHighlights();
     stopAnalysis();
     currentPosition = gameHistory;
     updateChessGround();
@@ -1102,6 +1124,7 @@ function goToStart() {
 }
 
 function goToEnd() {
+    removeHighlights();
     stopAnalysis();
     if (fenHash.last) {
         currentPosition = fenHash.last;
@@ -1111,6 +1134,7 @@ function goToEnd() {
 }
 
 function goForward() {
+    removeHighlights();
     stopAnalysis();
     if (currentPosition && currentPosition.variations[0]) {
         currentPosition = currentPosition.variations[0];
@@ -1122,6 +1146,7 @@ function goForward() {
 }
 
 function goBack() {
+    removeHighlights();
     stopAnalysis();
     if (currentPosition && currentPosition.previous) {
         currentPosition = currentPosition.previous;
@@ -1431,6 +1456,7 @@ function goToDGTFen() {
         if (data) {
             updateDGTPosition(data);
             highlightBoard(data.move, data.play);
+            addArrow(data.move, data.play);
         }
     }).fail(function(jqXHR, textStatus) {
         dgtClockStatusEl.html(textStatus);
@@ -1583,6 +1609,7 @@ $(function() {
                     updateDGTPosition(data);
                     if (data.play === 'reload') {
                         removeHighlights();
+                        removeArrorw();
                     }
                     if (data.play === 'user') {
                         highlightBoard(data.move, 'user');
@@ -1609,8 +1636,10 @@ $(function() {
                     computerside = tmp_move.color;
                     saymove(tmp_move, tmp_board);
                     highlightBoard(data.move, 'computer');
+                    addArrow(data.move, 'computer');
                     break;
                 case 'Clear':
+                    removeArrorw();
                     removeHighlights();
                     break;
                 case 'Header':

@@ -72,6 +72,8 @@ class EventApi():
     PICOCOACH = 'EVT_PICOCOACH'  # picocoach on/off
     PICOEXPLORER = 'EVT_PICOEXPLORER'  # picoexplorer on/off
     PICOCOMMENT = 'EVT_PICOCOMMENT'  # pico written game comments on/off/all
+    RSPEED = 'EVT_RSPEED'
+    TAKE_BACK = 'EVT_TAKE_BACK'
     READ_GAME = 'EVT_READ_GAME'
     SAVE_GAME = 'EVT_SAVE_GAME'
     CONTLAST = 'EVT_CONTLAST'
@@ -153,6 +155,7 @@ class MessageApi():
     PICOCOACH = 'MSG_PICOCOACH'  # picocoach on/off
     PICOEXPLORER = 'MSG_PICOEXPLORER'  # picoexplorer on/off
     PICOCOMMENT = 'MSG_PICOCOMMENT'  # picoexplorer on/off
+    RSPEED = 'MSG_RSPEED'
     READ_GAME = 'MSG_READ_GAME'  # read game
     SAVE_GAME = 'MSG_SAVE_GAME'  # save game
     CONTLAST = 'MSG_CONTLAST'   # continue last game
@@ -273,6 +276,7 @@ class Message():
     PICOCOACH = ClassFactory(MessageApi.PICOCOACH, ['picocoach'])
     PICOEXPLORER = ClassFactory(MessageApi.PICOEXPLORER, ['picoexplorer'])
     PICOCOMMENT = ClassFactory(MessageApi.PICOCOMMENT, ['picocomment'])
+    RSPEED = ClassFactory(MessageApi.RSPEED, ['rspeed'])
     READ_GAME = ClassFactory(MessageApi.READ_GAME, ['pgn_filename'])
     SAVE_GAME = ClassFactory(MessageApi.SAVE_GAME, ['tc_init', 'play_mode', 'game', 'pgn_filename'])
     CONTLAST = ClassFactory(MessageApi.CONTLAST, ['contlast'])
@@ -331,6 +335,8 @@ class Event():
     PICOCOACH = ClassFactory(EventApi.PICOCOACH, ['picocoach'])
     PICOEXPLORER = ClassFactory(EventApi.PICOEXPLORER, ['picoexplorer'])
     PICOCOMMENT = ClassFactory(EventApi.PICOCOMMENT, ['picocomment'])
+    TAKE_BACK = ClassFactory(EventApi.TAKE_BACK, ['take_back'])
+    RSPEED = ClassFactory(EventApi.RSPEED, ['rspeed'])
     READ_GAME = ClassFactory(EventApi.READ_GAME, ['pgn_filename'])
     SAVE_GAME = ClassFactory(EventApi.SAVE_GAME, ['pgn_filename'])
     CONTLAST = ClassFactory(EventApi.CONTLAST, ['contlast'])

@@ -994,7 +994,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
                 DispatchDgt.fire(message.book_text)
 
         elif isinstance(message, Message.TAKE_BACK):
-
+            self.take_back_move = chess.Move.null()
             game_copy = message.game.copy()
 
             self.force_leds_off()
@@ -1270,6 +1270,9 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             pass
 
         elif isinstance(message, Message.PICOCOMMENT):
+            pass
+
+        elif isinstance(message, Message.RSPEED):
             pass
 
         elif isinstance(message, Message.CONTLAST):
