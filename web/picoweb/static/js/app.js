@@ -732,12 +732,13 @@ var onSnapEnd = function(source, target) {
     var move = tmpGame.move({
         from: source,
         to: target,
-        promotion: 'q' // NOTE: always promote to a pawn for example simplicity
+        promotion: 'q' // NOTE: always promote to a queen for now
     });
 
     updateCurrentPosition(move, tmpGame);
     updateChessGround();
-    $.post('/channel', { action: 'move', fen: currentPosition.fen, source: source, target: target }, function(data) {});
+    $.post('/channel', { action: 'move', fen: currentPosition.fen, source: source, target: target,
+                         promotion: move.promotion ? move.promotion : '' }, function(data) {});
     updateStatus();
 };
 
@@ -1061,7 +1062,7 @@ function newBoard(fen) {
     updateChessGround();
     updateStatus();
     removeHighlights();
-    removeArrorw();
+    removeArrow();
 }
 
 function clockButton0() {

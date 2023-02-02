@@ -3154,7 +3154,7 @@ def main() -> None:
                                 logging.info('done move detected')
                                 assert state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING), 'wrong mode: %s' % state.interaction_mode
 
-                                time.sleep(2)
+                                time.sleep(0.5)
                                 DisplayMsg.show(Message.COMPUTER_MOVE_DONE())
 
                                 state.best_move_posted = False

@@ -85,7 +85,7 @@ class ChannelHandler(ServerRequestHandler):
             result = {'event': 'Broadcast', 'msg': 'Position from Spectators!', 'pgn': pgn_str, 'fen': fen}
             EventHandler.write_to_clients(result)
         elif action == 'move':
-            move = chess.Move.from_uci(self.get_argument('source') + self.get_argument('target'))
+            move = chess.Move.from_uci(self.get_argument('source') + self.get_argument('target') + self.get_argument('promotion'))
             Observable.fire(Event.REMOTE_MOVE(move=move, fen=self.get_argument('fen')))
         elif action == 'clockbutton':
             Observable.fire(Event.KEYBOARD_BUTTON(button=self.get_argument('button'), dev='web'))
