@@ -61,7 +61,7 @@ class CertaboBoard(EBoard):
             except queue.Empty:
                 pass
             bwait = 'Board' + waitchars[wait_counter]
-            text = self._display_text('no e-' + bwait, 'no e-' + bwait, 'no' + bwait, bwait)
+            text = self._display_text('no Certabo e-' + bwait, 'no e-' + bwait, 'no' + bwait, bwait)
             DisplayMsg.show(Message.DGT_NO_EBOARD_ERROR(text=text))
             wait_counter = (wait_counter + 1) % len(waitchars)
             time.sleep(1.0)

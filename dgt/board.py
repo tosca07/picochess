@@ -738,7 +738,7 @@ class DgtBoard(EBoard):
                     return _success('/dev/rfcomm123')
 
         bwait = 'Board' + waitchars[self.wait_counter]
-        text = Dgt.DISPLAY_TEXT(web_text='no e-' + bwait, large_text='no e-' + bwait, medium_text='no' + bwait, small_text=bwait, wait=True, beep=False, maxtime=0.1,
+        text = Dgt.DISPLAY_TEXT(web_text='no DGT e-' + bwait, large_text='no e-' + bwait, medium_text='no' + bwait, small_text=bwait, wait=True, beep=False, maxtime=0.1,
                                 devs={'i2c', 'web'})
         DisplayMsg.show(Message.DGT_NO_EBOARD_ERROR(text=text))
         self.wait_counter = (self.wait_counter + 1) % len(waitchars)
