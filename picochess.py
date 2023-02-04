@@ -757,17 +757,19 @@ def main() -> None:
         state.done_move = state.pb_move = chess.Move.null()
         state.play_mode = PlayMode.USER_WHITE if turn == chess.WHITE else PlayMode.USER_BLACK
 
+        l_pico_depth = 0
         try:
             if 'PicoDepth' in l_game_pgn.headers and l_game_pgn.headers['PicoDepth']:
                 l_pico_depth = int(l_game_pgn.headers['PicoDepth'])
         except ValueError:
-            l_pico_depth = 0
+            pass
 
+        l_pico_node = 0
         try:
             if 'PicoNode' in l_game_pgn.headers and l_game_pgn.headers['PicoNode']:
                 l_pico_node = int(l_game_pgn.headers['PicoNode'])
         except ValueError:
-            l_pico_node = 0
+            pass
 
         if 'PicoTimeControl' in l_game_pgn.headers and l_game_pgn.headers['PicoTimeControl']:
             l_pico_tc = str(l_game_pgn.headers['PicoTimeControl'])
