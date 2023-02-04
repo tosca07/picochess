@@ -700,7 +700,7 @@ def main() -> None:
             l_file_pgn = open(l_filename)
             if not l_file_pgn:
                 return
-        except Exception:
+        except OSError:
             return
 
         l_game_pgn = chess.pgn.read_game(l_file_pgn)
