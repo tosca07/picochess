@@ -253,7 +253,7 @@ class DgtTranslate(object):
         if text_id == 'position_fail':
             beep = False
             if 'clear' in msg:
-                entxt = Dgt.DISPLAY_TEXT(web_text='msg', large_text=msg, medium_text=msg, small_text=msg)
+                entxt = Dgt.DISPLAY_TEXT(web_text=msg, large_text=msg, medium_text=msg, small_text=msg)
                 text_de = 'Leere ' + msg[-2:]
                 detxt = Dgt.DISPLAY_TEXT(web_text=text_de, large_text=text_de, medium_text=text_de, small_text=text_de)
                 nltxt = entxt
