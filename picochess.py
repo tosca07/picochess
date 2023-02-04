@@ -758,31 +758,32 @@ def main() -> None:
         state.play_mode = PlayMode.USER_WHITE if turn == chess.WHITE else PlayMode.USER_BLACK
 
         try:
-            if l_game_pgn.headers['PicoDepth']:
+            if 'PicoDepth' in l_game_pgn.headers and l_game_pgn.headers['PicoDepth']:
                 l_pico_depth = int(l_game_pgn.headers['PicoDepth'])
-            else:
-                l_pico_depth = 0
+        except ValueError:
+            l_pico_depth = 0
 
-            if l_game_pgn.headers['PicoNode']:
+        try:
+            if 'PicoNode' in l_game_pgn.headers and l_game_pgn.headers['PicoNode']:
                 l_pico_node = int(l_game_pgn.headers['PicoNode'])
-            else:
-                l_pico_node = 0
+        except ValueError:
+            l_pico_node = 0
 
-            if l_game_pgn.headers['PicoTimeControl']:
-                l_pico_tc = str(l_game_pgn.headers['PicoTimeControl'])
-                state.time_control, time_text = state.transfer_time(l_pico_tc.split(), depth=l_pico_depth, node=l_pico_node)
+        if 'PicoTimeControl' in l_game_pgn.headers and l_game_pgn.headers['PicoTimeControl']:
+            l_pico_tc = str(l_game_pgn.headers['PicoTimeControl'])
+            state.time_control, time_text = state.transfer_time(l_pico_tc.split(), depth=l_pico_depth, node=l_pico_node)
 
-            if l_game_pgn.headers['PicoRemTimeW']:
+        try:
+            if 'PicoRemTimeW' in l_game_pgn.headers and l_game_pgn.headers['PicoRemTimeW']:
                 lt_white = int(l_game_pgn.headers['PicoRemTimeW'])
-            else:
-                lt_white = 0
+        except ValueError:
+            lt_white = 0
 
-            if l_game_pgn.headers['PicoRemTimeB']:
+        try:
+            if 'PicoRemTimeB' in l_game_pgn.headers and l_game_pgn.headers['PicoRemTimeB']:
                 lt_black = int(l_game_pgn.headers['PicoRemTimeB'])
-            else:
-                lt_black = 0
-        except IndexError:
-            pass
+        except ValueError:
+            lt_black = 0
 
         tc_init = state.time_control.get_parameters()
         state.tc_init_last = state.time_control.get_parameters()

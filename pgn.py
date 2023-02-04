@@ -582,13 +582,13 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             if message.mode == Mode.REMOTE:
                 self.old_engine = self.engine_name
                 self.engine_name = 'Remote Player'
-                self.level_text = ''
+                self.level_text = None
                 self.level_name = ''
             elif message.mode == Mode.OBSERVE:
                 self.old_engine = self.engine_name
                 self.engine_name = 'Player B'
                 self.user_name = 'Player A'
-                self.level_text = ''
+                self.level_text = None
                 self.level_name = ''
             else:
                 self.engine_name = self.old_engine
