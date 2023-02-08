@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from dgt.menu import DgtMenu, MenuState
 from dgt.translate import DgtTranslate
-from dgt.util import PicoComment
+from dgt.util import PicoComment, EBoard
 from uci.read import read_engine_ini
 from uci.engine_provider import EngineProvider
 
@@ -21,7 +21,7 @@ class TestDgtMenu(unittest.TestCase):
             EngineProvider.modern_engines + EngineProvider.retro_engines + EngineProvider.favorite_engines)
 
         trans = DgtTranslate('none', 0, 'en', 'version')
-        menu = DgtMenu(False, 0, '', '', 0, False, False, '', None, False, 0, 'dgt', 'dark', 1.0, False, False,
+        menu = DgtMenu(False, 0, '', '', 0, False, False, '', None, False, 0, EBoard.DGT, 'dark', 1.0, False, False,
                        False, False, False, PicoComment.COM_OFF, False, False, trans)
         return menu
 

@@ -52,6 +52,7 @@ from picotalker import PicoTalkerDisplay
 from dispatcher import Dispatcher
 
 from dgt.api import Dgt, Message, Event
+import dgt.util
 from dgt.util import GameResult, TimeMode, Mode, PlayMode, PicoComment
 from dgt.hw import DgtHw
 from dgt.pi import DgtPi
@@ -2007,12 +2008,16 @@ def main() -> None:
     state.set_location = args.location
     state.online_decrement = args.online_decrement
 
+    try:
+        board_type = dgt.util.EBoard[args.board_type.upper()]
+    except KeyError:
+        board_type = dgt.util.EBoard.DGT
     # wire some dgt classes
-    if args.board_type.lower() == 'chesslink':
+    if board_type == dgt.util.EBoard.CHESSLINK:
         dgtboard: EBoard = ChessLinkBoard()
-    elif args.board_type.lower() == 'chessnut':
+    elif board_type == dgt.util.EBoard.CHESSNUT:
         dgtboard = ChessnutBoard()
-    elif args.board_type.lower() == 'certabo':
+    elif board_type == dgt.util.EBoard.CERTABO:
         dgtboard = CertaboBoard()
     else:
         dgtboard = DgtBoard(args.dgt_port, args.disable_revelation_leds, args.dgtpi, args.disable_et, args.slow_slide)
@@ -2020,10 +2025,10 @@ def main() -> None:
     state.dgtmenu = DgtMenu(args.disable_confirm_message, args.ponder_interval,
                             args.user_voice, args.computer_voice, args.speed_voice, args.enable_capital_letters,
                             args.disable_short_notation, args.log_file, args.engine_remote_server,
-                            args.rolling_display_normal, max(0, min(10, args.volume_voice)), args.board_type, args.theme, round(float(args.rspeed), 2),
-                            args.rolling_display_ponder, args.show_engine, args.tutor_coach, args.tutor_watcher,
-                            args.tutor_explorer, PicoComment.from_str(args.tutor_comment),
-                            args.continue_game, args.alt_move,
+                            args.rolling_display_normal, max(0, min(10, args.volume_voice)), board_type, args.theme,
+                            round(float(args.rspeed), 2), args.rolling_display_ponder, args.show_engine,
+                            args.tutor_coach, args.tutor_watcher, args.tutor_explorer,
+                            PicoComment.from_str(args.tutor_comment), args.continue_game, args.alt_move,
                             state.dgttranslate)
 
     dgtdispatcher = Dispatcher(state.dgtmenu)
@@ -2048,14 +2053,15 @@ def main() -> None:
         beeper = True
     else:
         beeper = False
-    PicoTalkerDisplay(args.user_voice, args.computer_voice, args.speed_voice, args.enable_setpieces_voice, state.com_factor, beeper).start()
+    PicoTalkerDisplay(args.user_voice, args.computer_voice, args.speed_voice, args.enable_setpieces_voice,
+                      state.com_factor, beeper, board_type).start()
 
     # Launch web server
     if args.web_server_port:
         WebServer(args.web_server_port, dgtboard, calc_theme(args.theme, state.set_location)).start()
         dgtdispatcher.register('web')
 
-    if args.board_type.lower() == 'noeboard':
+    if board_type == dgt.util.EBoard.NOEBOARD:
         logging.debug('starting PicoChess in no eboard mode')
     else:
         # Connect to DGT board
@@ -2926,7 +2932,7 @@ def main() -> None:
 
             elif isinstance(event, Event.REMOTE_MOVE):
                 flag_startup = False
-                if args.board_type.lower() == 'noeboard':
+                if board_type == dgt.util.EBoard.NOEBOARD:
                     user_move(event.move, sliding=True, state=state)
                 else:
                     if state.interaction_mode == Mode.REMOTE and state.is_not_user_turn():
@@ -3153,7 +3159,7 @@ def main() -> None:
                                     state.no_guess_white = 1
 
                             # molli: noeboard/WEB-Play
-                            if args.board_type.lower() == 'noeboard':
+                            if board_type == dgt.util.EBoard.NOEBOARD:
                                 logging.info('done move detected')
                                 assert state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING), 'wrong mode: %s' % state.interaction_mode
 

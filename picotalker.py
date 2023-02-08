@@ -38,7 +38,7 @@ import time
 import chess  # type: ignore
 from utilities import DisplayMsg
 from dgt.api import Message
-from dgt.util import GameResult, PlayMode, Voice
+from dgt.util import GameResult, PlayMode, Voice, EBoard
 
 
 class PicoTalker(object):
@@ -111,7 +111,8 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
     c_draw = False
 
     # add voice comment-factor
-    def __init__(self, user_voice: str, computer_voice: str, speed_factor: int, setpieces_voice: bool, comment_factor: int, beep=False):
+    def __init__(self, user_voice: str, computer_voice: str, speed_factor: int, setpieces_voice: bool,
+                 comment_factor: int, beep: bool, eboard_type: EBoard):
         """
         Initialize a PicoTalkerDisplay with voices for the user and/or computer players.
 
@@ -122,6 +123,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         self.user_picotalker = None
         self.computer_picotalker: Optional[PicoTalker] = None
         self.beeper_picotalker = None
+        self.eboard_type = eboard_type
         self.speed_factor = (90 + (speed_factor % 10) * 5) / 100  # used by sox
         self.play_mode = PlayMode.USER_WHITE
         self.low_time = False
@@ -566,6 +568,8 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                             logging.debug('announcing COMPUTER_MOVE [%s]', message.move)
                             game_copy.push(message.move)
                             self.talk(['computer_move.ogg'], self.BEEPER)
+                            if self.eboard_type == EBoard.NOEBOARD:
+                                self.talk(['player_move.ogg'], self.BEEPER)
                             self.comment('beforecmove')
                             self.talk(self.say_last_move(game_copy), self.COMPUTER)
                             self.move_comment()
@@ -575,14 +579,15 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
                 elif isinstance(message, Message.COMPUTER_MOVE_DONE):
                     self.play_game = None
-                    self.talk(['player_move.ogg'], self.BEEPER)
+                    if self.eboard_type != EBoard.NOEBOARD:
+                        self.talk(['player_move.ogg'], self.BEEPER)
                     self.comment('chat')
 
                 elif isinstance(message, Message.USER_MOVE_DONE):
                     if message.move and message.game and message.move != previous_move:
                         logging.debug('announcing USER_MOVE_DONE [%s]', message.move)
-                        self.comment('beforeumove')
                         self.talk(['player_move.ogg'], self.BEEPER)
+                        self.comment('beforeumove')
                         self.talk(self.say_last_move(message.game), self.USER)
                         previous_move = message.move
                         self.play_game = None

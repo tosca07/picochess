@@ -162,7 +162,7 @@ class DgtMenu(object):
     def __init__(self, disable_confirm: bool, ponder_interval: int,
                  user_voice: str, comp_voice: str, speed_voice: int, enable_capital_letters: bool,
                  disable_short_move: bool, log_file, engine_server, rol_disp_norm: bool,
-                 volume_voice: int, board_type: str, theme_type: str, rspeed: float,
+                 volume_voice: int, board_type: EBoard, theme_type: str, rspeed: float,
                  rol_disp_brain: bool, show_enginename: bool,
                  picocoach: bool, picowatcher: bool, picoexplorer: bool,
                  picocomment: PicoComment,
@@ -264,10 +264,8 @@ class DgtMenu(object):
         self.menu_system_voice_volumefactor = volume_voice
         self._set_volume_voice(volume_voice)
 
-        self.board_type = board_type
-        eboards = {'certabo': EBoard.CERTABO, 'chesslink': EBoard.CHESSLINK, 'chessnut': EBoard.CHESSNUT,
-                   'dgt': EBoard.DGT, 'noeboard': EBoard.NOEBOARD}
-        self.menu_system_eboard_type = eboards[board_type]
+        self.current_board_type = board_type
+        self.menu_system_eboard_type = board_type
 
         self.theme_type = theme_type
         themes = {'light': Theme.LIGHT, 'dark': Theme.DARK, 'auto': Theme.AUTO}
@@ -539,6 +537,12 @@ class DgtMenu(object):
 
     def set_engine_level(self, level: int):
         self.res_engine_level = self.menu_engine_level = level
+        if self.menu_engine == EngineTop.MODERN_ENGINE:
+            self.menu_modern_engine_level = level
+        if self.menu_engine == EngineTop.RETRO_ENGINE:
+            self.menu_retro_engine_level = level
+        if self.menu_engine == EngineTop.FAV_ENGINE:
+            self.menu_fav_engine_level = level
 
     def set_enginename(self, showname: bool):
         """Set the flag."""
@@ -2495,13 +2499,11 @@ class DgtMenu(object):
             text = self.enter_sys_eboard_type_menu()
 
         elif self.state == MenuState.SYS_EBOARD_TYPE:
-            eboards = {EBoard.CERTABO: 'certabo', EBoard.CHESSLINK: 'chesslink', EBoard.CHESSNUT: 'chessnut',
-                       EBoard.DGT: 'dgt', EBoard.NOEBOARD: 'noeboard'}
-            eboard_type = eboards[self.menu_system_eboard_type]
+            eboard_type = self.menu_system_eboard_type.name.lower()
             write_picochess_ini('board-type', eboard_type)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okeboard'))
             self._fire_event(Event.PICOCOMMENT(picocomment='ok'))
-            if eboard_type != self.board_type:
+            if eboard_type != self.current_board_type:
                 # only reboot if e-board type is different from the current e-board type
                 self._fire_event(Event.REBOOT(dev='menu'))
 

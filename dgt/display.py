@@ -474,7 +474,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
                 text = self.dgttranslate.text('M10_level', msg)
                 text.wait = self._exit_menu()
                 logging.debug('map: New level %s', msg)
-                if not self.dgtmenu.remote_engine and 'Remote' not in str(eng) and 'Online' not in str(eng) and 'FICS' not in str(eng) and 'lichess' not in str(eng) and 'Lichess' not in str(eng) and 'Lichess' not in str(eng) and not ('mame' in str(eng) and Rev2Info.get_pi_mode()) and not ('mess' in str(eng) and Rev2Info.get_pi_mode()) and 'PGN' not in str(eng):
+                if not self.dgtmenu.remote_engine and 'Remote' not in str(eng) and 'Online' not in str(eng) and 'FICS' not in str(eng) and 'lichess' not in str(eng) and 'Lichess' not in str(eng) and 'Lichess' not in str(eng) and 'PGN' not in str(eng):
                     write_picochess_ini('engine-level', msg)
                 Observable.fire(Event.LEVEL(options=level_dict[msg], level_text=text, level_name=msg))
             else:
