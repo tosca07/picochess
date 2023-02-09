@@ -54,14 +54,14 @@ class CertaboBoard(EBoard):
         result = {}
         wait_counter = 0
         waitchars = ['/', '-', '\\', '|']
-        bwait = 'Board' + waitchars[wait_counter]
+        bwait = waitchars[wait_counter]
         while 'cmd' not in result or (result['cmd'] == 'agent_state' and result['state'] == 'offline'):
             try:
                 result = self.appque.get(block=False)
             except queue.Empty:
                 pass
-            bwait = 'Board' + waitchars[wait_counter]
-            text = self._display_text('no Certabo e-' + bwait, 'no e-' + bwait, 'no' + bwait, bwait)
+            bwait = waitchars[wait_counter]
+            text = self._display_text('no Certabo e-Board' + bwait, 'Certabo' + bwait, 'Certabo' + bwait, bwait)
             DisplayMsg.show(Message.DGT_NO_EBOARD_ERROR(text=text))
             wait_counter = (wait_counter + 1) % len(waitchars)
             time.sleep(1.0)
