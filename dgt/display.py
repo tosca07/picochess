@@ -597,6 +597,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         for index in range(0, len(self.dgtmenu.installed_engines)):
             eng = self.dgtmenu.installed_engines[index]
             if eng['file'] == message.file:
+                self.dgtmenu.set_state_current_engine(message.file)
                 self.dgtmenu.set_engine_index(index)
                 self.dgtmenu.set_engine_has_960(message.has_960)
                 self.dgtmenu.set_engine_has_ponder(message.has_ponder)
