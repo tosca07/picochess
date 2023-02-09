@@ -11,8 +11,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from typing import List
 
-def set_leds(pos, is_reversed: bool):
+
+def set_leds(pos, is_reversed: bool) -> bytearray:
     """
     Set LEDs according to `position`.
     :param pos: `position` array, field != 0 indicates a LED that should be on
@@ -29,6 +31,26 @@ def set_leds(pos, is_reversed: bool):
     return leds
 
 
+def set_led_squares(squares: List[int]) -> bytearray:
+    """
+    Set LEDs according to a list of squares.
+    :param squares: list of squares, # 0 -- chess.A1, 56 -- chess.A8
+    """
+    return _set_led_squares(bytearray(8), squares)
+
+
+def add_led_squares(data: bytearray, squares: List[int]) -> bytearray:
+    return _set_led_squares(data, squares)
+
+
+def _set_led_squares(leds: bytearray, squares: List[int]) -> bytearray:
+    for square in squares:
+        row = 7 - (square // 8)
+        col = 7 - square % 8
+        _set_bit(leds, row * 8 + col, 1)
+    return leds
+
+
 def _set_bit(data: bytearray, pos: int, val: int):
     pos_byte = int(pos / 8)
     posBit = pos % 8
@@ -38,9 +60,9 @@ def _set_bit(data: bytearray, pos: int, val: int):
     data[pos_byte] = newByte
 
 
-def set_leds_off():
-    return b'\x00\x00\x00\x00\x00\x00\x00\x00'
+def set_leds_off() -> bytearray:
+    return bytearray(8)
 
 
-def set_leds_calibrate():
-    return b'\xff\xff\x08\x00\x00\x08\xff\xff'
+def set_leds_calibrate() -> bytearray:
+    return bytearray(b'\xff\xff\x08\x00\x00\x08\xff\xff')

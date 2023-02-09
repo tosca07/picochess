@@ -242,11 +242,14 @@ class Transport(object):
                         self.agent_state(self.que, 'offline', emsg)
                         posted = True
 
-            try:
-                by = self.usb_dev.read(1024)
-                if len(by) > 0:
-                    que.put(by)
-            except (OSError, serial.SerialException, TypeError) as e:
-                self.log.error(f"Error reading from serial port, {e}")
-                time.sleep(0.1)
-                self.error_state = True
+            self._usb_read(que)
+
+    def _usb_read(self, que):
+        try:
+            by = self.usb_dev.read(1024)
+            if len(by) > 0:
+                que.put(by)
+        except (OSError, serial.SerialException, TypeError) as e:
+            self.log.error(f"Error reading from serial port, {e}")
+            time.sleep(0.1)
+            self.error_state = True

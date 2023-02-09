@@ -26,10 +26,18 @@ class SimpleTestTranslator(BoardTranslator):
 
     def __init__(self):
         super().__init__()
+        self.piece_recognition = False
         self.board = []
+        self.occupied = []
 
     def translate(self, board: typing.List[CertaboPiece]):
         self.board = board
+
+    def translate_occupied_squares(self, occupied: typing.List[int]):
+        self.occupied = occupied
+
+    def has_piece_recognition(self, value: bool):
+        self.piece_recognition = value
 
     def calibration_complete_square(self, square: int):
         pass
@@ -126,7 +134,7 @@ class TestParser(unittest.TestCase):
         Parser(MockedParserCallback).parse(data)
         MockedParserCallback.translate.assert_not_called()
 
-    def test_parse_position_with_junk_in_front(self, MockedParserCallback):
+    def test_parse_position_with_junk_in_front(self, _):
         data = bytearray(
             'xxxxxxxxxxxxxxxxxx:3 0 84 252 153 3 0 85 0 104 3 0 84 2 3 3 0 83 177 224 3 0 84 107 52 3 0 84 240 106 '
             '3 0 85 0 107 3 0 84 255 174 3 0 84 44 81 3 0 84 121 210 3 0 84 242 13 3 0 84 107 56 3 0 84 78 193 '
@@ -142,7 +150,22 @@ class TestParser(unittest.TestCase):
         # check last piece
         self.assertEqual(CertaboPiece(piece_id=bytearray(b'\x03\x00\x54\xfc\x0f')), callback.board[-1])
 
-    def test_parse_position_in_two_parts(self, MockedParserCallback):
+    def test_certabo_has_piece_recognition(self, _):
+        data = bytearray(
+            ':3 0 84 252 153 3 0 85 0 104 3 0 84 2 3 3 0 83 177 224 3 0 84 107 52 3 0 84 240 106 '
+            '3 0 85 0 107 3 0 84 255 174 3 0 84 44 81 3 0 84 121 210 3 0 84 242 13 3 0 84 107 56 3 0 84 78 193 '
+            '3 0 84 240 84 3 0 84 240 65 3 0 84 68 134 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 160 80 '
+            '7 140 126 32 250 15 0 0 254 7 118 237 181 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 '
+            '0 160 225 80 192 121 0 0 0 0 0 207 224 74 7 172 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3 0 85 1 184 0 0 0 0 0 '
+            '0 0 0 0 0 100 115 213 250 161 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 186 10 56 165 201 0 0 0 0 0 168 '
+            '94 211 7 40 74 124 195 174 25 3 0 84 44 165 3 0 84 68 112 3 0 84 237 98 3 0 84 252 170 0 0 0 0 0 3 0 '
+            '84 78 209 3 0 84 242 11 3 0 84 78 216 3 0 85 0 16 3 0 83 229 13 3 0 85 0 67 3 0 84 121 142 3 0 84 105 '
+            '128 3 0 84 106 231 3 0 84 247 87 3 0 84 252 15\r\n', encoding='UTF-8')
+        callback = SimpleTestTranslator()
+        Parser(callback).parse(data)
+        self.assertTrue(callback.piece_recognition)
+
+    def test_parse_position_in_two_parts(self, _):
         data1 = bytearray(':3 0 84 252 153 3 0 85 0 104 3 0 84 240 106 3 0 83 177 224 3 0 8\n'
                           '4 107 52 3 0 84 2 3 3 0 85 0 107 3 0 84 255 174 3 0 84 44 81 3 0\n'
                           ' 84 121 210 3 0 84 242 13 3 0 84 78 193 3 0 84 107 56 3 0 84 240\n'
@@ -164,6 +187,31 @@ class TestParser(unittest.TestCase):
         parser.parse(data2)
         # check last piece
         self.assertEqual(CertaboPiece(piece_id=bytearray(b'\x03\x00\x54\xfc\xaa')), callback.board[-1])
+
+    def test_parse_position_tabutronic_sentio(self, MockedParserCallback):
+        data = bytearray(':255 255 0 0 0 0 255 255 \r\n', encoding='UTF-8')
+        Parser(MockedParserCallback).parse(data)
+        MockedParserCallback.translate_occupied_squares.assert_called_once()
+
+    def test_tabutronic_sentio_has_no_piece_recognition(self, _):
+        data = bytearray(':255 255 0 0 0 0 255 255 \r\n', encoding='UTF-8')
+        callback = SimpleTestTranslator()
+        Parser(callback).parse(data)
+        self.assertFalse(callback.piece_recognition)
+
+    def test_parse_position_tabutronic_sentio_with_led_ack(self, _):
+        data = bytearray(':255 255 0 0 0 0 255 254\nL\r\n', encoding='UTF-8')
+        callback = SimpleTestTranslator()
+        Parser(callback).parse(data)
+        expected = [1, 1, 1, 1, 1, 1, 1, 1,
+                    1, 1, 1, 1, 1, 1, 1, 1,
+                    0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0,
+                    1, 1, 1, 1, 1, 1, 1, 1,
+                    1, 1, 1, 1, 1, 1, 1, 0]
+        self.assertEqual(expected, callback.occupied)
 
 
 @patch('certabo.parser.CalibrationCallback')

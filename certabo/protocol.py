@@ -13,6 +13,7 @@
 #
 # Some code copied from https://github.com/domschl/python-mchess/blob/master/mchess/chess_link.py
 
+from typing import List
 
 import json
 import logging
@@ -21,10 +22,12 @@ import time
 import threading
 import typing
 
+from move_debouncer import MoveDebouncer
 from certabo import command
 from certabo.parser import CalibrationCallback, CertaboCalibrator, CertaboPiece, \
     CertaboBoardMessageParser, ParserCallback
 from certabo.led_control import CertaboLedControl
+from certabo.sentio import Sentio
 from certabo.usb_transport import Transport
 
 
@@ -44,6 +47,7 @@ class Protocol(ParserCallback, CalibrationCallback):
         :param name: identifies this protocol
         """
         super().__init__()
+        self.piece_recognition = False
         self.name = name
         self.log = logging.getLogger('Certabo')
         self.log.debug('Certabo starting')
@@ -61,6 +65,8 @@ class Protocol(ParserCallback, CalibrationCallback):
         self.initial_position_received = False  # initial position after calibration is complete
         self.brd_reversed = False
         self.device_in_config = False
+        self.debouncer = MoveDebouncer(350, lambda fen: self.appque.put({'cmd': 'raw_board_position', 'fen': fen,
+                                                                         'actor': self.name}))
         self.thread_active = True
         self.event_thread = threading.Thread(target=self._event_worker_thread)
         self.event_thread.setDaemon(True)
@@ -91,7 +97,6 @@ class Protocol(ParserCallback, CalibrationCallback):
                 break
             self.device_in_config = False
             time.sleep(3)
-        self.calibrate()
 
     def _read_config(self):
         with open('certabo_config.json', 'r') as f:
@@ -126,6 +131,7 @@ class Protocol(ParserCallback, CalibrationCallback):
         if self.connected:
             self.log.info(f'Connected to Certabo at {address}')
             self.led_control = CertaboLedControl(self.trans)
+            self.sentio = Sentio(self, self.led_control)
             self.error_condition = False
         else:
             self.trans.quit()
@@ -189,12 +195,21 @@ class Protocol(ParserCallback, CalibrationCallback):
                     self.appque.put({'cmd': 'agent_state', 'state': state, 'message': emsg})
                     continue
 
-                if not self.calibrated:
+                if not self.calibrated and self.piece_recognition:
                     self.calibrator.calibrate(msg)
                 else:
                     self.parser.parse(msg)
             else:
                 time.sleep(0.01)
+
+    def has_piece_recognition(self, piece_recognition: bool):
+        self.piece_recognition = True
+        if piece_recognition:
+            self.calibrate()
+
+    def occupied_squares(self, board: List[int]):
+        if self.sentio is not None:
+            self.sentio.occupied_squares(board)
 
     def board_update(self, short_fen: str):
         if not self.initial_position_received and short_fen == 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR':
@@ -202,7 +217,7 @@ class Protocol(ParserCallback, CalibrationCallback):
         if self.initial_position_received:
             # only forward the fen if the initial position has been received at least once
             # to prevent additional queens on the board from changing settings
-            self.appque.put({'cmd': 'raw_board_position', 'fen': short_fen, 'actor': self.name})
+            self.debouncer.update(short_fen)
         with self.board_mutex:
             self.last_fen = short_fen
 
@@ -222,6 +237,10 @@ class Protocol(ParserCallback, CalibrationCallback):
     def set_led_off(self):
         if self.connected and self.led_control is not None:
             self.led_control.write_led_command(command.set_leds_off())
+
+    def uci_move(self, move: str):
+        if self.connected:
+            self.sentio.uci_move(move)
 
     def calibrate(self):
         if self.connected:

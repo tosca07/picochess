@@ -40,6 +40,12 @@ class BoardTranslator:
     def translate(self, board: List[CertaboPiece]):
         pass
 
+    def translate_occupied_squares(self, board: List[int]):
+        pass
+
+    def has_piece_recognition(self, value: bool):
+        pass
+
 
 class CalibrationCallback:
 
@@ -59,6 +65,12 @@ class ParserCallback(object):
         pass
 
     def reversed(self, value: bool):
+        pass
+
+    def has_piece_recognition(self, piece_recognition: bool):
+        pass
+
+    def occupied_squares(self, board: List[int]):
         pass
 
 
@@ -81,13 +93,14 @@ class Parser(object):
         self.buffer = bytearray()
         self.last_board: List = []
         self.reversed = False
+        self.piece_recognition = False
 
     def parse(self, msg: bytearray):
         # copy any previous buffer to the front
         data = self.buffer + msg
         self.buffer = bytearray()
 
-        if len(data) > 64 * 5 * 2:
+        if len(data) > 15:
             input_str = data.decode(encoding='UTF-8', errors='ignore')
             if '\r\n' not in input_str:
                 self._add_to_buffer(data)
@@ -107,6 +120,15 @@ class Parser(object):
 
     def _parse(self, part: str):
         split_input = re.sub('[\r\nL*]', '', part).split()
+        if not self.piece_recognition and len(split_input) > 8:
+            self.piece_recognition = True
+            self.callback.has_piece_recognition(True)
+        if self.piece_recognition:
+            self._parse_with_piece_info(split_input)
+        else:
+            self._parse_without_piece_info(split_input)
+
+    def _parse_with_piece_info(self, split_input):
         if len(split_input) >= 320:
             board = []
             for square in range(64):
@@ -119,6 +141,25 @@ class Parser(object):
                 piece = CertaboPiece(piece_id)
                 board.append(piece)
             self.callback.translate(board)
+            self.buffer = bytearray()
+            return True
+        else:
+            return False
+
+    def _parse_without_piece_info(self, split_input):
+        if len(split_input) >= 8:
+            board = []
+            for row in range(8):
+                try:
+                    b = int(split_input[row])
+                    for col in range(7, -1, -1):
+                        if (b & (1 << col)) != 0:
+                            board.append(1)  # UNKNOWN
+                        else:
+                            board.append(0)
+                except ValueError:
+                    return False
+            self.callback.translate_occupied_squares(board)
             self.buffer = bytearray()
             return True
         else:
@@ -219,6 +260,12 @@ class CertaboBoardMessageParser(BoardTranslator):
                     b_count += 1
         return w_count, b_count
 
+    def translate_occupied_squares(self, board: List[int]):
+        self.callback.occupied_squares(board)
+
+    def has_piece_recognition(self, value: bool):
+        self.callback.has_piece_recognition(value)
+
 
 class CalibrationSquare(object):
 
@@ -255,27 +302,14 @@ class CalibrationSquare(object):
             return 'p'
         if 47 < self.square < 56:
             return 'P'
-        if self.square == 0 or self.square == 7:
-            return self._no_stone_or('r')
-        if self.square == 1 or self.square == 6:
-            return self._no_stone_or('n')
-        if self.square == 2 or self.square == 5:
-            return self._no_stone_or('b')
-        if self.square == 3 or self.square == BLACK_EXTRA_QUEEN_SQUARE:
-            return self._no_stone_or('q')
-        if self.square == 4:
-            return self._no_stone_or('k')
-        if self.square == 56 or self.square == 63:
-            return self._no_stone_or('R')
-        if self.square == 57 or self.square == 62:
-            return self._no_stone_or('N')
-        if self.square == 58 or self.square == 61:
-            return self._no_stone_or('B')
-        if self.square == 59 or self.square == WHITE_EXTRA_QUEEN_SQUARE:
-            return self._no_stone_or('Q')
-        if self.square == 60:
-            return self._no_stone_or('K')
-        return None
+        square_to_stone = {0: 'r', 7: 'r', 1: 'n', 6: 'n', 2: 'b', 5: 'b', 3: 'q',
+                           BLACK_EXTRA_QUEEN_SQUARE: 'q', 4: 'k',
+                           56: 'R', 63: 'R', 57: 'N', 62: 'N', 58: 'B', 61: 'B', 59: 'Q',
+                           WHITE_EXTRA_QUEEN_SQUARE: 'Q', 60: 'K'}
+        if self.square in square_to_stone:
+            return self._no_stone_or(square_to_stone[self.square])
+        else:
+            return None
 
     def _no_stone_or(self, stone: str):
         if self.pieceId == NO_PIECE:

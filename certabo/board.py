@@ -36,6 +36,7 @@ class CertaboBoard(EBoard):
         dpos[int(uci_move[1]) - 1][ord(uci_move[0]) - ord('a')] = 1  # from
         dpos[int(uci_move[3]) - 1][ord(uci_move[2]) - ord('a')] = 1  # to
         if self.agent is not None:
+            self.agent.uci_move(uci_move)
             self.agent.set_led(dpos)
 
     def light_square_on_revelation(self, square: str):
@@ -54,7 +55,6 @@ class CertaboBoard(EBoard):
         result = {}
         wait_counter = 0
         waitchars = ['/', '-', '\\', '|']
-        bwait = waitchars[wait_counter]
         while 'cmd' not in result or (result['cmd'] == 'agent_state' and result['state'] == 'offline'):
             try:
                 result = self.appque.get(block=False)
@@ -69,13 +69,16 @@ class CertaboBoard(EBoard):
         if result['state'] != 'offline':
             logging.info('incoming_board ready')
 
+        self._process_after_connection()
+
+    def _process_after_connection(self):
         while True:
             if self.agent is not None:
                 try:
                     result = self.appque.get(block=False)
                     if 'cmd' in result and result['cmd'] == 'agent_state' and 'state' in result and 'message' in result:
                         if result['state'] == 'offline':
-                            text = self._display_text(result['message'], result['message'], 'no/', bwait)
+                            text = self._display_text(result['message'], result['message'], 'no/', 'Board')
                         else:
                             text = Dgt.DISPLAY_TIME(force=True, wait=True, devs={'ser', 'i2c', 'web'})
                         DisplayMsg.show(Message.DGT_NO_EBOARD_ERROR(text=text))
