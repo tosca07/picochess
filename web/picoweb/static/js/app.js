@@ -717,7 +717,7 @@ function toColor(chess) {
     return (chess.turn() === 'w') ? 'white' : 'black';
 }
 
-var onSnapEnd = function(source, target) {
+var onSnapEnd = async function(source, target) {
     stopAnalysis();
     var tmpGame = createGamePointer();
 
@@ -729,10 +729,17 @@ var onSnapEnd = function(source, target) {
         gameHistory.result = '*';
     }
 
+    let promotion = null
+    if (isPromotion(tmpGame.get(source), target)) {
+        chessground1.set({ animation: { enabled: false } })
+        promotion = await getUserPromotion(target)
+        chessground1.set({ animation: { enabled: true } })
+    }
+
     var move = tmpGame.move({
         from: source,
         to: target,
-        promotion: 'q' // NOTE: always promote to a queen for now
+        promotion: promotion
     });
 
     updateCurrentPosition(move, tmpGame);
@@ -1668,3 +1675,75 @@ $(function() {
 
     $.fn.dataTable.ext.errMode = 'throw';
 });
+
+function isPromotion(squareState, toSquare) {
+    if (squareState.type !== 'p') return false
+    if (toSquare.includes('8') || toSquare.includes('1')) return true
+    return false
+}
+
+function html() {
+    arguments[0] = { raw: arguments[0] };
+    return String.raw(...arguments);
+}
+
+let setPromotion = null
+async function getUserPromotion(toSquare) {
+    const column = toSquare[0]
+    const offSetMap = {
+        'a' : 0,
+        'b' : 12.5,
+        'c' : 25,
+        'd' : 37.5,
+        'e' : 50,
+        'f' : 62.5,
+        'g' : 75,
+        'h' : 87.5,
+    }
+    const leftOffset = offSetMap[column]
+
+    let color = 'black'
+    let queenTop = 87.5
+    let topOffsetIncrement = -12.5
+
+    if (toSquare.includes('8')) {
+        color = 'white'
+        queenTop = 0
+        topOffsetIncrement = 12.5
+    }
+
+    const knightTop = queenTop + topOffsetIncrement
+    const roookTop = knightTop + topOffsetIncrement
+    const bishopTop = roookTop + topOffsetIncrement
+
+    const promoChoiceHtml = html`
+    <div class="promotion-overlay cg-wrap">
+    <square onclick="pickPromotion('q')" style="top:${queenTop}%; left: ${leftOffset}%">
+        <piece class="queen ${color}"></piece>
+    </square>
+    <square onclick="pickPromotion('n')" style="top:${knightTop}%; left: ${leftOffset}%">
+        <piece class="knight ${color}"></piece>
+    </square>
+    <square onclick="pickPromotion('r')" style="top:${roookTop}%; left: ${leftOffset}%">
+        <piece class="rook ${color}"></piece>
+    </square>
+    <square onclick="pickPromotion('b')" style="top:${bishopTop}%; left: ${leftOffset}%">
+        <piece class="piece bishop ${color}"></piece>
+    </square>
+    </div>
+    `
+
+    const boardContainerEl = document.querySelector('.board-container')
+    boardContainerEl.insertAdjacentHTML('beforeend', promoChoiceHtml)
+
+    const piece = await new Promise(resolve => setPromotion = resolve)
+
+    boardContainerEl.removeChild(document.querySelector('.promotion-overlay'))
+    return piece
+}
+
+function pickPromotion(piece) {
+    if (setPromotion) setPromotion(piece)
+}
+
+window.pickPromotion = pickPromotion

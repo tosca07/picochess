@@ -270,3 +270,73 @@ td.result {
 #GameTable>tbody>tr:hover>* {
     box-shadow: inset 0 0 0 9999px white;
 }
+
+
+/* start promotion */
+.promotion-overlay {
+    z-index: 4;
+    background: rgba(22,21,18,.7);
+    width: 100%;
+    height: 100%;
+    position: absolute;
+}
+
+.promotion-overlay square {
+    cursor: pointer;
+    border-radius: 50%;
+    background-color: #b0b0b0;
+    box-shadow: inset 0 0 25px 3px gray;
+    transition: all 150ms;
+    z-index: 2;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 12.5%;
+    height: 12.5%;
+    transition: all 150ms;
+}
+
+.promotion-overlay piece {
+    position: absolute;
+    top: 10%;
+    left: 10%;
+    width: 80%;
+    height: 80%;;
+    background-size: cover;
+    z-index: 5;
+    pointer-events: none;
+    transition: all 150ms;
+}
+
+.promotion-overlay square:hover piece {
+    transform: scale(120%);
+}
+
+.promotion-overlay square:hover {
+    box-shadow:inset 0 0 48px 8px #d64f00;
+    border-radius:0%;
+}
+
+#promotoion-choice {
+    background: rgba(22,21,18,.7);
+    z-index: 205;
+    position: absolute;
+    width: var(--cg-width, 100%);
+    height: var(--cg-height, 100%);
+    right: 0;
+}
+
+#promotion-choice piece {
+    pointer-events: auto;
+    opacity: 1;
+}
+
+.knight.white {background-image: url('chessground/images/pieces/merida/wN.svg')}
+.bishop.white {background-image: url('chessground/images/pieces/merida/wB.svg')}
+.rook.white {background-image: url('chessground/images/pieces/merida/wR.svg')}
+.queen.white {background-image: url('chessground/images/pieces/merida/wQ.svg')}
+.knight.black {background-image: url('chessground/images/pieces/merida/bN.svg')}
+.bishop.black {background-image: url('chessground/images/pieces/merida/bB.svg')}
+.rook.black {background-image: url('chessground/images/pieces/merida/bR.svg')}
+.queen.black {background-image: url('chessground/images/pieces/merida/bQ.svg')}
+/* end promotion */
