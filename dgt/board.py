@@ -841,6 +841,9 @@ class DgtBoard(EBoard):
             logging.debug('(rev) leds turned off')
             self.write_command([DgtCmd.DGT_SET_LEDS, 0x04, 0x00, 0x40, 0x40, DgtClk.DGT_CMD_CLOCK_END_MESSAGE])
 
+    def promotion_done(self, uci_move: str):
+        pass
+
     def run(self):
         """NOT called from threading.Thread instead inside the __init__ function from hw.py."""
         self.incoming_board_thread = Timer(0, self._process_incoming_board_forever)

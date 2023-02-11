@@ -1318,6 +1318,10 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             text.maxtime = 0.5
 
             DispatchDgt.fire(text)
+
+        elif isinstance(message, Message.PROMOTION_DONE):
+            DispatchDgt.fire(Dgt.PROMOTION_DONE(uci_move=message.move.uci(), devs={'ser'}))
+
         else:  # Default
             pass
 

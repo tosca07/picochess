@@ -3601,6 +3601,9 @@ def main() -> None:
             elif isinstance(event, Event.REMOTE_ROOM):
                 DisplayMsg.show(Message.REMOTE_ROOM(inside=event.inside))
 
+            elif isinstance(event, Event.PROMOTION):
+                DisplayMsg.show(Message.PROMOTION_DONE(move=event.move))
+
             else:  # Default
                 logging.warning('event not handled : [%s]', event)
 

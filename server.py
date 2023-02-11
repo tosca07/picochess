@@ -85,8 +85,13 @@ class ChannelHandler(ServerRequestHandler):
             result = {'event': 'Broadcast', 'msg': 'Position from Spectators!', 'pgn': pgn_str, 'fen': fen}
             EventHandler.write_to_clients(result)
         elif action == 'move':
-            move = chess.Move.from_uci(self.get_argument('source') + self.get_argument('target') + self.get_argument('promotion'))
+            move = chess.Move.from_uci(
+                self.get_argument('source') + self.get_argument('target') + self.get_argument('promotion'))
             Observable.fire(Event.REMOTE_MOVE(move=move, fen=self.get_argument('fen')))
+        elif action == 'promotion':
+            move = chess.Move.from_uci(
+                self.get_argument('source') + self.get_argument('target') + self.get_argument('promotion'))
+            Observable.fire(Event.PROMOTION(move=move, fen=self.get_argument('fen')))
         elif action == 'clockbutton':
             Observable.fire(Event.KEYBOARD_BUTTON(button=self.get_argument('button'), dev='web'))
         elif action == 'room':
@@ -362,6 +367,9 @@ class WebVr(DgtIface):
         result = {'event': 'Clear'}
         EventHandler.write_to_clients(result)
         return True
+
+    def promotion_done(self, move):
+        pass
 
     def get_name(self):
         """Return name."""
@@ -691,6 +699,10 @@ class WebDisplay(DisplayMsg, threading.Thread):
             mov = peek_uci(message.game)
             result = {'pgn': pgn_str, 'fen': fen, 'event': 'Fen', 'move': mov, 'play': 'reload'}
             self.shared['last_dgt_move_msg'] = result
+            EventHandler.write_to_clients(result)
+
+        elif isinstance(message, Message.PROMOTION_DIALOG):
+            result = {'event': 'PromotionDlg', 'move': message.move}
             EventHandler.write_to_clients(result)
 
         elif isinstance(message, Message.GAME_ENDS):

@@ -285,6 +285,9 @@ class DgtPi(DgtIface):
         self.r_time = time_right
         return True
 
+    def promotion_done(self, uci_move: str):
+        pass
+
     def get_name(self):
         """Get name."""
         return 'i2c'

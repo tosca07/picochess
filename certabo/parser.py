@@ -73,6 +73,9 @@ class ParserCallback(object):
     def occupied_squares(self, board: List[int]):
         pass
 
+    def request_promotion_dialog(self, move: str):
+        pass
+
 
 NO_PIECE = CertaboPiece(bytearray(5))
 BLACK_EXTRA_QUEEN_SQUARE = 19

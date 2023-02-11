@@ -32,12 +32,20 @@ class Sentio(object):
         self.callback = callback
         self.led_control = led_control
 
-    def uci_move(self, move):
+    def uci_move(self, move: str):
         """ Called from the protocol when an engine made a move """
         try:
             chess_move = chess.Move.from_uci(move)
             if self.board.is_legal(chess_move):
                 self.last_engine_move = chess_move
+        except ValueError:
+            pass
+
+    def promotion_done(self, move: str):
+        """ Called from the protocol when the user selected a piece for promotion """
+        try:
+            chess_move = chess.Move.from_uci(move)
+            self._make_move(chess_move)
         except ValueError:
             pass
 
@@ -73,13 +81,11 @@ class Sentio(object):
                 squares.add(to_square(index))
         return squares
 
-    def _check_valid_move(self, expected_squares, occupied_squares) -> bool:
+    def _check_valid_move(self, expected_squares, occupied_squares):
         missing = list(expected_squares.difference(occupied_squares))
         extra = list(occupied_squares.difference(expected_squares))
-        if self._non_capture_move(missing, extra):
-            return True
-        else:
-            return self._capture_move(missing, extra)
+        if not self._non_capture_move(missing, extra):
+            self._capture_move(missing, extra)
 
     def _non_capture_move(self, missing, extra) -> bool:
         if len(missing) == 1 and len(extra) == 1:
@@ -87,11 +93,14 @@ class Sentio(object):
             if self._make_move(move):
                 return True
             else:
+                # try promotion move
                 move = chess.Move(missing[0], extra[0], promotion=chess.QUEEN)
-                return self._make_move(move)
+                if self.board.is_legal(move):
+                    self.callback.request_promotion_dialog(move.uci())
+                return True
         return False
 
-    def _capture_move(self, missing, extra) -> bool:
+    def _capture_move(self, missing, extra):
         if len(missing) == 2 and len(extra) == 0:
             if self.board.piece_at(missing[0]).color != self.board.piece_at(missing[1]).color:
                 if self.board.piece_at(missing[0]).color == self.board.turn:
@@ -102,17 +111,16 @@ class Sentio(object):
                 self.capture_piece = None
         elif self.capture_piece is not None and self._is_possibly_capture(missing, extra):
             move = chess.Move(self.capture_piece.from_square, self.capture_piece.to_square)
-            move_valid = self._make_move(move)
-            if not move_valid:
+            if not self._make_move(move):
+                # try promotion move
                 move = chess.Move(self.capture_piece.from_square, self.capture_piece.to_square, promotion=chess.QUEEN)
-                move_valid = self._make_move(move)
+                if self.board.is_legal(move):
+                    self.callback.request_promotion_dialog(move.uci())
             self.capture_piece = None
-            return move_valid
         elif self.capture_piece is not None and self._is_possibly_ep_capture(missing, extra):
             move = chess.Move(self.capture_piece.from_square, extra[0])
             self.capture_piece = None
-            return self._make_move(move)
-        return False
+            self._make_move(move)
 
     def _is_possibly_capture(self, missing, extra):
         return len(missing) == 1 and len(extra) == 0
@@ -120,7 +128,7 @@ class Sentio(object):
     def _is_possibly_ep_capture(self, missing, extra):
         return len(missing) == 2 and len(extra) == 1 and self.capture_piece.piece.piece_type == chess.PAWN
 
-    def _make_move(self, move) -> bool:
+    def _make_move(self, move: chess.Move) -> bool:
         if self.board.is_legal(move):
             self._do_board_move(move)
             return True

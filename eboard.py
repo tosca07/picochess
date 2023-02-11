@@ -58,3 +58,8 @@ class EBoard(Protocol):
     def end_text(self):
         """Return the clock display to time display."""
         raise NotImplementedError
+
+    @abstractmethod
+    def promotion_done(self, uci_move: str):
+        """Called when the user selected a piece for promotion."""
+        raise NotImplementedError

@@ -80,6 +80,10 @@ class DgtIface(DisplayDgt, Thread):
         """Override this function."""
         raise NotImplementedError()
 
+    def promotion_done(self, uci_move: str):
+        """Override this function."""
+        raise NotImplementedError()
+
     def get_name(self):
         """Override this function."""
         raise NotImplementedError()
@@ -166,6 +170,8 @@ class DgtIface(DisplayDgt, Thread):
             else:
                 if message.main == 2:
                     self.enable_dgt3000 = True
+        elif isinstance(message, Dgt.PROMOTION_DONE):
+            self.promotion_done(message.uci_move)
         else:  # switch-default
             pass
         logging.debug('(%s) handle DgtApi: %s ended', ','.join(message.devs), message)

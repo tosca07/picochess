@@ -221,6 +221,9 @@ class Protocol(ParserCallback, CalibrationCallback):
         with self.board_mutex:
             self.last_fen = short_fen
 
+    def request_promotion_dialog(self, move: str):
+        self.appque.put({'cmd': 'request_promotion_dialog', 'move': move, 'actor': self.name})
+
     def reversed(self, value: bool):
         self.brd_reversed = value
 
@@ -241,6 +244,10 @@ class Protocol(ParserCallback, CalibrationCallback):
     def uci_move(self, move: str):
         if self.connected:
             self.sentio.uci_move(move)
+
+    def promotion_done(self, uci_move: str):
+        if self.connected:
+            self.sentio.promotion_done(uci_move)
 
     def calibrate(self):
         if self.connected:

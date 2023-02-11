@@ -116,3 +116,6 @@ class ChessLinkBoard(EBoard):
 
     def end_text(self):
         pass
+
+    def promotion_done(self, uci_move: str):
+        pass

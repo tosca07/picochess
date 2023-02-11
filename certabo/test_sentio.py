@@ -111,18 +111,17 @@ class TestSentio(unittest.TestCase):
                  call('rnbqkbnr/pp2pppp/2P5/8/8/8/PPPP1PPP/RNBQKBNR')]
         MockedParserCallback.board_update.assert_has_calls(calls)
 
-    def test_promotion(self, MockedParserCallback, MockedLedControl):
+    def test_promotion_request(self, MockedParserCallback, MockedLedControl):
         sentio = Sentio(MockedParserCallback, MockedLedControl)
         sentio.board = chess.Board('4k3/P7/8/8/8/8/8/4K3 w - - 0 1')
         sentio.occupied_squares(self._fen_to_occupied('4k3/P7/8/8/8/8/8/4K3'))
         # a7a8=Q
         sentio.occupied_squares(self._fen_to_occupied('4k3/8/8/8/8/8/8/4K3'))  # a7 up
         sentio.occupied_squares(self._fen_to_occupied('Q3k3/8/8/8/8/8/8/4K3'))  # a8 down
-        calls = [call('4k3/P7/8/8/8/8/8/4K3'),
-                 call('Q3k3/8/8/8/8/8/8/4K3')]
-        MockedParserCallback.board_update.assert_has_calls(calls)
+        MockedParserCallback.board_update.assert_has_calls([call('4k3/P7/8/8/8/8/8/4K3')])
+        MockedParserCallback.request_promotion_dialog([call(chess.Move(chess.A7, chess.A8, promotion=chess.QUEEN))])
 
-    def test_promotion_with_capture(self, MockedParserCallback, MockedLedControl):
+    def test_promotion_request_with_capture(self, MockedParserCallback, MockedLedControl):
         sentio = Sentio(MockedParserCallback, MockedLedControl)
         sentio.board = chess.Board('1n2k3/P7/8/8/8/8/8/4K3 w - - 0 1')
         sentio.occupied_squares(self._fen_to_occupied('1n2k3/P7/8/8/8/8/8/4K3'))
@@ -130,9 +129,19 @@ class TestSentio(unittest.TestCase):
         sentio.occupied_squares(self._fen_to_occupied('4k3/P7/8/8/8/8/8/4K3'))  # b8 up
         sentio.occupied_squares(self._fen_to_occupied('4k3/8/8/8/8/8/8/4K3'))  # a7 up
         sentio.occupied_squares(self._fen_to_occupied('1Q2k3/8/8/8/8/8/8/4K3'))  # b8 down
-        calls = [call('1n2k3/P7/8/8/8/8/8/4K3'),
-                 call('1Q2k3/8/8/8/8/8/8/4K3')]
-        MockedParserCallback.board_update.assert_has_calls(calls)
+        MockedParserCallback.board_update.assert_has_calls([call('1n2k3/P7/8/8/8/8/8/4K3')])
+        MockedParserCallback.request_promotion_dialog([call(chess.Move(chess.A7, chess.B8, promotion=chess.QUEEN))])
+
+    def test_finish_promotion_move(self, MockedParserCallback, MockedLedControl):
+        sentio = Sentio(MockedParserCallback, MockedLedControl)
+        sentio.board = chess.Board('1n2k3/P7/8/8/8/8/8/4K3 w - - 0 1')
+        sentio.occupied_squares(self._fen_to_occupied('1n2k3/P7/8/8/8/8/8/4K3'))
+        # a7xb8=Q
+        sentio.occupied_squares(self._fen_to_occupied('4k3/P7/8/8/8/8/8/4K3'))  # b8 up
+        sentio.occupied_squares(self._fen_to_occupied('4k3/8/8/8/8/8/8/4K3'))  # a7 up
+        sentio.occupied_squares(self._fen_to_occupied('1Q2k3/8/8/8/8/8/8/4K3'))  # b8 down
+        sentio.promotion_done("a7b8n")
+        MockedParserCallback.board_update.assert_has_calls([call('1N2k3/8/8/8/8/8/8/4K3')])
 
     def test_detect_new_game(self, MockedParserCallback, MockedLedControl):
         sentio = Sentio(MockedParserCallback, MockedLedControl)

@@ -749,6 +749,31 @@ var onSnapEnd = async function(source, target) {
     updateStatus();
 };
 
+async function promotionDialog(ucimove) {
+    var move = ucimove.match(/.{2}/g);
+    var source = move[0];
+    var target =move[1];
+
+    var tmpGame = createGamePointer();
+
+    let promotion = null
+    if (isPromotion(tmpGame.get(source), target)) {
+        chessground1.set({ animation: { enabled: false } })
+        promotion = await getUserPromotion(target)
+        chessground1.set({ animation: { enabled: true } })
+    }
+
+    var move = tmpGame.move({
+        from: source,
+        to: target,
+        promotion: promotion
+    });
+    if (move !== null) {
+        $.post('/channel', { action: 'promotion', fen: currentPosition.fen, source: source, target: target,
+                             promotion: move.promotion ? move.promotion : '' }, function(data) {});
+    }
+}
+
 function updateChessGround() {
     var tmpGame = createGamePointer();
 
@@ -1614,10 +1639,11 @@ $(function() {
             var data = JSON.parse(e.data);
             switch (data.event) {
                 case 'Fen':
+                    pickPromotion(null) // reset promotion dialog if still showing
                     updateDGTPosition(data);
                     if (data.play === 'reload') {
                         removeHighlights();
-                        removeArrorw();
+                        removeArrow();
                     }
                     if (data.play === 'user') {
                         highlightBoard(data.move, 'user');
@@ -1641,13 +1667,15 @@ $(function() {
                 case 'Light':
                     var tmp_board = new Chess(currentPosition.fen, chessGameType);
                     var tmp_move = tmp_board.move(data.move, { sloppy: true });
-                    computerside = tmp_move.color;
-                    saymove(tmp_move, tmp_board);
-                    highlightBoard(data.move, 'computer');
-                    addArrow(data.move, 'computer');
+                    if (tmp_move !== null) {
+                        computerside = tmp_move.color;
+                        saymove(tmp_move, tmp_board);
+                        highlightBoard(data.move, 'computer');
+                        addArrow(data.move, 'computer');
+                    }
                     break;
                 case 'Clear':
-                    removeArrorw();
+                    removeArrow();
                     removeHighlights();
                     break;
                 case 'Header':
@@ -1659,6 +1687,9 @@ $(function() {
                 case 'Broadcast':
                     boardStatusEl.html(data.msg);
                     break;
+                case 'PromotionDlg':
+                    // for e-boards that do not feature piece recognition
+                    promotionDialog(data.move);
                 default:
                     console.warn(data);
             }

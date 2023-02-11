@@ -59,3 +59,6 @@ class CertaboAgent:
 
     def uci_move(self, move: str):
         self.brd.uci_move(move)
+
+    def promotion_done(self, uci_move: str):
+        self.brd.promotion_done(uci_move)

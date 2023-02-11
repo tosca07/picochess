@@ -55,6 +55,7 @@ class EventApi():
     DRAWRESIGN = 'EVT_DRAWRESIGN'  # User declares a resignation or draw
     KEYBOARD_MOVE = 'EVT_KEYBOARD_MOVE'  # Keyboard sends a move (to be transfered to a fen)
     REMOTE_MOVE = 'EVT_REMOTE_MOVE'  # Remote player move
+    PROMOTION = 'EVT_PROMOTION'  # Promotion piece selected
     SET_OPENING_BOOK = 'EVT_SET_OPENING_BOOK'  # User chooses an opening book
     NEW_ENGINE = 'EVT_NEW_ENGINE'  # Change engine
     SET_INTERACTION_MODE = 'EVT_SET_INTERACTION_MODE'  # Change interaction mode
@@ -114,6 +115,8 @@ class MessageApi():
     LEVEL = 'MSG_LEVEL'  # User sets engine level
     TIME_CONTROL = 'MSG_TIME_CONTROL'  # New Timecontrol
     OPENING_BOOK = 'MSG_OPENING_BOOK'  # User chooses an opening book
+    PROMOTION_DIALOG = 'MSG_PROMOTION_DIALOG'  # Request promotion dialog on web display
+    PROMOTION_DONE = 'MSG_PROMOTION_DONE'  # User has selected piece for promotion
 
     DGT_BUTTON = 'MSG_DGT_BUTTON'  # Clock button pressed
     DGT_FEN = 'MSG_DGT_FEN'  # DGT Board sends a fen
@@ -202,6 +205,7 @@ class DgtApi():
     CLOCK_STOP = 'DGT_CLOCK_STOP'
     CLOCK_VERSION = 'DGT_CLOCK_VERSION'
     SERIALNR = 'DGT_SERIALNR'
+    PROMOTION_DONE = 'DGT_PROMOTION_DONE'
 
 
 class Dgt():
@@ -218,6 +222,7 @@ class Dgt():
     CLOCK_START = ClassFactory(DgtApi.CLOCK_START, ['side', 'devs', 'wait'])
     CLOCK_STOP = ClassFactory(DgtApi.CLOCK_STOP, ['devs', 'wait'])
     CLOCK_VERSION = ClassFactory(DgtApi.CLOCK_VERSION, ['main', 'sub', 'devs'])
+    PROMOTION_DONE = ClassFactory(DgtApi.PROMOTION_DONE, ['uci_move', 'devs'])
 
 
 class Message():
@@ -236,6 +241,7 @@ class Message():
     LEVEL = ClassFactory(MessageApi.LEVEL, ['level_text', 'level_name', 'do_speak'])
     TIME_CONTROL = ClassFactory(MessageApi.TIME_CONTROL, ['time_text', 'show_ok', 'tc_init'])
     OPENING_BOOK = ClassFactory(MessageApi.OPENING_BOOK, ['book_text', 'show_ok'])
+    PROMOTION_DIALOG = ClassFactory(MessageApi.PROMOTION_DIALOG, ['move'])
 
     DGT_BUTTON = ClassFactory(MessageApi.DGT_BUTTON, ['button', 'dev'])
     DGT_FEN = ClassFactory(MessageApi.DGT_FEN, ['fen', 'raw'])
@@ -305,6 +311,7 @@ class Message():
     PICOTUTOR_MSG = ClassFactory(MessageApi.PICOTUTOR_MSG, ['eval_str', 'game', 'score'])
     POSITION_FAIL = ClassFactory(MessageApi.POSITION_FAIL, ['fen_result'])
     TIMECONTROL_CHECK = ClassFactory(MessageApi.TIMECONTROL_CHECK, ['player', 'movestogo', 'time1', 'time2'])
+    PROMOTION_DONE = ClassFactory(MessageApi.PROMOTION_DONE, ['move'])
 
 
 class Event():
@@ -318,6 +325,7 @@ class Event():
     DRAWRESIGN = ClassFactory(EventApi.DRAWRESIGN, ['result'])
     KEYBOARD_MOVE = ClassFactory(EventApi.KEYBOARD_MOVE, ['move'])
     REMOTE_MOVE = ClassFactory(EventApi.REMOTE_MOVE, ['move', 'fen'])
+    PROMOTION = ClassFactory(EventApi.PROMOTION, ['move', 'fen'])
     SET_OPENING_BOOK = ClassFactory(EventApi.SET_OPENING_BOOK, ['book', 'book_text', 'show_ok'])
     NEW_ENGINE = ClassFactory(EventApi.NEW_ENGINE, ['eng', 'eng_text', 'options', 'show_ok'])
     SET_INTERACTION_MODE = ClassFactory(EventApi.SET_INTERACTION_MODE, ['mode', 'mode_text', 'show_ok'])

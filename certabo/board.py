@@ -85,6 +85,8 @@ class CertaboBoard(EBoard):
                     elif 'cmd' in result and result['cmd'] == 'raw_board_position' and 'fen' in result:
                         fen = result['fen'].split(' ')[0]
                         DisplayMsg.show(Message.DGT_FEN(fen=fen, raw=True))
+                    elif 'cmd' in result and result['cmd'] == 'request_promotion_dialog' and 'move' in result:
+                        DisplayMsg.show(Message.PROMOTION_DIALOG(move=result['move']))
                 except queue.Empty:
                     pass
 
@@ -120,3 +122,6 @@ class CertaboBoard(EBoard):
 
     def end_text(self):
         pass
+
+    def promotion_done(self, uci_move: str):
+        self.agent.promotion_done(uci_move)

@@ -207,6 +207,9 @@ class DgtHw(DgtIface):
         self.dgtboard.r_time = time_right
         return True
 
+    def promotion_done(self, uci_move: str):
+        self.dgtboard.promotion_done(uci_move)
+
     def get_name(self):
         """Get name."""
         return 'ser'
