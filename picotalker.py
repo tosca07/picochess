@@ -309,7 +309,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
             c_prob = 100
             c_number = self.c_no_shutdown
         elif c_group == 'takeback':
-            c_prob = 100
+            c_prob = 50
             c_number = self.c_no_takeback
         elif c_group == 'taken':
             c_prob = 50
@@ -372,7 +372,9 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         if c_prob == 0:
             return talkfile
         # consider probability factor from picochess.ini
-        if c_group == 'start' or c_group == 'name' or c_group == 'shutdown':
+        if c_group == 'start' or c_group == 'name' or c_group == 'shutdown' or c_group == 'newgame' \
+                or c_group == 'mate' or c_group == 'stalemate' or c_group == 'draw' or c_group == 'takeback' \
+                or c_group == 'check':
             # don't use factor for these events
             c_prob = c_prob
         else:
