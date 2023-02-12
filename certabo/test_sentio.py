@@ -31,28 +31,41 @@ class TestSentio(unittest.TestCase):
     def test_leds_missing_all_pieces(self, MockedParserCallback, MockedLedControl):
         sentio = Sentio(MockedParserCallback, MockedLedControl)
         sentio.occupied_squares(self._fen_to_occupied('8/8/8/8/8/8/8/8'))
-        calls = [call(bytearray(b'\xff\xff\x00\x00\x00\x00\xff\xff'))]
-        MockedLedControl.write_led_command.assert_has_calls(calls)
+        MockedLedControl.write_led_command.assert_called_with(bytearray(b'\xff\xff\x00\x00\x00\x00\xff\xff'))
 
     def test_leds_missing_rook_a1(self, MockedParserCallback, MockedLedControl):
         sentio = Sentio(MockedParserCallback, MockedLedControl)
         sentio.occupied_squares(self._fen_to_occupied('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/1NBQKBNR'))
-        calls = [call(bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x01'))]
-        MockedLedControl.write_led_command.assert_has_calls(calls)
+        MockedLedControl.write_led_command.assert_called_with(bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x01'))
 
     def test_leds_missing_pawn_h2(self, MockedParserCallback, MockedLedControl):
         sentio = Sentio(MockedParserCallback, MockedLedControl)
         sentio.occupied_squares(self._fen_to_occupied('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPP1/RNBQKBNR'))
-        calls = [call(bytearray(b'\x00\x00\x00\x00\x00\x00\x80\x00'))]
-        MockedLedControl.write_led_command.assert_has_calls(calls)
+        MockedLedControl.write_led_command.assert_called_with(bytearray(b'\x00\x00\x00\x00\x00\x00\x80\x00'))
 
     def test_leds_combine_with_engine_move(self, MockedParserCallback, MockedLedControl):
         sentio = Sentio(MockedParserCallback, MockedLedControl)
         sentio.occupied_squares(self._fen_to_occupied('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'))
         sentio.uci_move("e2e4")
-        sentio.occupied_squares(self._fen_to_occupied('rnbqkbnr/pppppppp/8/8/8/8/PPPP1PPP/RNBQKBNR'))
-        calls = [call(bytearray(b'\x00\x00\x00\x00\x10\x00\x10\x00'))]
-        MockedLedControl.write_led_command.assert_has_calls(calls)
+        sentio.occupied_squares(self._fen_to_occupied('rnbqkbnr/pppppppp/8/8/8/8/PPPP1PPP/RNBQKBNR'))  # pick up pawn
+        MockedLedControl.write_led_command.assert_called_with(bytearray(b'\x00\x00\x00\x00\x10\x00\x10\x00'))
+
+    def test_leds_stay_on_for_engine_move(self, MockedParserCallback, MockedLedControl):
+        sentio = Sentio(MockedParserCallback, MockedLedControl)
+        sentio.occupied_squares(self._fen_to_occupied('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'))
+        sentio.uci_move("e2e4")
+        sentio.occupied_squares(self._fen_to_occupied('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPP1/RNBQKBNR'))  # pick up pawn
+        sentio.occupied_squares(self._fen_to_occupied('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'))  # put back down
+        MockedLedControl.write_led_command.assert_called_with(bytearray(b'\x00\x00\x00\x00\x10\x00\x10\x00'))
+
+    def test_leds_stay_on_for_finished_engine_move(self, MockedParserCallback, MockedLedControl):
+        # LEDs will be turned off at the end by picochess itself
+        sentio = Sentio(MockedParserCallback, MockedLedControl)
+        sentio.occupied_squares(self._fen_to_occupied('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'))
+        sentio.uci_move("e2e4")
+        sentio.occupied_squares(self._fen_to_occupied('rnbqkbnr/pppppppp/8/8/8/8/PPPP1PPP/RNBQKBNR'))  # pick up e2
+        sentio.occupied_squares(self._fen_to_occupied('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR'))  # put down e4
+        MockedLedControl.write_led_command.assert_called_with(bytearray(b'\x00\x00\x00\x00\x10\x00\x10\x00'))
 
     def test_non_capture_move(self, MockedParserCallback, MockedLedControl):
         sentio = Sentio(MockedParserCallback, MockedLedControl)
@@ -141,7 +154,7 @@ class TestSentio(unittest.TestCase):
         sentio.occupied_squares(self._fen_to_occupied('4k3/8/8/8/8/8/8/4K3'))  # a7 up
         sentio.occupied_squares(self._fen_to_occupied('1Q2k3/8/8/8/8/8/8/4K3'))  # b8 down
         sentio.promotion_done("a7b8n")
-        MockedParserCallback.board_update.assert_has_calls([call('1N2k3/8/8/8/8/8/8/4K3')])
+        MockedParserCallback.board_update.assert_called_with('1N2k3/8/8/8/8/8/8/4K3')
 
     def test_detect_new_game(self, MockedParserCallback, MockedLedControl):
         sentio = Sentio(MockedParserCallback, MockedLedControl)
@@ -149,8 +162,7 @@ class TestSentio(unittest.TestCase):
         sentio.occupied_squares(self._fen_to_occupied('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'))
         calls = [call('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')]
         MockedParserCallback.board_update.assert_has_calls(calls)
-        calls = [call(bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x00'))]
-        MockedLedControl.write_led_command.assert_has_calls(calls)
+        MockedLedControl.write_led_command.assert_called_with(bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x00'))
 
     def test_sliding_piece(self, MockedParserCallback, MockedLedControl):
         sentio = Sentio(MockedParserCallback, MockedLedControl)
@@ -195,14 +207,8 @@ class TestSentio(unittest.TestCase):
     def test_take_back_b(self, MockedParserCallback, MockedLedControl):
         sentio = Sentio(MockedParserCallback, MockedLedControl)
         board = chess.Board()
-        board.push(chess.Move.from_uci("e2e4"))
-        board.push(chess.Move.from_uci("c7c5"))
-        board.push(chess.Move.from_uci("g1f3"))
-        board.push(chess.Move.from_uci("d7d6"))
-        board.push(chess.Move.from_uci("f1b5"))
-        board.push(chess.Move.from_uci("c8d7"))
-        board.push(chess.Move.from_uci("b5d7"))
-        board.push(chess.Move.from_uci("b8d7"))
+        for move in ("e2e4", "c7c5", "g1f3", "d7d6", "f1b5", "c8d7", "b5d7", "b8d7"):
+            board.push(chess.Move.from_uci(move))
         sentio.board = board
         sentio.occupied_squares(self._fen_to_occupied('r2qkbnr/pp1npppp/3p4/2p5/4P3/5N2/PPPP1PPP/RNBQK2R'))
         # takeback b8d7

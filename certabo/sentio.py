@@ -57,7 +57,7 @@ class Sentio(object):
         expected_squares = self._fen_to_squares(self.board.fen())
         occupied_squares = self._occupied_to_squares(occupied)
         if expected_squares == occupied_squares:
-            self._call_board_update(self.board.board_fen())
+            self.callback.board_update(self.board.board_fen())
             self._write_led_command(certabo.command.set_leds_off())
         elif occupied_squares == self._fen_to_squares(chess.STARTING_FEN):
             self.board = chess.Board()
