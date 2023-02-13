@@ -729,18 +729,7 @@ var onSnapEnd = async function(source, target) {
         gameHistory.result = '*';
     }
 
-    let promotion = null
-    if (isPromotion(tmpGame.get(source), target)) {
-        chessground1.set({ animation: { enabled: false } })
-        promotion = await getUserPromotion(target)
-        chessground1.set({ animation: { enabled: true } })
-    }
-
-    var move = tmpGame.move({
-        from: source,
-        to: target,
-        promotion: promotion
-    });
+    var move = await getMove(tmpGame, source, target);
 
     updateCurrentPosition(move, tmpGame);
     updateChessGround();
@@ -755,23 +744,26 @@ async function promotionDialog(ucimove) {
     var target =move[1];
 
     var tmpGame = createGamePointer();
+    var move = await getMove(tmpGame, source, target);
+    if (move !== null) {
+        $.post('/channel', { action: 'promotion', fen: currentPosition.fen, source: source, target: target,
+                             promotion: move.promotion ? move.promotion : '' }, function(data) {});
+    }
+}
 
+async function getMove(game, source, target) {
     let promotion = null
-    if (isPromotion(tmpGame.get(source), target)) {
+    if (isPromotion(game.get(source), target)) {
         chessground1.set({ animation: { enabled: false } })
         promotion = await getUserPromotion(target)
         chessground1.set({ animation: { enabled: true } })
     }
 
-    var move = tmpGame.move({
+    return game.move({
         from: source,
         to: target,
         promotion: promotion
     });
-    if (move !== null) {
-        $.post('/channel', { action: 'promotion', fen: currentPosition.fen, source: source, target: target,
-                             promotion: move.promotion ? move.promotion : '' }, function(data) {});
-    }
 }
 
 function updateChessGround() {
