@@ -45,7 +45,7 @@ import chess.uci  # type: ignore
 from timecontrol import TimeControl
 from theme import calc_theme
 from utilities import get_location, update_picochess, get_opening_books, shutdown, reboot, checkout_tag
-from utilities import Observable, DisplayMsg, version, evt_queue, write_picochess_ini, hms_time, get_engine_rspeed_par
+from utilities import Observable, DisplayMsg, version, evt_queue, write_picochess_ini, hms_time, get_engine_mame_par
 from pgn import Emailer, PgnDisplay, ModeInfo
 from server import WebServer
 from picotalker import PicoTalkerDisplay
@@ -1975,6 +1975,7 @@ def main() -> None:
     parser.add_argument('-board', '--board-type', type=str, default='dgt', help='Type of e-board: "dgt", "certabo", "chesslink", "chessnut" or "noeboard" (for basic web-play only), default is "dgt"')
     parser.add_argument('-theme', '--theme', type=str, default='dark', help='Web theme, "light", "dark" , "auto" or blank, default is "dark", leave blank for another light theme, or auto for a sunrise/sunset dependent theme setting')
     parser.add_argument('-rspeed', '--rspeed', type=str, default='1.0', help='RetroSpeed factor for mame eingines, 0.0 for fullspeed, 1.0 for original speed, 0.5 for half of the original speed or any other value from 0.0 to 7.0')
+    parser.add_argument('-rsound', '--rsound', action='store_true', help='enable/disable mame engine sound (default is off)')
     parser.add_argument('-ratdev', '--rating-deviation', type=str, help='Player rating deviation for automatic adjustment of ELO', default=350)
     args, unknown = parser.parse_known_args()
 
@@ -2026,7 +2027,7 @@ def main() -> None:
                             args.user_voice, args.computer_voice, args.speed_voice, args.enable_capital_letters,
                             args.disable_short_notation, args.log_file, args.engine_remote_server,
                             args.rolling_display_normal, max(0, min(10, args.volume_voice)), board_type, args.theme,
-                            round(float(args.rspeed), 2), args.rolling_display_ponder, args.show_engine,
+                            round(float(args.rspeed), 2), args.rsound, args.rolling_display_ponder, args.show_engine,
                             args.tutor_coach, args.tutor_watcher, args.tutor_explorer,
                             PicoComment.from_str(args.tutor_comment), args.continue_game, args.alt_move,
                             state.dgttranslate)
@@ -2119,7 +2120,7 @@ def main() -> None:
         engine_file = EngineProvider.installed_engines[0]['file']
 
     engine = UciEngine(file=engine_file, uci_shell=uci_local_shell,
-                       retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
+                       mame_par=get_engine_mame_par(state.dgtmenu.get_engine_rspeed(), state.dgtmenu.get_engine_rsound()))
     try:
         engine_name = engine.get_name()
     except AttributeError:
@@ -2174,9 +2175,9 @@ def main() -> None:
                                                'level_text': level_text, 'level_name': state.engine_level,
                                                'tc_init': state.time_control.get_parameters(), 'time_text': time_text}))
 
-    DisplayMsg.show(Message.ENGINE_SETUP())
     # engines setup
     DisplayMsg.show(Message.ENGINE_STARTUP(installed_engines=EngineProvider.installed_engines, file=engine.get_file(), level_index=level_index, has_960=engine.has_chess960(), has_ponder=engine.has_ponder()))
+    DisplayMsg.show(Message.ENGINE_SETUP())
     update_elo_display(state)
 
     # set timecontrol restore data set for normal engines after leaving emulation mode
@@ -2288,10 +2289,10 @@ def main() -> None:
                     # Load the new one and send args.
                     if remote_engine_mode() and flag_eng and uci_remote_shell:
                         engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell,
-                                           retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
+                                           mame_par=get_engine_mame_par(state.dgtmenu.get_engine_rspeed(), state.dgtmenu.get_engine_rsound()))
                     else:
                         engine = UciEngine(file=engine_file, uci_shell=uci_local_shell,
-                                           retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
+                                           mame_par=get_engine_mame_par(state.dgtmenu.get_engine_rspeed(), state.dgtmenu.get_engine_rsound()))
                     try:
                         engine_name = engine.get_name()
                     except AttributeError:
@@ -2305,10 +2306,10 @@ def main() -> None:
 
                         if remote_engine_mode() and flag_eng and uci_remote_shell:
                             engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell,
-                                               retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
+                                               mame_par=get_engine_mame_par(state.dgtmenu.get_engine_rspeed(), state.dgtmenu.get_engine_rsound()))
                         else:
                             engine = UciEngine(file=old_file, uci_shell=uci_local_shell,
-                                               retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
+                                               mame_par=get_engine_mame_par(state.dgtmenu.get_engine_rspeed(), state.dgtmenu.get_engine_rsound()))
                         try:
                             engine_name = engine.get_name()
                         except AttributeError:
@@ -2325,10 +2326,10 @@ def main() -> None:
                         if engine.quit():
                             if remote_engine_mode() and flag_eng and uci_remote_shell:
                                 engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell,
-                                                   retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
+                                                   mame_par=get_engine_mame_par(state.dgtmenu.get_engine_rspeed(), state.dgtmenu.get_engine_rsound()))
                             else:
                                 engine = UciEngine(file=old_file, uci_shell=uci_local_shell,
-                                                   retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
+                                                   mame_par=get_engine_mame_par(state.dgtmenu.get_engine_rspeed(), state.dgtmenu.get_engine_rsound()))
                             engine.startup(old_options, state.rating)
                             engine.newgame(state.game.copy())
                             try:
@@ -2363,10 +2364,10 @@ def main() -> None:
 
                             if remote_engine_mode() and flag_eng and uci_remote_shell:
                                 engine = UciEngine(file=remote_file, uci_shell=uci_remote_shell,
-                                                   retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
+                                                   mame_par=get_engine_mame_par(state.dgtmenu.get_engine_rspeed(), state.dgtmenu.get_engine_rsound()))
                             else:
                                 engine = UciEngine(file=old_file, uci_shell=uci_local_shell,
-                                                   retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
+                                                   mame_par=get_engine_mame_par(state.dgtmenu.get_engine_rspeed(), state.dgtmenu.get_engine_rsound()))
                             try:
                                 engine_name = engine.get_name()
                             except AttributeError:
@@ -3406,7 +3407,7 @@ def main() -> None:
                     DisplayMsg.show(Message.ENGINE_SETUP())
                     if engine.quit():
                         engine = UciEngine(file=engine_file, uci_shell=uci_local_shell,
-                                           retrospeed=get_engine_rspeed_par(state.dgtmenu.get_engine_rspeed()))
+                                           mame_par=get_engine_mame_par(state.dgtmenu.get_engine_rspeed(), state.dgtmenu.get_engine_rsound()))
                         engine.startup(old_options, state.rating)
                         stop_search_and_clock()
                         state.game = chess.Board()

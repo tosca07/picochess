@@ -311,15 +311,14 @@ class TimeModeLoop(object):
 
 
 class EngineTop(MyEnum):
-
     MODERN_ENGINE = 'B00_engine_menu_modern'
     RETRO_ENGINE = 'B00_engine_menu_retro'
-    RETROSPEED = 'B00_engine_menu_retrospeed'
+    RETROSETTINGS = 'B00_engine_menu_retrosettings'
     FAV_ENGINE = 'B00_engine_menu_favorites'
 
     @classmethod
     def items(cls):
-        return [EngineTop.MODERN_ENGINE, EngineTop.RETRO_ENGINE, EngineTop.RETROSPEED, EngineTop.FAV_ENGINE]
+        return [EngineTop.MODERN_ENGINE, EngineTop.RETRO_ENGINE, EngineTop.RETROSETTINGS, EngineTop.FAV_ENGINE]
 
 
 class EngineTopLoop(object):
@@ -336,6 +335,28 @@ class EngineTopLoop(object):
     def prev(item: EngineTop):
         """Get previous item."""
         return prev_item(EngineTop.items(), item, 'errEngTopPrev')
+
+
+class EngineRetroSettings(MyEnum):
+    RETROSPEED = 'B00_engine_menu_retrospeed'
+    RETROSOUND = 'B00_engine_menu_retrosound'
+
+    @classmethod
+    def items(cls):
+        return [EngineRetroSettings.RETROSPEED, EngineRetroSettings.RETROSOUND]
+
+
+class EngineRetroSettingsLoop(object):
+    def __init__(self):
+        super(EngineRetroSettingsLoop, self).__init__()
+
+    @staticmethod
+    def next(item: EngineRetroSettings):
+        return next_item(EngineRetroSettings.items(), item, 'errEngineRetroSettingsNext')
+
+    @staticmethod
+    def prev(item: EngineRetroSettings):
+        return prev_item(EngineRetroSettings.items(), item, 'errEngineRetroSettingsPrev')
 
 
 class System(MyEnum):

@@ -25,9 +25,11 @@ from typing import Dict, List, Set
 import chess  # type: ignore
 from timecontrol import TimeControl
 from utilities import Observable, DispatchDgt, get_tags, version, write_picochess_ini
-from dgt.util import TimeMode, TimeModeLoop, Top, TopLoop, Mode, ModeLoop, Language, LanguageLoop, BeepLevel, BeepLoop, EBoard, EBoardLoop, Theme, ThemeLoop, EngineTop, EngineTopLoop
-from dgt.util import System, SystemLoop, Display, DisplayLoop, ClockIcons, Voice, VoiceLoop, Info, InfoLoop, PicoTutor, Game, GameLoop, GameSave, GameSaveLoop, GameRead, GameReadLoop, PicoComment, PicoCommentLoop
-from dgt.util import Power, PowerLoop
+from dgt.util import TimeMode, TimeModeLoop, Top, TopLoop, Mode, ModeLoop, Language, LanguageLoop, BeepLevel, BeepLoop
+from dgt.util import EBoard, EBoardLoop, Theme, ThemeLoop, EngineTop, EngineTopLoop
+from dgt.util import System, SystemLoop, Display, DisplayLoop, ClockIcons, Voice, VoiceLoop, Info, InfoLoop, PicoTutor
+from dgt.util import Game, GameLoop, GameSave, GameSaveLoop, GameRead, GameReadLoop, PicoComment, PicoCommentLoop
+from dgt.util import EngineRetroSettings, EngineRetroSettingsLoop, Power, PowerLoop
 from dgt.api import Dgt, Event
 from dgt.translate import DgtTranslate
 from uci.engine_provider import EngineProvider
@@ -79,8 +81,11 @@ class MenuState(object):
     ENG_FAV_NAME = 651000
     ENG_FAV_NAME_LEVEL = 651100
 
-    RETROSPEED = 660000
-    RETROSPEED_FACTOR = 661000
+    RETROSETTINGS = 660000
+    RETROSETTINGS_RETROSPEED = 661000
+    RETROSETTINGS_RETROSPEED_FACTOR = 661100
+    RETROSETTINGS_RETROSOUND = 662000
+    RETROSETTINGS_RETROSOUND_ONOFF = 662100
 
     SYS = 700000
     SYS_POWER = 705000
@@ -162,7 +167,7 @@ class DgtMenu(object):
     def __init__(self, disable_confirm: bool, ponder_interval: int,
                  user_voice: str, comp_voice: str, speed_voice: int, enable_capital_letters: bool,
                  disable_short_move: bool, log_file, engine_server, rol_disp_norm: bool,
-                 volume_voice: int, board_type: EBoard, theme_type: str, rspeed: float,
+                 volume_voice: int, board_type: EBoard, theme_type: str, rspeed: float, rsound: bool,
                  rol_disp_brain: bool, show_enginename: bool,
                  picocoach: bool, picowatcher: bool, picoexplorer: bool,
                  picocomment: PicoComment,
@@ -306,6 +311,11 @@ class DgtMenu(object):
 
         logging.debug(f'calculated retro speed index: {self.menu_engine_retrospeed_idx}')
         self.res_engine_retrospeed_idx = self.menu_engine_retrospeed_idx
+
+        self.engine_retrosound = rsound
+        self.res_engine_retrosound = self.engine_retrosound
+        self.engine_retrosound_onoff = self.engine_retrosound
+        self.menu_engine_retrosettings = EngineRetroSettings.RETROSPEED
 
         self.tc_fixed_map = OrderedDict([
             ('rnbqkbnr/pppppppp/Q7/8/8/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=1)),
@@ -481,6 +491,10 @@ class DgtMenu(object):
     def get_engine_rspeed(self):
         """Get the flag."""
         return self.res_engine_retrospeed
+
+    def get_engine_rsound(self):
+        """Get the flag."""
+        return self.res_engine_retrosound
 
     def set_engine_restart(self, flag: bool):
         """Set the flag."""
@@ -952,16 +966,36 @@ class DgtMenu(object):
         text = self.dgttranslate.text('B00_tc_depth', self.tc_depth_list[self.menu_time_depth])
         return text
 
+    def enter_retrosettings_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.RETROSETTINGS
+        text = self.dgttranslate.text(EngineTop.RETROSETTINGS.value)
+        return text
+
+    def enter_retrosound_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.RETROSETTINGS_RETROSOUND
+        text = self.dgttranslate.text(EngineRetroSettings.RETROSOUND.value)
+        return text
+
+    def enter_retrosound_onoff_menu(self):
+        self.state = MenuState.RETROSETTINGS_RETROSOUND_ONOFF
+        msg = 'on' if self.engine_retrosound else 'off'
+
+        self.res_engine_retrosound = self.engine_retrosound
+        text = self.dgttranslate.text('B00_engine_retrosound_' + msg)
+        return text
+
     def enter_retrospeed_menu(self):
         """Set the menu state."""
-        self.state = MenuState.RETROSPEED
-        text = self.dgttranslate.text(EngineTop.RETROSPEED.value)
+        self.state = MenuState.RETROSETTINGS_RETROSPEED
+        text = self.dgttranslate.text(EngineRetroSettings.RETROSPEED.value)
         return text
 
     def enter_retrospeed_factor_menu(self):
         """Set the menu state."""
         l_speed = ''
-        self.state = MenuState.RETROSPEED_FACTOR
+        self.state = MenuState.RETROSETTINGS_RETROSPEED_FACTOR
         if self.retrospeed_list[self.menu_engine_retrospeed_idx] == 'max.':
             l_speed = self.retrospeed_list[self.menu_engine_retrospeed_idx]
         else:
@@ -1504,11 +1538,20 @@ class DgtMenu(object):
         elif self.state == MenuState.ENG_FAV_NAME_LEVEL:
             text = self.enter_eng_fav_name_menu()
 
-        elif self.state == MenuState.RETROSPEED:
+        elif self.state == MenuState.RETROSETTINGS:
             text = self.enter_engine_menu()
 
-        elif self.state == MenuState.RETROSPEED_FACTOR:
+        elif self.state == MenuState.RETROSETTINGS_RETROSPEED_FACTOR:
             text = self.enter_retrospeed_menu()
+
+        elif self.state == MenuState.RETROSETTINGS_RETROSPEED:
+            text = self.enter_retrosettings_menu()
+
+        elif self.state == MenuState.RETROSETTINGS_RETROSOUND:
+            text = self.enter_retrosettings_menu()
+
+        elif self.state == MenuState.RETROSETTINGS_RETROSOUND_ONOFF:
+            text = self.enter_retrosound_menu()
 
         elif self.state == MenuState.SYS:
             text = self.enter_top_menu()
@@ -2180,11 +2223,35 @@ class DgtMenu(object):
             text = self._fire_event(event)
             self.engine_restart = True
 
-        elif self.state == MenuState.RETROSPEED:
-            self.menu_engine = EngineTop.RETROSPEED
+        elif self.state == MenuState.RETROSETTINGS:
+            if self.menu_engine_retrosettings == EngineRetroSettings.RETROSPEED:
+                text = self.enter_retrospeed_menu()
+            if self.menu_engine_retrosettings == EngineRetroSettings.RETROSOUND:
+                text = self.enter_retrosound_menu()
+
+        elif self.state == MenuState.RETROSETTINGS_RETROSOUND:
+            self.menu_engine_retrosettings = EngineRetroSettings.RETROSOUND
+            text = self.enter_retrosound_onoff_menu()
+
+        elif self.state == MenuState.RETROSETTINGS_RETROSOUND_ONOFF:
+            config = ConfigObj('picochess.ini', default_encoding='utf8')
+            self.engine_retrosound = self.engine_retrosound_onoff
+            self.res_engine_retrosound = self.engine_retrosound
+            if self.engine_retrosound:
+                config['rsound'] = self.engine_retrosound
+            elif 'rsound' in config:
+                del config['rsound']
+            config.write()
+            # trigger engine restart by using rspeed event for rsound change
+            self._fire_event(Event.RSPEED(rspeed=self.retrospeed_factor))
+            text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okrsound'))
+            self._fire_event(Event.PICOCOMMENT(picocomment='ok'))
+
+        elif self.state == MenuState.RETROSETTINGS_RETROSPEED:
+            self.menu_engine_retrosettings = EngineRetroSettings.RETROSPEED
             text = self.enter_retrospeed_factor_menu()
 
-        elif self.state == MenuState.RETROSPEED_FACTOR:
+        elif self.state == MenuState.RETROSETTINGS_RETROSPEED_FACTOR:
             retrospeed = self.retrospeed_list[self.menu_engine_retrospeed_idx]
             if retrospeed == 'max.':
                 self.retrospeed_factor = 0.0
@@ -2195,14 +2262,15 @@ class DgtMenu(object):
             write_picochess_ini('rspeed', self.retrospeed_factor)
             self._fire_event(Event.RSPEED(rspeed=self.retrospeed_factor))
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okrspeed'))
+            self._fire_event(Event.PICOCOMMENT(picocomment='ok'))
 
         elif self.state == MenuState.ENGINE:
             if self.menu_engine == EngineTop.MODERN_ENGINE:
                 text = self.enter_modern_eng_menu()
             elif self.menu_engine == EngineTop.RETRO_ENGINE:
                 text = self.enter_retro_eng_menu()
-            elif self.menu_engine == EngineTop.RETROSPEED:
-                text = self.enter_retrospeed_menu()
+            elif self.menu_engine == EngineTop.RETROSETTINGS:
+                text = self.enter_retrosettings_menu()
             elif self.menu_engine == EngineTop.FAV_ENGINE:
                 text = self.enter_fav_eng_menu()
 
@@ -2804,7 +2872,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text('B00_level', msg)
 
         elif self.state == MenuState.ENG_FAV:
-            self.state = MenuState.RETROSPEED
+            self.state = MenuState.RETROSETTINGS
             self.menu_engine = EngineTopLoop.prev(self.menu_engine)
             text = self.dgttranslate.text(self.menu_engine.value)
 
@@ -2818,13 +2886,27 @@ class DgtMenu(object):
             msg = sorted(retro_level_dict)[self.menu_fav_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
 
-        elif self.state == MenuState.RETROSPEED:
+        elif self.state == MenuState.RETROSETTINGS:
             self.state = MenuState.ENG_RETRO
             self.menu_engine = EngineTopLoop.prev(self.menu_engine)
             text = self.dgttranslate.text(self.menu_engine.value)
 
-        elif self.state == MenuState.RETROSPEED_FACTOR:
-            l_speed = ''
+        elif self.state == MenuState.RETROSETTINGS_RETROSOUND_ONOFF:
+            self.engine_retrosound_onoff = not self.engine_retrosound_onoff
+            msg = 'on' if self.engine_retrosound_onoff else 'off'
+            text = self.dgttranslate.text('B00_engine_retrosound_' + msg)
+
+        elif self.state == MenuState.RETROSETTINGS_RETROSPEED:
+            self.state = MenuState.RETROSETTINGS_RETROSOUND
+            self.menu_engine_retrosettings = EngineRetroSettingsLoop.prev(self.menu_engine_retrosettings)
+            text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
+
+        elif self.state == MenuState.RETROSETTINGS_RETROSOUND:
+            self.state = MenuState.RETROSETTINGS_RETROSPEED
+            self.menu_engine_retrosettings = EngineRetroSettingsLoop.prev(self.menu_engine_retrosettings)
+            text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
+
+        elif self.state == MenuState.RETROSETTINGS_RETROSPEED_FACTOR:
             self.menu_engine_retrospeed_idx = (self.menu_engine_retrospeed_idx - 1) % len(self.retrospeed_list)
             if self.retrospeed_list[self.menu_engine_retrospeed_idx] == 'max.':
                 l_speed = self.retrospeed_list[self.menu_engine_retrospeed_idx]
@@ -3308,7 +3390,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text('B00_level', msg)
 
         elif self.state == MenuState.ENG_RETRO:
-            self.state = MenuState.RETROSPEED
+            self.state = MenuState.RETROSETTINGS
             self.menu_engine = EngineTopLoop.next(self.menu_engine)
             text = self.dgttranslate.text(self.menu_engine.value)
 
@@ -3337,13 +3419,27 @@ class DgtMenu(object):
             msg = sorted(retro_level_dict)[self.menu_fav_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
 
-        elif self.state == MenuState.RETROSPEED:
+        elif self.state == MenuState.RETROSETTINGS:
             self.state = MenuState.ENG_FAV
             self.menu_engine = EngineTopLoop.next(self.menu_engine)
             text = self.dgttranslate.text(self.menu_engine.value)
 
-        elif self.state == MenuState.RETROSPEED_FACTOR:
-            l_speed = ''
+        elif self.state == MenuState.RETROSETTINGS_RETROSOUND:
+            self.state = MenuState.RETROSETTINGS_RETROSPEED
+            self.menu_engine_retrosettings = EngineRetroSettingsLoop.next(self.menu_engine_retrosettings)
+            text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
+
+        elif self.state == MenuState.RETROSETTINGS_RETROSOUND_ONOFF:
+            self.engine_retrosound_onoff = not self.engine_retrosound_onoff
+            msg = 'on' if self.engine_retrosound_onoff else 'off'
+            text = self.dgttranslate.text('B00_engine_retrosound_' + msg)
+
+        elif self.state == MenuState.RETROSETTINGS_RETROSPEED:
+            self.state = MenuState.RETROSETTINGS_RETROSOUND
+            self.menu_engine_retrosettings = EngineRetroSettingsLoop.next(self.menu_engine_retrosettings)
+            text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
+
+        elif self.state == MenuState.RETROSETTINGS_RETROSPEED_FACTOR:
             self.menu_engine_retrospeed_idx = (self.menu_engine_retrospeed_idx + 1) % len(self.retrospeed_list)
             if self.retrospeed_list[self.menu_engine_retrospeed_idx] == 'max.':
                 l_speed = self.retrospeed_list[self.menu_engine_retrospeed_idx]

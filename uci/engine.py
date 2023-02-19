@@ -64,9 +64,9 @@ class UciEngine(object):
 
     """Handle the uci engine communication."""
 
-    def __init__(self, file: str, uci_shell: UciShell, retrospeed: str):
+    def __init__(self, file: str, uci_shell: UciShell, mame_par: str):
         super(UciEngine, self).__init__()
-        logging.info('parameter retrospeed=' + retrospeed)
+        logging.info('mame parameters=' + mame_par)
         try:
             self.is_adaptive = False
             self.is_mame = False
@@ -76,7 +76,7 @@ class UciEngine(object):
             logging.info('file ' + file)
             if '/mame/' in file:
                 self.is_mame = True
-                mfile = [file, retrospeed]
+                mfile = [file, mame_par]
                 logging.info(mfile)
             else:
                 mfile = [file]

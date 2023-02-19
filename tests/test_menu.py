@@ -21,8 +21,8 @@ class TestDgtMenu(unittest.TestCase):
             EngineProvider.modern_engines + EngineProvider.retro_engines + EngineProvider.favorite_engines)
 
         trans = DgtTranslate('none', 0, 'en', 'version')
-        menu = DgtMenu(False, 0, '', '', 0, False, False, '', None, False, 0, EBoard.DGT, 'dark', 1.0, False, False,
-                       False, False, False, PicoComment.COM_OFF, False, False, trans)
+        menu = DgtMenu(False, 0, '', '', 0, False, False, '', None, False, 0, EBoard.DGT, 'dark', 1.0, True, False,
+                       False, False, False, False, PicoComment.COM_OFF, False, False, trans)
         return menu
 
     @patch('platform.machine')
@@ -57,7 +57,7 @@ class TestDgtMenu(unittest.TestCase):
         menu.main_down()
         self.assertEqual(MenuState.ENG_RETRO, menu.state)
         menu.main_right()
-        self.assertEqual(MenuState.RETROSPEED, menu.state)
+        self.assertEqual(MenuState.RETROSETTINGS, menu.state)
         menu.main_right()
         self.assertEqual(MenuState.ENG_FAV, menu.state)
         menu.main_up()
@@ -69,7 +69,7 @@ class TestDgtMenu(unittest.TestCase):
         menu.main_left()
         self.assertEqual(MenuState.ENG_FAV, menu.state)
         menu.main_left()
-        self.assertEqual(MenuState.RETROSPEED, menu.state)
+        self.assertEqual(MenuState.RETROSETTINGS, menu.state)
         menu.main_left()
         self.assertEqual(MenuState.ENG_RETRO, menu.state)
         menu.main_left()
@@ -97,7 +97,7 @@ class TestDgtMenu(unittest.TestCase):
         menu.main_up()
         self.assertEqual(MenuState.ENG_RETRO, menu.state)
         menu.main_right()
-        self.assertEqual(MenuState.RETROSPEED, menu.state)
+        self.assertEqual(MenuState.RETROSETTINGS, menu.state)
         menu.main_right()
         # favorite engines
         self.assertEqual(MenuState.ENG_FAV, menu.state)
@@ -261,7 +261,7 @@ class TestDgtMenu(unittest.TestCase):
         menu.enter_top_menu()
         self.assertEqual('Engine', menu.main_down().medium_text.strip())
         self.assertEqual('Retro', menu.main_down().medium_text.strip())
-        self.assertEqual('R.-Speed', menu.main_right().medium_text.strip())
+        self.assertEqual('Ret-Sett', menu.main_right().medium_text.strip())
         self.assertEqual('Favorite', menu.main_right().medium_text.strip())
         self.assertEqual('Mephisto Milano', menu.main_down().large_text)
 
