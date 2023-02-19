@@ -261,7 +261,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             if self.last_move:
                 side = self._get_clock_side(self.last_turn)
                 beep = self.dgttranslate.bl(BeepLevel.BUTTON)
-                text = Dgt.DISPLAY_MOVE(move=self.last_move, fen=self.last_fen, side=side, wait=False, maxtime=1,
+                text = Dgt.DISPLAY_MOVE(move=self.last_move, fen=self.last_fen, side=side, wait=False, maxtime=3,
                                         beep=beep, devs={'ser', 'i2c', 'web'}, uci960=self.uci960,
                                         lang=self.dgttranslate.language, capital=self.dgttranslate.capital,
                                         long=self.dgttranslate.notation)
@@ -279,7 +279,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         else:
             text = self._combine_depth_and_score()
             text.beep = self.dgttranslate.bl(BeepLevel.BUTTON)
-            # text.maxtime = 0
+            text.maxtime = 3
             DispatchDgt.fire(text)
             self._exit_display()
 
@@ -316,7 +316,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             if self.hint_move:
                 side = self._get_clock_side(self.hint_turn)
                 beep = self.dgttranslate.bl(BeepLevel.BUTTON)
-                text = Dgt.DISPLAY_MOVE(move=self.hint_move, fen=self.hint_fen, side=side, wait=False, maxtime=1,
+                text = Dgt.DISPLAY_MOVE(move=self.hint_move, fen=self.hint_fen, side=side, wait=False, maxtime=3,
                                         beep=beep, devs={'ser', 'i2c', 'web'}, uci960=self.uci960,
                                         lang=self.dgttranslate.language, capital=self.dgttranslate.capital,
                                         long=self.dgttranslate.notation)
