@@ -1696,6 +1696,7 @@ $(function() {
     $.fn.dataTable.ext.errMode = 'throw';
 });
 
+// promotion code taken from https://github.com/thinktt/chessg
 function isPromotion(squareState, toSquare) {
     if (squareState.type !== 'p') return false
     if (toSquare.includes('8') || toSquare.includes('1')) return true
