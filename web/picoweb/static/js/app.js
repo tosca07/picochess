@@ -1635,7 +1635,6 @@ $(function() {
                     updateDGTPosition(data);
                     if (data.play === 'reload') {
                         removeHighlights();
-                        removeArrow();
                     }
                     if (data.play === 'user') {
                         highlightBoard(data.move, 'user');
@@ -1667,8 +1666,6 @@ $(function() {
                     }
                     break;
                 case 'Clear':
-                    removeArrow();
-                    removeHighlights();
                     break;
                 case 'Header':
                     setHeaders(data['headers']);
