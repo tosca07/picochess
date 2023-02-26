@@ -51,8 +51,9 @@ def _theme_according_to_current_time() -> str:
 
 
 def _theme_from_location_info(location_info) -> str:
-    local_time = datetime.datetime.now(datetime.datetime.now().astimezone().tzinfo)
-    sun_info = sun(location_info.observer, tzinfo=datetime.datetime.now().astimezone().tzinfo)
+    local_timezone = location_info.tzinfo
+    local_time = datetime.datetime.now(local_timezone)
+    sun_info = sun(location_info.observer, tzinfo=local_timezone)
     return _theme_for_time(local_time, sun_info['sunrise'], sun_info['sunset'])
 
 
@@ -72,6 +73,6 @@ def _location_info_from_location(location: str):
     except GeopyError:
         loc = None
     if loc is not None:
-        location_info = LocationInfo(location, '', datetime.datetime.now().astimezone().tzname(),
+        location_info = LocationInfo(location, '', datetime.datetime.now().astimezone(datetime.timezone.utc).tzname(),
                                      loc.latitude, loc.longitude)
     return location_info
