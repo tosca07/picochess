@@ -32,7 +32,7 @@ import queue
 import configargparse  # type: ignore
 import paramiko
 import math
-from typing import Optional, Set, Tuple
+from typing import Any, List, Optional, Set, Tuple
 
 from uci.engine import UciShell, UciEngine
 from uci.engine_provider import EngineProvider
@@ -156,10 +156,10 @@ class PicochessState:
         self.game = None
         self.game_declared = False  # User declared resignation or draw
         self.interaction_mode = Mode.NORMAL
-        self.last_legal_fens = []
+        self.last_legal_fens: List[Any] = []
         self.last_move = None
-        self.legal_fens = []
-        self.legal_fens_after_cmove = []
+        self.legal_fens: List[Any] = []
+        self.legal_fens_after_cmove: List[Any] = []
         self.max_guess = 0
         self.max_guess_black = 0
         self.max_guess_white = 0
@@ -168,11 +168,11 @@ class PicochessState:
         self.online_decrement = 0
         self.pb_move = chess.Move.null()  # Best ponder move
         self.pgn_book_test = False
-        self.picotutor: PicoTutor = None
+        self.picotutor: PicoTutor = PicoTutor()
         self.play_mode = PlayMode.USER_WHITE
         self.position_mode = False
         self.reset_auto = False
-        self.searchmoves: AlternativeMover = None
+        self.searchmoves = AlternativeMover()
         self.seeking_flag = False
         self.set_location = ''
         self.start_time_cmove_done = 0.0
@@ -183,7 +183,7 @@ class PicochessState:
         self.time_control: TimeControl = None
         self.rating: Rating = None
 
-    def start_clock(self):
+    def start_clock(self) -> None:
         """Start the clock."""
         if self.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.OBSERVE, Mode.REMOTE, Mode.TRAINING):
             self.time_control.start_internal(self.game.turn)
@@ -196,7 +196,7 @@ class PicochessState:
         else:
             logging.warning('wrong function call [start]! mode: %s', self.interaction_mode)
 
-    def stop_clock(self):
+    def stop_clock(self) -> None:
         """Stop the clock."""
         if self.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.OBSERVE, Mode.REMOTE, Mode.TRAINING):
             self.time_control.stop_internal()
@@ -208,21 +208,21 @@ class PicochessState:
         else:
             logging.warning('wrong function call [stop]! mode: %s', self.interaction_mode)
 
-    def stop_fen_timer(self):
+    def stop_fen_timer(self) -> None:
         """Stop the fen timer cause another fen string been send."""
         if self.fen_timer_running:
             self.fen_timer.cancel()
             self.fen_timer.join()
             self.fen_timer_running = False
 
-    def is_not_user_turn(self):
+    def is_not_user_turn(self) -> bool:
         """Return if it is users turn (only valid in normal, brain or remote mode)."""
         assert self.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING), 'wrong mode: %s' % self.interaction_mode
         condition1 = (self.play_mode == PlayMode.USER_WHITE and self.game.turn == chess.BLACK)
         condition2 = (self.play_mode == PlayMode.USER_BLACK and self.game.turn == chess.WHITE)
         return condition1 or condition2
 
-    def set_online_tctrl(self, game_time, fischer_inc):
+    def set_online_tctrl(self, game_time, fischer_inc) -> None:
         l_game_time = 0
         l_fischer_inc = 0
 
@@ -281,7 +281,7 @@ class PicochessState:
         return Message.GAME_ENDS(tc_init=self.time_control.get_parameters(), result=result, play_mode=self.play_mode, game=self.game.copy())
 
     @staticmethod
-    def _num(time_str):
+    def _num(time_str) -> int:
         try:
             value = int(time_str)
             if value > 999:
@@ -290,7 +290,7 @@ class PicochessState:
         except ValueError:
             return 1
 
-    def transfer_time(self, time_list: list, depth=0, node=0):
+    def transfer_time(self, time_list: list, depth=0, node=0) -> Tuple[TimeControl, Dgt.DISPLAY_TEXT]:
         """Transfer the time list to a TimeControl Object and a Text Object."""
         i_depth = self._num(depth)
         i_node = self._num(node)
@@ -345,17 +345,15 @@ class PicochessState:
         return timec, textc
 
 
-def check_ssh(host, username, password):
-    l_ssh = True
+def check_ssh(host, username, password) -> bool:
     try:
         s = paramiko.SSHClient()
         s.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         s.connect(host, username=username, password=password, timeout=7)
         s.close()
     except Exception:
-        l_ssh = False
-
-    return (l_ssh)
+        return False
+    return True
 
 
 def log_pgn(state: PicochessState):
