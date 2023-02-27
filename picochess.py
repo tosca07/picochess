@@ -68,6 +68,8 @@ from dgt.menu import DgtMenu
 from picotutor import PicoTutor
 from pathlib import Path
 
+ONLINE_PREFIX = 'Online'
+
 
 class AlternativeMover:
 
@@ -124,16 +126,6 @@ class AlternativeMover:
         self._excludedmoves.clear()
 
 
-flag_startup = False
-online_prefix = 'Online'
-seeking_flag = False
-fen_error_occured = False
-position_mode = False
-start_time_cmove_done = 0.0
-reset_auto = False
-newgame_happened = False
-
-
 class PicochessState:
     """Class to keep track of state in Picochess."""
 
@@ -151,13 +143,16 @@ class PicochessState:
         self.engine_text = None
         self.engine_level = ''
         self.new_engine_level = ''
+        self.newgame_happened = False
         self.old_engine_level = ''
         self.error_fen = None
+        self.fen_error_occured = False
         self.fen_timer = None
         self.fen_timer_running = False
         self.flag_flexible_ponder = False
         self.flag_picotutor = True
         self.flag_premove = False
+        self.flag_startup = False
         self.game = None
         self.game_declared = False  # User declared resignation or draw
         self.interaction_mode = Mode.NORMAL
@@ -175,8 +170,12 @@ class PicochessState:
         self.pgn_book_test = False
         self.picotutor: PicoTutor = None
         self.play_mode = PlayMode.USER_WHITE
+        self.position_mode = False
+        self.reset_auto = False
         self.searchmoves: AlternativeMover = None
+        self.seeking_flag = False
         self.set_location = ''
+        self.start_time_cmove_done = 0.0
         self.take_back_locked = False
         self.takeback_active = False
         self.tc_init_last = None
@@ -499,14 +498,6 @@ def main() -> None:
     flag_last_engine_pgn = False
     flag_last_engine_emu = False
     flag_last_engine_online = False
-    global reset_auto
-    global flag_startup
-    global position_mode
-    global seeking_flag
-    global fen_error_occured
-    global position_mode
-    global start_time_cmove_done
-    global newgame_happened
 
     def det_pgn_guess_tctrl(state: PicochessState):
         state.max_guess_white = 0
@@ -666,7 +657,7 @@ def main() -> None:
     def online_mode():
         online = False
         if len(engine_name) >= 6:
-            if engine_name[0:6] == online_prefix:
+            if engine_name[0:6] == ONLINE_PREFIX:
                 online = True
             else:
                 online = False
@@ -825,11 +816,6 @@ def main() -> None:
 
     def expired_fen_timer(state: PicochessState):
         """Handle times up for an unhandled fen string send from board."""
-        global flag_startup
-        global seeking_flag
-        global fen_error_occured
-        global position_mode
-        global newgame_happened
         fen_i = ''
         game_fen = ''
 
@@ -844,9 +830,9 @@ def main() -> None:
                     logging.debug('molli: reverse the board!')
                     state.dgtmenu.set_position_reverse_flipboard(True)
 
-            if (state.interaction_mode in (Mode.NORMAL, Mode.TRAINING, Mode.BRAIN) and game_fen != chess.STARTING_BOARD_FEN and flag_startup and state.dgtmenu.get_game_contlast() and not online_mode() and not pgn_mode() and not emulation_mode()):
+            if (state.interaction_mode in (Mode.NORMAL, Mode.TRAINING, Mode.BRAIN) and game_fen != chess.STARTING_BOARD_FEN and state.flag_startup and state.dgtmenu.get_game_contlast() and not online_mode() and not pgn_mode() and not emulation_mode()):
                 # molli: read the pgn of last game and restore correct game status and times
-                flag_startup = False
+                state.flag_startup = False
                 DisplayMsg.show(Message.RESTORE_GAME())
                 time.sleep(2)
 
@@ -854,7 +840,7 @@ def main() -> None:
                 read_pgn_file(l_pgn_file_name, state)
 
             elif (state.interaction_mode == Mode.PONDER and state.flag_flexible_ponder):
-                if (not newgame_happened) or flag_startup:
+                if (not state.newgame_happened) or state.flag_startup:
                     # molli: no error in analysis(ponder) mode => start new game with current fen
                     # and try to keep same player to play (white or black) but check
                     # if it is a legal position (otherwise switch sides or return error)
@@ -913,7 +899,7 @@ def main() -> None:
 
                 if online_mode():
                     # show computer opponents move again
-                    if seeking_flag:
+                    if state.seeking_flag:
                         DisplayMsg.show(Message.SEEKING())
                     elif state.best_move_displayed:
                         DisplayMsg.show(Message.COMPUTER_MOVE(move=state.done_move, ponder=False, game=state.game.copy(), wait=False))
@@ -923,14 +909,14 @@ def main() -> None:
                 external_fen = state.error_fen
                 fen_res = compare_fen(external_fen, internal_fen)
 
-                if not position_mode and fen_res:
+                if not state.position_mode and fen_res:
                     DisplayMsg.show(Message.WRONG_FEN())
                     time.sleep(2)
-                if fen_error_occured and state.game.board_fen() and fen_res:
+                if state.fen_error_occured and state.game.board_fen() and fen_res:
                     # molli: Picochess correction messages (not for starting position)
                     # show incorrect square(s) and piece to put or be removed
                     if fen_res:
-                        position_mode = True
+                        state.position_mode = True
                         if not online_mode():
                             state.stop_clock()
                         msg = Message.POSITION_FAIL(fen_result=fen_res)
@@ -941,7 +927,7 @@ def main() -> None:
                 else:
                     DisplayMsg.show(Message.EXIT_MENU())
 
-                if state.interaction_mode in (Mode.NORMAL, Mode.TRAINING, Mode.BRAIN) and game_fen != chess.STARTING_BOARD_FEN and flag_startup:
+                if state.interaction_mode in (Mode.NORMAL, Mode.TRAINING, Mode.BRAIN) and game_fen != chess.STARTING_BOARD_FEN and state.flag_startup:
 
                     if state.dgtmenu.get_enginename():
                         DisplayMsg.show(Message.ENGINE_NAME(engine_name=state.engine_text))
@@ -966,18 +952,17 @@ def main() -> None:
                             DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_game_name))
 
                 else:
-                    if state.done_computer_fen and not position_mode:
+                    if state.done_computer_fen and not state.position_mode:
                         DisplayMsg.show(Message.EXIT_MENU())
-                fen_error_occured = True  # to be reset in fen_handling
-        flag_startup = False
-        newgame_happened = False
+                state.fen_error_occured = True  # to be reset in fen_handling
+        state.flag_startup = False
+        state.newgame_happened = False
 
     def start_fen_timer(state: PicochessState):
         """Start the fen timer in case an unhandled fen string been received from board."""
-        global position_mode
         delay = 0
 
-        if position_mode:
+        if state.position_mode:
             delay = 1  # if a fen error already occured don't wait too long for next check
         else:
             delay = 4
@@ -1071,8 +1056,6 @@ def main() -> None:
 
     def user_move(move: chess.Move, sliding: bool, state: PicochessState):
         """Handle an user move."""
-        global fen_error_occured
-        global position_mode
 
         eval_str = ''
 
@@ -1115,7 +1098,7 @@ def main() -> None:
             state.game.push(move)
             eval_str = ''
 
-            if picotutor_mode(state) and not position_mode and not state.takeback_active:
+            if picotutor_mode(state) and not state.position_mode and not state.takeback_active:
                 l_mate = ''
                 t_hint_move = chess.Move.null()
                 valid = state.picotutor.push_move(move)
@@ -1254,7 +1237,7 @@ def main() -> None:
                 else:
                     analyse(state.game, msg)
 
-            if picotutor_mode(state) and not position_mode and not state.takeback_active and not state.automatic_takeback:
+            if picotutor_mode(state) and not state.position_mode and not state.takeback_active and not state.automatic_takeback:
                 if state.dgtmenu.get_picoexplorer():
                     opening_name = ''
                     opening_in_book = False
@@ -1291,11 +1274,6 @@ def main() -> None:
 
     def process_fen(fen: str, state: PicochessState):
         """Process given fen like doMove, undoMove, takebackPosition, handleSliding."""
-        global flag_startup
-        global fen_error_occured
-        global position_mode
-        global start_time_cmove_done
-        global newgame_happened
 
         handled_fen = True
         state.error_fen = None
@@ -1303,9 +1281,9 @@ def main() -> None:
         # Check for same position
         if fen == state.game.board_fen():
             logging.debug('Already in this fen: %s', fen)
-            flag_startup = False
+            state.flag_startup = False
             # molli: Chess tutor
-            if picotutor_mode(state) and state.dgtmenu.get_picocoach() and fen != chess.STARTING_BOARD_FEN and not state.take_back_locked and not fen_error_occured and not position_mode and not state.automatic_takeback:
+            if picotutor_mode(state) and state.dgtmenu.get_picocoach() and fen != chess.STARTING_BOARD_FEN and not state.take_back_locked and not state.fen_error_occured and not state.position_mode and not state.automatic_takeback:
                 if ((state.game.turn == chess.WHITE and state.play_mode == PlayMode.USER_WHITE) or (state.game.turn == chess.BLACK and state.play_mode == PlayMode.USER_BLACK)) and not (state.game.is_checkmate() or state.game.is_stalemate()):
                     state.stop_clock()
                     state.stop_fen_timer()
@@ -1361,12 +1339,12 @@ def main() -> None:
 
                     state.start_clock()
             else:
-                if position_mode:
+                if state.position_mode:
                     # position finally alright!
                     tutor_str = 'POSOK'
                     msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=state.game.copy())
                     DisplayMsg.show(msg)
-                    position_mode = False
+                    state.position_mode = False
                     time.sleep(1)
                     if not state.done_computer_fen:
                         state.start_clock()
@@ -1470,7 +1448,7 @@ def main() -> None:
         # standard legal move
         elif fen in state.legal_fens:
             logging.info('standard move detected')
-            newgame_happened = False
+            state.newgame_happened = False
             legal_moves = list(state.game.legal_moves)
             move = legal_moves[state.legal_fens.index(fen)]
             user_move(move, sliding=False, state=state)
@@ -1553,11 +1531,11 @@ def main() -> None:
                 # for online or emulation engine the user time alraedy runs with move announcement
                 # => subtract time between announcement and execution
                 end_time_cmove_done = time.time()
-                cmove_time = math.floor(end_time_cmove_done - start_time_cmove_done)
+                cmove_time = math.floor(end_time_cmove_done - state.start_time_cmove_done)
                 if cmove_time > 0:
                     state.time_control.sub_online_time(state.game.turn, cmove_time)
                 cmove_time = 0
-                start_time_cmove_done = 0
+                state.start_time_cmove_done = 0
 
             game_end = state.check_game_state()
             if game_end:
@@ -1613,7 +1591,7 @@ def main() -> None:
                             get_next_pgn_move(state)
 
             state.last_legal_fens = []
-            newgame_happened = False
+            state.newgame_happened = False
 
             if state.game.fullmove_number < 1:
                 ModeInfo.reset_opening()
@@ -1653,7 +1631,7 @@ def main() -> None:
             move = legal_moves[state.legal_fens.index(fen)]
             user_move(move, sliding=False, state=state)
             state.last_legal_fens = state.legal_fens
-            newgame_happened = False
+            state.newgame_happened = False
             if state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING):
                 state.legal_fens = []
             else:
@@ -1705,14 +1683,14 @@ def main() -> None:
         logging.debug('fen: %s result: %s', fen, handled_fen)
         state.stop_fen_timer()
         if handled_fen:
-            flag_startup = False
+            state.flag_startup = False
             state.error_fen = None
-            fen_error_occured = False
-            if position_mode:
+            state.fen_error_occured = False
+            if state.position_mode:
                 tutor_str = 'POSOK'
                 msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=state.game.copy())
                 DisplayMsg.show(msg)
-                position_mode = False
+                state.position_mode = False
                 time.sleep(1)
                 if not state.done_computer_fen:
                     state.start_clock()
@@ -1721,11 +1699,11 @@ def main() -> None:
             if fen == chess.STARTING_BOARD_FEN:
                 pos960 = 518
                 state.error_fen = None
-                if position_mode:
+                if state.position_mode:
                     tutor_str = 'POSOK'
                     msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=state.game.copy())
                     DisplayMsg.show(msg)
-                    position_mode = False
+                    state.position_mode = False
                     if not state.done_computer_fen:
                         state.start_clock()
                 Observable.fire(Event.NEW_GAME(pos960=pos960))
@@ -1734,7 +1712,6 @@ def main() -> None:
                 start_fen_timer(state)
 
     def set_wait_state(msg: Message, state: PicochessState, start_search=True):
-        global reset_auto
         """Enter engine waiting (normal mode) and maybe (by parameter) start pondering."""
         if not state.done_computer_fen:
             state.legal_fens = compute_legal_fens(state.game.copy())
@@ -1767,15 +1744,15 @@ def main() -> None:
             if state.interaction_mode in (Mode.OBSERVE, Mode.REMOTE):
                 analyse(state.game, msg)
                 return
-        if not reset_auto:
+        if not state.reset_auto:
             if state.automatic_takeback:
                 stop_search_and_clock()
-                reset_auto = True
+                state.reset_auto = True
             DisplayMsg.show(msg)
         else:
             state.automatic_takeback = False
             state.takeback_active = False
-            reset_auto = False
+            state.reset_auto = False
         state.stop_fen_timer()
 
     def get_engine_level_dict(engine_level):
@@ -2135,7 +2112,7 @@ def main() -> None:
     fen = state.game.fen()
     state.legal_fens = compute_legal_fens(state.game.copy())  # Compute the legal FENs
     is_out_of_time_already = False  # molli: out of time message only once
-    flag_startup = True
+    state.flag_startup = True
 
     all_books = get_opening_books()
     try:
@@ -2226,9 +2203,7 @@ def main() -> None:
             pass
         else:
             logging.debug('received event from evt_queue: %s', event)
-            if False:  # switch-case
-                pass
-            elif isinstance(event, Event.FEN):
+            if isinstance(event, Event.FEN):
                 process_fen(event.fen, state)
 
             elif isinstance(event, Event.KEYBOARD_MOVE):
@@ -2539,13 +2514,13 @@ def main() -> None:
             elif isinstance(event, Event.NEW_GAME):
                 last_move_no = state.game.fullmove_number
                 state.takeback_active = False
-                flag_startup = False
+                state.flag_startup = False
                 flag_pgn_game_over = False
                 ModeInfo.set_game_ending(result='*')  # initialize game result for game saving status
                 engine_name = engine.get_name()
-                position_mode = False
-                fen_error_occured = False
-                newgame_happened = True
+                state.position_mode = False
+                state.fen_error_occured = False
+                state.newgame_happened = True
                 newgame = state.game.move_stack or (state.game.chess960_pos() != event.pos960)
 
                 if newgame:
@@ -2592,7 +2567,7 @@ def main() -> None:
                     if online_mode():
                         DisplayMsg.show(Message.SEEKING())
                         engine.stop()
-                        seeking_flag = True
+                        state.seeking_flag = True
                         state.stop_fen_timer()
                         ModeInfo.set_online_mode(mode=True)
                     else:
@@ -2625,7 +2600,7 @@ def main() -> None:
                         else:
                             DisplayMsg.show(Message.ONLINE_NAMES(own_user=own_user, opp_user=opp_user))
                             time.sleep(3)
-                        seeking_flag = False
+                        state.seeking_flag = False
                         state.best_move_displayed = None
 
                     state.legal_fens = compute_legal_fens(state.game.copy())
@@ -2673,7 +2648,7 @@ def main() -> None:
 
                         DisplayMsg.show(Message.SEEKING())
                         engine.stop()
-                        seeking_flag = True
+                        state.seeking_flag = True
 
                         engine.newgame(state.game.copy())
 
@@ -2689,7 +2664,7 @@ def main() -> None:
                         else:
                             DisplayMsg.show(Message.ONLINE_NAMES(own_user=own_user, opp_user=opp_user))
                             time.sleep(1)
-                        seeking_flag = False
+                        state.seeking_flag = False
                         state.best_move_displayed = None
                         state.done_computer_fen = None
                         state.done_move = state.pb_move = chess.Move.null()
@@ -2715,7 +2690,7 @@ def main() -> None:
 
                 if picotutor_mode(state):
                     state.picotutor.reset()
-                    if not flag_startup:
+                    if not state.flag_startup:
                         if state.play_mode == PlayMode.USER_BLACK:
                             state.picotutor.set_user_color(chess.BLACK)
                         else:
@@ -2791,7 +2766,7 @@ def main() -> None:
                         logging.warning('wrong function call [alternative]! mode: %s', state.interaction_mode)
 
             elif isinstance(event, Event.SWITCH_SIDES):
-                flag_startup = False
+                state.flag_startup = False
                 DisplayMsg.show(Message.EXIT_MENU())
 
                 if state.interaction_mode == Mode.PONDER:
@@ -2832,7 +2807,7 @@ def main() -> None:
                         stop_search_and_clock()
                     state.automatic_takeback = False
                     state.takeback_active = False
-                    reset_auto = False
+                    state.reset_auto = False
                     state.last_legal_fens = []
                     state.legal_fens_after_cmove = []
                     state.best_move_displayed = state.done_computer_fen
@@ -2931,7 +2906,7 @@ def main() -> None:
                     update_elo(state, event.result)
 
             elif isinstance(event, Event.REMOTE_MOVE):
-                flag_startup = False
+                state.flag_startup = False
                 if board_type == dgt.util.EBoard.NOEBOARD:
                     user_move(event.move, sliding=True, state=state)
                 else:
@@ -2949,7 +2924,7 @@ def main() -> None:
                         logging.warning('wrong function call [remote]! mode: %s turn: %s', state.interaction_mode, state.game.turn)
 
             elif isinstance(event, Event.BEST_MOVE):
-                flag_startup = False
+                state.flag_startup = False
                 state.take_back_locked = False
                 state.best_move_posted = False
                 state.takeback_active = False
@@ -3120,7 +3095,7 @@ def main() -> None:
                             state.searchmoves.exclude(event.move)
 
                             if online_mode() or emulation_mode():
-                                start_time_cmove_done = time.time()  # time should alraedy run for the player
+                                state.start_time_cmove_done = time.time()  # time should alraedy run for the player
                             DisplayMsg.show(Message.EXIT_MENU())
                             DisplayMsg.show(Message.COMPUTER_MOVE(move=event.move, ponder=event.ponder, game=state.game.copy(), wait=event.inbook))
                             game_copy = state.game.copy()
@@ -3175,11 +3150,11 @@ def main() -> None:
                                     # for online or emulation engine the user time alraedy runs with move announcement
                                     # => subtract time between announcement and execution
                                     end_time_cmove_done = time.time()
-                                    cmove_time = math.floor(end_time_cmove_done - start_time_cmove_done)
+                                    cmove_time = math.floor(end_time_cmove_done - state.start_time_cmove_done)
                                     if cmove_time > 0:
                                         state.time_control.sub_online_time(state.game.turn, cmove_time)
                                     cmove_time = 0
-                                    start_time_cmove_done = 0
+                                    state.start_time_cmove_done = 0
 
                                 game_end = state.check_game_state()
                                 if game_end:
@@ -3235,7 +3210,7 @@ def main() -> None:
                                                 get_next_pgn_move(state)
 
                                 state.last_legal_fens = []
-                                newgame_happened = False
+                                state.newgame_happened = False
 
                                 if state.game.fullmove_number < 1:
                                     ModeInfo.reset_opening()
@@ -3298,7 +3273,7 @@ def main() -> None:
                     DisplayMsg.show(msg)
                 else:
                     if event.mode == Mode.PONDER:
-                        newgame_happened = False
+                        state.newgame_happened = False
                     stop_search_and_clock()
                     state.interaction_mode = event.mode
                     engine_mode()
@@ -3527,7 +3502,7 @@ def main() -> None:
                             time_u, time_c = time_c, time_u
                     low_time = False  # molli allow the speech output even for less than 60 seconds
                     dgtboard.low_time = low_time
-                    if state.interaction_mode == Mode.TRAINING or position_mode:
+                    if state.interaction_mode == Mode.TRAINING or state.position_mode:
                         pass
                     else:
                         DisplayMsg.show(Message.CLOCK_TIME(time_white=event.time_white, time_black=event.time_black,
