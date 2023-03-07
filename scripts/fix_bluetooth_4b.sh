@@ -1,7 +1,7 @@
 #!/bin/bash 
 ###########################################################
 # Script Name:fix_bluetooth_4b.sh
-# Author: Eric Singer
+# Author: Eric Singer (updated by Randy Reade 05/02/2022)
 # Date: 04/27/2020
 # Description: This script will fix problems with bluetooth
 #              connectivity when picochess is running on a
@@ -40,12 +40,12 @@ else
    sleep 2
 fi
 
-##########################################################
-### Loop through all the devices that have been paired ###
-### to the Raspberry Pi.  If they are DGT 00:06:66     ###
-### then check if they are connected, if not remove    ###
-##########################################################
-/bin/echo -e  'paired-devices  \nquit' |  bluetoothctl|grep '00:06:66'|cut -d' ' -f2| while read PAIRED
+#############################################################
+### Loop through all the devices that have been paired to ###
+### the Raspberry Pi.  If they are DGT_BT_ or PCS-REVII   ###
+### then check if they are connected, if not remove them  ###
+#############################################################
+/bin/echo -e  'paired-devices  \nquit' |  bluetoothctl|grep -E 'DGT_BT_|PCS-REVII'|cut -d' ' -f2| while read PAIRED
 do
    echo "${PAIRED} is paired"
    CONNECTED=` /bin/echo -e  "info ${PAIRED} \nquit" |  bluetoothctl|grep Connected`

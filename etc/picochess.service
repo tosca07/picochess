@@ -1,5 +1,5 @@
 [Unit]
-Description=PicoChess stand alone chess computer based on DGT board
+Description=PicoChess Chess Program
 
 [Service]
 Type=simple
