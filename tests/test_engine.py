@@ -21,9 +21,10 @@ from uci.rating import Rating, Result
 
 
 class MockEngine(object):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.name = 'Mocked engine'
         self.options = {}
+        self.info_handlers = list()
 
     def setoption(self, options: dict):
         self.options = options
@@ -34,9 +35,12 @@ class MockEngine(object):
         else:
             return None
 
+    def uci(self):
+        pass
 
+
+@patch("chess.uci.popen_engine", new=MockEngine)
 class TestEngine(unittest.TestCase):
-
     def test_engine_uses_elo(self):
         eng = UciEngine('some_test_engine', UciShell(), '')
         eng.engine = MockEngine()
