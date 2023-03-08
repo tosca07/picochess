@@ -12,7 +12,8 @@ from uci.engine_provider import EngineProvider
 
 class TestDgtMenu(unittest.TestCase):
 
-    def create_menu(self, machine_mock):
+    @patch("subprocess.run")
+    def create_menu(self, machine_mock, _):
         machine_mock.return_value = '..' + os.sep + 'tests'  # return the tests path as the platform engine path
         EngineProvider.modern_engines = read_engine_ini(filename='engines.ini')
         EngineProvider.retro_engines = read_engine_ini(filename='retro.ini')
@@ -21,8 +22,30 @@ class TestDgtMenu(unittest.TestCase):
             EngineProvider.modern_engines + EngineProvider.retro_engines + EngineProvider.favorite_engines)
 
         trans = DgtTranslate('none', 0, 'en', 'version')
-        menu = DgtMenu(False, 0, '', '', 0, False, False, '', None, False, 0, EBoard.DGT, 'dark', 1.0, True, False,
-                       False, False, False, False, PicoComment.COM_OFF, False, False, trans)
+        menu = DgtMenu(disable_confirm=False,
+                       ponder_interval=0,
+                       user_voice='',
+                       comp_voice='',
+                       speed_voice=0,
+                       enable_capital_letters=False,
+                       disable_short_move=False,
+                       log_file='',
+                       engine_server=None,
+                       rol_disp_norm=False,
+                       volume_voice=0,
+                       board_type=EBoard.DGT,
+                       theme_type='dark',
+                       rspeed=1.0,
+                       rsound=True,
+                       rol_disp_brain=False,
+                       show_enginename=False,
+                       picocoach=False,
+                       picowatcher=False,
+                       picoexplorer=False,
+                       picocomment=PicoComment.COM_OFF,
+                       contlast=False,
+                       altmove=False,
+                       dgttranslate=trans)
         return menu
 
     @patch('platform.machine')
