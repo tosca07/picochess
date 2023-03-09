@@ -129,6 +129,10 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         self.low_time = False
         self.play_game = None  # saves the game after a computer move - used for "setpieces" to speak the move again
         self.setpieces_voice = setpieces_voice
+        if computer_voice:
+            self.pico_voice_active = True
+        else:
+            self.pico_voice_active = False
         self.c_no_beforecmove = 0
         self.c_no_beforeumove = 0
         self.c_no_cmove = 0
@@ -806,7 +810,8 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
                 elif isinstance(message, Message.PICOTUTOR_MSG):
                     if '??' == message.eval_str:
-                        self.talk(['picotutor.ogg'], self.BEEPER)
+                        if not self.pico_voice_active:
+                            self.talk(['picotutor.ogg'], self.BEEPER)
                         self.talk(['picotutor_notify.ogg'])
                         self.talk(['verybadmove.ogg'])
                     elif '?' == message.eval_str:

@@ -205,7 +205,7 @@ class PicochessState:
                 pass
             else:
                 DisplayMsg.show(Message.CLOCK_STOP(devs={'ser', 'i2c', 'web'}))
-                time.sleep(0.5)  # @todo give some time to clock to really do it. Find a better solution!
+                time.sleep(0.7)  # @todo give some time to clock to really do it. Find a better solution!
         else:
             logging.warning('wrong function call [stop]! mode: %s', self.interaction_mode)
 
@@ -1216,9 +1216,12 @@ def main() -> None:
                             if emulation_mode() and eval_str == '??' and state.last_move != move:
                                 # molli: do not send move to engine
                                 # wait for take back or lever button in case of no takeback
-                                state.takeback_active = True
-                                state.automatic_takeback = True  # to be reset in think!
-                                set_wait_state(Message.TAKE_BACK(game=state.game.copy()), state)
+                                if board_type == dgt.util.EBoard.NOEBOARD:
+                                    Observable.fire(Event.TAKE_BACK(take_back='PGN_TAKEBACK'))
+                                else:
+                                    state.takeback_active = True
+                                    state.automatic_takeback = True  # to be reset in think!
+                                    set_wait_state(Message.TAKE_BACK(game=state.game.copy()), state)
                             else:
                                 # send move to engine
                                 logging.info('starting think()')
@@ -1306,60 +1309,7 @@ def main() -> None:
             flag_startup = False
             # molli: Chess tutor
             if picotutor_mode(state) and state.dgtmenu.get_picocoach() and fen != chess.STARTING_BOARD_FEN and not state.take_back_locked and not fen_error_occured and not position_mode and not state.automatic_takeback:
-                if ((state.game.turn == chess.WHITE and state.play_mode == PlayMode.USER_WHITE) or (state.game.turn == chess.BLACK and state.play_mode == PlayMode.USER_BLACK)) and not (state.game.is_checkmate() or state.game.is_stalemate()):
-                    state.stop_clock()
-                    state.stop_fen_timer()
-                    eval_str = 'ANALYSIS'
-                    msg = Message.PICOTUTOR_MSG(eval_str=eval_str)
-                    DisplayMsg.show(msg)
-                    time.sleep(2)
-
-                    t_best_move, t_best_score, t_best_mate, t_pv_best_move, t_alt_best_moves = state.picotutor.get_pos_analysis()
-
-                    tutor_str = 'POS' + str(t_best_score)
-                    msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, score=t_best_score)
-                    DisplayMsg.show(msg)
-                    time.sleep(5)
-
-                    if t_best_mate:
-                        l_mate = int(t_best_mate)
-                        if t_best_move != chess.Move.null():
-                            game_tutor = state.game.copy()
-                            san_move = game_tutor.san(t_best_move)
-                            game_tutor.push(t_best_move)  # for picotalker (last move spoken)
-                            tutor_str = 'BEST' + san_move
-                            msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=game_tutor.copy())
-                            DisplayMsg.show(msg)
-                            time.sleep(5)
-                    else:
-                        l_mate = 0
-                    if l_mate > 0:
-                        eval_str = 'PICMATE_' + str(abs(l_mate))
-                        msg = Message.PICOTUTOR_MSG(eval_str=eval_str)
-                        DisplayMsg.show(msg)
-                        time.sleep(5)
-                    elif l_mate < 0:
-                        eval_str = 'USRMATE_' + str(abs(l_mate))
-                        msg = Message.PICOTUTOR_MSG(eval_str=eval_str)
-                        DisplayMsg.show(msg)
-                        time.sleep(5)
-                    else:
-                        l_max = 0
-                        for alt_move in t_alt_best_moves:
-                            l_max = l_max + 1
-                            if l_max <= 3:
-                                game_tutor = state.game.copy()
-                                san_move = game_tutor.san(alt_move)
-                                game_tutor.push(alt_move)  # for picotalker (last move spoken)
-
-                                tutor_str = 'BEST' + san_move
-                                msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=game_tutor.copy())
-                                DisplayMsg.show(msg)
-                                time.sleep(5)
-                            else:
-                                break
-
-                    state.start_clock()
+                call_pico_coach(state)
             else:
                 if position_mode:
                     # position finally alright!
@@ -1507,7 +1457,6 @@ def main() -> None:
                 state.picotutor.pop_last_move()
                 valid = state.picotutor.push_move(state.done_move)
                 if not valid:
-                    eval_str = 'ER'
                     state.picotutor.reset()
                     state.picotutor.set_position(state.game.fen(), i_turn=state.game.turn)
 
@@ -1733,6 +1682,65 @@ def main() -> None:
                 state.error_fen = fen
                 start_fen_timer(state)
 
+    def call_pico_coach(state):
+        if ((state.game.turn == chess.WHITE and state.play_mode == PlayMode.USER_WHITE) or (state.game.turn == chess.BLACK and state.play_mode == PlayMode.USER_BLACK)) and not (state.game.is_checkmate() or state.game.is_stalemate()):
+
+            state.stop_clock()
+            time.sleep(0.5)
+            state.stop_fen_timer()
+            time.sleep(0.5)
+            eval_str = 'ANALYSIS'
+            msg = Message.PICOTUTOR_MSG(eval_str=eval_str)
+            DisplayMsg.show(msg)
+            time.sleep(2)
+
+            t_best_move, t_best_score, t_best_mate, t_pv_best_move, t_alt_best_moves = state.picotutor.get_pos_analysis()
+
+            tutor_str = 'POS' + str(t_best_score)
+            msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, score=t_best_score)
+            DisplayMsg.show(msg)
+            time.sleep(5)
+
+            if t_best_mate:
+                l_mate = int(t_best_mate)
+                if t_best_move != chess.Move.null():
+                    game_tutor = state.game.copy()
+                    san_move = game_tutor.san(t_best_move)
+                    game_tutor.push(t_best_move)  # for picotalker (last move spoken)
+                    tutor_str = 'BEST' + san_move
+                    msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=game_tutor.copy())
+                    DisplayMsg.show(msg)
+                    time.sleep(5)
+            else:
+                l_mate = 0
+            if l_mate > 0:
+                eval_str = 'PICMATE_' + str(abs(l_mate))
+                msg = Message.PICOTUTOR_MSG(eval_str=eval_str)
+                DisplayMsg.show(msg)
+                time.sleep(5)
+            elif l_mate < 0:
+                eval_str = 'USRMATE_' + str(abs(l_mate))
+                msg = Message.PICOTUTOR_MSG(eval_str=eval_str)
+                DisplayMsg.show(msg)
+                time.sleep(5)
+            else:
+                l_max = 0
+                for alt_move in t_alt_best_moves:
+                    l_max = l_max + 1
+                    if l_max <= 3:
+                        game_tutor = state.game.copy()
+                        san_move = game_tutor.san(alt_move)
+                        game_tutor.push(alt_move)  # for picotalker (last move spoken)
+
+                        tutor_str = 'BEST' + san_move
+                        msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=game_tutor.copy())
+                        DisplayMsg.show(msg)
+                        time.sleep(5)
+                    else:
+                        break
+
+            state.start_clock()
+
     def set_wait_state(msg: Message, state: PicochessState, start_search=True):
         global reset_auto
         """Enter engine waiting (normal mode) and maybe (by parameter) start pondering."""
@@ -1884,6 +1892,42 @@ def main() -> None:
             state.start_clock()
             state.legal_fens = compute_legal_fens(state.game.copy())
 
+    def takeback(state: PicochessState):
+        stop_search_and_clock()
+        l_error = False
+        try:
+            state.game.pop()
+            l_error = False
+        except Exception:
+            l_error = True
+            logging.debug('takeback not possible!')
+        if not l_error:
+            if picotutor_mode(state):
+                if state.best_move_posted:
+                    state.picotutor.pop_last_move()
+                    state.best_move_posted = False
+                state.picotutor.pop_last_move()
+            state.done_computer_fen = None
+            state.done_move = state.pb_move = chess.Move.null()
+            state.searchmoves.reset()
+            state.takeback_active = True
+            set_wait_state(Message.TAKE_BACK(game=state.game.copy()), state)
+
+            if pgn_mode():  # molli pgn
+                log_pgn(state)
+                if state.max_guess_white > 0:
+                    if state.game.turn == chess.WHITE:
+                        if state.no_guess_white > state.max_guess_white:
+                            get_next_pgn_move(state)
+                elif state.max_guess_black > 0:
+                    if state.game.turn == chess.BLACK:
+                        if state.no_guess_black > state.max_guess_black:
+                            get_next_pgn_move(state)
+
+            if (state.game.board_fen() == chess.STARTING_BOARD_FEN):
+                pos960 = 518
+                Observable.fire(Event.NEW_GAME(pos960=pos960))
+
     # Enable garbage collection - needed for engne swapping as objects orphaned
     gc.enable()
 
@@ -1975,8 +2019,8 @@ def main() -> None:
     parser.add_argument('-board', '--board-type', type=str, default='dgt', help='Type of e-board: "dgt", "certabo", "chesslink", "chessnut" or "noeboard" (for basic web-play only), default is "dgt"')
     parser.add_argument('-theme', '--theme', type=str, default='dark', help='Web theme, "light", "dark" , "auto" or blank, default is "dark", leave blank for another light theme, or auto for a sunrise/sunset dependent theme setting')
     parser.add_argument('-rspeed', '--rspeed', type=str, default='1.0', help='RetroSpeed factor for mame eingines, 0.0 for fullspeed, 1.0 for original speed, 0.5 for half of the original speed or any other value from 0.0 to 7.0')
-    parser.add_argument('-rsound', '--rsound', action='store_true', help='enable/disable mame engine sound (default is off)')
     parser.add_argument('-ratdev', '--rating-deviation', type=str, help='Player rating deviation for automatic adjustment of ELO', default=350)
+    parser.add_argument('-rsound', '--rsound', action='store_true', help='en/disable mame engine sound (default is off)')
     args, unknown = parser.parse_known_args()
 
     # Enable logging
@@ -3086,9 +3130,12 @@ def main() -> None:
                                             else:
                                                 # user move wrong in pgn display mode only
                                                 DisplayMsg.show(Message.MOVE_RETRY())
-                                            state.takeback_active = True
-                                            state.automatic_takeback = True
-                                            set_wait_state(Message.TAKE_BACK(game=state.game.copy()), state)  # automatic takeback mode
+                                            if board_type == dgt.util.EBoard.NOEBOARD:
+                                                Observable.fire(Event.TAKE_BACK(take_back='PGN_TAKEBACK'))
+                                            else:
+                                                state.takeback_active = True
+                                                state.automatic_takeback = True
+                                                set_wait_state(Message.TAKE_BACK(game=state.game.copy()), state)  # automatic takeback mode
                                     else:
                                         logging.debug('molli pgn: Wrong Move! Try Again!')
 
@@ -3107,9 +3154,13 @@ def main() -> None:
                                         else:
                                             # user move wrong in pgn display mode only
                                             DisplayMsg.show(Message.MOVE_RETRY())
-                                        state.takeback_active = True
-                                        state.automatic_takeback = True
-                                        set_wait_state(Message.TAKE_BACK(game=state.game.copy()), state)  # automatic takeback mode
+
+                                        if board_type == dgt.util.EBoard.NOEBOARD:
+                                            Observable.fire(Event.TAKE_BACK(take_back='PGN_TAKEBACK'))
+                                        else:
+                                            state.takeback_active = True
+                                            state.automatic_takeback = True
+                                            set_wait_state(Message.TAKE_BACK(game=state.game.copy()), state)  # automatic takeback mode
                                 else:
                                     DisplayMsg.show(Message.GAME_ENDS(tc_init=state.time_control.get_parameters(), result=GameResult.ABORT, play_mode=state.play_mode, game=state.game.copy()))
 
@@ -3357,12 +3408,12 @@ def main() -> None:
 
             elif isinstance(event, Event.PICOCOACH):
 
+                pico_calc = False
                 if (state.dgtmenu.get_picowatcher() or state.dgtmenu.get_picocoach()):
                     pico_calc = True
                 else:
                     pico_calc = False
 
-                pico_calc = False
                 state.picotutor.set_status(state.dgtmenu.get_picowatcher(), state.dgtmenu.get_picocoach(), state.dgtmenu.get_picoexplorer(), state.dgtmenu.get_picocomment())
 
                 if event.picocoach:
@@ -3382,6 +3433,8 @@ def main() -> None:
                         state.picotutor.stop()
 
                 DisplayMsg.show(Message.PICOCOACH(picocoach=event.picocoach))
+                if state.dgtmenu.get_picocoach() and board_type == dgt.util.EBoard.NOEBOARD:
+                    call_pico_coach(state)
 
             elif isinstance(event, Event.PICOEXPLORER):
                 if (state.dgtmenu.get_picowatcher() or state.dgtmenu.get_picocoach()):
@@ -3430,42 +3483,10 @@ def main() -> None:
                         DisplayMsg.show(Message.ENGINE_FAIL())
 
             elif isinstance(event, Event.TAKE_BACK):
-                if not (state.take_back_locked or online_mode() or (emulation_mode() and not state.automatic_takeback)) and state.game.move_stack:
-                    stop_search_and_clock()
-                    l_error = False
-                    try:
-                        state.game.pop()
-                        l_error = False
-                    except Exception:
-                        l_error = True
-                        logging.debug('takeback not possible!')
-
-                    if not l_error:
-                        if picotutor_mode(state):
-                            if state.best_move_posted:
-                                state.picotutor.pop_last_move()
-                                state.best_move_posted = False
-                            state.picotutor.pop_last_move()
-                        state.done_computer_fen = None
-                        state.done_move = state.pb_move = chess.Move.null()
-                        state.searchmoves.reset()
-                        state.takeback_active = True
-                        set_wait_state(Message.TAKE_BACK(game=state.game.copy()), state)
-
-                        if pgn_mode():  # molli pgn
-                            log_pgn(state)
-                            if state.max_guess_white > 0:
-                                if state.game.turn == chess.WHITE:
-                                    if state.no_guess_white > state.max_guess_white:
-                                        get_next_pgn_move(state)
-                            elif state.max_guess_black > 0:
-                                if state.game.turn == chess.BLACK:
-                                    if state.no_guess_black > state.max_guess_black:
-                                        get_next_pgn_move(state)
-
-                        if (state.game.board_fen() == chess.STARTING_BOARD_FEN):
-                            pos960 = 518
-                            Observable.fire(Event.NEW_GAME(pos960=pos960))
+                if state.game.move_stack and (event.take_back == 'PGN_TAKEBACK' or not (
+                        state.take_back_locked or online_mode() or (
+                        emulation_mode() and not state.automatic_takeback))):
+                    takeback(state)
 
             elif isinstance(event, Event.PICOCOMMENT):
                 DisplayMsg.show(Message.PICOCOMMENT(picocomment=event.picocomment))

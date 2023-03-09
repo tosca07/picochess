@@ -42,6 +42,27 @@ from eboard import EBoard
 client_ips = []
 
 
+def read_pgn_info():
+    info = {}
+    try:
+        with open('pgn_game_info.txt') as info_file:
+            for line in info_file:
+                name, value = line.partition("=")[::2]
+                info[name.strip()] = value.strip()
+        return info
+    except (OSError, KeyError):
+        logging.error('Could not read pgn_game_info file')
+        info['PGN_GAME'] = 'Game Error'
+        info['PGN_PROBLEM'] = ''
+        info['PGN_FEN'] = ''
+        info['PGN_RESULT'] = '*'
+        info['PGN_White'] = ''
+        info['PGN_Black'] = ''
+        info['PGN_White_ELO'] = ''
+        info['PGN_Black_ELO'] = ''
+        return info
+
+
 class ServerRequestHandler(tornado.web.RequestHandler):
     def initialize(self, shared=None):
         self.shared = shared
@@ -409,7 +430,6 @@ class WebDisplay(DisplayMsg, threading.Thread):
         pgn_game.headers['Round'] = '?'
         pgn_game.headers['White'] = '?'
         pgn_game.headers['Black'] = '?'
-        pgn_game.headers['PicoRSpeed'] = '1.0'
 
         user_name = 'User'
         engine_name = 'Picochess'
@@ -462,6 +482,18 @@ class WebDisplay(DisplayMsg, threading.Thread):
                     pgn_game.headers['Black'] = user_name
                     pgn_game.headers['WhiteElo'] = comp_elo
                     pgn_game.headers['BlackElo'] = user_elo
+
+            if 'PGN Replay' in engine_name:
+                info = {}
+                info = read_pgn_info()
+                pgn_game.headers['Event'] = engine_name + engine_level
+                pgn_game.headers['Date'] = datetime.datetime.today().strftime('%Y.%m.%d')
+                pgn_game.headers['Site'] = 'picochess.org'
+                pgn_game.headers['Round'] = ''
+                pgn_game.headers['White'] = info['PGN_White']
+                pgn_game.headers['Black'] = info['PGN_Black']
+                pgn_game.headers['WhiteElo'] = info['PGN_White_ELO']
+                pgn_game.headers['BlackElo'] = info['PGN_Black_ELO']
 
         if 'ip_info' in self.shared:
             if 'location' in self.shared['ip_info']:
