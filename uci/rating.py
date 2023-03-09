@@ -39,7 +39,7 @@ class Rating(object):
         expected_outcome = self._expected_outcome(other)
         g = self._g(other.rating_deviation)
         d_squared = math.pow((math.pow(Rating.Q, 2)) * (math.pow(g, 2)) * expected_outcome * (1 - expected_outcome), -1)
-        denominator = math.pow(self.rating_deviation, -2) + 1 / d_squared
+        denominator = math.pow(max(self.rating_deviation, 0.000001), -2) + 1 / d_squared
         new_rating = self.rating + Rating.Q / denominator * g * (result.value - expected_outcome)
         return Rating(new_rating, math.sqrt(1.0 / denominator))
 
