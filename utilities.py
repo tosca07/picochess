@@ -265,15 +265,15 @@ def get_location():
         sock.connect(('8.8.8.8', 80))
         int_ip = sock.getsockname()[0]
         sock.close()
-        response = urllib.request.urlopen('http://www.geolocation-db.com/json/')
+        response = urllib.request.urlopen('https://get.geojs.io/v1/ip/geo.json')
         j = json.loads(response.read().decode())
-        country_name = j['country_name'] + ' ' if 'country_name' in j and j['country_name'] is not None else ''
-        country_code = j['country_code'] + ' ' if 'country_code' in j and j['country_code'] is not None else ''
-        city = j['city'] + ', ' if 'city' in j and j['city'] is not None else ''
 
-        ext_ip = j['IPv4'] if 'IPv4' in j and j['IPv4'] is not None else None
+        country_name = j.get('country', '')
+        country_code = j.get('country_code', '')
+        city = j.get('city', '')
+        ext_ip = j.get('IPv4', None)
 
-        return (city + country_name + country_code).strip(), ext_ip, int_ip
+        return f"{city}, {country_name} {country_code}", ext_ip, int_ip
     except Exception:
         return '?', None, None
 

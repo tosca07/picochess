@@ -14,15 +14,17 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
+from unittest.mock import patch
 
 from uci.engine import UciEngine, UciShell
 from uci.rating import Rating, Result
 
 
 class MockEngine(object):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.name = 'Mocked engine'
         self.options = {}
+        self.info_handlers = list()
 
     def setoption(self, options: dict):
         self.options = options
@@ -33,9 +35,12 @@ class MockEngine(object):
         else:
             return None
 
+    def uci(self):
+        pass
 
+
+@patch("chess.uci.popen_engine", new=MockEngine)
 class TestEngine(unittest.TestCase):
-
     def test_engine_uses_elo(self):
         eng = UciEngine('some_test_engine', UciShell(), '')
         eng.engine = MockEngine()
@@ -131,7 +136,8 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(None, eng.engine.get_elo())
         self.assertEqual(-1, eng.engine_rating)
 
-    def test_udpate_rating(self):
+    @patch("uci.engine.write_picochess_ini")
+    def test_update_rating(self, _):
         eng = UciEngine('some_engine', UciShell(), '')
         eng.engine = MockEngine()
         eng.startup({'UCI_Elo': 'auto'}, Rating(849.5, 123.0))
@@ -141,7 +147,8 @@ class TestEngine(unittest.TestCase):
         self.assertEqual('900', eng.engine.get_elo())
         self.assertEqual(900, eng.engine_rating)
 
-    def test_udpate_rating_with_eval(self):
+    @patch("uci.engine.write_picochess_ini")
+    def test_update_rating_with_eval(self, _):
         eng = UciEngine('some_engine', UciShell(), '')
         eng.engine = MockEngine()
         eng.startup({'UCI_Elo': 'auto + 11'}, Rating(850.5, 123.0))
