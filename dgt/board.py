@@ -549,30 +549,6 @@ class DgtBoard(EBoard):
     def _open_bluetooth(self):
         if self.bt_state == -1:
             # only for jessie upwards
-
-            ############################################################
-            # Check to see if bluetooth is running, if not restart it. #
-            # Idea from Eric Singer's fix_bluetooth_4b.py script).     #
-            ############################################################
-            status = subprocess.call('systemctl is-active --quiet bluetooth', shell=True)
-            if status != 0:
-                logging.warning('Bluetooth Service is not running, Restarting...')
-                subprocess.call('systemctl restart bluetooth', shell=True)
-            else:
-                logging.info('Bluetooth Service is running...')
-
-            ##########################################################
-            # Check to see if hciuart is running, if not restart it. #
-            # Idea from Eric Singer's fix_bluetooth_4b.py script).   #
-            ##########################################################
-            status = subprocess.call('systemctl is-active --quiet hciuart', shell=True)
-            if status != 0:
-                logging.warning('hciuart Service is not running or failed, Restarting...')
-                subprocess.call('systemctl restart hciuart', shell=True)
-                time.sleep(5)
-            else:
-                logging.info('hciuart Service is running...')
-
             if path.exists('/usr/bin/bluetoothctl'):
                 self.bt_state = 0
 
@@ -625,13 +601,10 @@ class DgtBoard(EBoard):
                     self.bt_state = 3
                     self.btctl.stdin.write("scan on\n")
                     self.btctl.stdin.flush()
-
-# RR - in the meantime get already-paired devices since BlueZ > 5.43 no longer lists already-paired
-#       devices when bluetoothctl is started in a shell.
-
+                    # get already-paired devices since BlueZ > 5.43 no longer lists already-paired
+                    # devices when bluetoothctl is started in a shell
                     self.btctl.stdin.write("paired-devices\n")
                     self.btctl.stdin.flush()
-##
                 elif 'Discovering: yes' in self.bt_line:
                     self.bt_state = 4
                 elif 'Pairing successful' in self.bt_line:
