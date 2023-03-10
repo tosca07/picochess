@@ -356,6 +356,7 @@ class DgtTranslate(object):
                 ittxt = entxt
             elif 'HINT' in msg:
                 beep = False
+                w_msg = 'hint move: ' + msg[4:]
                 l_msg = 'hint ' + msg[4:]
                 l_msg = l_msg.ljust(11, ' ')
                 l_move_g = msg[4:]
@@ -364,7 +365,7 @@ class DgtTranslate(object):
                 l_move_g = l_move_g.replace('R', 'T')
                 l_move_g = l_move_g.replace('B', 'L')
                 l_move_g = l_move_g.replace('P', 'B')
-                l_msg_g = 'Tipp ' + l_move_g
+                l_msg_g = 'Tipp: ' + l_move_g
                 l_msg_g = l_msg_g.ljust(11, ' ')
                 m_move_g = msg[4:]
                 m_move_g = l_move_g.replace('N', 'S')
@@ -383,7 +384,7 @@ class DgtTranslate(object):
                     m_msg_g = 'Tipp ' + m_move_g
                 m_msg = m_msg.ljust(8, ' ')
                 m_msg_g = m_msg_g.ljust(8, ' ')
-                entxt = Dgt.DISPLAY_TEXT(web_text=l_msg[:38], large_text=l_msg[:11], medium_text=m_msg[:8], small_text=m_msg[:6])
+                entxt = Dgt.DISPLAY_TEXT(web_text=w_msg[:38], large_text=l_msg[:11], medium_text=m_msg[:8], small_text=m_msg[:6])
                 detxt = Dgt.DISPLAY_TEXT(web_text=l_msg_g[:38], large_text=l_msg_g[:11], medium_text=m_msg_g[:8], small_text=m_msg_g[:6])
                 nltxt = entxt
                 frtxt = entxt
@@ -400,6 +401,7 @@ class DgtTranslate(object):
                 else:
                     l_msg = 'threat ' + msg[6:]
                     m_msg = 'thrt ' + msg[6:]
+                w_msg = 'threat: ' + msg[6:]
                 l_msg = l_msg.ljust(11, ' ')
                 m_msg = m_msg.ljust(8, ' ')
                 l_move_g = msg[6:]
@@ -418,17 +420,19 @@ class DgtTranslate(object):
                     l_msg_g = 'droht' + l_move_g
                 else:
                     l_msg_g = 'droht ' + l_move_g
+                w_msg_g = 'Es droht: ' + l_move_g
                 l_msg_g = l_msg_g.ljust(11, ' ')
                 m_msg_g = m_move_g
                 m_msg_g = m_msg_g.ljust(8, ' ')
-                entxt = Dgt.DISPLAY_TEXT(web_text=l_msg[:38], large_text=l_msg[:11], medium_text=m_msg[:8], small_text=m_msg[:6])
-                detxt = Dgt.DISPLAY_TEXT(web_text=l_msg_g[:38], large_text=l_msg_g[:11], medium_text=m_msg_g[:8], small_text=m_msg_g[:6])
+                entxt = Dgt.DISPLAY_TEXT(web_text=w_msg[:38], large_text=l_msg[:11], medium_text=m_msg[:8], small_text=m_msg[:6])
+                detxt = Dgt.DISPLAY_TEXT(web_text=w_msg_g[:38], large_text=l_msg_g[:11], medium_text=m_msg_g[:8], small_text=m_msg_g[:6])
                 nltxt = entxt
                 frtxt = entxt
                 estxt = entxt
                 ittxt = entxt
             elif 'BEST' in msg:
                 beep = False
+                w_msg = 'hint move: ' + msg[4:]
                 l_msg = 'hint ' + msg[4:]
                 l_msg = l_msg.ljust(11, ' ')
                 l_move_g = msg[4:]
@@ -456,7 +460,7 @@ class DgtTranslate(object):
                     m_msg_g = 'Tipp ' + m_move_g
                 m_msg = m_msg.ljust(8, ' ')
                 m_msg_g = m_msg_g.ljust(8, ' ')
-                entxt = Dgt.DISPLAY_TEXT(web_text=l_msg[:38], large_text=l_msg[:11], medium_text=m_msg[:8], small_text=m_msg[:6])
+                entxt = Dgt.DISPLAY_TEXT(web_text=w_msg[:38], large_text=l_msg[:11], medium_text=m_msg[:8], small_text=m_msg[:6])
                 detxt = Dgt.DISPLAY_TEXT(web_text=l_msg_g[:38], large_text=l_msg_g[:11], medium_text=m_msg_g[:8], small_text=m_msg_g[:6])
                 nltxt = entxt
                 frtxt = entxt
@@ -465,27 +469,30 @@ class DgtTranslate(object):
             elif 'POS' in msg:
                 beep = False
                 l_msg = 'eval ' + msg[3:]
+                w_msg = 'position eval.: ' + msg[3:]
                 l_msg = l_msg.ljust(11, ' ')
+                w_msg_de = 'Stellungsbewertung: ' + msg[3:]
                 l_msg_de = 'Wert ' + msg[3:]
                 l_msg_de = l_msg_de.ljust(11, ' ')
                 m_msg = 'eval' + msg[3:]
                 m_msg = m_msg.ljust(8, ' ')
                 m_msg_de = 'Wert' + msg[3:]
                 m_msg_de = m_msg_de.ljust(8, ' ')
-                entxt = Dgt.DISPLAY_TEXT(web_text=l_msg[:38], large_text=l_msg[:11], medium_text=m_msg[:8], small_text=m_msg[:6])
-                detxt = Dgt.DISPLAY_TEXT(web_text=l_msg_de[:38], large_text=l_msg_de[:11], medium_text=m_msg_de[:8], small_text=m_msg_de[:6])
+                entxt = Dgt.DISPLAY_TEXT(web_text=w_msg[:38], large_text=l_msg[:11], medium_text=m_msg[:8], small_text=m_msg[:6])
+                detxt = Dgt.DISPLAY_TEXT(web_text=w_msg_de[:38], large_text=l_msg_de[:11], medium_text=m_msg_de[:8], small_text=m_msg_de[:6])
                 nltxt = entxt
                 frtxt = entxt
                 estxt = entxt
                 ittxt = entxt
             else:
+                w_msg = 'Pico Tutor: ' + msg[:2]
                 l_msg = 'PicTutor ' + msg[:2]
                 l_msg = l_msg.ljust(11, ' ')
                 m_msg = 'Tutor ' + msg[:2]
                 m_msg = m_msg.ljust(9, ' ')
                 s_msg = 'Tut ' + msg[:2]
                 s_msg = s_msg.ljust(6, ' ')
-                entxt = Dgt.DISPLAY_TEXT(web_text='', large_text=l_msg, medium_text=m_msg, small_text=s_msg)
+                entxt = Dgt.DISPLAY_TEXT(web_text=w_msg, large_text=l_msg, medium_text=m_msg, small_text=s_msg)
                 detxt = entxt
                 nltxt = entxt
                 frtxt = entxt
@@ -932,8 +939,8 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_menu_favorites':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Favorites', large_text='Favorites', medium_text='Favorite', small_text='favor.')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Favoriten', large_text='Favoriten', medium_text='Favorite', small_text='Favor.')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Favorite Engines', large_text='Favorites', medium_text='Favorite', small_text='fav')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Favoriten Engines', large_text='Favoriten', medium_text='Favorite', small_text='fav')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
