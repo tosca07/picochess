@@ -59,6 +59,12 @@ class TestRating(unittest.TestCase):
         rating = rating.rate(Rating(995, 0), Result.WIN)
         self.assertTrue(rating.is_similar_to(Rating(1065.206549, 155.6053732)))
 
+    def test_rate_with_zero_rating_deviation(self):
+        rating = Rating(1200, 0)
+        rating = rating.rate(Rating(1200, 0), Result.LOSS)
+        print(rating.rating_deviation)
+        self.assertTrue(rating.is_similar_to(Rating(1200.0, 0.0)))
+
 
 class TestDetermineResult(unittest.TestCase):
 
