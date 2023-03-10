@@ -3489,15 +3489,6 @@ def main() -> None:
                             moves_to_go = 0
                         state.time_control.set_clock_times(white_time=event.time_white, black_time=event.time_black, moves_to_go=moves_to_go)
 
-                    # find out, if we are in bullet time (<=60secs on users clock or lowest time if user side unknown)
-                    time_u = event.time_white
-                    time_c = event.time_black
-                    if state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):   # @todo handle Mode.REMOTE too
-                        if state.play_mode == PlayMode.USER_BLACK:
-                            time_u, time_c = time_c, time_u
-                    else:  # here, we use the lowest time
-                        if time_c < time_u:
-                            time_u, time_c = time_c, time_u
                     low_time = False  # molli allow the speech output even for less than 60 seconds
                     dgtboard.low_time = low_time
                     if state.interaction_mode == Mode.TRAINING or state.position_mode:
