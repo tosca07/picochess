@@ -21,31 +21,38 @@ import subprocess
 from threading import Timer, Lock
 from fcntl import fcntl, F_GETFL, F_SETFL
 from os import O_NONBLOCK, read, path, listdir
-from serial import Serial, SerialException, STOPBITS_ONE, PARITY_NONE, EIGHTBITS
+from serial import Serial, SerialException, STOPBITS_ONE, PARITY_NONE, EIGHTBITS  # type: ignore
 import time
+from typing import List, Optional, Tuple
 
+from eboard import EBoard
 from dgt.util import DgtAck, DgtClk, DgtCmd, DgtMsg, ClockIcons, ClockSide, enum
 from dgt.api import Message, Dgt
 from utilities import RepeatedTimer, DisplayMsg, hms_time
 
+
 class Rev2Info():
-    
     is_revelation = False
     is_pi = False
     is_dgtpi = False
-    
+    is_web_only = None
+
     @classmethod
     def set_revelation(cls, rev):
         Rev2Info.is_revelation = rev
-        
+
+    @classmethod
+    def set_dgtpi(cls, dgtpi):
+        Rev2Info.is_dgtpi = dgtpi
+
     @classmethod
     def set_pi_mode(cls, pi_mode):
         Rev2Info.is_pi = pi_mode
-        
+
     @classmethod
     def get_pi_mode(cls):
         return Rev2Info.is_pi
-    
+
     @classmethod
     def get_new_rev2_mode(cls):
         if Rev2Info.is_revelation and Rev2Info.is_pi:
@@ -53,7 +60,21 @@ class Rev2Info():
         else:
             return False
 
-class DgtBoard(object):
+    @classmethod
+    def get_web_only(cls):
+        if Rev2Info.is_dgtpi:
+            Rev2Info.is_web_only = False
+        else:
+            if Rev2Info.get_pi_mode():
+                Rev2Info.is_web_only = False
+            elif Rev2Info.get_new_rev2_mode():
+                Rev2Info.is_web_only = False
+            else:
+                Rev2Info.is_web_only = True
+        return Rev2Info.is_web_only
+
+
+class DgtBoard(EBoard):
 
     """Handle the DGT board communication."""
 
@@ -65,7 +86,6 @@ class DgtBoard(object):
         self.disable_revelation_leds = disable_revelation_leds
         self.enable_revelation_pi = False
         self.is_revelation = False
-        self.reverse = False ## molli REV2 LED bug
 
         self.is_pi = is_pi
         self.disable_end = disable_end  # @todo for test - XL needs a "end_text" maybe!
@@ -74,11 +94,11 @@ class DgtBoard(object):
         self.serial = None
         self.lock = Lock()  # lock the serial write
         self.incoming_board_thread = None
-        self.lever_pos = None
+        self.lever_pos: Optional[int] = None
         # the next three are only used for "not dgtpi" mode
-        self.clock_lock = False  # serial connected clock is locked
-        self.last_clock_command = []  # Used for resend last (failed) clock command
-        self.enable_ser_clock = None  # None = "unknown status" False="only board found" True="clock also found"
+        self.clock_lock: float = 0.0  # serial connected clock is locked
+        self.last_clock_command: list = []  # Used for resend last (failed) clock command
+        self.enable_ser_clock: Optional[bool] = None  # None = "unknown status" False="only board found" True="clock also found"
         self.watchdog_timer = RepeatedTimer(1, self._watchdog)
         # bluetooth vars for Jessie upwards & autoconnect
         self.btctl = None
@@ -86,28 +106,22 @@ class DgtBoard(object):
         self.bt_state = -1
         self.bt_line = ''
         self.bt_current_device = -1
-        self.bt_mac_list = []
-        self.bt_name_list = []
+        self.bt_mac_list: List[str] = []
+        self.bt_name_list: List[str] = []
         self.bt_name = ''
         self.wait_counter = 0
-        # keep the last time to find out errorous DGT_MSG_BWTIME messages (error: current time > last time)
+        # keep the last time to find out erroneous DGT_MSG_BWTIME messages (error: current time > last time)
         self.r_time = 3600 * 10  # max value cause 10h cant be reached by clock
         self.l_time = 3600 * 10  # max value cause 10h cant be reached by clock
 
-        self.bconn_text = None
+        self.bconn_text: Optional[Dgt.DISPLAY_TEXT] = None
         # keep track of changed board positions
         self.field_timer = None
         self.field_timer_running = False
-        self.channel = None
+        self.channel = ''
 
         self.in_settime = False  # this is true between set_clock and clock_start => use set values instead of clock
         self.low_time = False  # This is set from picochess.py and used to limit the field timer
-    ## molli REV2 LED bug
-    def set_reverse(self,flag):
-        self.reverse = flag
-        
-    def get_reverse(self):
-        return self.reverse
 
     def expired_field_timer(self):
         """Board position hasnt changed for some time."""
@@ -135,6 +149,8 @@ class DgtBoard(object):
 
     def write_command(self, message: list):
         """Write the message list to the dgt board."""
+        if not self.serial:
+            return False
         mes = message[3] if message[0].value == DgtCmd.DGT_CLOCK_MESSAGE.value else message[0]
         if not mes == DgtCmd.DGT_RETURN_SERIALNR:
             logging.debug('(ser) board put [%s] length: %i', mes, len(message))
@@ -158,7 +174,8 @@ class DgtBoard(object):
                 array.append(item.value)
             elif isinstance(item, str):
                 for character in item:
-                    array.append(char_to_xl[character.lower()])
+                    if character in char_to_xl:
+                        array.append(char_to_xl[character.lower()])
             else:
                 logging.error('type not supported [%s]', type(item))
                 return False
@@ -222,7 +239,8 @@ class DgtBoard(object):
                     text_l, text_m, text_s = 'BT e-Board', 'BT board', 'ok bt'
                 self.channel = 'BT'
                 self.ask_battery_status()
-            self.bconn_text = Dgt.DISPLAY_TEXT(l=text_l, m=text_m, s=text_s, wait=True, beep=False, maxtime=1.1,
+            self.bconn_text = Dgt.DISPLAY_TEXT(web_text=text_l, large_text=text_l, medium_text=text_m, small_text=text_s,
+                                               wait=True, beep=False, maxtime=1.1,
                                                devs={'i2c', 'web'})  # serial clock lateron
             DisplayMsg.show(Message.DGT_EBOARD_VERSION(text=self.bconn_text, channel=self.channel))
             self.startup_serial_clock()  # now ask the serial clock to answer
@@ -427,7 +445,7 @@ class DgtBoard(object):
         return b''
 
     def _read_board_message(self, head: bytes):
-        message = ()
+        message: Tuple = ()
         header_len = 3
         header = head + self._read_serial(header_len - 1)
         try:
@@ -444,7 +462,8 @@ class DgtBoard(object):
                 now = time.time()
                 while counter > 0:
                     ee_moves = self._read_serial(counter)
-                    logging.info('EE_MOVES 0x%x bytes read - inWaiting: 0x%x', len(ee_moves), self.serial.inWaiting())
+                    if self.serial:
+                        logging.info('EE_MOVES 0x%x bytes read - inWaiting: 0x%x', len(ee_moves), self.serial.inWaiting())
                     counter -= len(ee_moves)
                     if time.time() - now > 15:
                         logging.warning('EE_MOVES needed over 15secs => ignore not readed 0x%x bytes now', counter)
@@ -465,7 +484,7 @@ class DgtBoard(object):
             byte = self._read_serial()
             try:
                 if byte:
-                    data = struct.unpack('>B', byte)
+                    data: Tuple = struct.unpack('>B', byte)
                     counter -= 1
                     if data[0] & 0x80:
                         logging.warning('illegal data in message 0x%x found', message_id)
@@ -508,7 +527,7 @@ class DgtBoard(object):
 
     def startup_serial_clock(self):
         """Ask the clock for its version."""
-        self.clock_lock = False
+        self.clock_lock = 0.0
         self.enable_ser_clock = False
         command = [DgtCmd.DGT_CLOCK_MESSAGE, 0x03, DgtClk.DGT_CMD_CLOCK_START_MESSAGE,
                    DgtClk.DGT_CMD_CLOCK_VERSION, DgtClk.DGT_CMD_CLOCK_END_MESSAGE]
@@ -523,7 +542,7 @@ class DgtBoard(object):
             if time.time() - self.clock_lock > 2:
                 logging.warning('(ser) clock is locked over 2secs')
                 logging.debug('resending locked (ser) clock message [%s]', self.last_clock_command)
-                self.clock_lock = False
+                self.clock_lock = 0.0
                 self.write_command(self.last_clock_command)
         self.write_command([DgtCmd.DGT_RETURN_SERIALNR])  # ask for this AFTER cause of - maybe - old board hardware
 
@@ -574,13 +593,17 @@ class DgtBoard(object):
                     self.bt_state = 1
                     self.btctl.stdin.write("agent on\n")
                     self.btctl.stdin.flush()
-                elif 'Agent registered' in self.bt_line:
+                elif 'Agent is already registered' in self.bt_line:
                     self.bt_state = 2
                     self.btctl.stdin.write("default-agent\n")
                     self.btctl.stdin.flush()
                 elif 'Default agent request successful' in self.bt_line:
                     self.bt_state = 3
                     self.btctl.stdin.write("scan on\n")
+                    self.btctl.stdin.flush()
+                    # get already-paired devices since BlueZ > 5.43 no longer lists already-paired
+                    # devices when bluetoothctl is started in a shell
+                    self.btctl.stdin.write("paired-devices\n")
                     self.btctl.stdin.flush()
                 elif 'Discovering: yes' in self.bt_line:
                     self.bt_state = 4
@@ -597,18 +620,21 @@ class DgtBoard(object):
                 elif 'not available' in self.bt_line:
                     # remove and try the next
                     self.bt_state = 4
+                    logging.debug('BT pairing failed - not available')
+                    logging.debug('Removing device: %s %s', self.bt_mac_list[self.bt_current_device], self.bt_name_list[self.bt_current_device])
                     self.bt_mac_list.remove(self.bt_mac_list[self.bt_current_device])
                     self.bt_name_list.remove(self.bt_name_list[self.bt_current_device])
                     self.bt_current_device -= 1
-                    logging.debug('BT pairing failed, unknown device')
-                elif ('DGT_BT_' in self.bt_line or 'PCS-REVII' in self.bt_line) and \
-                        ('NEW' in self.bt_line or 'CHG' in self.bt_line) and 'Device' in self.bt_line:
-                    # New e-Board found add to list
+                    # space before DGT_BT_ and PCS-REVII to prevent double detection
+                    # when bluetoothctl is connected and bt_line contains e.g. "[DGT_BT_..."
+                elif (' DGT_BT_' in self.bt_line or ' PCS-REVII' in self.bt_line):
                     try:
-                        if not self.bt_line.split()[3] in self.bt_mac_list:
-                            self.bt_mac_list.append(self.bt_line.split()[3])
-                            self.bt_name_list.append(self.bt_line.split()[4])
-                            logging.debug('BT found device: %s %s', self.bt_line.split()[3], self.bt_line.split()[4])
+                        # since the MAC address and Name occur at the end of the bt_line, use [-2]
+                        # and [-1] to grab the respective text
+                        if not self.bt_line.split()[-2] in self.bt_mac_list:
+                            self.bt_mac_list.append(self.bt_line.split()[-2])
+                            self.bt_name_list.append(self.bt_line.split()[-1])
+                            logging.debug('BT found device: %s %s', self.bt_line.split()[-2], self.bt_line.split()[-1])
                     except IndexError:
                         logging.error('BT wrong line [%s]', self.bt_line)
                 # clear the line
@@ -669,11 +695,19 @@ class DgtBoard(object):
                 if self.bt_rfcomm.poll() is not None:
                     logging.debug('BT rfcomm failed')
                     self.btctl.stdin.write('remove ' + self.bt_mac_list[self.bt_current_device] + "\n")
-                    self.bt_mac_list.remove(self.bt_mac_list[self.bt_current_device])
-                    self.bt_name_list.remove(self.bt_name_list[self.bt_current_device])
-                    self.bt_current_device -= 1
-                    self.btctl.stdin.flush()
-                    self.bt_state = 4
+                    if self.bt_current_device > 0:
+                        logging.debug('Removing device from list: %s %s', self.bt_mac_list[self.bt_current_device], self.bt_name_list[self.bt_current_device])
+                        self.bt_mac_list.remove(self.bt_mac_list[self.bt_current_device])
+                        self.bt_name_list.remove(self.bt_name_list[self.bt_current_device])
+                        self.bt_current_device -= 1
+                    else:
+                        self.btctl.stdin.write("quit\n")
+                        self.btctl.stdin.flush()
+                        self.bt_state = -1
+                        self.bt_mac_list = []
+                        self.bt_name_list = []
+                        time.sleep(0.5)
+                        logging.debug('Restarting bluetoothctl')
         return False
 
     def _open_serial(self, device: str):
@@ -710,10 +744,9 @@ class DgtBoard(object):
                 if self._open_bluetooth():
                     return _success('/dev/rfcomm123')
 
-        # text = self.dgttranslate.text('N00_noboard', 'Board' + waitchars[self.wait_counter])
-        bwait = 'Board' + waitchars[self.wait_counter]
-        text = Dgt.DISPLAY_TEXT(l='no e-' + bwait, m='no' + bwait, s=bwait, wait=True, beep=False, maxtime=0.1,
-                                devs={'i2c', 'web'})
+        bwait = waitchars[self.wait_counter]
+        text = Dgt.DISPLAY_TEXT(web_text='no DGT e-Board' + bwait, large_text='DGT eBoard' + bwait, medium_text='DGT' + bwait,
+                                small_text=bwait, wait=True, beep=False, maxtime=0.1, devs={'i2c', 'web'})
         DisplayMsg.show(Message.DGT_NO_EBOARD_ERROR(text=text))
         self.wait_counter = (self.wait_counter + 1) % len(waitchars)
         return False
@@ -733,7 +766,7 @@ class DgtBoard(object):
         if has_to_wait:
             logging.debug('(ser) clock is released now')
 
-    def set_text_rp(self, text: str, beep: int):
+    def set_text_rp(self, text: bytes, beep: int):
         """Display a text on a Pi enabled Rev2."""
         self._wait_for_clock('SetTextRp()')
         res = self.write_command([DgtCmd.DGT_CLOCK_MESSAGE, 0x0f, DgtClk.DGT_CMD_CLOCK_START_MESSAGE,
@@ -743,10 +776,9 @@ class DgtBoard(object):
                                   DgtClk.DGT_CMD_CLOCK_END_MESSAGE])
         return res
 
-    def set_text_3k(self, text: str, beep: int):
+    def set_text_3k(self, text: bytes, beep: int):
         """Display a text on a 3000 Clock."""
         self._wait_for_clock('SetText3K()')
-        Rev2Info.set_pi_mode(True)
         res = self.write_command([DgtCmd.DGT_CLOCK_MESSAGE, 0x0c, DgtClk.DGT_CMD_CLOCK_START_MESSAGE,
                                   DgtClk.DGT_CMD_CLOCK_ASCII,
                                   text[0], text[1], text[2], text[3], text[4], text[5], text[6], text[7], beep,
@@ -801,24 +833,23 @@ class DgtBoard(object):
             fr_s = (8 - int(uci_move[1])) * 8 + ord(uci_move[0]) - ord('a')
             to_s = (8 - int(uci_move[3])) * 8 + ord(uci_move[2]) - ord('a')
             self.write_command([DgtCmd.DGT_SET_LEDS, 0x04, 0x01, fr_s, to_s, DgtClk.DGT_CMD_CLOCK_END_MESSAGE])
-            
+
     def light_square_on_revelation(self, square: str):
         """Light the Rev2 leds."""
         if self.is_revelation and not self.disable_revelation_leds:
-            # self._wait_for_clock('LIGHTon')
             logging.debug('molli:(rev) leds turned on - square: %s', square)
             fr_s = (8 - int(square[1])) * 8 + ord(square[0]) - ord('a')
-            ##to_s = (8 - int('1') * 8 + ord('a') - ord('a'))
             to_s = fr_s
             self.write_command([DgtCmd.DGT_SET_LEDS, 0x04, 0x01, fr_s, to_s, DgtClk.DGT_CMD_CLOCK_END_MESSAGE])
 
     def clear_light_on_revelation(self):
         """Clear the Rev2 leds."""
         if self.is_revelation and not self.disable_revelation_leds:
-            # self._wait_for_clock('LIGHToff')
             logging.debug('(rev) leds turned off')
             self.write_command([DgtCmd.DGT_SET_LEDS, 0x04, 0x00, 0x40, 0x40, DgtClk.DGT_CMD_CLOCK_END_MESSAGE])
-    # dgtHw functions end
+
+    def promotion_done(self, uci_move: str):
+        pass
 
     def run(self):
         """NOT called from threading.Thread instead inside the __init__ function from hw.py."""

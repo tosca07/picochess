@@ -18,7 +18,7 @@
 try:
     import enum
 except ImportError:
-    import enum34 as enum
+    import enum34 as enum  # type: ignore
 
 
 class MyEnum(enum.Enum):
@@ -39,10 +39,13 @@ class Top(MyEnum):
     TIME = 'B00_top_time_menu'  # Time controls menu
     BOOK = 'B00_top_book_menu'  # Book menu
     ENGINE = 'B00_top_engine_menu'  # Engine menu
-    ENGINE2 = 'B00_top_engine_menu2'  # Engine menu
     SYSTEM = 'B00_top_system_menu'  # Settings menu
     PICOTUTOR = 'B00_top_picotutor_menu'  # PicoTutor menu v3
     GAME = 'B00_top_game_menu'  # Game menu v3
+
+    @classmethod
+    def items(cls):
+        return [Top.MODE, Top.POSITION, Top.TIME, Top.BOOK, Top.ENGINE, Top.SYSTEM, Top.PICOTUTOR, Top.GAME]
 
 
 class TopLoop(object):
@@ -55,253 +58,175 @@ class TopLoop(object):
     @staticmethod
     def next(item: Top):
         """Get next item."""
-        if item == Top.MODE:
-            return Top.POSITION
-        elif item == Top.POSITION:
-            return Top.TIME
-        elif item == Top.TIME:
-            return Top.BOOK
-        elif item == Top.BOOK:
-            return Top.ENGINE
-        elif item == Top.ENGINE:
-            return Top.ENGINE2
-        elif item == Top.ENGINE2:
-            return Top.SYSTEM
-        elif item == Top.SYSTEM:
-            return Top.PICOTUTOR
-        elif item == Top.PICOTUTOR:     ## molli v3
-            return Top.GAME
-        elif item == Top.GAME:     ## molli v3
-            return Top.MODE
-        return 'errMenuNext'
+        return next_item(Top.items(), item, 'errMenuNext')
 
     @staticmethod
     def prev(item: Top):
         """Get previous item."""
-        if item == Top.GAME:
-            return Top.PICOTUTOR
-        if item == Top.PICOTUTOR:
-            return Top.SYSTEM
-        if item == Top.MODE:
-            return Top.GAME
-        elif item == Top.POSITION:
-            return Top.MODE
-        elif item == Top.TIME:
-            return Top.POSITION
-        elif item == Top.BOOK:
-            return Top.TIME
-        elif item == Top.ENGINE:
-            return Top.BOOK
-        elif item == Top.SYSTEM:
-            return Top.ENGINE2
-        elif item == Top.ENGINE2:
-            return Top.ENGINE
-        return 'errMenuPrev'
+        return prev_item(Top.items(), item, 'errMenuPrev')
 
 
 @enum.unique
-class Game(MyEnum):                ##molli v3
-    
+class Game(MyEnum):
     """Game Class."""
-    
-    SAVE     = 'B00_game_save_menu'
-    READ     = 'B00_game_read_menu'
-    ALTMOVE  = 'B00_game_altmove_menu'
+
+    NEW = 'B00_game_new_menu'
+    TAKEBACK = 'B00_game_takeback_menu'
+    SAVE = 'B00_game_save_menu'
+    READ = 'B00_game_read_menu'
+    ALTMOVE = 'B00_game_altmove_menu'
     CONTLAST = 'B00_game_contlast_menu'
 
+    @classmethod
+    def items(cls):
+        return [Game.NEW, Game.TAKEBACK, Game.SAVE, Game.READ, Game.ALTMOVE, Game.CONTLAST]
+
+
 class GameLoop(object):
-    
     """InfoLoop Class."""
-    
+
     def __init__(self):
         super(GameLoop, self).__init__()
-    
+
     @staticmethod
     def next(item: Game):
         """Get next item."""
-        if item == Game.SAVE:
-            return Game.READ
-        elif item == Game.READ:
-            return Game.ALTMOVE
-        elif item == Game.ALTMOVE:
-            return Game.CONTLAST
-        elif item == Game.CONTLAST:
-            return Game.SAVE
-        return 'errGameNext'
+        return next_item(Game.items(), item, 'errGameNext')
 
     @staticmethod
     def prev(item: Game):
         """Get previous item."""
-        if item == Game.READ:
-            return Game.SAVE
-        elif item == Game.ALTMOVE:
-            return Game.READ
-        elif item == Game.CONTLAST:
-            return Game.ALTMOVE
-        elif item == Game.SAVE:
-            return Game.CONTLAST
-        return 'errGamePrev'
+        return prev_item(Game.items(), item, 'errGamePrev')
+
 
 @enum.unique
-class GameSave(MyEnum):                ##molli v3
-    
+class GameSave(MyEnum):
     """GameSave Class."""
-    
-    GAME1     = 'B00_game_save_game1'
-    GAME2     = 'B00_game_save_game2'
-    GAME3     = 'B00_game_save_game3'
+
+    GAME1 = 'B00_game_save_game1'
+    GAME2 = 'B00_game_save_game2'
+    GAME3 = 'B00_game_save_game3'
+
+    @classmethod
+    def items(cls):
+        return [GameSave.GAME1, GameSave.GAME2, GameSave.GAME3]
+
 
 class GameSaveLoop(object):
-    
     """InfoLoop Class."""
-    
+
     def __init__(self):
         super(GameSaveLoop, self).__init__()
-    
+
     @staticmethod
     def next(item: GameSave):
         """Get next item."""
-        if item == GameSave.GAME1:
-            return GameSave.GAME2
-        elif item == GameSave.GAME2:
-            return GameSave.GAME3
-        elif item == GameSave.GAME3:
-            return GameSave.GAME1
-        return 'errGameSaveNext'
-    
+        return next_item(GameSave.items(), item, 'errGameSaveNext')
+
     @staticmethod
     def prev(item: GameSave):
         """Get previous item."""
-        if item == GameSave.GAME2:
-            return GameSave.GAME1
-        elif item == GameSave.GAME1:
-            return GameSave.GAME3
-        elif item == GameSave.GAME3:
-            return GameSave.GAME2
-        return 'errGameSavePrev'
+        return prev_item(GameSave.items(), item, 'errGameSavePrev')
+
 
 @enum.unique
-class GameRead(MyEnum):                ##molli v3
-    
+class GameRead(MyEnum):
     """GameRead Class."""
-    GAMELAST  = 'B00_game_read_gamelast'
-    GAME1     = 'B00_game_read_game1'
-    GAME2     = 'B00_game_read_game2'
-    GAME3     = 'B00_game_read_game3'
+    GAMELAST = 'B00_game_read_gamelast'
+    GAME1 = 'B00_game_read_game1'
+    GAME2 = 'B00_game_read_game2'
+    GAME3 = 'B00_game_read_game3'
+
+    @classmethod
+    def items(cls):
+        return [GameRead.GAMELAST, GameRead.GAME1, GameRead.GAME2, GameRead.GAME3]
+
 
 class GameReadLoop(object):
-    
     """InfoLoop Class."""
-    
+
     def __init__(self):
         super(GameReadLoop, self).__init__()
-    
+
     @staticmethod
     def next(item: GameRead):
         """Get next item."""
-        if item == GameRead.GAMELAST:
-            return GameRead.GAME1
-        if item == GameRead.GAME1:
-            return GameRead.GAME2
-        elif item == GameRead.GAME2:
-            return GameRead.GAME3
-        elif item == GameRead.GAME3:
-            return GameRead.GAMELAST
-        return 'errGameReadNext'
-    
+        return next_item(GameRead.items(), item, 'errGameReadNext')
+
     @staticmethod
     def prev(item: GameRead):
         """Get previous item."""
-        if item == GameRead.GAMELAST:
-            return GameRead.GAME3
-        elif item == GameRead.GAME2:
-            return GameRead.GAME1
-        elif item == GameRead.GAME1:
-            return GameRead.GAMELAST
-        elif item == GameRead.GAME3:
-            return GameRead.GAME2
-        return 'errGameReadPrev'
+        return prev_item(GameRead.items(), item, 'errGameReadPrev')
+
 
 @enum.unique
-class PicoTutor(MyEnum):                ##molli v3
-    
+class PicoTutor(MyEnum):
+
     """PicoTutor Class."""
-    
-    WATCHER  = 'B00_picotutor_picowatcher_menu'
-    COACH    = 'B00_picotutor_picocoach_menu'
+
+    WATCHER = 'B00_picotutor_picowatcher_menu'
+    COACH = 'B00_picotutor_picocoach_menu'
     EXPLORER = 'B00_picotutor_picoexplorer_menu'
-    COMMENT  = 'B00_picotutor_picocomment_menu'
+    COMMENT = 'B00_picotutor_picocomment_menu'
+
+    @classmethod
+    def items(cls):
+        return [PicoTutor.WATCHER, PicoTutor.COACH, PicoTutor.EXPLORER, PicoTutor.COMMENT]
+
 
 class PicoTutorLoop(object):
-    
     """InfoLoop Class."""
-        
+
     def __init__(self):
         super(PicoTutorLoop, self).__init__()
-        
+
     @staticmethod
     def next(item: PicoTutor):
         """Get next item."""
-        if item == PicoTutor.WATCHER:
-            return PicoTutor.COACH
-        elif item == PicoTutor.COACH:
-            return PicoTutor.EXPLORER
-        elif item == PicoTutor.EXPLORER:
-            return PicoTutor.COMMENT
-        elif item == PicoTutor.COMMENT:
-            return PicoTutor.WATCHER
-        return 'errPicoTutorNext'
-        
+        return next_item(PicoTutor.items(), item, 'errPicoTutorNext')
+
     @staticmethod
     def prev(item: PicoTutor):
         """Get previous item."""
-        if item == PicoTutor.COMMENT:
-            return PicoTutor.EXPLORER
-        elif item == PicoTutor.EXPLORER:
-            return PicoTutor.COACH
-        elif item == PicoTutor.COACH:
-            return PicoTutor.WATCHER
-        elif item == PicoTutor.WATCHER:
-            return PicoTutor.COMMENT
-        return 'errPicoTutorPrev'
+        return prev_item(PicoTutor.items(), item, 'errPicoTutorPrev')
+
 
 @enum.unique
-class PicoComment(MyEnum):                ##molli v3
-    
+class PicoComment(MyEnum):
     """PicoTutor Class."""
-    
-    COM_OFF    = 'B00_picocomment_off'
+
+    COM_OFF = 'B00_picocomment_off'
     COM_ON_ENG = 'B00_picocomment_on_eng'
     COM_ON_ALL = 'B00_picocomment_on_all'
 
+    @classmethod
+    def items(cls):
+        return [PicoComment.COM_OFF, PicoComment.COM_ON_ENG, PicoComment.COM_ON_ALL]
+
+    @classmethod
+    def from_str(cls, s):
+        if s == 'single':
+            return PicoComment.COM_ON_ENG
+        elif s == 'all':
+            return PicoComment.COM_ON_ALL
+        else:
+            return PicoComment.COM_OFF
+
+
 class PicoCommentLoop(object):
-    
-    """InfoLoop Class."""
-    
+
     def __init__(self):
         super(PicoCommentLoop, self).__init__()
-    
+
     @staticmethod
     def next(item: PicoComment):
         """Get next item."""
-        if item == PicoComment.COM_OFF:
-            return PicoComment.COM_ON_ENG
-        elif item == PicoComment.COM_ON_ENG:
-            return PicoComment.COM_ON_ALL
-        elif item == PicoComment.COM_ON_ALL:
-            return PicoComment.COM_OFF
-        return 'errPicoCommentNext'
-    
+        return next_item(PicoComment.items(), item, 'errPicoCommentNext')
+
     @staticmethod
     def prev(item: PicoComment):
         """Get previous item."""
-        if item == PicoComment.COM_OFF:
-            return PicoComment.COM_ON_ALL
-        elif item == PicoComment.COM_ON_ALL:
-            return PicoComment.COM_ON_ENG
-        elif item == PicoComment.COM_ON_ENG:
-            return PicoComment.COM_OFF
-        return 'errPicoCommentPrev'
+        return prev_item(PicoComment.items(), item, 'errPicoCommentPrev')
 
 
 @enum.unique
@@ -318,6 +243,11 @@ class Mode(MyEnum):
     REMOTE = 'B00_mode_remote_menu'
     PONDER = 'B00_mode_ponder_menu'
 
+    @classmethod
+    def items(cls):
+        return [Mode.NORMAL, Mode.TRAINING, Mode.BRAIN, Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE,
+                Mode.REMOTE, Mode.PONDER]
+
 
 class ModeLoop(object):
 
@@ -329,44 +259,13 @@ class ModeLoop(object):
     @staticmethod
     def next(item: Mode):
         """Get next item."""
-        if item == Mode.NORMAL:
-            return Mode.BRAIN
-        elif item == Mode.BRAIN:
-            return Mode.ANALYSIS
-        elif item == Mode.ANALYSIS:
-            return Mode.KIBITZ
-        elif item == Mode.KIBITZ:
-            return Mode.OBSERVE
-        elif item == Mode.OBSERVE:
-            return Mode.PONDER
-        elif item == Mode.PONDER:
-            return Mode.TRAINING 
-        elif item == Mode.TRAINING: 
-            return Mode.REMOTE
-        elif item == Mode.REMOTE:
-            return Mode.NORMAL
-        return 'errModeNext'
+        return next_item(Mode.items(), item, 'errModeNext')
 
     @staticmethod
     def prev(item: Mode):
         """Get previous item."""
-        if item == Mode.NORMAL:
-            return Mode.REMOTE
-        elif item == Mode.BRAIN:
-            return Mode.NORMAL
-        elif item == Mode.ANALYSIS:
-            return Mode.BRAIN
-        elif item == Mode.KIBITZ:
-            return Mode.ANALYSIS
-        elif item == Mode.OBSERVE:
-            return Mode.KIBITZ
-        elif item == Mode.PONDER:
-            return Mode.OBSERVE
-        elif item == Mode.TRAINING: 
-            return Mode.PONDER
-        elif item == Mode.REMOTE:
-            return Mode.TRAINING 
-        return 'errModePrev'
+        return prev_item(Mode.items(), item, 'errModePrev')
+
 
 @enum.unique
 class PlayMode(MyEnum):
@@ -386,6 +285,11 @@ class TimeMode(MyEnum):
     FISCHER = 'B00_timemode_fischer_menu'  # Fischer increment
     TOURN = 'B00_timemode_tourn_menu'  # tournament
     DEPTH = 'B00_timemode_depth_menu'  # search depth
+    NODE = 'B00_timemode_node_menu'  # search noodes
+
+    @classmethod
+    def items(cls):
+        return [TimeMode.FIXED, TimeMode.BLITZ, TimeMode.FISCHER, TimeMode.TOURN, TimeMode.DEPTH, TimeMode.NODE]
 
 
 class TimeModeLoop(object):
@@ -398,44 +302,81 @@ class TimeModeLoop(object):
     @staticmethod
     def next(item: TimeMode):
         """Get next item."""
-        if item == TimeMode.FIXED:
-            return TimeMode.BLITZ
-        elif item == TimeMode.BLITZ:
-            return TimeMode.FISCHER
-        elif item == TimeMode.FISCHER:
-            return TimeMode.TOURN     ## molli tournament
-        elif item == TimeMode.TOURN:
-            return TimeMode.DEPTH ## molli: search depth
-        elif item == TimeMode.DEPTH:
-            return TimeMode.FIXED
-        return 'errTiMoNext'
+        return next_item(TimeMode.items(), item, 'errTiMoNext')
 
     @staticmethod
     def prev(item: TimeMode):
         """Get previous item."""
-        if item == TimeMode.FIXED:
-            return TimeMode.DEPTH           ## molli: search depth
-        if item == TimeMode.DEPTH:
-            return TimeMode.TOURN           ## molli tournament
-        elif item == TimeMode.TOURN:
-            return TimeMode.FISCHER
-        elif item == TimeMode.FISCHER:
-            return TimeMode.BLITZ
-        elif item == TimeMode.BLITZ:
-            return TimeMode.FIXED
-        return 'errTiMoPrev'
+        return prev_item(TimeMode.items(), item, 'errTiMoPrev')
+
+
+class EngineTop(MyEnum):
+    MODERN_ENGINE = 'B00_engine_menu_modern'
+    RETRO_ENGINE = 'B00_engine_menu_retro'
+    RETROSETTINGS = 'B00_engine_menu_retrosettings'
+    FAV_ENGINE = 'B00_engine_menu_favorites'
+
+    @classmethod
+    def items(cls):
+        return [EngineTop.MODERN_ENGINE, EngineTop.RETRO_ENGINE, EngineTop.RETROSETTINGS, EngineTop.FAV_ENGINE]
+
+
+class EngineTopLoop(object):
+
+    def __init__(self):
+        super(EngineTopLoop, self).__init__()
+
+    @staticmethod
+    def next(item: EngineTop):
+        """Get next item."""
+        return next_item(EngineTop.items(), item, 'errEngTopNext')
+
+    @staticmethod
+    def prev(item: EngineTop):
+        """Get previous item."""
+        return prev_item(EngineTop.items(), item, 'errEngTopPrev')
+
+
+class EngineRetroSettings(MyEnum):
+    RETROSPEED = 'B00_engine_menu_retrospeed'
+    RETROSOUND = 'B00_engine_menu_retrosound'
+
+    @classmethod
+    def items(cls):
+        return [EngineRetroSettings.RETROSPEED, EngineRetroSettings.RETROSOUND]
+
+
+class EngineRetroSettingsLoop(object):
+    def __init__(self):
+        super(EngineRetroSettingsLoop, self).__init__()
+
+    @staticmethod
+    def next(item: EngineRetroSettings):
+        return next_item(EngineRetroSettings.items(), item, 'errEngineRetroSettingsNext')
+
+    @staticmethod
+    def prev(item: EngineRetroSettings):
+        return prev_item(EngineRetroSettings.items(), item, 'errEngineRetroSettingsPrev')
 
 
 class System(MyEnum):
 
     """System Class."""
 
+    POWER = 'B00_system_power_menu'
     INFO = 'B00_system_info_menu'
     SOUND = 'B00_system_sound_menu'
     LANGUAGE = 'B00_system_language_menu'
     LOGFILE = 'B00_system_logfile_menu'
     VOICE = 'B00_system_voice_menu'
     DISPLAY = 'B00_system_display_menu'
+    EBOARD = 'B00_system_eboard_menu'
+    THEME = 'B00_system_theme_menu'
+
+    @classmethod
+    def items(cls):
+        return [System.POWER, System.INFO, System.SOUND, System.LANGUAGE, System.LOGFILE, System.VOICE, System.DISPLAY,
+                System.EBOARD, System.THEME]
 
 
 class SystemLoop(object):
@@ -448,36 +389,88 @@ class SystemLoop(object):
     @staticmethod
     def next(item: System):
         """Get next item."""
-        if item == System.INFO:
-            return System.SOUND
-        elif item == System.SOUND:
-            return System.LANGUAGE
-        elif item == System.LANGUAGE:
-            return System.LOGFILE
-        elif item == System.LOGFILE:
-            return System.VOICE
-        elif item == System.VOICE:
-            return System.DISPLAY
-        elif item == System.DISPLAY:
-            return System.INFO
-        return 'errSystNext'
+        return next_item(System.items(), item, 'errSystNext')
 
     @staticmethod
     def prev(item: System):
         """Get previous item."""
-        if item == System.INFO:
-            return System.DISPLAY
-        if item == System.DISPLAY:
-            return System.VOICE
-        if item == System.VOICE:
-            return System.LOGFILE
-        if item == System.LOGFILE:
-            return System.LANGUAGE
-        if item == System.LANGUAGE:
-            return System.SOUND
-        elif item == System.SOUND:
-            return System.INFO
-        return 'errSystPrev'
+        return prev_item(System.items(), item, 'errSystPrev')
+
+
+class Power(MyEnum):
+    SHUT_DOWN = 'B00_power_shut_down_menu'
+    RESTART = 'B00_power_restart_menu'
+
+    @classmethod
+    def items(cls):
+        return [Power.SHUT_DOWN, Power.RESTART]
+
+
+class PowerLoop(object):
+    def __init__(self):
+        super(PowerLoop, self).__init__()
+
+    @staticmethod
+    def next(item: Power):
+        return next_item(Power.items(), item, 'errPowerNext')
+
+    @staticmethod
+    def prev(item: Power):
+        return prev_item(Power.items(), item, 'errPowerPrev')
+
+
+class EBoard(MyEnum):
+    CERTABO = 'B00_eboard_certabo_menu'
+    CHESSLINK = 'B00_eboard_chesslink_menu'
+    CHESSNUT = 'B00_eboard_chessnut_menu'
+    DGT = 'B00_eboard_dgt_menu'
+    NOEBOARD = 'B00_eboard_noeboard_menu'
+
+    @classmethod
+    def items(cls):
+        return [EBoard.CERTABO, EBoard.CHESSLINK, EBoard.CHESSNUT, EBoard.DGT, EBoard.NOEBOARD]
+
+
+class EBoardLoop(object):
+
+    def __init__(self):
+        super(EBoardLoop, self).__init__()
+
+    @staticmethod
+    def next(item: EBoard):
+        """Get next item."""
+        return next_item(EBoard.items(), item, 'errEboardNext')
+
+    @staticmethod
+    def prev(item: EBoard):
+        """Get previous item."""
+        return prev_item(EBoard.items(), item, 'errEboardPrev')
+
+
+class Theme(MyEnum):
+    LIGHT = 'B00_theme_light_menu'
+    DARK = 'B00_theme_dark_menu'
+    AUTO = 'B00_theme_auto_menu'
+
+    @classmethod
+    def items(cls):
+        return [Theme.LIGHT, Theme.DARK, Theme.AUTO]
+
+
+class ThemeLoop(object):
+
+    def __init__(self):
+        super(ThemeLoop, self).__init__()
+
+    @staticmethod
+    def next(item: Theme):
+        """Get next item."""
+        return next_item(Theme.items(), item, 'errThemeNext')
+
+    @staticmethod
+    def prev(item: Theme):
+        """Get previous item."""
+        return prev_item(Theme.items(), item, 'errThemePrev')
 
 
 class Info(MyEnum):
@@ -488,35 +481,26 @@ class Info(MyEnum):
     IPADR = 'B00_info_ipadr_menu'
     BATTERY = 'B00_info_battery_menu'
 
+    @classmethod
+    def items(cls):
+        return [Info.VERSION, Info.IPADR, Info.BATTERY]
+
 
 class InfoLoop(object):
+    """InfoLoop Class."""
 
-        """InfoLoop Class."""
+    def __init__(self):
+        super(InfoLoop, self).__init__()
 
-        def __init__(self):
-            super(InfoLoop, self).__init__()
+    @staticmethod
+    def next(item: Info):
+        """Get next item."""
+        return next_item(Info.items(), item, 'errInfoNext')
 
-        @staticmethod
-        def next(item: Info):
-            """Get next item."""
-            if item == Info.VERSION:
-                return Info.IPADR
-            elif item == Info.IPADR:
-                return Info.BATTERY
-            elif item == Info.BATTERY:
-                return Info.VERSION
-            return 'errInfoNext'
-
-        @staticmethod
-        def prev(item: Info):
-            """Get previous item."""
-            if item == Info.VERSION:
-                return Info.BATTERY
-            if item == Info.BATTERY:
-                return Info.IPADR
-            if item == Info.IPADR:
-                return Info.VERSION
-            return 'errInfoPrev'
+    @staticmethod
+    def prev(item: Info):
+        """Get previous item."""
+        return prev_item(Info.items(), item, 'errInfoPrev')
 
 
 class Language(MyEnum):
@@ -530,6 +514,11 @@ class Language(MyEnum):
     ES = 'B00_language_es_menu'
     IT = 'B00_language_it_menu'
 
+    @classmethod
+    def items(cls):
+        return [Language.EN, Language.DE, Language.NL, Language.FR, Language.ES,
+                Language.IT]
+
 
 class LanguageLoop(object):
 
@@ -541,36 +530,12 @@ class LanguageLoop(object):
     @staticmethod
     def next(item: Language):
         """Get next item."""
-        if item == Language.EN:
-            return Language.DE
-        elif item == Language.DE:
-            return Language.NL
-        elif item == Language.NL:
-            return Language.FR
-        elif item == Language.FR:
-            return Language.ES
-        elif item == Language.ES:
-            return Language.IT
-        elif item == Language.IT:
-            return Language.EN
-        return 'errLangNext'
+        return next_item(Language.items(), item, 'errLangNext')
 
     @staticmethod
     def prev(item: Language):
         """Get previous item."""
-        if item == Language.EN:
-            return Language.IT
-        if item == Language.IT:
-            return Language.ES
-        if item == Language.ES:
-            return Language.FR
-        if item == Language.FR:
-            return Language.NL
-        elif item == Language.NL:
-            return Language.DE
-        elif item == Language.DE:
-            return Language.EN
-        return 'errLangPrev'
+        return prev_item(Language.items(), item, 'errLangPrev')
 
 
 class Beep(MyEnum):
@@ -580,6 +545,11 @@ class Beep(MyEnum):
     OFF = 'B00_beep_off_menu'
     SOME = 'B00_beep_some_menu'
     ON = 'B00_beep_on_menu'
+    SAMPLE = 'B00_beep_sample_menu'
+
+    @classmethod
+    def items(cls):
+        return [Beep.OFF, Beep.SOME, Beep.ON, Beep.SAMPLE]
 
 
 class BeepLoop(object):
@@ -592,23 +562,12 @@ class BeepLoop(object):
     @staticmethod
     def next(item: Beep):
         """Get next item."""
-        if item == Beep.OFF:
-            return Beep.SOME
-        elif item == Beep.SOME:
-            return Beep.ON
-        elif item == Beep.ON:
-            return Beep.OFF
-        return 'errBeepNext'
+        return next_item(Beep.items(), item, 'errBeepNext')
 
     @staticmethod
     def prev(item: Beep):
-        if item == Beep.OFF:
-            return Beep.ON
-        if item == Beep.ON:
-            return Beep.SOME
-        if item == Beep.SOME:
-            return Beep.OFF
-        return 'errBeepPrev'
+        """Get previous item."""
+        return prev_item(Beep.items(), item, 'errBeepPrev')
 
 
 class Voice(MyEnum):
@@ -618,8 +577,13 @@ class Voice(MyEnum):
     SPEED = 'B00_voice_speed_menu'
     USER = 'B00_voice_user_menu'
     COMP = 'B00_voice_comp_menu'
-    VOLUME = 'B00_voice_volume_menu' #WD
-    
+    VOLUME = 'B00_voice_volume_menu'
+    BEEPER = 'B00_voice_beeper_menu'  # non-functional menu
+
+    @classmethod
+    def items(cls):
+        return [Voice.SPEED, Voice.COMP, Voice.USER, Voice.VOLUME]
+
 
 class VoiceLoop(object):
 
@@ -631,28 +595,12 @@ class VoiceLoop(object):
     @staticmethod
     def next(item: Voice):
         """Get next item."""
-        if item == Voice.SPEED:
-            return Voice.COMP
-        elif item == Voice.COMP:
-            return Voice.USER
-        elif item == Voice.USER:
-            return Voice.VOLUME #WD
-        elif item == Voice.VOLUME: #WD
-            return Voice.SPEED
-        return 'errVoicNext'
+        return next_item(Voice.items(), item, 'errVoicNext')
 
     @staticmethod
     def prev(item: Voice):
         """Get previous item."""
-        if item == Voice.SPEED:
-            return Voice.VOLUME #WD
-        elif item == Voice.VOLUME: #WD
-            return Voice.USER
-        elif item == Voice.USER:
-            return Voice.COMP
-        elif item == Voice.COMP:
-            return Voice.SPEED
-        return 'errVoicPrev'
+        return prev_item(Voice.items(), item, 'errVoicPrev')
 
 
 @enum.unique
@@ -666,6 +614,10 @@ class Display(MyEnum):
     CAPITAL = 'B00_display_capital_menu'
     NOTATION = 'B00_display_notation_menu'
 
+    @classmethod
+    def items(cls):
+        return [Display.PONDER, Display.CONFIRM, Display.ENGINENAME, Display.CAPITAL, Display.NOTATION]
+
 
 class DisplayLoop(object):
 
@@ -677,32 +629,12 @@ class DisplayLoop(object):
     @staticmethod
     def next(item: Display):
         """Get next item."""
-        if item == Display.PONDER:
-            return Display.CONFIRM
-        elif item == Display.CONFIRM:
-            return Display.ENGINENAME
-        elif item == Display.ENGINENAME:
-            return Display.CAPITAL
-        elif item == Display.CAPITAL:
-            return Display.NOTATION
-        elif item == Display.NOTATION:
-            return Display.PONDER
-        return 'errDispNext'
+        return next_item(Display.items(), item, 'errDispNext')
 
     @staticmethod
     def prev(item: Display):
         """Get previous item."""
-        if item == Display.NOTATION:
-            return Display.CAPITAL
-        elif item == Display.CAPITAL:
-            return Display.ENGINENAME
-        elif item == Display.ENGINENAME:
-            return Display.CONFIRM
-        elif item == Display.CONFIRM:
-            return Display.PONDER
-        elif item == Display.PONDER:
-            return Display.NOTATION
-        return 'errDispPrev'
+        return prev_item(Display.items(), item, 'errDispPrev')
 
 
 @enum.unique
@@ -887,3 +819,35 @@ class DgtMsg(enum.IntEnum):
     EE_FUTURE_2 = 0x7e
     EE_NOP = 0x7f
     EE_NOP2 = 0x00
+
+
+def next_item(items, item, error: str):
+    """
+    :param items: list of items
+    :param item: item to search for in the list
+    :param error: return this error string
+    :return: the next item in the list or the first item as the next for the last one
+    """
+    if item in items:
+        next_index = items.index(item) + 1
+        if next_index >= len(items):
+            next_index = 0
+        return items[next_index]
+    else:
+        return error
+
+
+def prev_item(items, item, error: str):
+    """
+    :param items: list of items
+    :param item: item to search for in the list
+    :param error: return this error string
+    :return: the previous item in the list or the last item as the previous for the first one
+    """
+    if item in items:
+        prev_index = items.index(item) - 1
+        if prev_index < 0:
+            prev_index = len(items) - 1
+        return items[prev_index]
+    else:
+        return error

@@ -19,7 +19,7 @@ from threading import Timer
 
 from utilities import Observable
 from dgt.api import Event
-import chess.uci
+import chess.uci  # type: ignore
 
 
 class Informer(chess.uci.InfoHandler):

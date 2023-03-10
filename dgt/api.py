@@ -17,15 +17,15 @@
 
 
 class BaseClass(object):
-    
+
     """Used for creating event, message, dgt classes."""
-    
+
     def __init__(self, classtype):
         self._type = classtype
-    
+
     def __repr__(self):
         return self._type
-    
+
     def __hash__(self):
         return hash(str(self.__class__) + ": " + str(self.__dict__))
 
@@ -39,15 +39,15 @@ def ClassFactory(name, argnames, BaseClass=BaseClass):
                 raise TypeError("argument {} not valid for {}".format(key, self.__class__.__name__))
             setattr(self, key, value)
         BaseClass.__init__(self, name)
-    
+
     newclass = type(name, (BaseClass,), {"__init__": __init__})
     return newclass
 
 
 class EventApi():
-    
+
     """The api for the events."""
-    
+
     # User events
     FEN = 'EVT_FEN'  # User has moved one or more pieces, and we have a new fen position
     LEVEL = 'EVT_LEVEL'  # User sets engine level
@@ -55,6 +55,7 @@ class EventApi():
     DRAWRESIGN = 'EVT_DRAWRESIGN'  # User declares a resignation or draw
     KEYBOARD_MOVE = 'EVT_KEYBOARD_MOVE'  # Keyboard sends a move (to be transfered to a fen)
     REMOTE_MOVE = 'EVT_REMOTE_MOVE'  # Remote player move
+    PROMOTION = 'EVT_PROMOTION'  # Promotion piece selected
     SET_OPENING_BOOK = 'EVT_SET_OPENING_BOOK'  # User chooses an opening book
     NEW_ENGINE = 'EVT_NEW_ENGINE'  # Change engine
     SET_INTERACTION_MODE = 'EVT_SET_INTERACTION_MODE'  # Change interaction mode
@@ -67,16 +68,18 @@ class EventApi():
     ALTERNATIVE_MOVE = 'EVT_ALTERNATIVE_MOVE'  # User wants engine to recalculate the position
     EMAIL_LOG = 'EVT_EMAIL_LOG'  # User want to send the log file by eMail
     SET_VOICE = 'EVT_SET_VOICE'  # User sets a new voice
-    SHOW_ENGINENAME = 'EVT_SHOW_ENGINENAME' ## show enginename
-    PICOWATCHER = 'EVT_PICOWATCHER' ## picowatcher on/off
-    PICOCOACH = 'EVT_PICOCOACH' ## picocoach on/off
-    PICOEXPLORER = 'EVT_PICOEXPLORER' ## picoexplorer on/off
-    PICOCOMMENT = 'EVT_PICOCOMMENT' ## pico written game comments on/off/all
-    READ_GAME = 'EVT_READ_GAME' ##
-    SAVE_GAME = 'EVT_SAVE_GAME' ##
-    CONTLAST  = 'EVT_CONTLAST' ##
-    ALTMOVES  = 'EVT_ALTMOVES' ##
-    
+    SHOW_ENGINENAME = 'EVT_SHOW_ENGINENAME'  # show enginename
+    PICOWATCHER = 'EVT_PICOWATCHER'  # picowatcher on/off
+    PICOCOACH = 'EVT_PICOCOACH'  # picocoach on/off
+    PICOEXPLORER = 'EVT_PICOEXPLORER'  # picoexplorer on/off
+    PICOCOMMENT = 'EVT_PICOCOMMENT'  # pico written game comments on/off/all
+    RSPEED = 'EVT_RSPEED'
+    TAKE_BACK = 'EVT_TAKE_BACK'
+    READ_GAME = 'EVT_READ_GAME'
+    SAVE_GAME = 'EVT_SAVE_GAME'
+    CONTLAST = 'EVT_CONTLAST'
+    ALTMOVES = 'EVT_ALTMOVES'
+
     # Keyboard events
     KEYBOARD_BUTTON = 'EVT_KEYBOARD_BUTTON'  # User pressed a button at the virtual clock
     KEYBOARD_FEN = 'EVT_KEYBOARD_FEN'  # Virtual board sends a fen
@@ -97,9 +100,9 @@ class EventApi():
 
 
 class MessageApi():
-    
+
     """The api for message."""
-    
+
     # Messages to display devices
     COMPUTER_MOVE = 'MSG_COMPUTER_MOVE'  # Show computer move
     BOOK_MOVE = 'MSG_BOOK_MOVE'  # Show book move
@@ -112,7 +115,9 @@ class MessageApi():
     LEVEL = 'MSG_LEVEL'  # User sets engine level
     TIME_CONTROL = 'MSG_TIME_CONTROL'  # New Timecontrol
     OPENING_BOOK = 'MSG_OPENING_BOOK'  # User chooses an opening book
-    
+    PROMOTION_DIALOG = 'MSG_PROMOTION_DIALOG'  # Request promotion dialog on web display
+    PROMOTION_DONE = 'MSG_PROMOTION_DONE'  # User has selected piece for promotion
+
     DGT_BUTTON = 'MSG_DGT_BUTTON'  # Clock button pressed
     DGT_FEN = 'MSG_DGT_FEN'  # DGT Board sends a fen
     DGT_CLOCK_VERSION = 'MSG_DGT_CLOCK_VERSION'  # DGT Board sends the clock version
@@ -122,14 +127,14 @@ class MessageApi():
     DGT_NO_CLOCK_ERROR = 'MSG_DGT_NO_CLOCK_ERROR'  # User hasnt connected a clock
     DGT_NO_EBOARD_ERROR = 'MSG_DGT_NO_EBOARD_ERROR'  # User hasnt connected an E-Board
     DGT_EBOARD_VERSION = 'MSG_DGT_EBOARD_VERSION'  # Startup Message after a successful connection to an E-Board
-    
+
     INTERACTION_MODE = 'MSG_INTERACTON_MODE'  # Interaction mode
     PLAY_MODE = 'MSG_PLAY_MODE'  # Play mode
-    SET_PLAYMODE = 'MSG_SET_PLAYMODE' # molli
+    SET_PLAYMODE = 'MSG_SET_PLAYMODE'
     START_NEW_GAME = 'MSG_START_NEW_GAME'  # User starts a new game
     COMPUTER_MOVE_DONE = 'MSG_COMPUTER_MOVE_DONE'  # User has done the computer move on board
     SEARCH_STARTED = 'MSG_SEARCH_STARTED'  # Engine has started to search
-    
+
     SEARCH_STOPPED = 'MSG_SEARCH_STOPPED'  # Engine has stopped the search
     TAKE_BACK = 'MSG_TACK_BACK'  # User takes back move(s)
     CLOCK_START = 'MSG_CLOCK_START'  # Say to run autonomous clock, contains time_control
@@ -137,7 +142,7 @@ class MessageApi():
     CLOCK_TIME = 'MSG_CLOCK_TIME'  # Send the prio clock time
     USER_MOVE_DONE = 'MSG_USER_MOVE_DONE'  # Player has done a move on board
     GAME_ENDS = 'MSG_GAME_ENDS'  # The current game has ended, contains a 'result' (GameResult) and list of 'moves'
-    
+
     SYSTEM_INFO = 'MSG_SYSTEM_INFO'  # Information about picochess such as version etc
     STARTUP_INFO = 'MSG_STARTUP_INFO'  # Information about the startup options
     IP_INFO = 'MSG_IP_INFO'  # Information about the IP adr
@@ -149,44 +154,45 @@ class MessageApi():
     SYSTEM_REBOOT = 'MSG_SYSTEM_REBOOT'  # Sends a Reboot
     SET_VOICE = 'MSG_SET_VOICE'  # User chooses a new voice
     SHOW_ENGINENAME = 'MSG_SHOW_ENGINENAME'
-    PICOWATCHER = 'MSG_PICOWATCHER' ## picowatcher on/off
-    PICOCOACH = 'MSG_PICOCOACH' ## picocoach on/off
-    PICOEXPLORER = 'MSG_PICOEXPLORER' ## picoexplorer on/off
-    PICOCOMMENT = 'MSG_PICOCOMMENT' ## picoexplorer on/off
-    READ_GAME = 'MSG_READ_GAME' ## read game
-    SAVE_GAME = 'MSG_SAVE_GAME' ## save game
-    CONTLAST  = 'MSG_CONTLAST'  ## continue last game
-    ALTMOVES  = 'MSG_ALTMOVES'  ## direct play alternative pico moves
-    
+    PICOWATCHER = 'MSG_PICOWATCHER'  # picowatcher on/off
+    PICOCOACH = 'MSG_PICOCOACH'  # picocoach on/off
+    PICOEXPLORER = 'MSG_PICOEXPLORER'  # picoexplorer on/off
+    PICOCOMMENT = 'MSG_PICOCOMMENT'  # picoexplorer on/off
+    RSPEED = 'MSG_RSPEED'
+    READ_GAME = 'MSG_READ_GAME'  # read game
+    SAVE_GAME = 'MSG_SAVE_GAME'  # save game
+    CONTLAST = 'MSG_CONTLAST'   # continue last game
+    ALTMOVES = 'MSG_ALTMOVES'   # direct play alternative pico moves
+
     EXIT_MENU = 'MSG_EXIT_MENU'  # User exits the menu
     WRONG_FEN = 'MSG_WRONG_FEN'  # User sends a wrong placement of pieces (timed)
     BATTERY = 'MSG_BATTERY'  # percent of BT battery
     UPDATE_PICO = 'MSG_UPDATE'  # User wants to update picochess
-    SEEKING     = 'MSG_SEEKING' ## molli: seek for online player
-    PGN_GAME_END = 'MSG_PGN_GAME_END' ## molli end of PGN game
-    ENGINE_SETUP = 'MSG_ENGINE_SETUP' ## molli
-    MOVE_RETRY = 'MSG_MOVE_RETRY' ## molli
-    MOVE_WRONG = 'MSG_MOVE_WRONG' ## molli
-    RESTORE_GAME = 'MSG_RESTORE_GAME' ## molli
-    ENGINE_NAME = 'MSG_ENGINE_NAME' ## molli
-    SHOW_TEXT = 'MSG_SHOW_TEXT' ## molli
-    ONLINE_NAMES = 'MSG_ONLINE_NAMES' ## molli
-    ONLINE_LOGIN = 'MSG_ONLINE_LOGIN' ## molli
-    ONLINE_USER_FAILED = 'MSG_ONLINE_USER_FAILED' ## molli
-    ONLINE_NO_OPPONENT = 'MSG_ONLINE_NO_OPPONENT' ## molli
-    ONLINE_FAILED = 'MSG_ONLINE_FAILED' ## molli
-    LOST_ON_TIME = 'MSG_LOST_ON_TIME' ##molli
-    SET_NOBOOK   = 'MSG_SET_NOBOOK' ##molli
-    PICOTUTOR_MSG = 'MSG_PICOTUTOR_MSG' ##molli
-    POSITION_FAIL = 'MSG_POSITION_FAIL' ##molli
-    TIMECONTROL_CHECK = 'MSG_TIMECONTROL_CHECK' ## molli
+    SEEKING = 'MSG_SEEKING'  # molli: seek for online player
+    PGN_GAME_END = 'MSG_PGN_GAME_END'
+    ENGINE_SETUP = 'MSG_ENGINE_SETUP'
+    MOVE_RETRY = 'MSG_MOVE_RETRY'
+    MOVE_WRONG = 'MSG_MOVE_WRONG'
+    RESTORE_GAME = 'MSG_RESTORE_GAME'
+    ENGINE_NAME = 'MSG_ENGINE_NAME'
+    SHOW_TEXT = 'MSG_SHOW_TEXT'
+    ONLINE_NAMES = 'MSG_ONLINE_NAMES'
+    ONLINE_LOGIN = 'MSG_ONLINE_LOGIN'
+    ONLINE_USER_FAILED = 'MSG_ONLINE_USER_FAILED'
+    ONLINE_NO_OPPONENT = 'MSG_ONLINE_NO_OPPONENT'
+    ONLINE_FAILED = 'MSG_ONLINE_FAILED'
+    LOST_ON_TIME = 'MSG_LOST_ON_TIME'
+    SET_NOBOOK = 'MSG_SET_NOBOOK'
+    PICOTUTOR_MSG = 'MSG_PICOTUTOR_MSG'
+    POSITION_FAIL = 'MSG_POSITION_FAIL'
+    TIMECONTROL_CHECK = 'MSG_TIMECONTROL_CHECK'
     REMOTE_ROOM = 'MSG_REMOTE_ROOM'  # User enters/leaves a remote room
 
 
 class DgtApi():
-    
+
     """The api for the dgt."""
-    
+
     # Commands to the DgtHw/DgtPi/DgtVr
     DISPLAY_MOVE = 'DGT_DISPLAY_MOVE'
     DISPLAY_TEXT = 'DGT_DISPLAY_TEXT'
@@ -199,14 +205,15 @@ class DgtApi():
     CLOCK_STOP = 'DGT_CLOCK_STOP'
     CLOCK_VERSION = 'DGT_CLOCK_VERSION'
     SERIALNR = 'DGT_SERIALNR'
+    PROMOTION_DONE = 'DGT_PROMOTION_DONE'
 
 
 class Dgt():
-    
+
     """Used to define tasks for the communication towards the dgt hardware."""
-    
+
     DISPLAY_MOVE = ClassFactory(DgtApi.DISPLAY_MOVE, ['move', 'fen', 'uci960', 'side', 'lang', 'capital', 'long', 'beep', 'maxtime', 'devs', 'wait', 'ld', 'rd'])
-    DISPLAY_TEXT = ClassFactory(DgtApi.DISPLAY_TEXT, ['l', 'm', 's', 'beep', 'maxtime', 'devs', 'wait', 'ld', 'rd'])
+    DISPLAY_TEXT = ClassFactory(DgtApi.DISPLAY_TEXT, ['web_text', 'large_text', 'medium_text', 'small_text', 'beep', 'maxtime', 'devs', 'wait', 'ld', 'rd'])
     DISPLAY_TIME = ClassFactory(DgtApi.DISPLAY_TIME, ['wait', 'force', 'devs'])
     LIGHT_CLEAR = ClassFactory(DgtApi.LIGHT_CLEAR, ['devs'])
     LIGHT_SQUARES = ClassFactory(DgtApi.LIGHT_SQUARES, ['uci_move', 'devs'])
@@ -215,12 +222,13 @@ class Dgt():
     CLOCK_START = ClassFactory(DgtApi.CLOCK_START, ['side', 'devs', 'wait'])
     CLOCK_STOP = ClassFactory(DgtApi.CLOCK_STOP, ['devs', 'wait'])
     CLOCK_VERSION = ClassFactory(DgtApi.CLOCK_VERSION, ['main', 'sub', 'devs'])
+    PROMOTION_DONE = ClassFactory(DgtApi.PROMOTION_DONE, ['uci_move', 'devs'])
 
 
 class Message():
-    
+
     """General class for transmitting messages between several parts of picochess."""
-    
+
     # Messages to display devices
     COMPUTER_MOVE = ClassFactory(MessageApi.COMPUTER_MOVE, ['move', 'ponder', 'game', 'wait'])
     BOOK_MOVE = ClassFactory(MessageApi.BOOK_MOVE, [])
@@ -233,11 +241,12 @@ class Message():
     LEVEL = ClassFactory(MessageApi.LEVEL, ['level_text', 'level_name', 'do_speak'])
     TIME_CONTROL = ClassFactory(MessageApi.TIME_CONTROL, ['time_text', 'show_ok', 'tc_init'])
     OPENING_BOOK = ClassFactory(MessageApi.OPENING_BOOK, ['book_text', 'show_ok'])
+    PROMOTION_DIALOG = ClassFactory(MessageApi.PROMOTION_DIALOG, ['move'])
 
     DGT_BUTTON = ClassFactory(MessageApi.DGT_BUTTON, ['button', 'dev'])
     DGT_FEN = ClassFactory(MessageApi.DGT_FEN, ['fen', 'raw'])
     DGT_CLOCK_VERSION = ClassFactory(MessageApi.DGT_CLOCK_VERSION, ['main', 'sub', 'dev', 'text'])
-    DGT_CLOCK_TIME = ClassFactory(MessageApi.DGT_CLOCK_TIME, ['time_left', 'time_right' , 'connect', 'dev'])
+    DGT_CLOCK_TIME = ClassFactory(MessageApi.DGT_CLOCK_TIME, ['time_left', 'time_right', 'connect', 'dev'])
     DGT_SERIAL_NR = ClassFactory(MessageApi.DGT_SERIAL_NR, ['number'])
     DGT_JACK_CONNECTED_ERROR = ClassFactory(MessageApi.DGT_JACK_CONNECTED_ERROR, [])
     DGT_NO_CLOCK_ERROR = ClassFactory(MessageApi.DGT_NO_CLOCK_ERROR, ['text'])
@@ -273,39 +282,42 @@ class Message():
     PICOCOACH = ClassFactory(MessageApi.PICOCOACH, ['picocoach'])
     PICOEXPLORER = ClassFactory(MessageApi.PICOEXPLORER, ['picoexplorer'])
     PICOCOMMENT = ClassFactory(MessageApi.PICOCOMMENT, ['picocomment'])
+    RSPEED = ClassFactory(MessageApi.RSPEED, ['rspeed'])
     READ_GAME = ClassFactory(MessageApi.READ_GAME, ['pgn_filename'])
     SAVE_GAME = ClassFactory(MessageApi.SAVE_GAME, ['tc_init', 'play_mode', 'game', 'pgn_filename'])
     CONTLAST = ClassFactory(MessageApi.CONTLAST, ['contlast'])
     ALTMOVES = ClassFactory(MessageApi.ALTMOVES, ['altmoves'])
-    
+
     EXIT_MENU = ClassFactory(MessageApi.EXIT_MENU, [])
     WRONG_FEN = ClassFactory(MessageApi.WRONG_FEN, [])
     BATTERY = ClassFactory(MessageApi.BATTERY, ['percent'])
     UPDATE_PICO = ClassFactory(MessageApi.UPDATE_PICO, [])
     REMOTE_ROOM = ClassFactory(MessageApi.REMOTE_ROOM, ['inside'])
-    SEEKING = ClassFactory(MessageApi.SEEKING, []) ## molli
-    PGN_GAME_END = ClassFactory(MessageApi.PGN_GAME_END, ['result']) ## molli
-    ENGINE_SETUP = ClassFactory(MessageApi.ENGINE_SETUP, []) ## molli
-    MOVE_RETRY   = ClassFactory(MessageApi.MOVE_RETRY, []) ## molli
-    MOVE_WRONG = ClassFactory(MessageApi.MOVE_WRONG, []) ## molli## molli
-    RESTORE_GAME = ClassFactory(MessageApi.RESTORE_GAME, []) ## molli
-    ENGINE_NAME = ClassFactory(MessageApi.ENGINE_NAME, ['engine_name']) ## molli
-    SHOW_TEXT = ClassFactory(MessageApi.SHOW_TEXT, ['text_string']) ## molli
-    ONLINE_NAMES = ClassFactory(MessageApi.ONLINE_NAMES, ['own_user', 'opp_user']) ## molli
-    ONLINE_LOGIN = ClassFactory(MessageApi.ONLINE_LOGIN, []) ## molli
-    ONLINE_NO_OPPONENT = ClassFactory(MessageApi.ONLINE_NO_OPPONENT, []) ## molli
-    ONLINE_USER_FAILED = ClassFactory(MessageApi.ONLINE_USER_FAILED, []) ## molli
-    ONLINE_FAILED = ClassFactory(MessageApi.ONLINE_FAILED, []) ## molli
-    LOST_ON_TIME = ClassFactory(MessageApi.LOST_ON_TIME, []) ## molli
-    SET_NOBOOK = ClassFactory(MessageApi.SET_NOBOOK, ['book_index']) ## molli
-    PICOTUTOR_MSG = ClassFactory(MessageApi.PICOTUTOR_MSG, ['eval_str', 'game', 'score']) ## molli
-    POSITION_FAIL = ClassFactory(MessageApi.POSITION_FAIL, ['fen_result']) ## molli
-    TIMECONTROL_CHECK = ClassFactory(MessageApi.TIMECONTROL_CHECK, ['player', 'movestogo', 'time1', 'time2']) ## molli
+    SEEKING = ClassFactory(MessageApi.SEEKING, [])
+    PGN_GAME_END = ClassFactory(MessageApi.PGN_GAME_END, ['result'])
+    ENGINE_SETUP = ClassFactory(MessageApi.ENGINE_SETUP, [])
+    MOVE_RETRY = ClassFactory(MessageApi.MOVE_RETRY, [])
+    MOVE_WRONG = ClassFactory(MessageApi.MOVE_WRONG, [])
+    RESTORE_GAME = ClassFactory(MessageApi.RESTORE_GAME, [])
+    ENGINE_NAME = ClassFactory(MessageApi.ENGINE_NAME, ['engine_name'])
+    SHOW_TEXT = ClassFactory(MessageApi.SHOW_TEXT, ['text_string'])
+    ONLINE_NAMES = ClassFactory(MessageApi.ONLINE_NAMES, ['own_user', 'opp_user'])
+    ONLINE_LOGIN = ClassFactory(MessageApi.ONLINE_LOGIN, [])
+    ONLINE_NO_OPPONENT = ClassFactory(MessageApi.ONLINE_NO_OPPONENT, [])
+    ONLINE_USER_FAILED = ClassFactory(MessageApi.ONLINE_USER_FAILED, [])
+    ONLINE_FAILED = ClassFactory(MessageApi.ONLINE_FAILED, [])
+    LOST_ON_TIME = ClassFactory(MessageApi.LOST_ON_TIME, [])
+    SET_NOBOOK = ClassFactory(MessageApi.SET_NOBOOK, ['book_index'])
+    PICOTUTOR_MSG = ClassFactory(MessageApi.PICOTUTOR_MSG, ['eval_str', 'game', 'score'])
+    POSITION_FAIL = ClassFactory(MessageApi.POSITION_FAIL, ['fen_result'])
+    TIMECONTROL_CHECK = ClassFactory(MessageApi.TIMECONTROL_CHECK, ['player', 'movestogo', 'time1', 'time2'])
+    PROMOTION_DONE = ClassFactory(MessageApi.PROMOTION_DONE, ['move'])
+
 
 class Event():
-    
+
     """Event used to send towards picochess."""
-    
+
     # User events
     FEN = ClassFactory(EventApi.FEN, ['fen'])
     LEVEL = ClassFactory(EventApi.LEVEL, ['options', 'level_text', 'level_name'])
@@ -313,6 +325,7 @@ class Event():
     DRAWRESIGN = ClassFactory(EventApi.DRAWRESIGN, ['result'])
     KEYBOARD_MOVE = ClassFactory(EventApi.KEYBOARD_MOVE, ['move'])
     REMOTE_MOVE = ClassFactory(EventApi.REMOTE_MOVE, ['move', 'fen'])
+    PROMOTION = ClassFactory(EventApi.PROMOTION, ['move', 'fen'])
     SET_OPENING_BOOK = ClassFactory(EventApi.SET_OPENING_BOOK, ['book', 'book_text', 'show_ok'])
     NEW_ENGINE = ClassFactory(EventApi.NEW_ENGINE, ['eng', 'eng_text', 'options', 'show_ok'])
     SET_INTERACTION_MODE = ClassFactory(EventApi.SET_INTERACTION_MODE, ['mode', 'mode_text', 'show_ok'])
@@ -330,10 +343,12 @@ class Event():
     PICOCOACH = ClassFactory(EventApi.PICOCOACH, ['picocoach'])
     PICOEXPLORER = ClassFactory(EventApi.PICOEXPLORER, ['picoexplorer'])
     PICOCOMMENT = ClassFactory(EventApi.PICOCOMMENT, ['picocomment'])
+    TAKE_BACK = ClassFactory(EventApi.TAKE_BACK, ['take_back'])
+    RSPEED = ClassFactory(EventApi.RSPEED, ['rspeed'])
     READ_GAME = ClassFactory(EventApi.READ_GAME, ['pgn_filename'])
     SAVE_GAME = ClassFactory(EventApi.SAVE_GAME, ['pgn_filename'])
-    CONTLAST  = ClassFactory(EventApi.CONTLAST, ['contlast'])
-    ALTMOVES  = ClassFactory(EventApi.ALTMOVES, ['altmoves'])
+    CONTLAST = ClassFactory(EventApi.CONTLAST, ['contlast'])
+    ALTMOVES = ClassFactory(EventApi.ALTMOVES, ['altmoves'])
     # Keyboard events
     KEYBOARD_BUTTON = ClassFactory(EventApi.KEYBOARD_BUTTON, ['button', 'dev'])
     KEYBOARD_FEN = ClassFactory(EventApi.KEYBOARD_FEN, ['fen'])

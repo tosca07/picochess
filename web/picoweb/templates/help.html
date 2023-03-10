@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Picochess Help</title>
+    <link rel="shortcut icon" type="image/x-icon" href="/static/img/favicon.ico">
+    <link rel="stylesheet" href="/static/css/bootstrap-5.5.2.min.css"/>
+    <link rel="stylesheet" type="text/css" href="/static/css/datatables.min.css"/>
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css"/>
+    {% try %}
+    {% if theme=='dark' %}
+    <link rel="stylesheet" href="/static/css/mdb.dark.min.css"/>
+    {% end %}
+    {% if theme=='light' %}
+    <link rel="stylesheet" href="/static/css/mdb.min.css"/>
+    {% end %}
+    {% except %}
+    <link rel="stylesheet" href="/static/css/mdb.dark.min.css"/>
+    {% end %}
+    <link rel="stylesheet" href="/static/css/select.dataTables.css"/>
+    <link rel="stylesheet" href="/static/css/dataTables.bootstrap5.min.css"/>
+    <link rel="stylesheet" href="/static/css/custom.css"/>
+
+    <script type="text/javascript" src="/static/js/jquery-3.6.1.min.js"></script>
+    <script type="text/javascript" src="/static/js/datatables.min.js"></script>
+    <script type="text/javascript" src="/static/js/dataTables.select.min.js"></script>
+    <script type="text/javascript" src="/static/js/dataTables.bootstrap5.min.js"></script>
+    <script type="text/javascript" src="/static/js/bootstrap-5.5.2.min.js"></script>
+</head>
+<body>
+{% try %}
+{% if theme=='dark' or theme=='light' %}
+<script type="text/javascript" src="/static/js/mdb.min.js"></script>
+{% end %}
+{% except %}
+<script type="text/javascript" src="/static/js/mdb.min.js"></script>
+{% end %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    Help
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>
+                            <a href="/static/manual/ShortManual.pdf">Short Manual</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

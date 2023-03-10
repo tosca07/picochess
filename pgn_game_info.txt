@@ -1,7 +1,7 @@
-PGN_GAME=Hoerspiel
+PGN_GAME=Kasparov 25 board Simul
 PGN_GAME_INDEX=1
 PGN_PROBLEM=
-PGN_White=NN
-PGN_Black=Stimpas
+PGN_White=Kasparov
+PGN_Black=Lloyds Bank: Munro, Clarke, Cooper, Drew
 PGN_FEN=
-PGN_RESULT=0-1
+PGN_RESULT=1/2-1/2

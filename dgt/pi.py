@@ -22,19 +22,18 @@ from ctypes import cdll, c_byte, create_string_buffer, pointer
 from platform import machine
 
 from utilities import DisplayMsg, hms_time
-from dgt.api import Message
+from dgt.api import Dgt, Message
 from dgt.util import ClockIcons, ClockSide
-from dgt.translate import DgtTranslate
-from dgt.board import DgtBoard
+from eboard import EBoard
 from dgt.iface import DgtIface
-from dgt.board import Rev2Info ## molli Rev2
+from dgt.board import Rev2Info
 
 
 class DgtPi(DgtIface):
 
     """Handle the DgtPi communication."""
 
-    def __init__(self, dgtboard: DgtBoard):
+    def __init__(self, dgtboard: EBoard):
         super(DgtPi, self).__init__(dgtboard)
 
         self.lib_lock = Lock()
@@ -90,7 +89,7 @@ class DgtPi(DgtIface):
                     if ack3 == 0x20:
                         logging.info('(i2c) clock button on/off pressed')
                         self.lib.dgtpicom_configure()  # restart the clock - cause its OFF
-                        DisplayMsg.show(Message.DGT_BUTTON(button=0x20, dev='i2c')) # WD Fehlerbereinigung
+                        DisplayMsg.show(Message.DGT_BUTTON(button=0x20, dev='i2c'))
                     if ack3 == 0x11:
                         logging.info('(i2c) clock button 0+4 pressed')
                         DisplayMsg.show(Message.DGT_BUTTON(button=0x11, dev='i2c'))
@@ -136,24 +135,23 @@ class DgtPi(DgtIface):
         if len(text) > 11:
             logging.warning('(i2c) clock message too long [%s]', text)
         logging.debug('[%s]', text)
-        text = bytes(text, 'utf-8')
         with self.lib_lock:
-            res = self.lib.dgtpicom_set_text(text, 0x03 if beep else 0x00, left_icons.value, right_icons.value)
+            res = self.lib.dgtpicom_set_text(bytes(text, 'utf-8'), 0x03 if beep else 0x00, left_icons.value, right_icons.value)
             if res < 0:
                 logging.warning('SetText() returned error %i, running configure', res)
                 self._run_configure()
-                res = self.lib.dgtpicom_set_text(text, 0x03 if beep else 0x00, left_icons.value, right_icons.value)
+                res = self.lib.dgtpicom_set_text(bytes(text, 'utf-8'), 0x03 if beep else 0x00, left_icons.value, right_icons.value)
         if res < 0:
             logging.warning('finally failed %i', res)
             return False
         else:
             return True
 
-    def display_text_on_clock(self, message):
+    def display_text_on_clock(self, message: Dgt.DISPLAY_TEXT):
         """Display a text on the dgtpi."""
-        text = message.l
+        text = message.large_text
         if text is None:
-            text = message.m
+            text = message.medium_text
         if self.get_name() not in message.devs:
             logging.debug('ignored %s - devs: %s', text, message.devs)
             return
@@ -164,9 +162,8 @@ class DgtPi(DgtIface):
     def display_move_on_clock(self, message):
         """Display a move on the dgtpi."""
         bit_board, text = self.get_san(message)
-        ## molli rev2 changes
         if Rev2Info.get_new_rev2_mode():
-            text = '. ' + text ##molli rev2
+            text = '. ' + text
         text = '{:3d}{:s}'.format(bit_board.fullmove_number, text)
         if self.get_name() not in message.devs:
             logging.debug('ignored %s - devs: %s', text, message.devs)
@@ -197,8 +194,8 @@ class DgtPi(DgtIface):
     def light_squares_on_revelation(self, uci_move: str):
         """Handle this by hw.py."""
         return True
-        
-    def light_square_on_revelation(self, square: str): ##molli
+
+    def light_square_on_revelation(self, square: str):
         """Handle this by hw.py."""
         return True
 
@@ -287,6 +284,9 @@ class DgtPi(DgtIface):
         self.l_time = time_left
         self.r_time = time_right
         return True
+
+    def promotion_done(self, uci_move: str):
+        pass
 
     def get_name(self):
         """Get name."""

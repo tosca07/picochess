@@ -1,5 +1,5 @@
 import os
-from flask import Flask, url_for
+from flask import Flask, url_for  # type: ignore
 
 picoweb = Flask(__name__)
 

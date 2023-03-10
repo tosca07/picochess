@@ -19,27 +19,48 @@ import datetime
 import threading
 import logging
 from collections import OrderedDict
+from typing import Optional, Set
 
-import chess
-import chess.pgn as pgn
+import chess  # type: ignore
+import chess.pgn as pgn  # type: ignore
 
-import tornado.web
-import tornado.wsgi
-from tornado.ioloop import IOLoop
-from tornado.websocket import WebSocketHandler
+import tornado.web  # type: ignore
+import tornado.wsgi  # type: ignore
+from tornado.ioloop import IOLoop  # type: ignore
+from tornado.websocket import WebSocketHandler  # type: ignore
 
 from utilities import Observable, DisplayMsg, hms_time, RepeatedTimer
 from web.picoweb import picoweb as pw
 
-from dgt.api import Event, Message
+from dgt.api import Dgt, Event, Message
 from dgt.util import PlayMode, Mode, ClockSide
 from dgt.iface import DgtIface
-from dgt.translate import DgtTranslate
-from dgt.board import DgtBoard
+from eboard import EBoard
 
 # This needs to be reworked to be session based (probably by token)
 # Otherwise multiple clients behind a NAT can all play as the 'player'
 client_ips = []
+
+
+def read_pgn_info():
+    info = {}
+    try:
+        with open('pgn_game_info.txt') as info_file:
+            for line in info_file:
+                name, value = line.partition("=")[::2]
+                info[name.strip()] = value.strip()
+        return info
+    except (OSError, KeyError):
+        logging.error('Could not read pgn_game_info file')
+        info['PGN_GAME'] = 'Game Error'
+        info['PGN_PROBLEM'] = ''
+        info['PGN_FEN'] = ''
+        info['PGN_RESULT'] = '*'
+        info['PGN_White'] = ''
+        info['PGN_Black'] = ''
+        info['PGN_White_ELO'] = ''
+        info['PGN_Black_ELO'] = ''
+        return info
 
 
 class ServerRequestHandler(tornado.web.RequestHandler):
@@ -85,8 +106,13 @@ class ChannelHandler(ServerRequestHandler):
             result = {'event': 'Broadcast', 'msg': 'Position from Spectators!', 'pgn': pgn_str, 'fen': fen}
             EventHandler.write_to_clients(result)
         elif action == 'move':
-            move = chess.Move.from_uci(self.get_argument('source') + self.get_argument('target'))
+            move = chess.Move.from_uci(
+                self.get_argument('source') + self.get_argument('target') + self.get_argument('promotion'))
             Observable.fire(Event.REMOTE_MOVE(move=move, fen=self.get_argument('fen')))
+        elif action == 'promotion':
+            move = chess.Move.from_uci(
+                self.get_argument('source') + self.get_argument('target') + self.get_argument('promotion'))
+            Observable.fire(Event.PROMOTION(move=move, fen=self.get_argument('fen')))
         elif action == 'clockbutton':
             Observable.fire(Event.KEYBOARD_BUTTON(button=self.get_argument('button'), dev='web'))
         elif action == 'room':
@@ -97,7 +123,7 @@ class ChannelHandler(ServerRequestHandler):
 
 
 class EventHandler(WebSocketHandler):
-    clients = set()
+    clients: Set[WebSocketHandler] = set()
 
     def initialize(self, shared=None):
         self.shared = shared
@@ -153,13 +179,24 @@ class InfoHandler(ServerRequestHandler):
 
 
 class ChessBoardHandler(ServerRequestHandler):
+    def initialize(self, theme='dark'):
+        self.theme = theme
+
     def get(self):
-        self.render('web/picoweb/templates/clock.html')
+        self.render('web/picoweb/templates/clock.html', theme=self.theme)
+
+
+class HelpHandler(ServerRequestHandler):
+    def initialize(self, theme='dark'):
+        self.theme = theme
+
+    def get(self):
+        self.render('web/picoweb/templates/help.html', theme=self.theme)
 
 
 class WebServer(threading.Thread):
-    def __init__(self, port: int, dgtboard: DgtBoard):
-        shared = {}
+    def __init__(self, port: int, dgtboard: EBoard, theme: str):
+        shared: dict = {}
 
         WebDisplay(shared).start()
         WebVr(shared, dgtboard).start()
@@ -167,10 +204,11 @@ class WebServer(threading.Thread):
         wsgi_app = tornado.wsgi.WSGIContainer(pw)
 
         application = tornado.web.Application([
-            (r'/', ChessBoardHandler, dict(shared=shared)),
+            (r'/', ChessBoardHandler, dict(theme=theme)),
             (r'/event', EventHandler, dict(shared=shared)),
             (r'/dgt', DGTHandler, dict(shared=shared)),
             (r'/info', InfoHandler, dict(shared=shared)),
+            (r'/help', HelpHandler, dict(theme=theme)),
 
             (r'/channel', ChannelHandler, dict(shared=shared)),
             (r'.*', tornado.web.FallbackHandler, {'fallback': wsgi_app})
@@ -184,13 +222,12 @@ class WebServer(threading.Thread):
 
 
 class WebVr(DgtIface):
-
     """Handle the web (clock) communication."""
 
-    def __init__(self, shared, dgtboard: DgtBoard):
+    def __init__(self, shared, dgtboard: EBoard):
         super(WebVr, self).__init__(dgtboard)
         self.shared = shared
-        self.virtual_timer = None
+        self.virtual_timer: Optional[RepeatedTimer] = None
         self.enable_dgtpi = dgtboard.is_pi
         sub = 2 if dgtboard.is_pi else 0
         DisplayMsg.show(Message.DGT_CLOCK_VERSION(main=2, sub=sub, dev='web', text=None))
@@ -267,16 +304,12 @@ class WebVr(DgtIface):
         EventHandler.write_to_clients(result)
         return True
 
-    def display_text_on_clock(self, message):
+    def display_text_on_clock(self, message: Dgt.DISPLAY_TEXT):
         """Display a text on the web clock."""
-        is_new_rev2 = self.dgtboard.is_revelation and self.dgtboard.enable_revelation_pi
-        """
-        if self.enable_dgtpi or is_new_rev2:
-            text = message.l
+        if message.web_text != '':
+            text = message.web_text
         else:
-            text = message.m if self.enable_dgt3000 else message.s
-        """
-        text = message.l
+            text = message.large_text
         if self.get_name() not in message.devs:
             logging.debug('ignored %s - devs: %s', text, message.devs)
             return True
@@ -342,10 +375,9 @@ class WebVr(DgtIface):
         result = {'event': 'Light', 'move': uci_move}
         EventHandler.write_to_clients(result)
         return True
-        
+
     def light_square_on_revelation(self, square):
         """Light the rev2 square."""
-        ##result = {'event': 'Light', 'square': square}
         uci_move = square + square
         result = {'event': 'Light', 'move': uci_move}
         EventHandler.write_to_clients(result)
@@ -357,6 +389,9 @@ class WebVr(DgtIface):
         EventHandler.write_to_clients(result)
         return True
 
+    def promotion_done(self, move):
+        pass
+
     def get_name(self):
         """Return name."""
         return 'web'
@@ -366,6 +401,10 @@ class WebVr(DgtIface):
 
 
 class WebDisplay(DisplayMsg, threading.Thread):
+    level_text_sav = ''
+    level_name_sav = ''
+    engine_elo_sav = ''
+
     def __init__(self, shared):
         super(WebDisplay, self).__init__()
         self.shared = shared
@@ -396,11 +435,24 @@ class WebDisplay(DisplayMsg, threading.Thread):
         engine_name = 'Picochess'
         user_elo = '-'
         comp_elo = 2500
+        rspeed = 1
+        retro_speed = 100
+        retro_speed_str = ''
+
         if 'system_info' in self.shared:
             if 'user_name' in self.shared['system_info']:
                 user_name = self.shared['system_info']['user_name']
             if 'engine_name' in self.shared['system_info']:
                 engine_name = self.shared['system_info']['engine_name']
+            if 'rspeed' in self.shared['system_info']:
+                rspeed = self.shared['system_info']['rspeed']
+                retro_speed = int(100 * round(float(rspeed), 2))
+                if 'mame' in engine_name or 'MAME' in engine_name or 'mess' in engine_name or 'MESS' in engine_name:
+                    retro_speed_str = ' (' + str(retro_speed) + '%' + ')'
+                    if retro_speed < 20:
+                        retro_speed_str = ' (full speed)'
+                else:
+                    retro_speed_str = ''
             if 'user_elo' in self.shared['system_info']:
                 user_elo = self.shared['system_info']['user_elo']
             if 'engine_elo' in self.shared['system_info']:
@@ -408,7 +460,10 @@ class WebDisplay(DisplayMsg, threading.Thread):
 
         if 'game_info' in self.shared:
             if 'level_text' in self.shared['game_info']:
-                engine_level = ' ({0})'.format(self.shared['game_info']['level_text'].l)
+                text: Dgt.DISPLAY_TEXT = self.shared['game_info']['level_text']
+                engine_level = ' ({0})'.format(text.large_text)
+                if text.large_text == '' or text.large_text == ' ':
+                    engine_level = ''
             else:
                 engine_level = ''
             if 'level_name' in self.shared['game_info']:
@@ -419,14 +474,26 @@ class WebDisplay(DisplayMsg, threading.Thread):
             if 'play_mode' in self.shared['game_info']:
                 if self.shared['game_info']['play_mode'] == PlayMode.USER_WHITE:
                     pgn_game.headers['White'] = user_name
-                    pgn_game.headers['Black'] = engine_name + engine_level
+                    pgn_game.headers['Black'] = engine_name + engine_level + retro_speed_str
                     pgn_game.headers['WhiteElo'] = user_elo
                     pgn_game.headers['BlackElo'] = comp_elo
                 else:
-                    pgn_game.headers['White'] = engine_name + engine_level
+                    pgn_game.headers['White'] = engine_name + engine_level + retro_speed_str
                     pgn_game.headers['Black'] = user_name
                     pgn_game.headers['WhiteElo'] = comp_elo
                     pgn_game.headers['BlackElo'] = user_elo
+
+            if 'PGN Replay' in engine_name:
+                info = {}
+                info = read_pgn_info()
+                pgn_game.headers['Event'] = engine_name + engine_level
+                pgn_game.headers['Date'] = datetime.datetime.today().strftime('%Y.%m.%d')
+                pgn_game.headers['Site'] = 'picochess.org'
+                pgn_game.headers['Round'] = ''
+                pgn_game.headers['White'] = info['PGN_White']
+                pgn_game.headers['Black'] = info['PGN_Black']
+                pgn_game.headers['WhiteElo'] = info['PGN_White_ELO']
+                pgn_game.headers['BlackElo'] = info['PGN_Black_ELO']
 
         if 'ip_info' in self.shared:
             if 'location' in self.shared['ip_info']:
@@ -455,7 +522,8 @@ class WebDisplay(DisplayMsg, threading.Thread):
             EventHandler.write_to_clients({'event': 'Header', 'headers': self.shared['headers']})
 
         def _send_title():
-            EventHandler.write_to_clients({'event': 'Title', 'ip_info': self.shared['ip_info']})
+            if 'ip_info' in self.shared:
+                EventHandler.write_to_clients({'event': 'Title', 'ip_info': self.shared['ip_info']})
 
         def _transfer(game: chess.Board):
             pgn_game = pgn.Game().from_board(game)
@@ -479,7 +547,9 @@ class WebDisplay(DisplayMsg, threading.Thread):
             result = {'pgn': pgn_str, 'fen': fen, 'event': 'Game', 'move': '0000', 'play': 'newgame'}
             self.shared['last_dgt_move_msg'] = result
             EventHandler.write_to_clients(result)
-            _send_headers()  # don't need _build_headers()
+            _build_headers()
+            _send_headers()
+            _send_title()
 
         elif isinstance(message, Message.IP_INFO):
             self.shared['ip_info'] = message.info
@@ -488,9 +558,14 @@ class WebDisplay(DisplayMsg, threading.Thread):
             _send_title()
 
         elif isinstance(message, Message.SYSTEM_INFO):
-            self.shared['system_info'] = message.info
-            self.shared['system_info']['old_engine'] = self.shared['system_info']['engine_name']
-            self.shared['system_info']['user_name_orig'] = self.shared['system_info']['user_name']
+            self._create_system_info()
+            self.shared['system_info'].update(message.info)
+            if 'engine_name' in self.shared['system_info']:
+                self.shared['system_info']['old_engine'] = self.shared['system_info']['engine_name']
+            if 'rspeed' in self.shared['system_info']:
+                self.shared['system_info']['rspeed_orig'] = self.shared['system_info']['rspeed']
+            if 'user_name' in self.shared['system_info']:
+                self.shared['system_info']['user_name_orig'] = self.shared['system_info']['user_name']
             _build_headers()
             _send_headers()
 
@@ -537,12 +612,38 @@ class WebDisplay(DisplayMsg, threading.Thread):
             self.shared['game_info']['interaction_mode'] = message.mode
             if self.shared['game_info']['interaction_mode'] == Mode.REMOTE:
                 self.shared['system_info']['engine_name'] = 'Remote Player'
+                if self.shared['system_info']['engine_elo'] != '':
+                    WebDisplay.engine_elo_sav = self.shared['system_info']['engine_elo']
+                self.shared['system_info']['engine_elo'] = '?'
+                if self.shared['game_info']['level_text'] != '':
+                    WebDisplay.level_text_sav = self.shared['game_info']['level_text']
+                if self.shared['game_info']['level_name'] != '':
+                    WebDisplay.level_name_sav = self.shared['game_info']['level_name']
+                del self.shared['game_info']['level_text']
+                del self.shared['game_info']['level_name']
+
             elif self.shared['game_info']['interaction_mode'] == Mode.OBSERVE:
                 self.shared['system_info']['engine_name'] = 'Player B'
                 self.shared['system_info']['user_name'] = 'Player A'
+                if self.shared['system_info']['engine_elo'] != '':
+                    WebDisplay.engine_elo_sav = self.shared['system_info']['engine_elo']
+                self.shared['system_info']['engine_elo'] = '?'
+                if self.shared['game_info']['level_text'] != '':
+                    WebDisplay.level_text_sav = self.shared['game_info']['level_text']
+                if self.shared['game_info']['level_name'] != '':
+                    WebDisplay.level_name_sav = self.shared['game_info']['level_name']
+                del self.shared['game_info']['level_text']
+                del self.shared['game_info']['level_name']
             else:
                 self.shared['system_info']['engine_name'] = self.shared['system_info']['old_engine']
                 self.shared['system_info']['user_name'] = self.shared['system_info']['user_name_orig']
+                if WebDisplay.engine_elo_sav != '':
+                    self.shared['system_info']['engine_elo'] = WebDisplay.engine_elo_sav
+                if WebDisplay.level_text_sav != '':
+                    self.shared['game_info']['level_text'] = WebDisplay.level_text_sav
+                if WebDisplay.level_name_sav != '':
+                    self.shared['game_info']['level_name'] = WebDisplay.level_name_sav
+
             _build_headers()
             _send_headers()
 
@@ -630,6 +731,10 @@ class WebDisplay(DisplayMsg, threading.Thread):
             mov = peek_uci(message.game)
             result = {'pgn': pgn_str, 'fen': fen, 'event': 'Fen', 'move': mov, 'play': 'reload'}
             self.shared['last_dgt_move_msg'] = result
+            EventHandler.write_to_clients(result)
+
+        elif isinstance(message, Message.PROMOTION_DIALOG):
+            result = {'event': 'PromotionDlg', 'move': message.move}
             EventHandler.write_to_clients(result)
 
         elif isinstance(message, Message.GAME_ENDS):

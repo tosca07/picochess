@@ -31,17 +31,15 @@ from subprocess import Popen, PIPE
 
 from dgt.translate import DgtTranslate
 from dgt.api import Dgt
-## molli: for switching off the DGT clock display
 from ctypes import cdll
 
-from configobj import ConfigObj, ConfigObjError, DuplicateError
+from configobj import ConfigObj, ConfigObjError, DuplicateError  # type: ignore
 
 # picochess version
-version = '3' ##molli
-##version_rev2 = '3.0' ##molli
+version = '3.1'
 
-evt_queue = queue.Queue()
-dispatch_queue = queue.Queue()
+evt_queue: queue.Queue = queue.Queue()
+dispatch_queue: queue.Queue = queue.Queue()
 
 msgdisplay_devices = []
 dgtdisplay_devices = []
@@ -154,7 +152,7 @@ def get_opening_books():
 
     library = []
     for section in config.sections():
-        text = Dgt.DISPLAY_TEXT(l=config[section]['large'], m=config[section]['medium'], s=config[section]['small'],
+        text = Dgt.DISPLAY_TEXT(web_text=config[section]['large'], large_text=config[section]['large'], medium_text=config[section]['medium'], small_text=config[section]['small'],
                                 wait=True, beep=False, maxtime=0, devs={'ser', 'i2c', 'web'})
         library.append(
             {
@@ -235,23 +233,23 @@ def update_picochess(dgtpi: bool, auto_reboot: bool, dgttranslate: DgtTranslate)
 
 def shutdown(dgtpi: bool, dev: str):
     """Shutdown picochess."""
-    dgt_functions = cdll.LoadLibrary('etc/dgtpicom.so')
     logging.debug('shutting down system requested by (%s)', dev)
-    time.sleep(3)  # give some time to send out the pgn file or speak the event
+    time.sleep(5)  # give some time to send out the pgn file or speak the event
     if platform.system() == 'Windows':
         os.system('shutdown /s')
     elif dgtpi:
-        dgt_functions.dgtpicom_off(1) ## molli: thanks to Lukas & Randy
+        dgt_functions = cdll.LoadLibrary('etc/dgtpicom.so')
+        dgt_functions.dgtpicom_off(1)
         os.system('shutdown -h now')
-    ##  os.system('systemctl isolate dgtpistandby.target')
+        time.sleep(5)
     else:
-        os.system('shutdown -h now')
+        os.system('sudo shutdown -h now')
 
 
 def reboot(dgtpi: bool, dev: str):
     """Reboot picochess."""
     logging.debug('rebooting system requested by (%s)', dev)
-    time.sleep(3)  # give some time to send out the pgn file or speak the event
+    time.sleep(5)  # give some time to send out the pgn file or speak the event
     if platform.system() == 'Windows':
         os.system('shutdown /r')
     elif dgtpi:
@@ -261,20 +259,22 @@ def reboot(dgtpi: bool, dev: str):
 
 
 def get_location():
-    """Return the location of the user and the external and interal ip adr."""
+    """Return the location of the user and the external and internal ip adr."""
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.connect(('8.8.8.8', 80))
         int_ip = sock.getsockname()[0]
         sock.close()
-        response = urllib.request.urlopen('http://will6.de/freegeoip')
+        response = urllib.request.urlopen('https://get.geojs.io/v1/ip/geo.json')
         j = json.loads(response.read().decode())
-        country_name = j['country_name'] + ' ' if 'country_name' in j else ''
-        country_code = j['country_code'] + ' ' if 'country_code' in j else ''
-        ext_ip = j['ip'] if 'ip' in j else None
-        city = j['city'] + ', ' if 'city' in j else ''
-        return (city + country_name + country_code).strip(), ext_ip, int_ip
-    except:
+
+        country_name = j.get('country', '')
+        country_code = j.get('country_code', '')
+        city = j.get('city', '')
+        ext_ip = j.get('IPv4', None)
+
+        return f"{city}, {country_name} {country_code}", ext_ip, int_ip
+    except Exception:
         return '?', None, None
 
 
@@ -286,3 +286,13 @@ def write_picochess_ini(key: str, value):
         config.write()
     except (ConfigObjError, DuplicateError) as conf_exc:
         logging.exception(conf_exc)
+
+
+def get_engine_mame_par(engine_rspeed: float, engine_rsound=False) -> str:
+    if engine_rspeed < 0.01:
+        engine_mame_par = '-nothrottle'
+    else:
+        engine_mame_par = '-speed ' + str(engine_rspeed)
+    if not engine_rsound:
+        engine_mame_par = engine_mame_par + ' -sound none'
+    return engine_mame_par

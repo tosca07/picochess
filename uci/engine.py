@@ -15,19 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Optional
 import logging
-import os
 import configparser
-import spur
+import spur  # type: ignore
 import paramiko
 
 from subprocess import DEVNULL
 from dgt.api import Event
 from utilities import Observable
-import chess.uci
-from chess import Board
+import chess.uci  # type: ignore
+from chess import Board  # type: ignore
 from uci.informer import Informer
-from uci.read import read_engine_ini
+from uci.rating import Rating, Result
+from utilities import write_picochess_ini
 
 
 class UciShell(object):
@@ -41,17 +42,17 @@ class UciShell(object):
             if key_file:
                 if windows:
                     self.shell = spur.SshShell(hostname=hostname, username=username, private_key_file=key_file,
-                                                              missing_host_key=paramiko.AutoAddPolicy(), shell_type=spur.ssh.ShellTypes.windows)
+                                               missing_host_key=paramiko.AutoAddPolicy(), shell_type=spur.ssh.ShellTypes.windows)
                 else:
                     self.shell = spur.SshShell(hostname=hostname, username=username, private_key_file=key_file,
-                                           missing_host_key=paramiko.AutoAddPolicy())
+                                               missing_host_key=paramiko.AutoAddPolicy())
             else:
                 if windows:
                     self.shell = spur.SshShell(hostname=hostname, username=username, password=password,
-                                                              missing_host_key=paramiko.AutoAddPolicy(), shell_type=spur.ssh.ShellTypes.windows)
+                                               missing_host_key=paramiko.AutoAddPolicy(), shell_type=spur.ssh.ShellTypes.windows)
                 else:
                     self.shell = spur.SshShell(hostname=hostname, username=username, password=password,
-                                           missing_host_key=paramiko.AutoAddPolicy())
+                                               missing_host_key=paramiko.AutoAddPolicy())
         else:
             self.shell = None
 
@@ -63,18 +64,27 @@ class UciEngine(object):
 
     """Handle the uci engine communication."""
 
-    def __init__(self, file: str, uci_shell: UciShell, home=''):
+    def __init__(self, file: str, uci_shell: UciShell, mame_par: str):
         super(UciEngine, self).__init__()
-        favorites = ''
+        logging.info('mame parameters=' + mame_par)
         try:
+            self.is_adaptive = False
+            self.is_mame = False
+            self.engine_rating = -1
+            self.uci_elo_eval_fn = None  # saved UCI_Elo eval function
             self.shell = uci_shell.get()
-            if home:
-                # file = home + os.sep + file # wd
-                pass   # wd 
-            if self.shell:
-                self.engine = chess.uci.spur_spawn_engine(self.shell, [file])
+            logging.info('file ' + file)
+            if '/mame/' in file:
+                self.is_mame = True
+                mfile = [file, mame_par]
+                logging.info(mfile)
             else:
-                self.engine = chess.uci.popen_engine(file, stderr=DEVNULL)
+                mfile = [file]
+                logging.info(mfile)
+            if self.shell:
+                self.engine = chess.uci.spur_spawn_engine(self.shell, mfile)
+            else:
+                self.engine = chess.uci.popen_engine(mfile, stderr=DEVNULL)
 
             self.file = file
             if self.engine:
@@ -83,18 +93,12 @@ class UciEngine(object):
                 self.engine.uci()
             else:
                 logging.error('engine executable [%s] not found', file)
-            self.options = {}
+            self.options: dict = {}
             self.future = None
             self.show_best = True
 
             self.res = None
             self.level_support = False
-            # self.installed_engines = read_engine_ini(self.shell, (file.rsplit(os.sep, 1))[0]) # wd
-            # self.installed_engines2 = read_engine_ini()engine_shell=self.shell, engine_path=(file.rsplit(os.sep, 1))[0], filename='favorites.ini') ## favorites # wd
-
-            self.installed_engines = read_engine_ini()  # wd
-            self.installed_engines2 = read_engine_ini(filename='favorites.ini') ## favorites # wd
-
         except OSError:
             logging.exception('OS error in starting engine')
         except TypeError:
@@ -107,8 +111,8 @@ class UciEngine(object):
     def get_options(self):
         """Get engine options."""
         return self.engine.options
-    
-    def get_pgn_options(self):   ## molli pgn
+
+    def get_pgn_options(self):
         """Get options."""
         return self.options
 
@@ -153,14 +157,6 @@ class UciEngine(object):
         """Get File."""
         return self.file
 
-    def get_installed_engines(self):
-        """Get installed engines."""
-        return self.installed_engines
-    ## Favorites
-    def get_installed_engines2(self):
-        """Get installed engines."""
-        return self.installed_engines2
-
     def position(self, game: Board):
         """Set position."""
         self.engine.position(game)
@@ -190,11 +186,11 @@ class UciEngine(object):
             logging.error('Engine terminated')  # @todo find out, why this can happen!
         return self.future.result()
 
-    def pause_pgn_audio(self):  ##molli v3
+    def pause_pgn_audio(self):
         """Stop engine."""
         logging.info('pause audio old')
         try:
-            self.engine.uci() ## pseudo command
+            self.engine.uci()
         except chess.uci.EngineTerminatedException:
             logging.error('Engine terminated')  # @todo find out, why this can happen!
 
@@ -206,7 +202,7 @@ class UciEngine(object):
         # Observable.fire(Event.START_SEARCH())
         self.future = self.engine.go(**time_dict)
         return self.future
-    
+
     def go_emu(self):
         """Go engine."""
         logging.debug('molli: go_emu')
@@ -285,14 +281,13 @@ class UciEngine(object):
         """Set engine mode."""
         self.engine.setoption({'Ponder': ponder, 'UCI_AnalyseMode': analyse})
 
-    def startup(self, options: dict, show=True):
+    def startup(self, options: dict, rating: Optional[Rating] = None):
         """Startup engine."""
         parser = configparser.ConfigParser()
-        parser.optionxform = str
 
         if not options:
             if self.shell is None:
-                success = parser.read(self.get_file() + '.uci')
+                success = bool(parser.read(self.get_file() + '.uci'))
             else:
                 try:
                     with self.shell.open(self.get_file() + '.uci', 'r') as file:
@@ -305,9 +300,65 @@ class UciEngine(object):
 
         self.level_support = bool(options)
 
-        logging.debug('setting engine with options %s', options)
-        self.options = options
+        self.options = options.copy()
+        self._engine_rating(rating)
+        logging.debug('setting engine with options %s', self.options)
         self.send()
-        if show:
-            logging.debug('Loaded engine [%s]', self.get_name())
-            logging.debug('Supported options [%s]', self.get_options())
+
+        logging.debug('Loaded engine [%s]', self.get_name())
+        logging.debug('Supported options [%s]', self.get_options())
+
+    def _engine_rating(self, rating: Optional[Rating] = None):
+        """
+        Set engine_rating; replace UCI_Elo 'auto' value with rating.
+        Delete UCI_Elo from the options if no rating is given.
+        """
+        if 'UCI_Elo' in self.options:
+            uci_elo_option = self.options['UCI_Elo'].strip()
+            if uci_elo_option.lower() == 'auto' and rating is not None:
+                self._set_rating(self._round_engine_rating(int(rating.rating)))
+            elif uci_elo_option.isnumeric():
+                self.engine_rating = int(uci_elo_option)
+            elif 'auto' in uci_elo_option and rating is not None:
+                uci_elo_with_rating = uci_elo_option.replace('auto', str(int(rating.rating)))
+                try:
+                    evaluated = eval(uci_elo_with_rating)
+                    if str(evaluated).isnumeric():
+                        self._set_rating(int(evaluated))
+                        self.uci_elo_eval_fn = uci_elo_option  # save evaluation function for updating engine ELO later
+                    else:
+                        del self.options['UCI_Elo']
+                except Exception as e:  # noqa - catch all exceptions for eval()
+                    print(f'invalid option set for UCI_Elo={uci_elo_with_rating}, exception={e}')
+                    logging.error(f'invalid option set for UCI_Elo={uci_elo_with_rating}, exception={e}')
+                    del self.options['UCI_Elo']
+            else:
+                del self.options['UCI_Elo']
+
+    def _set_rating(self, value: int):
+        self.engine_rating = value
+        self.options['UCI_Elo'] = str(int(self.engine_rating))
+        self.is_adaptive = True
+
+    def _round_engine_rating(self, value: int) -> int:
+        """ Round the value up to the next 50, minimum=500 """
+        return max(500, int(value / 50 + 1) * 50)
+
+    def update_rating(self, rating: Rating, result: Result) -> Rating:
+        """ Send the new ELO value to the engine and save the ELO and rating deviation """
+        if not self.is_adaptive or result is None or self.engine_rating < 0:
+            return rating
+        new_rating = rating.rate(Rating(self.engine_rating, 0), result)
+        if self.uci_elo_eval_fn is not None:
+            # evaluation function instead of auto?
+            self.engine_rating = eval(self.uci_elo_eval_fn.replace('auto', str(int(new_rating.rating))))
+        else:
+            self.engine_rating = self._round_engine_rating(int(new_rating.rating))
+        self._save_rating(new_rating)
+        self.option('UCI_Elo', str(self.engine_rating))
+        self.send()
+        return new_rating
+
+    def _save_rating(self, new_rating: Rating):
+        write_picochess_ini('pgn-elo', max(500, int(new_rating.rating)))
+        write_picochess_ini('rating-deviation', int(new_rating.rating_deviation))

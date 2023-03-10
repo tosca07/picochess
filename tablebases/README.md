@@ -1,10 +1,18 @@
 General
 =======
-This folder is for tablebase files. Right now the 3+4 stone endgames for the syzygy format can be found here. Please notice,
-that these files are not used out of the box for picochess or its engines. To make use of them you have to set the uci parameters
-of each engine.
+This folder is for tablebases files. They are not provided with picochess
+because of their size. However, a script is provided to download the Syzygy
+tablebases for 3, 4 and 5 pieces endgames from the Internet Archive.
 
+To use this script, you will need to install `wget` and `unzip`. You can do so
+with:
 
-If you have problems please don't hassitate to contact me over eMail or skype.
+`apt install wget unzip`
 
-LocutusOfPenguin
+You can then run the script from this folder:
+
+`./download-syzygy345.sh`
+
+Please note that this will take several minutes to download, depending on your
+Internet connection. It will also require 2Gb of free space to run, and 1Gb
+once completed.

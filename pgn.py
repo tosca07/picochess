@@ -29,16 +29,17 @@ from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
 import mimetypes
 import requests
+from typing import Optional
 
-import chess
-import chess.pgn
+import chess  # type: ignore
+import chess.pgn  # type: ignore
 from timecontrol import TimeControl
 from utilities import DisplayMsg
-from dgt.api import Message
+from dgt.api import Dgt, Message
 from dgt.util import GameResult, PlayMode, Mode, TimeMode
-import copy
 
-## molli: support for player names from online game
+
+# molli: support for player names from online game
 class ModeInfo:
     online_mode = False
     pgn_mode = False
@@ -48,12 +49,13 @@ class ModeInfo:
     online_own_user = ''
     end_result = '*'
     book_in_use = ''
-    
+
     @classmethod
     def set_opening(cls, book_in_use, op_name, op_eco):
         ModeInfo.opening_name = op_name
         ModeInfo.opening_eco = op_eco
         ModeInfo.book_in_use = book_in_use
+        ModeInfo.opening_name = ModeInfo.opening_name.strip()
         ModeInfo.opening_name.replace('\n', '')
         ModeInfo.opening_name.replace('\r', '')
         ModeInfo.opening_name.replace('\t', '')
@@ -61,6 +63,7 @@ class ModeInfo:
         ModeInfo.opening_name.replace(']', '')
         ModeInfo.opening_name.replace('(', '')
         ModeInfo.opening_name.replace(')', '')
+        ModeInfo.opening_name = ModeInfo.opening_name.strip()
         ModeInfo.opening_eco.replace('\n', '')
         ModeInfo.opening_eco.replace('\r', '')
         ModeInfo.opening_eco.replace('\t', '')
@@ -68,42 +71,42 @@ class ModeInfo:
         ModeInfo.opening_eco.replace(']', '')
         ModeInfo.opening_eco.replace('(', '')
         ModeInfo.opening_eco.replace(')', '')
-  
+
     @classmethod
     def reset_opening(cls):
         ModeInfo.opening_name = ''
         ModeInfo.opening_eco = ''
         ModeInfo.book_in_use = ''
-            
+
     @classmethod
     def set_game_ending(cls, result):
         logging.debug('Save game result %s', result)
         ModeInfo.end_result = result
-    
+
     @classmethod
     def get_game_ending(cls):
         return ModeInfo.end_result
-    
+
     @classmethod
     def set_online_mode(cls, mode):
         ModeInfo.online_mode = mode
         if mode:
             ModeInfo.pgn_mode = False
-    
+
     @classmethod
     def get_online_mode(cls):
         return ModeInfo.online_mode
-    
+
     @classmethod
     def set_pgn_mode(cls, mode):
         ModeInfo.pgn_mode = mode
         if mode:
             ModeInfo.online_mode = False
-    
+
     @classmethod
     def get_pgn_mode(cls):
         return ModeInfo.pgn_mode
-    
+
     @classmethod
     def set_online_opponent(cls, name):
         ModeInfo.online_opponent = name
@@ -114,11 +117,11 @@ class ModeInfo:
         ModeInfo.online_opponent.replace('\n', '')
         ModeInfo.online_opponent.replace('\r', '')
         ModeInfo.online_opponent.replace('\t', '')
-    
+
     @classmethod
     def get_online_opponent(cls):
         return ModeInfo.online_opponent
-    
+
     @classmethod
     def set_online_own_user(cls, name):
         ModeInfo.online_own_user = name
@@ -129,15 +132,15 @@ class ModeInfo:
         ModeInfo.online_own_user.replace('\n', '')
         ModeInfo.online_own_user.replace('\r', '')
         ModeInfo.online_own_user.replace('\t', '')
-    
+
     @classmethod
     def get_online_own_user(cls):
-        ##help = ModeInfo.online_own_user.split()
         if ModeInfo.online_own_user != '':
             pass
         else:
-            ModeInfo.online_own_user = self.user_name
+            ModeInfo.online_own_user = cls.user_name
         return ModeInfo.online_own_user
+
 
 class Emailer(object):
 
@@ -259,25 +262,28 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         self.old_engine = '?'
         self.user_name = '?'
         self.user_name_orig = '?'
+        self.rspeed = '1.0'
         self.location = '?'
-        self.level_text = None
+        self.level_text: Optional[Dgt.DISPLAY_TEXT] = None
         self.level_name = ''
+        self.old_level_name = ''
+        self.old_level_text = None
+        self.old_engine_elo = '-'
         self.user_elo = '-'
         self.engine_elo = '-'
         self.mode = ''
         self.startime = datetime.datetime.now().strftime('%H:%M:%S')
 
-
     def _save_and_email_pgn(self, message):
         logging.debug('Saving game to [%s]', self.file_name)
         pgn_game = chess.pgn.Game().from_board(message.game)
-        
+
         # Headers
         if ModeInfo.get_online_mode():
             pgn_game.headers['Event'] = 'PicoChess' + self.engine_name
         else:
             pgn_game.headers['Event'] = 'PicoChess Game'
-        
+
         pgn_game.headers['Site'] = self.location
         pgn_game.headers['Date'] = datetime.date.today().strftime('%Y.%m.%d')
         pgn_game.headers['Time'] = self.startime
@@ -292,7 +298,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         if self.level_text is None:
             engine_level = ''
         else:
-            engine_level = ' ({})'.format(self.level_text.l)
+            engine_level = ' ({})'.format(self.level_text.large_text)
 
         if self.level_name.startswith('Elo@'):
             comp_elo = int(self.level_name[4:])
@@ -300,7 +306,6 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         else:
             comp_elo = self.engine_elo
 
-        ##molli: online
         if ModeInfo.get_online_mode():
             help1 = ModeInfo.get_online_opponent()
             help2 = '(Opp.)'
@@ -308,7 +313,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
                 engine_name = 'Opp.(Guest)'
             else:
                 engine_name = ModeInfo.get_online_opponent()[:-1] + help2
-            
+
             help = ModeInfo.get_online_own_user()
             if help[:5] == 'Guest':
                 help2 = self.user_name
@@ -341,15 +346,20 @@ class PgnDisplay(DisplayMsg, threading.Thread):
                 pgn_game.headers['Black'] = self.user_name
                 pgn_game.headers['WhiteElo'] = comp_elo
                 pgn_game.headers['BlackElo'] = self.user_elo
-        
-        ## game time related tags for picochess
+
+        # game time related tags for picochess
         l_tc_init = message.tc_init
         l_timectrl = TimeControl(**l_tc_init)
-    
-        ## molli: depth
-        pgn_game.headers['PicoDepth'] = str(l_timectrl.depth)
-    
-        ## Timecontrol
+
+        if l_timectrl.depth > 0:
+            pgn_game.headers['PicoDepth'] = str(l_timectrl.depth)
+        if l_timectrl.node > 0:
+            pgn_game.headers['PicoNode'] = str(l_timectrl.node)
+        if 'mame' in self.engine_name or 'mess' in self.engine_name or 'MAME' in self.engine_name or 'MESS' in self.engine_name:
+            rspeed_str = str(round(float(self.rspeed), 2))
+            pgn_game.headers['PicoRSpeed'] = rspeed_str
+
+        # Timecontrol
 
         if l_timectrl.mode == TimeMode.FIXED:
             l_timecontrol = str(l_timectrl.move_time)
@@ -364,19 +374,17 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             else:
                 l_timecontrol = str(l_timectrl.moves_to_go_orig) + ' ' + str(l_timectrl.game_time) + ' 0 ' + str(l_timectrl.game_time2)
 
-        ## remaining game times
+        # remaining game times
         l_int_time = l_tc_init['internal_time']
         l_rem_time_w = str(int(l_int_time[chess.WHITE]))
         l_rem_time_b = str(int(l_int_time[chess.BLACK]))
-        
+
         pgn_game.headers['PicoTimeControl'] = l_timecontrol
-        pgn_game.headers['PicoRemTimeW']    = l_rem_time_w
-        pgn_game.headers['PicoRemTimeB']    = l_rem_time_b
-        
-        ##logging.debug('molli:PGN filled until book [%s]', str(pgn_game))
-        
-        ## book openning information
-        if ModeInfo.book_in_use: 
+        pgn_game.headers['PicoRemTimeW'] = l_rem_time_w
+        pgn_game.headers['PicoRemTimeB'] = l_rem_time_b
+
+        # book openning information
+        if ModeInfo.book_in_use:
             pgn_game.headers['PicoOpeningBook'] = ModeInfo.book_in_use
         else:
             pgn_game.headers['PicoOpeningBook'] = ''
@@ -390,24 +398,22 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         pgn_game_last = pgn_game
 
         # Save to file
-        ## molli save game in a single last game
+        # molli save game in a single last game
         last_file = open(self.last_file_name, 'w')
         last_exporter = chess.pgn.FileExporter(last_file)
         pgn_game_last.accept(last_exporter)
         last_file.flush()
         last_file.close()
-        
+
         file = open(self.file_name, 'a')
         exporter = chess.pgn.FileExporter(file)
         pgn_game.accept(exporter)
         file.flush()
         file.close()
-        
+
         self.emailer.send('Game PGN', str(pgn_game), self.file_name)
 
-                
-    def _save_pgn(self, message):   ## molli
-        
+    def _save_pgn(self, message):
         l_file_name = 'games' + os.sep + message.pgn_filename
         logging.debug('Saving PGN game to [%s]', l_file_name)
         pgn_game = chess.pgn.Game().from_board(message.game)
@@ -417,19 +423,19 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             pgn_game.headers['Event'] = 'PicoChess' + self.engine_name
         else:
             pgn_game.headers['Event'] = 'PicoChess Game'
-            
+
         pgn_game.headers['Site'] = self.location
         pgn_game.headers['Date'] = datetime.date.today().strftime('%Y.%m.%d')
         pgn_game.headers['Time'] = self.startime
-        
+
         logging.debug('molli: pgn save result = %s', ModeInfo.get_game_ending())
         if pgn_game.headers['Result'] == '*':
             pgn_game.headers['Result'] = ModeInfo.get_game_ending()
-        
-        if self.level_text is None:
+
+        if self.level_text.large_text is None or self.level_text.large_text == '' or self.level_text.large_text == '""':
             engine_level = ''
         else:
-            engine_level = ' ({})'.format(self.level_text.l)
+            engine_level = ' ({})'.format(self.level_text.large_text)
 
         if self.level_name.startswith('Elo@'):
             comp_elo = int(self.level_name[4:])
@@ -437,7 +443,6 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         else:
             comp_elo = self.engine_elo
 
-        ##molli: online
         if ModeInfo.get_online_mode():
             help1 = ModeInfo.get_online_opponent()
             help2 = '(Opp.)'
@@ -447,7 +452,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
                 engine_name = 'Opp.(Guest)'
             else:
                 engine_name = ModeInfo.get_online_opponent()[:-1] + help2
-        
+
             help = ModeInfo.get_online_own_user()
             if help[:5] == 'Guest':
                 help2 = self.user_name
@@ -457,7 +462,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
                 user_name = ModeInfo.get_online_own_user()[:-1] + help2
                 user_name.replace('\n', '')
                 user_name = str(user_name)
-                
+
             if message.play_mode == PlayMode.USER_WHITE:
                 pgn_game.headers['White'] = user_name
                 pgn_game.headers['Black'] = engine_name
@@ -480,16 +485,19 @@ class PgnDisplay(DisplayMsg, threading.Thread):
                 pgn_game.headers['WhiteElo'] = comp_elo
                 pgn_game.headers['BlackElo'] = self.user_elo
 
-        ##logging.debug('molli: pgn save names ok')
-        
-        ## game time related tags for picochess
+        # game time related tags for picochess
         l_tc_init = message.tc_init
         l_timectrl = TimeControl(**l_tc_init)
-        
-        ## molli: depth
-        pgn_game.headers['PicoDepth'] = str(l_timectrl.depth)
-        
-        ## Timecontrol
+
+        if l_timectrl.depth > 0:
+            pgn_game.headers['PicoDepth'] = str(l_timectrl.depth)
+        if l_timectrl.node > 0:
+            pgn_game.headers['PicoNode'] = str(l_timectrl.node)
+        if 'mame' in self.engine_name or 'mess' in self.engine_name or 'MAME' in self.engine_name or 'MESS' in self.engine_name:
+            rspeed_str = str(round(float(self.rspeed), 2))
+            pgn_game.headers['PicoRSpeed'] = rspeed_str
+
+        # Timecontrol
         if l_timectrl.moves_to_go_orig > 0:
             if l_timectrl.fisch_inc > 0:
                 l_timecontrol = str(l_timectrl.moves_to_go_orig) + ' ' + str(l_timectrl.game_time) + ' ' + str(l_timectrl.fisch_inc) + ' ' + str(l_timectrl.game_time2)
@@ -503,18 +511,18 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         elif l_timectrl.mode == TimeMode.FISCHER:
             l_timecontrol = str(l_timectrl.game_time) + ' ' + str(l_timectrl.fisch_inc)
 
-        ## remaining game times
+        # remaining game times
         l_int_time = l_tc_init['internal_time']
         l_rem_time_w = str(int(l_int_time[chess.WHITE]))
         l_rem_time_b = str(int(l_int_time[chess.BLACK]))
 
         logging.debug('molli: save pgn Time %s', str(l_timecontrol))
-        
-        pgn_game.headers['PicoTimeControl'] = l_timecontrol
-        pgn_game.headers['PicoRemTimeW']    = l_rem_time_w
-        pgn_game.headers['PicoRemTimeB']    = l_rem_time_b
 
-        ## book openning information
+        pgn_game.headers['PicoTimeControl'] = l_timecontrol
+        pgn_game.headers['PicoRemTimeW'] = l_rem_time_w
+        pgn_game.headers['PicoRemTimeB'] = l_rem_time_b
+
+        # book openning information
         if ModeInfo.book_in_use:
             pgn_game.headers['PicoOpeningBook'] = ModeInfo.book_in_use
         else:
@@ -525,7 +533,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         else:
             pgn_game.headers['Opening'] = '??'
             pgn_game.headers['ECO'] = '??'
-        
+
         file = open(l_file_name, 'w')
         exporter = chess.pgn.FileExporter(file)
         pgn_game.accept(exporter)
@@ -538,11 +546,19 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             pass
 
         elif isinstance(message, Message.SYSTEM_INFO):
-            self.engine_name = message.info['engine_name']
-            self.old_engine = self.engine_name
-            self.user_name = message.info['user_name']
-            self.user_name_orig = message.info['user_name']
-            self.user_elo = message.info['user_elo']
+            if 'engine_name' in message.info:
+                self.engine_name = message.info['engine_name']
+                self.old_engine = self.engine_name
+                self.old_level_name = self.level_name
+                self.old_level_text = self.level_text
+                self.old_engine_elo = self.engine_elo
+            if 'user_name' in message.info:
+                self.user_name = message.info['user_name']
+                self.user_name_orig = message.info['user_name']
+            if 'user_elo' in message.info:
+                self.user_elo = message.info['user_elo']
+            if 'rspeed' in message.info:
+                self.rspeed = message.info['rspeed']
 
         elif isinstance(message, Message.IP_INFO):
             self.location = message.info['location']
@@ -550,22 +566,35 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         elif isinstance(message, Message.STARTUP_INFO):
             self.level_text = message.info['level_text']
             self.level_name = message.info['level_name']
+            self.old_level_name = self.level_name
+            self.old_level_text = self.level_text
+            self.old_engine_elo = self.engine_elo
 
         elif isinstance(message, Message.LEVEL):
             self.level_text = message.level_text
             self.level_name = message.level_name
+            self.old_level_name = self.level_name
+            self.old_level_text = self.level_text
+            self.old_engine_elo = self.engine_elo
 
         elif isinstance(message, Message.INTERACTION_MODE):
             self.mode = message.mode
             if message.mode == Mode.REMOTE:
                 self.old_engine = self.engine_name
                 self.engine_name = 'Remote Player'
+                self.level_text = None
+                self.level_name = ''
             elif message.mode == Mode.OBSERVE:
                 self.old_engine = self.engine_name
                 self.engine_name = 'Player B'
                 self.user_name = 'Player A'
+                self.level_text = None
+                self.level_name = ''
             else:
                 self.engine_name = self.old_engine
+                self.level_name = self.old_level_name
+                self.level_text = self.old_level_text
+                self.engine_elo = self.old_engine_elo
                 self.user_name = self.user_name_orig
 
         elif isinstance(message, Message.ENGINE_STARTUP):
@@ -582,20 +611,21 @@ class PgnDisplay(DisplayMsg, threading.Thread):
                 self.level_text = None
                 self.level_name = ''
 
+            self.old_level_name = self.level_name
+            self.old_level_text = self.level_text
+            self.old_engine_elo = self.engine_elo
+
         elif isinstance(message, Message.GAME_ENDS):
             if message.game.move_stack and not ModeInfo.get_pgn_mode() and self.mode != Mode.PONDER:
                 self._save_and_email_pgn(message)
 
         elif isinstance(message, Message.START_NEW_GAME):
             self.startime = datetime.datetime.now().strftime('%H:%M:%S')
-        
+
         elif isinstance(message, Message.SAVE_GAME):
             logging.debug('molli: save game message pgn dispatch')
             if message.game.move_stack:
                 self._save_pgn(message)
-
-        else:  # Default
-            pass
 
     def run(self):
         """Call by threading.Thread start() function."""

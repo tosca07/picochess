@@ -20,16 +20,16 @@ from threading import Lock
 
 from utilities import hms_time
 from dgt.iface import DgtIface
-from dgt.util import ClockIcons, ClockSide, DgtClk, DgtCmd
-from dgt.translate import DgtTranslate
-from dgt.board import DgtBoard
+from dgt.util import ClockIcons, ClockSide
+from eboard import EBoard
+from dgt.api import Dgt
 
 
 class DgtHw(DgtIface):
 
     """Handle the DgtXL/3000 communication."""
 
-    def __init__(self, dgtboard: DgtBoard):
+    def __init__(self, dgtboard: EBoard):
         super(DgtHw, self).__init__(dgtboard)
 
         self.lib_lock = Lock()
@@ -50,9 +50,8 @@ class DgtHw(DgtIface):
         if len(text) > 8:
             logging.warning('(ser) clock message too long [%s]', text)
         logging.debug('[%s]', text)
-        text = bytes(text, 'utf-8')
         with self.lib_lock:
-            res = self.dgtboard.set_text_3k(text, 0x03 if beep else 0x00)
+            res = self.dgtboard.set_text_3k(bytes(text, 'utf-8'), 0x03 if beep else 0x00)
             if not res:
                 logging.warning('SetText() returned error %i', res)
             return res
@@ -62,20 +61,19 @@ class DgtHw(DgtIface):
         if len(text) > 11:
             logging.warning('(rev) clock message too long [%s]', text)
         logging.debug('[%s]', text)
-        text = bytes(text, 'utf-8')
         with self.lib_lock:
-            res = self.dgtboard.set_text_rp(text, 0x03 if beep else 0x00)
+            res = self.dgtboard.set_text_rp(bytes(text, 'utf-8'), 0x03 if beep else 0x00)
             if not res:
                 logging.warning('SetText() returned error %i', res)
             return res
 
-    def display_text_on_clock(self, message):
+    def display_text_on_clock(self, message: Dgt.DISPLAY_TEXT):
         """Display a text on the dgtxl/3k/rev2."""
         is_new_rev2 = self.dgtboard.is_revelation and self.dgtboard.enable_revelation_pi
         if is_new_rev2:
-            text = message.l
+            text = message.large_text
         else:
-            text = message.m if self.enable_dgt3000 else message.s
+            text = message.medium_text if self.enable_dgt3000 else message.small_text
         if self.get_name() not in message.devs:
             logging.debug('ignored %s - devs: %s', text, message.devs)
             return True
@@ -90,17 +88,16 @@ class DgtHw(DgtIface):
                 right_icons = message.rd if hasattr(message, 'rd') else ClockIcons.NONE
                 return self._display_on_dgt_xl(text, message.beep, left_icons, right_icons)
 
-    def display_move_on_clock(self, message):
+    def display_move_on_clock(self, message: Dgt.DISPLAY_MOVE):
         """Display a move on the dgtxl/3k/rev2."""
         is_new_rev2 = self.dgtboard.is_revelation and self.dgtboard.enable_revelation_pi
         if self.enable_dgt3000 or is_new_rev2:
             bit_board, text = self.get_san(message)
             if is_new_rev2:
                 points = '...' if message.side == ClockSide.RIGHT else '.'
-                ## text = '{:3d}{:s}'.format(bit_board.fullmove_number, text) ## orig
                 if len(text) > 5:
                     points = '.'
-                text = '{:3d}{:s}{:s}'.format(bit_board.fullmove_number, points, text) ## REV2 molli
+                text = '{:3d}{:s}{:s}'.format(bit_board.fullmove_number, points, text)
         else:
             text = message.move.uci()
             if message.side == ClockSide.RIGHT:
@@ -143,8 +140,8 @@ class DgtHw(DgtIface):
         """Light the Rev2 leds."""
         self.dgtboard.light_squares_on_revelation(uci_move)
         return True
-        
-    def light_square_on_revelation(self, square: str): ##molli
+
+    def light_square_on_revelation(self, square: str):
         """Light the Rev2 led."""
         self.dgtboard.light_square_on_revelation(square)
         return True
@@ -209,6 +206,9 @@ class DgtHw(DgtIface):
         self.dgtboard.l_time = time_left
         self.dgtboard.r_time = time_right
         return True
+
+    def promotion_done(self, uci_move: str):
+        self.dgtboard.promotion_done(uci_move)
 
     def get_name(self):
         """Get name."""

@@ -1,7 +1,10 @@
 [Unit]
-Description=PicoChess stand alone chess computer based on DGT board
+Description=PicoChess Chess Program
+After=multi-user.target
 
 [Service]
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=/home/pi/.Xauthority"
 Type=simple
 ExecStart=/usr/bin/python3 /opt/picochess/picochess.py
 ExecStop=/usr/bin/pkill -f picochess.py

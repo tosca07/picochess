@@ -19,20 +19,19 @@ import logging
 import queue
 from threading import Thread
 
-from chess import Board
-from utilities import hms_time, DisplayDgt, DispatchDgt
-from dgt.util import ClockIcons, ClockSide
+from chess import Board  # type: ignore
+from utilities import DisplayDgt
+from dgt.util import ClockSide
 from dgt.api import Dgt
-from dgt.translate import DgtTranslate
-from dgt.board import DgtBoard
-from dgt.board import Rev2Info ## molli Rev2
+from eboard import EBoard
+from dgt.board import Rev2Info
 
 
 class DgtIface(DisplayDgt, Thread):
 
     """An Interface class for DgtHw, DgtPi, DgtVr."""
 
-    def __init__(self, dgtboard: DgtBoard):
+    def __init__(self, dgtboard: EBoard):
         super(DgtIface, self).__init__()
 
         self.dgtboard = dgtboard
@@ -56,7 +55,7 @@ class DgtIface(DisplayDgt, Thread):
     def light_squares_on_revelation(self, uci_move):
         """Override this function."""
         raise NotImplementedError()
-        
+
     def light_square_on_revelation(self, square):
         """Override this function."""
         raise NotImplementedError()
@@ -78,6 +77,10 @@ class DgtIface(DisplayDgt, Thread):
         raise NotImplementedError()
 
     def stop_clock(self, devs):
+        """Override this function."""
+        raise NotImplementedError()
+
+    def promotion_done(self, uci_move: str):
         """Override this function."""
         raise NotImplementedError()
 
@@ -123,12 +126,11 @@ class DgtIface(DisplayDgt, Thread):
             move_text = move_text.format(message.move.uci()[:4])
 
         if message.side == ClockSide.RIGHT:
-            ## move_text = move_text.rjust(6 if is_xl else 8)  
             if Rev2Info.get_new_rev2_mode():
-                move_text = move_text.rjust(5)  ## molli REV2
+                move_text = move_text.rjust(5)
             else:
                 move_text = move_text.rjust(6 if is_xl else 8)
-                    
+
         return bit_board, move(move_text, message.lang, message.capital and not is_xl, not message.long)
 
     def _process_message(self, message):
@@ -168,6 +170,8 @@ class DgtIface(DisplayDgt, Thread):
             else:
                 if message.main == 2:
                     self.enable_dgt3000 = True
+        elif isinstance(message, Dgt.PROMOTION_DONE):
+            self.promotion_done(message.uci_move)
         else:  # switch-default
             pass
         logging.debug('(%s) handle DgtApi: %s ended', ','.join(message.devs), message)

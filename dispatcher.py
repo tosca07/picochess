@@ -19,6 +19,7 @@ import logging
 import queue
 from threading import Timer, Thread, Lock
 from copy import deepcopy
+from typing import Dict, Set
 
 from utilities import DisplayDgt, DispatchDgt, dispatch_queue
 from dgt.api import Dgt, DgtApi
@@ -33,26 +34,25 @@ class Dispatcher(DispatchDgt, Thread):
         super(Dispatcher, self).__init__()
 
         self.dgtmenu = dgtmenu
-        self.devices = set()
-        self.maxtimer = {}
-        self.maxtimer_running = {}
-        self.clock_connected = {}
+        self.devices: Set[str] = set()
+        self.maxtimer: Dict[str, Timer] = {}
+        self.maxtimer_running: Dict[str, bool] = {}
+        self.clock_connected: Dict[str, bool] = {}
         self.time_factor = 1  # This is for testing the duration - remove it lateron!
-        self.tasks = {}  # delayed task array
+        self.tasks: Dict[str, list] = {}  # delayed task array
 
-        self.display_hash = {}  # Hash value of clock's display
-        self.process_lock = {}
+        self.display_hash: Dict[str, int] = {}  # Hash value of clock's display
+        self.process_lock: Dict[str, Lock] = {}
 
     def register(self, device: str):
         """Register new device to send DgtApi messsages."""
         logging.debug('device %s registered', device)
         self.devices.add(device)
-        self.maxtimer[device] = None
         self.maxtimer_running[device] = False
         self.clock_connected[device] = False
         self.process_lock[device] = Lock()
         self.tasks[device] = []
-        self.display_hash[device] = None
+        self.display_hash[device] = 0
 
     def is_prio_device(self, dev, connect):
         """Return the most prio registered device."""
@@ -97,7 +97,7 @@ class Dispatcher(DispatchDgt, Thread):
     def _process_message(self, message, dev: str):
         do_handle = True
         if repr(message) in (DgtApi.CLOCK_START, DgtApi.CLOCK_STOP, DgtApi.DISPLAY_TIME):
-            self.display_hash[dev] = None  # Cant know the clock display if command changing the running status
+            self.display_hash[dev] = 0  # Cant know the clock display if command changing the running status
         else:
             if repr(message) in (DgtApi.DISPLAY_MOVE, DgtApi.DISPLAY_TEXT):
                 if self.display_hash[dev] == hash(message) and not message.beep:
