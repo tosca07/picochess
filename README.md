@@ -1,4 +1,61 @@
-PicoChess V3
+PicoChess V3.1
+============
+
+* Support of different eboard types (DGT,  Certabo, Chesslink, ChessNut) - this is so cool!
+* Different ini-files for retro, modern and favorite engines and corresponding menu entries
+* Support of Windows engines (see Dirks S. image via box86 & wine)
+* Auto ELO feature for engines supporting the UCI ELO settings
+* Web themes: light, dark
+* RetroSpeed for mame engines via picochess.ini
+* local game and opening book database server which Gerhard added so that we now have this information again provided in the web server 
+
+Internal changes:
+* Unified sources for all devices (before we had different sources for the PicochessWeb version  (most important for me)
+* Unified translation.py file (new  "web_text" tag for longer texts) eg.: 
+if text_id == 'pleasewait': entxt = Dgt.DISPLAY_TEXT(web_text='Reboot: please wait', large_text='please wait', medium_text='pls wait', small_text='wait  ')
+* Unified engines.ini (new "web" tag for longer engine names), see attached retro.ini eg.: 
+* [mame/academy] 
+* name = Mephisto Academy
+* small = academ
+* medium = Academy
+* large = Mep.Academy
+* web = Mephisto Academy
+* elo = 1980
+* levels = 10
+* ponder/brain = n
+* Lots of bug fixes (esp. for analysis mode, PGN information display in web server etc.)
+* New (for PicoChessWeb) and alternative (for DGTPI/DGT3000 users) Beep sample sounds instead of internal beeper. For this I have created a new voice  „beeper“  which does not need a voice.ini entry (it is not a voice for announcing moves etc.) because it is activated via menu system ->  sound -> „sample“). This voice folder must be put into the /picochess/talker/en/ folder and consists of different sound samples for various events (eg after computer move has been played etc. You can here some of these sounds in my last video for the no eboard feature). The sound files are part of Gerhards repository but I have put it into my dropbox: https://www.dropbox.com/sh/thii2ty659qm29g/AADaiG_-z3IKavYh9eSvupUla?dl=0
+* New "auto" theme option according to sunrise/set and the possibility to change it in the menu
+* New no-eboard/web play only mode for playing without an attached eboard via the web server.
+* Search nodes like search depth for NN strength restriction for eg. Leela (with node = 1 you can simulate the maia engine etc.)
+* Retro speed option is now in menu, automatic restart of the (mame-) engine but keep in mind that you have to start a new game after changing the retro speed because of this engine new start as we have no FEN position setup at the moment (so better change it before starting a new game) 
+
+* PGN Replay/Analysis and Guessing Game engine
+
+i) Correct PGN header information (player names, elo) for the current game in web server. Fully automatic replay, you can define the replay speed in the corresponding uci file by specifying a higher or lower thinking time for the analysis engine). 
+[AlphaZero1]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/alphazero_stockfish_2018.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/AnnaRudolph_AlphaZeroStockfish.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/armv7l/a-stockf
+think_time = 1
+
+Pause of audio commentary with II button, pause of fully automatic replay of the game: lever button 
+
+ii) full support of guessing game functions when playing in no-eboard/Web Play mode  (automatic take back of wrong guessed moves, etc.)
+
+* PicoTutor in no-eBoard/WebPlay“ mode
+
+i) Get position evaluation by activating PicoCoach (again) because we can’t lift up and replace a piece (that’s the trigger for the tutor evaluation when playing with an eBoard).
+
+ii) In emulation mode with retro/mame engines: support of automatic take back in case of a blunder (because we can’t take back moves the normal way in case of retro engines)
+
+
+
+
+
+
+PicoChess V3.0
 ============
 
 [![Join the chat at https://gitter.im/picochess/Lobby](https://badges.gitter.im/picochess/Lobby.svg)](https://gitter.im/picochess/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -12,7 +69,7 @@ This is an enhancement of the last main picochess version 09N and includes chang
 
 IMPORTANT:
 -------------------------------------------------------------------------------------------
-This repository is only for code reference - it won't be a fully 3.0 working version because of the github restrictions (25MB each file and less than 100 files in one folder) so don't expect to be able to use this repository as a working picochess version because a lot of (non source) files are missing for a working V3 (eg. voice samples for V3 features, audio example samples for the replay of games using my pgn_engine or the mame emulator framework).
+This repository is only for code reference - it won't be a fully 3.1 working version because of the github restrictions (25MB each file and less than 100 files in one folder) so don't expect to be able to use this repository as a working picochess version because a lot of (non source) files are missing for a working V3 (eg. voice samples for V3 features, audio example samples for the replay of games using my pgn_engine or the mame emulator framework).
 Further than that the software quality is no longer good - I used the "sledge hammer" in order to achieve some features and lots of global variables & functions are used. I started as an absolute python beginner almost 2 years ago so I would implement some features completly different today.
 
 Installation:
