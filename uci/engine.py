@@ -31,33 +31,78 @@ from uci.rating import Rating, Result
 from utilities import write_picochess_ini
 
 
-class UciShell(object):
+class WindowsShellType:
+    """Shell type supporting Windows for spur."""
+    supports_which = True
 
+    def generate_run_command(self, command_args, store_pid,
+                             cwd=None, update_env={}, new_process_group=False):
+
+        if new_process_group:
+            raise spur.ssh.UnsupportedArgumentError(
+                "'new_process_group' is not supported when using a windows shell"
+            )
+
+        commands = []
+        if command_args[0] == "kill":
+            command_args = self.generate_kill_command(command_args[-1]).split()
+
+        if store_pid:
+            commands.append("powershell (Get-WmiObject Win32_Process -Filter ProcessId=$PID).ParentProcessId")
+
+        if cwd is not None:
+            commands.append("cd {0} 2>&1 || ( echo. & echo spur-cd: %errorlevel% & exit 1 )".format(self.win_escape_sh(cwd)))
+            commands.append("echo. & echo spur-cd: 0")
+
+        update_env_commands = [
+            "SET {0}={1}".format(key, value)
+            for key, value in update_env.items()
+        ]
+        commands += update_env_commands
+        commands.append(
+            "( (powershell Get-Command {0} > nul 2>&1) && echo 0) || (echo %errorlevel% & exit 1)".format(
+                self.win_escape_sh(command_args[0])))
+
+        commands.append(" ".join(command_args))
+        return " & ".join(commands)
+
+    def generate_kill_command(self, pid):
+        return "taskkill /F /PID {0}".format(pid)
+
+    @staticmethod
+    def win_escape_sh(value):
+        return '"' + value + '"'
+
+
+class UciShell(object):
     """Handle the uci engine shell."""
 
     def __init__(self, hostname=None, username=None, key_file=None, password=None, windows=False):
         super(UciShell, self).__init__()
         if hostname:
             logging.info('connecting to [%s]', hostname)
+            shell_params = {
+                "hostname": hostname,
+                "username": username,
+                "missing_host_key": paramiko.AutoAddPolicy(),
+            }
             if key_file:
-                if windows:
-                    self.shell = spur.SshShell(hostname=hostname, username=username, private_key_file=key_file,
-                                               missing_host_key=paramiko.AutoAddPolicy(), shell_type=spur.ssh.ShellTypes.windows)
-                else:
-                    self.shell = spur.SshShell(hostname=hostname, username=username, private_key_file=key_file,
-                                               missing_host_key=paramiko.AutoAddPolicy())
+                shell_params["private_key_file"] = key_file
             else:
-                if windows:
-                    self.shell = spur.SshShell(hostname=hostname, username=username, password=password,
-                                               missing_host_key=paramiko.AutoAddPolicy(), shell_type=spur.ssh.ShellTypes.windows)
-                else:
-                    self.shell = spur.SshShell(hostname=hostname, username=username, password=password,
-                                               missing_host_key=paramiko.AutoAddPolicy())
+                shell_params["password"] = password
+            if windows:
+                shell_params["shell_type"] = WindowsShellType()
+
+            self._shell = spur.SshShell(**shell_params)
         else:
-            self.shell = None
+            self._shell = None
+
+    def __getattr__(self, attr):
+        """Dispatch unknown attributes to SshShell."""
+        return getattr(self._shell, attr)
 
     def get(self):
-        return self.shell
+        return self if self._shell is not None else None
 
 
 class UciEngine(object):

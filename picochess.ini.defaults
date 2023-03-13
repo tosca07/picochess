@@ -70,8 +70,8 @@ dgtpi = True
 ## Sets the UCI engine used at startup
 ## handle with care. If you setup this section wrong, picochess won't start.
 ## Path to the engine relative to the 'picochess' folder (local engine - standard case)
-#engine = /opt/picochess/engines/armv7l/a-stockf
-engine = /opt/picochess/engines/armv7l/NNUE/StockfishNN
+#engine = /opt/picochess/engines/armv7l/NNUE/StockfishNN
+engine = /opt/picochess/engines/armv7l/a-stockf
 
 ## What level the engine should have at startup?
 ## For a (correct) value please take a look at 'engines/<your_plattform>/<engine_name>.uci'
@@ -162,8 +162,8 @@ book = books/h-varied.bin
 log-file = picochess.log
 ## What log level should be used 
 ## Loglevel options are [debug, info, warning (default), error, critical]
-#log-level = warning
-log-level = error
+#log-level = error
+log-level = warning
 
 ## PicoChess can use human voices for announcement
 ## Valid voice names are formed from 'talker/voices' folder structure. Please take a look there.

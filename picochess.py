@@ -1903,11 +1903,13 @@ def main() -> None:
                 pos960 = 518
                 Observable.fire(Event.NEW_GAME(pos960=pos960))
 
-    # Enable garbage collection - needed for engne swapping as objects orphaned
-    gc.enable()
-
     # Command line argument parsing
-    parser = configargparse.ArgParser(default_config_files=[os.path.join(os.path.dirname(__file__), 'picochess.ini')])
+    parser = configargparse.ArgParser(
+        default_config_files=[
+            os.path.join(os.path.dirname(__file__), 'picochess.ini.defaults'),
+            os.path.join(os.path.dirname(__file__), 'picochess.ini'),
+        ]
+    )
     parser.add_argument('-e', '--engine', type=str, help="UCI engine filename/path such as 'engines/armv7l/a-stockf'",
                         default=None)
     parser.add_argument('-el', '--engine-level', type=str, help='UCI engine level', default=None)

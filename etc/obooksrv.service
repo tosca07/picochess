@@ -1,0 +1,12 @@
+[Unit]
+Description=Opening Book Server
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/opt/picochess/obooksrv/obooksrv
+ExecStop=/usr/bin/pkill -f obooksrv
+WorkingDirectory=/opt/picochess/obooksrv/
+
+[Install]
+WantedBy=multi-user.target
