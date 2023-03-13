@@ -25,6 +25,7 @@ import json
 import time
 import copy
 import configparser
+import subprocess
 
 from threading import Timer
 from subprocess import Popen, PIPE
@@ -34,6 +35,8 @@ from dgt.api import Dgt
 from ctypes import cdll
 
 from configobj import ConfigObj, ConfigObjError, DuplicateError  # type: ignore
+
+from typing import Optional
 
 # picochess version
 version = '3.1'
@@ -258,24 +261,38 @@ def reboot(dgtpi: bool, dev: str):
         os.system('sudo reboot')
 
 
+def _get_internal_ip() -> Optional[str]:
+    try:
+        iproute = subprocess.run(["ip", "-j", "route", "get", "8.8.8.8"], capture_output=True)
+        routes = json.loads(iproute.stdout)
+        if routes:
+            gateway = routes[0]["gateway"]
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.connect((gateway, 80))
+            int_ip = sock.getsockname()[0]
+            sock.close()
+            return int_ip
+    except Exception:
+        return None
+    return None
+
+
 def get_location():
     """Return the location of the user and the external and internal ip adr."""
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.connect(('8.8.8.8', 80))
-        int_ip = sock.getsockname()[0]
-        sock.close()
-        response = urllib.request.urlopen('https://get.geojs.io/v1/ip/geo.json')
-        j = json.loads(response.read().decode())
+    if int_ip := _get_internal_ip():
+        try:
+            response = urllib.request.urlopen('https://get.geojs.io/v1/ip/geo.json')
+            j = json.loads(response.read().decode())
 
-        country_name = j.get('country', '')
-        country_code = j.get('country_code', '')
-        city = j.get('city', '')
-        ext_ip = j.get('IPv4', None)
+            country_name = j.get('country', '')
+            country_code = j.get('country_code', '')
+            city = j.get('city', '')
+            ext_ip = j.get('IPv4', None)
 
-        return f"{city}, {country_name} {country_code}", ext_ip, int_ip
-    except Exception:
-        return '?', None, None
+            return f"{city}, {country_name} {country_code}", ext_ip, int_ip
+        except Exception:
+            pass
+    return '?', None, None
 
 
 def write_picochess_ini(key: str, value):
