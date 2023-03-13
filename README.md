@@ -2,32 +2,46 @@ PicoChess V3.1
 ============
 
 * Support of different eboard types (DGT,  Certabo, Chesslink, ChessNut) - this is so cool!
+
 * Different ini-files for retro, modern and favorite engines and corresponding menu entries
+
 * Support of Windows engines (see Dirks S. image via box86 & wine)
+
 * Auto ELO feature for engines supporting the UCI ELO settings
+
 * Web themes: light, dark
+
 * RetroSpeed for mame engines via picochess.ini
+
 * local game and opening book database server which Gerhard added so that we now have this information again provided in the web server 
 
 Internal changes:
 * Unified sources for all devices (before we had different sources for the PicochessWeb version  (most important for me)
+
 * Unified translation.py file (new  "web_text" tag for longer texts) eg.: 
-if text_id == 'pleasewait': entxt = Dgt.DISPLAY_TEXT(web_text='Reboot: please wait', large_text='please wait', medium_text='pls wait', small_text='wait  ')
+if text_id == 'pleasewait': entxt=Dgt.DISPLAY_TEXT(web_text='Reboot: please wait', large_text='please wait', medium_text='pls wait', small_text='wait  ')
+
 * Unified engines.ini (new "web" tag for longer engine names), see attached retro.ini eg.: 
-* [mame/academy] 
-* name = Mephisto Academy
-* small = academ
-* medium = Academy
-* large = Mep.Academy
-* web = Mephisto Academy
-* elo = 1980
-* levels = 10
-* ponder/brain = n
+ [mame/academy] 
+ name = Mephisto Academy
+ small = academ
+ medium = Academy
+ large = Mep.Academy
+ web = Mephisto Academy
+ elo = 1980
+ levels = 10
+ ponder/brain = n
+ 
 * Lots of bug fixes (esp. for analysis mode, PGN information display in web server etc.)
+
 * New (for PicoChessWeb) and alternative (for DGTPI/DGT3000 users) Beep sample sounds instead of internal beeper. For this I have created a new voice  „beeper“  which does not need a voice.ini entry (it is not a voice for announcing moves etc.) because it is activated via menu system ->  sound -> „sample“). This voice folder must be put into the /picochess/talker/en/ folder and consists of different sound samples for various events (eg after computer move has been played etc. You can here some of these sounds in my last video for the no eboard feature). The sound files are part of Gerhards repository but I have put it into my dropbox: https://www.dropbox.com/sh/thii2ty659qm29g/AADaiG_-z3IKavYh9eSvupUla?dl=0
+
 * New "auto" theme option according to sunrise/set and the possibility to change it in the menu
+
 * New no-eboard/web play only mode for playing without an attached eboard via the web server.
+
 * Search nodes like search depth for NN strength restriction for eg. Leela (with node = 1 you can simulate the maia engine etc.)
+
 * Retro speed option is now in menu, automatic restart of the (mame-) engine but keep in mind that you have to start a new game after changing the retro speed because of this engine new start as we have no FEN position setup at the moment (so better change it before starting a new game) 
 
 * PGN Replay/Analysis and Guessing Game engine
