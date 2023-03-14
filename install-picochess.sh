@@ -25,6 +25,8 @@ cp etc/gamesdb.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable dgtpi.service
 systemctl enable picochess.service
+systemctl enable obooksrv.service
+systemctl enable gamesdb.service
 
 cd tablebases
 ./download-syzygy345.sh
