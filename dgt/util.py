@@ -72,6 +72,7 @@ class Game(MyEnum):
 
     NEW = 'B00_game_new_menu'
     TAKEBACK = 'B00_game_takeback_menu'
+    END ='B00_game_end_menu'
     SAVE = 'B00_game_save_menu'
     READ = 'B00_game_read_menu'
     ALTMOVE = 'B00_game_altmove_menu'
@@ -79,7 +80,7 @@ class Game(MyEnum):
 
     @classmethod
     def items(cls):
-        return [Game.NEW, Game.TAKEBACK, Game.SAVE, Game.READ, Game.ALTMOVE, Game.CONTLAST]
+        return [Game.NEW, Game.TAKEBACK, Game.END, Game.SAVE, Game.READ, Game.ALTMOVE, Game.CONTLAST]
 
 
 class GameLoop(object):
@@ -97,6 +98,35 @@ class GameLoop(object):
     def prev(item: Game):
         """Get previous item."""
         return prev_item(Game.items(), item, 'errGamePrev')
+
+@enum.unique
+class GameEnd(MyEnum):
+    """GameSave Class."""
+
+    WHITE_WINS = 'B00_game_end_white_wins'
+    BLACK_WINS = 'B00_game_end_black_wins'
+    DRAW       = 'B00_game_end_draw'
+
+    @classmethod
+    def items(cls):
+        return [GameEnd.WHITE_WINS, GameEnd.BLACK_WINS, GameEnd.DRAW]
+
+class GameEndLoop(object):
+    """InfoLoop Class."""
+
+    def __init__(self):
+        super(GameEndLoop, self).__init__()
+
+    @staticmethod
+    def next(item: GameEnd):
+        """Get next item."""
+        return next_item(GameEnd.items(), item, 'errGameEndNext')
+
+    @staticmethod
+    def prev(item: GameEnd):
+        """Get previous item."""
+        return prev_item(GameEnd.items(), item, 'errGameEndPrev')
+
 
 
 @enum.unique
@@ -311,6 +341,7 @@ class TimeModeLoop(object):
 
 
 class EngineTop(MyEnum):
+
     MODERN_ENGINE = 'B00_engine_menu_modern'
     RETRO_ENGINE = 'B00_engine_menu_retro'
     RETROSETTINGS = 'B00_engine_menu_retrosettings'
@@ -338,13 +369,13 @@ class EngineTopLoop(object):
 
 
 class EngineRetroSettings(MyEnum):
+
     RETROSPEED = 'B00_engine_menu_retrospeed'
     RETROSOUND = 'B00_engine_menu_retrosound'
 
     @classmethod
     def items(cls):
         return [EngineRetroSettings.RETROSPEED, EngineRetroSettings.RETROSOUND]
-
 
 class EngineRetroSettingsLoop(object):
     def __init__(self):

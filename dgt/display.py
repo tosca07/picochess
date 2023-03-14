@@ -1043,8 +1043,9 @@ class DgtDisplay(DisplayMsg, threading.Thread):
 
                 text = self.dgttranslate.text(message.result.value)
                 text.beep = self.dgttranslate.bl(BeepLevel.CONFIG)
-                text.maxtime = 0.5
+                text.maxtime = 1
                 DispatchDgt.fire(text)
+                time.sleep(1)
                 if self.dgtmenu.get_mode() in (Mode.PONDER, Mode.TRAINING):
                     self._reset_moves_and_score()
                     text.beep = False

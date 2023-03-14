@@ -25,11 +25,9 @@ from typing import Dict, List, Set
 import chess  # type: ignore
 from timecontrol import TimeControl
 from utilities import Observable, DispatchDgt, get_tags, version, write_picochess_ini
-from dgt.util import TimeMode, TimeModeLoop, Top, TopLoop, Mode, ModeLoop, Language, LanguageLoop, BeepLevel, BeepLoop
-from dgt.util import EBoard, EBoardLoop, Theme, ThemeLoop, EngineTop, EngineTopLoop
-from dgt.util import System, SystemLoop, Display, DisplayLoop, ClockIcons, Voice, VoiceLoop, Info, InfoLoop, PicoTutor
-from dgt.util import Game, GameLoop, GameSave, GameSaveLoop, GameRead, GameReadLoop, PicoComment, PicoCommentLoop
-from dgt.util import EngineRetroSettings, EngineRetroSettingsLoop, Power, PowerLoop
+from dgt.util import TimeMode, TimeModeLoop, Top, TopLoop, Mode, ModeLoop, Language, LanguageLoop, BeepLevel, BeepLoop, EBoard, EBoardLoop, Theme, ThemeLoop, EngineTop, EngineTopLoop
+from dgt.util import System, SystemLoop, Display, DisplayLoop, ClockIcons, Voice, VoiceLoop, Info, InfoLoop, PicoTutor, Game, GameLoop, GameEnd, GameEndLoop, GameSave, GameSaveLoop, GameRead, GameReadLoop, PicoComment, PicoCommentLoop, EngineRetroSettings, EngineRetroSettingsLoop
+from dgt.util import Power, PowerLoop, GameResult
 from dgt.api import Dgt, Event
 from dgt.translate import DgtTranslate
 from uci.engine_provider import EngineProvider
@@ -80,7 +78,7 @@ class MenuState(object):
     ENG_FAV = 650000
     ENG_FAV_NAME = 651000
     ENG_FAV_NAME_LEVEL = 651100
-
+    
     RETROSETTINGS = 660000
     RETROSETTINGS_RETROSPEED = 661000
     RETROSETTINGS_RETROSPEED_FACTOR = 661100
@@ -145,6 +143,10 @@ class MenuState(object):
     GAME_GAMENEW = 905000
     GAME_GAMENEW_YESNO = 905100
     GAME_GAMETAKEBACK = 906000
+    GAME_GAMEEND = 950000
+    GAME_GAMEEND_WHITE_WINS = 951000
+    GAME_GAMEEND_BLACK_WINS = 952000
+    GAME_GAMEEND_DRAW = 953000
     GAME_GAMESAVE = 910000
     GAME_GAMESAVE_GAME1 = 911000
     GAME_GAMESAVE_GAME2 = 912000
@@ -188,6 +190,7 @@ class DgtMenu(object):
         self.menu_picotutor_picocomment = picocomment
 
         self.menu_game = Game.NEW
+        self.menu_game_end = GameEnd.WHITE_WINS
         self.menu_game_save = GameSave.GAME1
         self.menu_game_read = GameRead.GAMELAST
         self.menu_game_altmove = altmove
@@ -311,12 +314,12 @@ class DgtMenu(object):
 
         logging.debug(f'calculated retro speed index: {self.menu_engine_retrospeed_idx}')
         self.res_engine_retrospeed_idx = self.menu_engine_retrospeed_idx
-
+        
         self.engine_retrosound = rsound
         self.res_engine_retrosound = self.engine_retrosound
         self.engine_retrosound_onoff = self.engine_retrosound
         self.menu_engine_retrosettings = EngineRetroSettings.RETROSPEED
-
+    
         self.tc_fixed_map = OrderedDict([
             ('rnbqkbnr/pppppppp/Q7/8/8/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=1)),
             ('rnbqkbnr/pppppppp/1Q6/8/8/8/PPPPPPPP/RNBQKBNR', TimeControl(TimeMode.FIXED, fixed=3)),
@@ -491,7 +494,7 @@ class DgtMenu(object):
     def get_engine_rspeed(self):
         """Get the flag."""
         return self.res_engine_retrospeed
-
+        
     def get_engine_rsound(self):
         """Get the flag."""
         return self.res_engine_retrosound
@@ -748,7 +751,7 @@ class DgtMenu(object):
         return text
 
     def enter_picotutor_picocomment_off_menu(self):
-        """Set the gamesave state."""
+        """Set the picocomment state."""
         self.state = MenuState.PICOTUTOR_PICOCOMMENT_OFF
         text = self.dgttranslate.text('B00_picocomment_off')
         return text
@@ -770,13 +773,37 @@ class DgtMenu(object):
         self.state = MenuState.GAME
         text = self.dgttranslate.text(Top.GAME.value)
         return text
+        
+    def enter_game_gameend_menu(self):
+        """Set the gamesend state."""
+        self.state = MenuState.GAME_GAMEEND
+        text = self.dgttranslate.text('B00_game_end_menu')
+        return text
+        
+    def enter_game_gameend_white_wins_menu(self):
+        """Set the gameend state."""
+        self.state = MenuState.GAME_GAMEEND_WHITE_WINS
+        text = self.dgttranslate.text('B00_game_end_white_wins')
+        return text
+
+    def enter_game_gameend_black_wins_menu(self):
+        """Set the gameend state."""
+        self.state = MenuState.GAME_GAMEEND_BLACK_WINS
+        text = self.dgttranslate.text('B00_game_end_black_wins')
+        return text
+
+    def enter_game_gameend_draw_menu(self):
+        """Set the gameend state."""
+        self.state = MenuState.GAME_GAMEEND_DRAW
+        text = self.dgttranslate.text('B00_game_end_draw')
+        return text
 
     def enter_game_gamesave_menu(self):
         """Set the gamesave state."""
         self.state = MenuState.GAME_GAMESAVE
-        text = self.dgttranslate.text(self.menu_game.value)
+        text = self.dgttranslate.text('B00_game_save_menu')
         return text
-
+        
     def enter_game_gamesave_game1_menu(self):
         """Set the gamesave state."""
         self.state = MenuState.GAME_GAMESAVE_GAME1
@@ -971,24 +998,26 @@ class DgtMenu(object):
         self.state = MenuState.RETROSETTINGS
         text = self.dgttranslate.text(EngineTop.RETROSETTINGS.value)
         return text
-
+        
     def enter_retrosound_menu(self):
         """Set the menu state."""
         self.state = MenuState.RETROSETTINGS_RETROSOUND
+        ##text = self.dgttranslate.text('B00_engine_menu_retrosound')
         text = self.dgttranslate.text(EngineRetroSettings.RETROSOUND.value)
         return text
-
+        
     def enter_retrosound_onoff_menu(self):
         self.state = MenuState.RETROSETTINGS_RETROSOUND_ONOFF
         msg = 'on' if self.engine_retrosound else 'off'
-
+        
         self.res_engine_retrosound = self.engine_retrosound
         text = self.dgttranslate.text('B00_engine_retrosound_' + msg)
         return text
-
+        
     def enter_retrospeed_menu(self):
         """Set the menu state."""
         self.state = MenuState.RETROSETTINGS_RETROSPEED
+        ##text = self.dgttranslate.text('B00_engine_menu_retrospeed')
         text = self.dgttranslate.text(EngineRetroSettings.RETROSPEED.value)
         return text
 
@@ -1311,7 +1340,7 @@ class DgtMenu(object):
     def _set_volume_voice(self, volume_factor):
         """ Set the Volume-Voice."""
         factor = str(volume_factor * 5 + 50)
-        for channel in ('Headphone', 'Master', 'HDMI', 'PCM'):
+        for channel in ('Headphone', 'Master', 'HDMI'):
             volume_cmd = f'amixer sset {channel} {factor}%'
             logging.debug(volume_cmd)
             result = subprocess.run(volume_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -1540,7 +1569,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.RETROSETTINGS:
             text = self.enter_engine_menu()
-
+            
         elif self.state == MenuState.RETROSETTINGS_RETROSPEED_FACTOR:
             text = self.enter_retrospeed_menu()
 
@@ -1549,7 +1578,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND:
             text = self.enter_retrosettings_menu()
-
+            
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND_ONOFF:
             text = self.enter_retrosound_menu()
 
@@ -1712,6 +1741,18 @@ class DgtMenu(object):
         elif self.state == MenuState.GAME:
             text = self.enter_top_menu()
 
+        elif self.state == MenuState.GAME_GAMEEND:
+            text = self.enter_game_menu()
+            
+        elif self.state == MenuState.GAME_GAMEEND_WHITE_WINS:
+            text = self.enter_game_gameend_menu()
+
+        elif self.state == MenuState.GAME_GAMEEND_BLACK_WINS:
+            text = self.enter_game_gameend_menu()
+
+        elif self.state == MenuState.GAME_GAMEEND_DRAW:
+            text = self.enter_game_gameend_menu()
+            
         elif self.state == MenuState.GAME_GAMESAVE:
             text = self.enter_game_menu()
 
@@ -1806,6 +1847,8 @@ class DgtMenu(object):
                 text = self.enter_game_new_menu()
             if self.menu_game == Game.TAKEBACK:
                 text = self.enter_game_takeback_menu()
+            if self.menu_game == Game.END:
+                text = self.enter_game_gameend_menu()
             if self.menu_game == Game.SAVE:
                 text = self.enter_game_gamesave_menu()
             if self.menu_game == Game.READ:
@@ -1814,6 +1857,14 @@ class DgtMenu(object):
                 text = self.enter_game_altmove_menu()
             if self.menu_game == Game.CONTLAST:
                 text = self.enter_game_contlast_menu()
+                
+        elif self.state == MenuState.GAME_GAMEEND:
+            if self.menu_game_end == GameEnd.WHITE_WINS:
+                text = self.enter_game_gameend_white_wins_menu()
+            if self.menu_game_end == GameEnd.BLACK_WINS:
+                text = self.enter_game_gameend_black_wins_menu()
+            if self.menu_game_end == GameEnd.DRAW:
+                text = self.enter_game_gameend_draw_menu()
 
         elif self.state == MenuState.GAME_GAMESAVE:
             if self.menu_game_save == GameSave.GAME1:
@@ -1881,6 +1932,27 @@ class DgtMenu(object):
             event = Event.CONTLAST(contlast=self.menu_game_contlast)
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okcontlast'))
+            
+        elif self.state == MenuState.GAME_GAMEEND_WHITE_WINS:
+            # do action!
+            # raise event
+            event = Event.DRAWRESIGN(result=GameResult.WIN_WHITE)
+            Observable.fire(event)
+            text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okgameend'))
+
+        elif self.state == MenuState.GAME_GAMEEND_BLACK_WINS:
+            # do action!
+            # raise event
+            event = Event.DRAWRESIGN(result=GameResult.WIN_BLACK)
+            Observable.fire(event)
+            text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okgameend'))
+
+        elif self.state == MenuState.GAME_GAMEEND_DRAW:
+            # do action!
+            # raise event
+            event = Event.DRAWRESIGN(result=GameResult.DRAW)
+            Observable.fire(event)
+            text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okgameend'))
 
         elif self.state == MenuState.GAME_GAMESAVE_GAME1:
             # do action!
@@ -2222,7 +2294,7 @@ class DgtMenu(object):
             event = Event.NEW_ENGINE(eng=fav_eng, eng_text=eng_text, options=options, show_ok=True)
             text = self._fire_event(event)
             self.engine_restart = True
-
+            
         elif self.state == MenuState.RETROSETTINGS:
             if self.menu_engine_retrosettings == EngineRetroSettings.RETROSPEED:
                 text = self.enter_retrospeed_menu()
@@ -2232,8 +2304,9 @@ class DgtMenu(object):
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND:
             self.menu_engine_retrosettings = EngineRetroSettings.RETROSOUND
             text = self.enter_retrosound_onoff_menu()
-
+            
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND_ONOFF:
+            ## do action!
             config = ConfigObj('picochess.ini', default_encoding='utf8')
             self.engine_retrosound = self.engine_retrosound_onoff
             self.res_engine_retrosound = self.engine_retrosound
@@ -2242,16 +2315,17 @@ class DgtMenu(object):
             elif 'rsound' in config:
                 del config['rsound']
             config.write()
-            # trigger engine restart by using rspeed event for rsound change
+            ## trigger rspped event for rsound change (does just an engine restart)
             self._fire_event(Event.RSPEED(rspeed=self.retrospeed_factor))
             text = self._fire_dispatchdgt(self.dgttranslate.text('B10_okrsound'))
             self._fire_event(Event.PICOCOMMENT(picocomment='ok'))
-
+            
         elif self.state == MenuState.RETROSETTINGS_RETROSPEED:
             self.menu_engine_retrosettings = EngineRetroSettings.RETROSPEED
             text = self.enter_retrospeed_factor_menu()
 
         elif self.state == MenuState.RETROSETTINGS_RETROSPEED_FACTOR:
+            ## do action!
             retrospeed = self.retrospeed_list[self.menu_engine_retrospeed_idx]
             if retrospeed == 'max.':
                 self.retrospeed_factor = 0.0
@@ -2605,21 +2679,41 @@ class DgtMenu(object):
             self.state = MenuState.GAME_GAMECONTLAST
             self.menu_game = GameLoop.prev(self.menu_game)
             text = self.dgttranslate.text(self.menu_game.value)
+            
+        elif self.state == MenuState.GAME_GAMENEW_YESNO:
+            self.menu_game_new = not self.menu_game_new
+            msg = 'yes' if self.menu_game_new else 'no'
+            text = self.dgttranslate.text('B00_game_new_' + msg)
 
         elif self.state == MenuState.GAME_GAMETAKEBACK:
             self.state = MenuState.GAME_GAMENEW
             self.menu_game = GameLoop.prev(self.menu_game)
             text = self.dgttranslate.text(self.menu_game.value)
-
-        elif self.state == MenuState.GAME_GAMESAVE:
+            
+        elif self.state == MenuState.GAME_GAMEEND:
             self.state = MenuState.GAME_GAMETAKEBACK
             self.menu_game = GameLoop.prev(self.menu_game)
             text = self.dgttranslate.text(self.menu_game.value)
 
-        elif self.state == MenuState.GAME_GAMENEW_YESNO:
-            self.menu_game_new = not self.menu_game_new
-            msg = 'yes' if self.menu_game_new else 'no'
-            text = self.dgttranslate.text('B00_game_new_' + msg)
+        elif self.state == MenuState.GAME_GAMEEND_WHITE_WINS:
+            self.state = MenuState.GAME_GAMEEND_DRAW
+            self.menu_game_end = GameEndLoop.prev(self.menu_game_end)
+            text = self.dgttranslate.text(self.menu_game_end.value)
+
+        elif self.state == MenuState.GAME_GAMEEND_BLACK_WINS:
+            self.state = MenuState.GAME_GAMEEND_WHITE_WINS
+            self.menu_game_end = GameEndLoop.prev(self.menu_game_end)
+            text = self.dgttranslate.text(self.menu_game_end.value)
+
+        elif self.state == MenuState.GAME_GAMEEND_DRAW:
+            self.state = MenuState.GAME_GAMEEND_BLACK_WINS
+            self.menu_game_end = GameEndLoop.prev(self.menu_game_end)
+            text = self.dgttranslate.text(self.menu_game_end.value)
+
+        elif self.state == MenuState.GAME_GAMESAVE:
+            self.state = MenuState.GAME_GAMEEND
+            self.menu_game = GameLoop.prev(self.menu_game)
+            text = self.dgttranslate.text(self.menu_game.value)
 
         elif self.state == MenuState.GAME_GAMESAVE_GAME1:
             self.state = MenuState.GAME_GAMESAVE_GAME3
@@ -2885,12 +2979,12 @@ class DgtMenu(object):
             self.menu_fav_engine_level = (self.menu_fav_engine_level - 1) % len(retro_level_dict)
             msg = sorted(retro_level_dict)[self.menu_fav_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
-
+            
         elif self.state == MenuState.RETROSETTINGS:
             self.state = MenuState.ENG_RETRO
             self.menu_engine = EngineTopLoop.prev(self.menu_engine)
             text = self.dgttranslate.text(self.menu_engine.value)
-
+            
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND_ONOFF:
             self.engine_retrosound_onoff = not self.engine_retrosound_onoff
             msg = 'on' if self.engine_retrosound_onoff else 'off'
@@ -2900,13 +2994,14 @@ class DgtMenu(object):
             self.state = MenuState.RETROSETTINGS_RETROSOUND
             self.menu_engine_retrosettings = EngineRetroSettingsLoop.prev(self.menu_engine_retrosettings)
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
-
+            
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND:
             self.state = MenuState.RETROSETTINGS_RETROSPEED
             self.menu_engine_retrosettings = EngineRetroSettingsLoop.prev(self.menu_engine_retrosettings)
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
-
+            
         elif self.state == MenuState.RETROSETTINGS_RETROSPEED_FACTOR:
+            l_speed = ''
             self.menu_engine_retrospeed_idx = (self.menu_engine_retrospeed_idx - 1) % len(self.retrospeed_list)
             if self.retrospeed_list[self.menu_engine_retrospeed_idx] == 'max.':
                 l_speed = self.retrospeed_list[self.menu_engine_retrospeed_idx]
@@ -3133,6 +3228,26 @@ class DgtMenu(object):
             self.state = MenuState.MODE
             self.menu_top = TopLoop.next(self.menu_top)
             text = self.dgttranslate.text(self.menu_top.value)
+            
+        elif self.state == MenuState.GAME_GAMEEND:
+            self.state = MenuState.GAME_GAMESAVE
+            self.menu_game = GameLoop.next(self.menu_game)
+            text = self.dgttranslate.text(self.menu_game.value)
+
+        elif self.state == MenuState.GAME_GAMEEND_WHITE_WINS:
+            self.state = MenuState.GAME_GAMEEND_BLACK_WINS
+            self.menu_game_end = GameEndLoop.next(self.menu_game_end)
+            text = self.dgttranslate.text(self.menu_game_end.value)
+
+        elif self.state == MenuState.GAME_GAMEEND_BLACK_WINS:
+            self.state = MenuState.GAME_GAMEEND_DRAW
+            self.menu_game_end = GameEndLoop.next(self.menu_game_end)
+            text = self.dgttranslate.text(self.menu_game_end.value)
+
+        elif self.state == MenuState.GAME_GAMEEND_DRAW:
+            self.state = MenuState.GAME_GAMEEND_WHITE_WINS
+            self.menu_game_end = GameEndLoop.next(self.menu_game_end)
+            text = self.dgttranslate.text(self.menu_game_end.value)
 
         elif self.state == MenuState.GAME_GAMESAVE:
             self.state = MenuState.GAME_GAMEREAD
@@ -3195,7 +3310,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text('B00_game_new_' + msg)
 
         elif self.state == MenuState.GAME_GAMETAKEBACK:
-            self.state = MenuState.GAME_GAMESAVE
+            self.state = MenuState.GAME_GAMEEND
             self.menu_game = GameLoop.next(self.menu_game)
             text = self.dgttranslate.text(self.menu_game.value)
 
@@ -3418,28 +3533,29 @@ class DgtMenu(object):
             self.menu_fav_engine_level = (self.menu_fav_engine_level + 1) % len(retro_level_dict)
             msg = sorted(retro_level_dict)[self.menu_fav_engine_level]
             text = self.dgttranslate.text('B00_level', msg)
-
+                        
         elif self.state == MenuState.RETROSETTINGS:
             self.state = MenuState.ENG_FAV
             self.menu_engine = EngineTopLoop.next(self.menu_engine)
             text = self.dgttranslate.text(self.menu_engine.value)
-
+            
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND:
             self.state = MenuState.RETROSETTINGS_RETROSPEED
             self.menu_engine_retrosettings = EngineRetroSettingsLoop.next(self.menu_engine_retrosettings)
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
-
+            
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND_ONOFF:
             self.engine_retrosound_onoff = not self.engine_retrosound_onoff
             msg = 'on' if self.engine_retrosound_onoff else 'off'
             text = self.dgttranslate.text('B00_engine_retrosound_' + msg)
-
+            
         elif self.state == MenuState.RETROSETTINGS_RETROSPEED:
             self.state = MenuState.RETROSETTINGS_RETROSOUND
             self.menu_engine_retrosettings = EngineRetroSettingsLoop.next(self.menu_engine_retrosettings)
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
 
         elif self.state == MenuState.RETROSETTINGS_RETROSPEED_FACTOR:
+            l_speed = ''
             self.menu_engine_retrospeed_idx = (self.menu_engine_retrospeed_idx + 1) % len(self.retrospeed_list)
             if self.retrospeed_list[self.menu_engine_retrospeed_idx] == 'max.':
                 l_speed = self.retrospeed_list[self.menu_engine_retrospeed_idx]
