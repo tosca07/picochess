@@ -182,16 +182,17 @@ class PicochessState:
         self.think_time = 0
         self.time_control: TimeControl = None
         self.rating: Rating = None
-
+        
     @property
     def picotutor(self) -> PicoTutor:
-        if not self._picotutor:
-            self._picotutor = PicoTutor()
-        return self._picotutor
+         if not self._picotutor:
+             self._picotutor = PicoTutor()
+         return self._picotutor
 
     @picotutor.setter
     def picotutor(self, value: PicoTutor) -> None:
-        self._picotutor = value
+         self._picotutor = value
+
 
     def start_clock(self) -> None:
         """Start the clock."""
@@ -2291,7 +2292,7 @@ def main() -> None:
                 engine_file = event.eng['file']
                 help_str = engine_file.rsplit(os.sep, 1)[1]
                 remote_file = engine_remote_home + os.sep + help_str
-
+                
                 flag_eng = False
                 flag_eng = check_ssh(args.engine_remote_server, args.engine_remote_user, args.engine_remote_pass)
 
@@ -2953,7 +2954,14 @@ def main() -> None:
             elif isinstance(event, Event.DRAWRESIGN):
                 if not state.game_declared:  # in case user leaves kings in place while moving other pieces
                     stop_search_and_clock()
+                    l_result = ''
+                    if event.result == GameResult.DRAW:
+                        l_result = '1/2-1/2'
+                    elif event.result in (GameResult.WIN_WHITE, GameResult.WIN_BLACK):
+                        l_result = '1-0' if event.result == GameResult.WIN_WHITE else '0-1'
+                    ModeInfo.set_game_ending(result = l_result)
                     DisplayMsg.show(Message.GAME_ENDS(tc_init=state.time_control.get_parameters(), result=event.result, play_mode=state.play_mode, game=state.game.copy()))
+                    time.sleep(1.5)
                     state.game_declared = True
                     state.stop_fen_timer()
                     state.legal_fens_after_cmove = []

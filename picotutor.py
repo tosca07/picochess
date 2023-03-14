@@ -36,6 +36,8 @@ class PicoTutor:
         self.user_color = i_player_color
         self.max_valid_moves = 200
         self.engine_path = i_engine_path
+        
+        """
         self.engine = chess.uci.popen_engine(i_engine_path)
         self.engine2 = chess.uci.popen_engine(i_engine_path)
         self.engine.uci()
@@ -51,7 +53,15 @@ class PicoTutor:
         self.info_handler = chess.uci.InfoHandler()
         self.info_handler2 = chess.uci.InfoHandler()
         self.engine.info_handlers.append(self.info_handler)
-        self.engine2.info_handlers.append(self.info_handler2)
+        self.engine2.info_helf.engine2.info_handlers.append(self.info_handler2)
+        """
+        
+        self.engine = None
+        self.engine2 =  None
+        
+        self.info_handler = None
+        self.info_handler2 = None
+        
         self.history = []
         self.history2 = []
         self.history.append((0, chess.Move.null(), 0.00, 0))

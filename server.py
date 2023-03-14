@@ -33,14 +33,12 @@ from utilities import Observable, DisplayMsg, hms_time, RepeatedTimer
 from web.picoweb import picoweb as pw
 
 from dgt.api import Dgt, Event, Message
-from dgt.util import PlayMode, Mode, ClockSide
+from dgt.util import PlayMode, Mode, ClockSide, GameResult
 from dgt.iface import DgtIface
 from eboard import EBoard
-
 # This needs to be reworked to be session based (probably by token)
 # Otherwise multiple clients behind a NAT can all play as the 'player'
 client_ips = []
-
 
 def read_pgn_info():
     info = {}
@@ -61,7 +59,6 @@ def read_pgn_info():
         info['PGN_White_ELO'] = ''
         info['PGN_Black_ELO'] = ''
         return info
-
 
 class ServerRequestHandler(tornado.web.RequestHandler):
     def initialize(self, shared=None):
@@ -404,6 +401,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
     level_text_sav = ''
     level_name_sav = ''
     engine_elo_sav = ''
+    result_sav     = ''
 
     def __init__(self, shared):
         super(WebDisplay, self).__init__()
@@ -423,7 +421,8 @@ class WebDisplay(DisplayMsg, threading.Thread):
             self.shared['headers'] = OrderedDict()
 
     def _build_game_header(self, pgn_game: chess.pgn.Game):
-        # pgn_game.headers['Result'] = '*'
+        if WebDisplay.result_sav:
+            pgn_game.headers['Result'] = WebDisplay.result_sav
         pgn_game.headers['Event'] = 'PicoChess game'
         pgn_game.headers['Site'] = 'picochess.org'
         pgn_game.headers['Date'] = datetime.datetime.today().strftime('%Y.%m.%d')
@@ -482,19 +481,18 @@ class WebDisplay(DisplayMsg, threading.Thread):
                     pgn_game.headers['Black'] = user_name
                     pgn_game.headers['WhiteElo'] = comp_elo
                     pgn_game.headers['BlackElo'] = user_elo
-
             if 'PGN Replay' in engine_name:
-                info = {}
-                info = read_pgn_info()
-                pgn_game.headers['Event'] = engine_name + engine_level
-                pgn_game.headers['Date'] = datetime.datetime.today().strftime('%Y.%m.%d')
-                pgn_game.headers['Site'] = 'picochess.org'
-                pgn_game.headers['Round'] = ''
-                pgn_game.headers['White'] = info['PGN_White']
-                pgn_game.headers['Black'] = info['PGN_Black']
-                pgn_game.headers['WhiteElo'] = info['PGN_White_ELO']
-                pgn_game.headers['BlackElo'] = info['PGN_Black_ELO']
-
+                    info =  {}
+                    info = read_pgn_info()
+                    pgn_game.headers['Event'] = engine_name + engine_level
+                    pgn_game.headers['Date']  = datetime.datetime.today().strftime('%Y.%m.%d')
+                    pgn_game.headers['Site']  = 'picochess.org'
+                    pgn_game.headers['Round'] = ''
+                    pgn_game.headers['White'] = info['PGN_White']
+                    pgn_game.headers['Black'] = info['PGN_Black']
+                    pgn_game.headers['WhiteElo'] = info['PGN_White_ELO']
+                    pgn_game.headers['BlackElo'] = info['PGN_Black_ELO']
+                    
         if 'ip_info' in self.shared:
             if 'location' in self.shared['ip_info']:
                 pgn_game.headers['Site'] = self.shared['ip_info']['location']
@@ -541,6 +539,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
         if False:  # switch-case
             pass
         elif isinstance(message, Message.START_NEW_GAME):
+            WebDisplay.result_sav = ''
             self.starttime = datetime.datetime.now().strftime('%H:%M:%S')
             pgn_str = _transfer(message.game)
             fen = message.game.fen()
@@ -738,8 +737,15 @@ class WebDisplay(DisplayMsg, threading.Thread):
             EventHandler.write_to_clients(result)
 
         elif isinstance(message, Message.GAME_ENDS):
-            pass
-
+            if message.result == GameResult.DRAW:
+                WebDisplay.result_sav = '1/2-1/2'
+            elif message.result in (GameResult.WIN_WHITE, GameResult.WIN_BLACK):
+                WebDisplay.result_sav = '1-0' if message.result == GameResult.WIN_WHITE else '0-1'
+            else:
+                WebDisplay.result_sav = ''
+            if WebDisplay.result_sav != '':
+                _build_headers()
+                _send_headers()
         else:  # Default
             pass
 
