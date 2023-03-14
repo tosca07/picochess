@@ -31,12 +31,18 @@ import picotutor_constants as c
 
 
 class PicoTutor:
-
-    def __init__(self, i_engine_path='/opt/picochess/engines/armv7l/a-stockf', i_player_color=chess.WHITE, i_fen='', i_comment_file='', i_lang='en'):
+    def __init__(
+        self,
+        i_engine_path="/opt/picochess/engines/armv7l/a-stockf",
+        i_player_color=chess.WHITE,
+        i_fen="",
+        i_comment_file="",
+        i_lang="en",
+    ):
         self.user_color = i_player_color
         self.max_valid_moves = 200
         self.engine_path = i_engine_path
-        
+
         """
         self.engine = chess.uci.popen_engine(i_engine_path)
         self.engine2 = chess.uci.popen_engine(i_engine_path)
@@ -55,13 +61,13 @@ class PicoTutor:
         self.engine.info_handlers.append(self.info_handler)
         self.engine2.info_helf.engine2.info_handlers.append(self.info_handler2)
         """
-        
+
         self.engine = None
-        self.engine2 =  None
-        
+        self.engine2 = None
+
         self.info_handler = None
         self.info_handler2 = None
-        
+
         self.history = []
         self.history2 = []
         self.history.append((0, chess.Move.null(), 0.00, 0))
@@ -90,7 +96,11 @@ class PicoTutor:
 
         try:
             with open("chess-eco_pos.txt") as fp:
-                self.book_data = list(csv.DictReader(filter(lambda row: row[0] != '#', fp.readlines()), delimiter='|'))
+                self.book_data = list(
+                    csv.DictReader(
+                        filter(lambda row: row[0] != "#", fp.readlines()), delimiter="|"
+                    )
+                )
         except EnvironmentError:
             self.book_data = []
 
@@ -116,7 +126,9 @@ class PicoTutor:
                 self.comment_no = len(self.comments)
 
         try:
-            general_comment_file = '/opt/picochess/engines/armv7l/general_game_comments_' + i_lang + '.txt'
+            general_comment_file = (
+                "/opt/picochess/engines/armv7l/general_game_comments_" + i_lang + ".txt"
+            )
             with open(general_comment_file) as fp:
                 self.comments_all = fp.readlines()
         except Exception:
@@ -133,12 +145,12 @@ class PicoTutor:
 
     def set_status(self, watcher=False, coach=False, explorer=False, comments=False):
 
-        if (self.watcher_on or self.coach_on):
+        if self.watcher_on or self.coach_on:
             self.watcher_on = watcher
             self.coach_on = coach
             self.explorer_on = explorer
             self.comments_on = comments
-            if (watcher or coach):
+            if watcher or coach:
                 self.reset()
             else:
                 self.stop()
@@ -147,7 +159,7 @@ class PicoTutor:
             self.coach_on = coach
             self.explorer_on = explorer
             self.comments_on = comments
-            if (watcher or coach):
+            if watcher or coach:
                 self.reset()
             else:
                 pass
@@ -158,7 +170,7 @@ class PicoTutor:
         range_fac = 0
 
         if com_factor == 0:
-            return ''
+            return ""
         range_fac = round(100 / com_factor)
         max_range = self.comment_no * range_fac
         max_range_all = self.comment_all_no * range_fac
@@ -168,25 +180,25 @@ class PicoTutor:
             if self.comments and self.comment_no > 0:
                 index = randint(0, max_range)
                 if index > self.comment_no - 1:
-                    return ''
+                    return ""
                 return self.comments[index]
             else:
-                return ''
+                return ""
         elif pico_comment == PicoComment.COM_ON_ALL:
             # get a comment by pure chance
             if self.comments and self.comment_no > 0:
                 index = randint(0, max_range)
                 if index > self.comment_no - 1:
-                    return ''
+                    return ""
                 return self.comments[index]
             else:
                 if self.comments_all and self.comment_all_no > 0:
                     index = randint(0, max_range_all)
                     if index > self.comment_all_no - 1:
-                        return ''
+                        return ""
                     return self.comments_all[index]
                 else:
-                    return ''
+                    return ""
 
     def init_comments(self, i_comment_file):
         self.comments = []
@@ -204,14 +216,14 @@ class PicoTutor:
             self.comments = []
 
     def _find_longest_matching_opening(self, played: str) -> Tuple[str, str, str]:
-        opening_name = moves = eco = ''
+        opening_name = moves = eco = ""
         for opening in self.book_data:
             # if len(opening.get('moves')) > 5:
-            if played[:len(opening.get('moves'))] == opening.get('moves'):
-                if len(opening.get('moves')) > len(moves):
-                    opening_name = opening.get('opening_name')
-                    moves = opening.get('moves')
-                    eco = opening.get('eco')
+            if played[: len(opening.get("moves"))] == opening.get("moves"):
+                if len(opening.get("moves")) > len(moves):
+                    opening_name = opening.get("opening_name")
+                    moves = opening.get("moves")
+                    eco = opening.get("eco")
         return opening_name, moves, eco
 
     def get_opening(self) -> Tuple[str, str, str, bool]:
@@ -219,12 +231,12 @@ class PicoTutor:
         diff = self.board.fullmove_number - self.last_inside_book_moveno
         inside_book_opening = False
 
-        opening_name = moves = eco = ''
+        opening_name = moves = eco = ""
 
         if self.op == [] or diff > 2:
             return eco, opening_name, moves, inside_book_opening
 
-        played = '%s' % (' '.join(self.op))
+        played = "%s" % (" ".join(self.op))
 
         opening_name, moves, eco = self._find_longest_matching_opening(played)
 
@@ -240,7 +252,7 @@ class PicoTutor:
             self.last_inside_book_moveno = self.board.fullmove_number
         else:
             # try opening name based on FEN
-            op_name = ''
+            op_name = ""
             i_book = False
 
             op_name, i_book = self.get_fen_opening()
@@ -260,7 +272,7 @@ class PicoTutor:
             return "", False
 
         index = 0
-        opening_name = ''
+        opening_name = ""
 
         for line in self.book_fen_data:
             line_list = line.split()
@@ -472,9 +484,9 @@ class PicoTutor:
 
     def print_score(self):
         if self.board.turn:
-            print('White to move...')
+            print("White to move...")
         else:
-            print('Black to move...')
+            print("Black to move...")
             print(self.info_handler.info["pv"])
             print(self.info_handler.info["score"])
 
@@ -591,7 +603,7 @@ class PicoTutor:
     def get_user_move_eval(self):
         if not (self.coach_on or self.watcher_on):
             return
-        eval_string = ''
+        eval_string = ""
         best_mate = 0
         best_score = 0
         best_move = chess.Move.null()
@@ -604,39 +616,43 @@ class PicoTutor:
                 current_pv, current_move, current_score, current_mate = self.history[-1]
             except IndexError:
                 current_score = 0.0
-                current_mate = ''
-                eval_string = ''
+                current_mate = ""
+                eval_string = ""
                 return eval_string, self.mate, self.hint_move
 
             try:
                 before_pv, before_move, before_score, before_mate = self.history[-2]
             except IndexError:
                 before_score = 0.0
-                eval_string = ''
+                eval_string = ""
                 return eval_string, self.mate, self.hint_move
 
         else:
             current_score = 0.0
-            current_mate = ''
+            current_mate = ""
             before_score = 0.0
-            eval_string = ''
+            eval_string = ""
             return eval_string, self.mate, self.hint_move
 
         # best deep engine score/move
         if self.legal_moves:
-            best_pv, best_move, best_score, best_mate = self.legal_moves[0]  # tupel (pv,move,score,mate)
+            best_pv, best_move, best_score, best_mate = self.legal_moves[
+                0
+            ]  # tupel (pv,move,score,mate)
 
         # calculate diffs based on low depth search for obvious moves
         if len(self.history2) > 0:
             try:
-                low_pv, low_move, low_score, low_mate = self.history2[-1]  # last evaluation = for current user move
+                low_pv, low_move, low_score, low_mate = self.history2[
+                    -1
+                ]  # last evaluation = for current user move
             except IndexError:
                 low_score = 0.0
-                eval_string = ''
+                eval_string = ""
                 return eval_string, self.mate, self.hint_move
         else:
             low_score = 0.0
-            eval_string = ''
+            eval_string = ""
             return eval_string, self.mate, self.hint_move
 
         best_deep_diff = best_score - current_score
@@ -651,43 +667,52 @@ class PicoTutor:
         ###############################################################
         # 1. bad moves
         ##############################################################
-        eval_string = ''
+        eval_string = ""
 
         # Blunder ??
         if best_deep_diff > c.VERY_BAD_MOVE_TH and legal_no:
-            eval_string = '??'
+            eval_string = "??"
 
         # Mistake ?
         elif best_deep_diff > c.BAD_MOVE_TH:
-            eval_string = '?'
+            eval_string = "?"
 
         # Dubious
-        elif best_deep_diff > c.DUBIOUS_TH and abs(deep_low_diff) > c.UNCLEAR_DIFF and score_hist_diff > c.POS_INCREASE:
-            eval_string = '?!'
+        elif (
+            best_deep_diff > c.DUBIOUS_TH
+            and abs(deep_low_diff) > c.UNCLEAR_DIFF
+            and score_hist_diff > c.POS_INCREASE
+        ):
+            eval_string = "?!"
 
         ###############################################################
         # 2. good moves
         ##############################################################
-        eval_string2 = ''
+        eval_string2 = ""
 
         # very good moves
         if best_deep_diff <= c.VERY_GOOD_MOVE_TH and deep_low_diff > c.VERY_GOOD_IMPROVE_TH:
             if (best_score == 999 and (best_mate == current_mate)) and legal_no <= 2:
                 pass
             else:
-                eval_string2 = '!!'
+                eval_string2 = "!!"
 
         # good move
-        elif best_deep_diff <= c.GOOD_MOVE_TH and deep_low_diff > c.GOOD_IMPROVE_TH and legal_no > 1:
-            eval_string2 = '!'
+        elif (
+            best_deep_diff <= c.GOOD_MOVE_TH and deep_low_diff > c.GOOD_IMPROVE_TH and legal_no > 1
+        ):
+            eval_string2 = "!"
 
         # interesting move
-        elif best_deep_diff < c.INTERESTING_TH and abs(
-                deep_low_diff) > c.UNCLEAR_DIFF and score_hist_diff < c.POS_DECREASE:
-            eval_string2 = '!?'
+        elif (
+            best_deep_diff < c.INTERESTING_TH
+            and abs(deep_low_diff) > c.UNCLEAR_DIFF
+            and score_hist_diff < c.POS_DECREASE
+        ):
+            eval_string2 = "!?"
 
-        if eval_string2 != '':
-            if eval_string == '':
+        if eval_string2 != "":
+            if eval_string == "":
                 eval_string = eval_string2
 
         # information return in addition:
@@ -717,7 +742,7 @@ class PicoTutor:
         try:
             best_move = self.info_handler.info["pv"][1][0]
         except IndexError:
-            best_move = ''
+            best_move = ""
 
         try:
             best_score = self.info_handler.info["score"][1]
