@@ -20,8 +20,14 @@ Version 3.1
 **Internal changes**
 - Unified sources for all devices (before we had different sources for the PicochessWeb version  (most important for me)
 
-- Unified translation.py file (new  "web_text" tag for longer texts) eg.: 
-if text_id == 'pleasewait': entxt=Dgt.DISPLAY_TEXT(web_text='Reboot: please wait', large_text='please wait', medium_text='pls wait', small_text='wait  ')
+- Unified translation.py file (new  "web_text" tag for longer texts) eg. 
+  ```python
+  if text_id == 'pleasewait':
+      entxt=Dgt.DISPLAY_TEXT(web_text='Reboot: please wait',
+                             large_text='please wait',
+                             medium_text='pls wait',
+                             small_text='wait  ')
+  ```
 
 - Unified engines.ini (new "web" tag for longer engine names), see attached retro.ini eg.: 
   ```
@@ -79,22 +85,22 @@ if text_id == 'pleasewait': entxt=Dgt.DISPLAY_TEXT(web_text='Reboot: please wai
 Version 3.0
 -------------------------------------------------------------------------------------------
 
+I think most of the enhancements only make sense running on a Revelation II (or at least
+a DGTPI with better display capabilities. Especially on a Revelation II it is really fun
+to read game comments or the opening name etc. while this is exhausting on a DGTPI and awful
+on a standalone DGT Clock with its 8 chars)
+Some features (like tournament control or PicoTutor) even wouldn't correctly work on stand
+alone clocks together with picochess because the display can not show the correct time control
+setting.
+Furthermore additional libraries must be installed, a bug must be fixed in the python-chess
+code itself(!) for the tournament control option and you need additional engines for some
+of the new feature (don't ask me where to get them or where you can get an image etc.)
+
+**Keep in mind:** I did these enhancements in this Personal Version for my own pleasure
+in order to have fun & play with picochess on my Revelation 2 - so it might be not
+your cup of tea...
+
 - Version set to 3.0 (a really big one ;-)
-  I think most of the enhancements only make sense running on a Revelation II (or at least
-  a DGTPI with better display capabilities. Especially on a Revelation II it is really fun
-  to read game comments or the opening name etc. while this is exhausting on a DGTPI and awful
-  on a standalone DGT Clock with its 8 chars)
-  Some features (like tournament control or PicoTutor) even wouldn't correctly work on stand
-  alone clocks together with picochess because the display can not show the correct time control
-  setting.
-  Furthermore additional libraries must be installed, a bug must be fixed in the python-chess
-  code itself(!) for the tournament control option and you need additional engines for some
-  of the new feature (don't ask me where to get them or where you can get an image etc.)
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !!! Keep in mind: I did these enhancements in this Personal Version for my own pleasure
-  !!! in order to have fun & play with picochess on my Revelation 2 - so it might be not
-  !!! your cup of tea...
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 - Support for Online Engines
     - Switch to Online Mode if online engine is choosen (engine name starts with
       Prefix 'Online')
