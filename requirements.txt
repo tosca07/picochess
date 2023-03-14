@@ -9,6 +9,6 @@ pyOpenSSL==22.1.0
 requests==2.21.0
 spur==0.3.23
 tornado==4.5.1
-configobj==5.0.6
+configobj==5.0.8
 geopy==2.3.0
 astral==3.2
