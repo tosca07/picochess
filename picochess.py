@@ -168,7 +168,7 @@ class PicochessState:
         self.online_decrement = 0
         self.pb_move = chess.Move.null()  # Best ponder move
         self.pgn_book_test = False
-        self.picotutor: PicoTutor = PicoTutor()
+        self._picotutor: Optional[PicoTutor] = None
         self.play_mode = PlayMode.USER_WHITE
         self.position_mode = False
         self.reset_auto = False
@@ -182,6 +182,16 @@ class PicochessState:
         self.think_time = 0
         self.time_control: TimeControl = None
         self.rating: Rating = None
+
+    @property
+    def picotutor(self) -> PicoTutor:
+        if not self._picotutor:
+            self._picotutor = PicoTutor()
+        return self._picotutor
+
+    @picotutor.setter
+    def picotutor(self, value: PicoTutor) -> None:
+        self._picotutor = value
 
     def start_clock(self) -> None:
         """Start the clock."""
