@@ -482,16 +482,16 @@ class WebDisplay(DisplayMsg, threading.Thread):
                     pgn_game.headers['WhiteElo'] = comp_elo
                     pgn_game.headers['BlackElo'] = user_elo
             if 'PGN Replay' in engine_name:
-                    info =  {}
-                    info = read_pgn_info()
-                    pgn_game.headers['Event'] = engine_name + engine_level
-                    pgn_game.headers['Date']  = datetime.datetime.today().strftime('%Y.%m.%d')
-                    pgn_game.headers['Site']  = 'picochess.org'
-                    pgn_game.headers['Round'] = ''
-                    pgn_game.headers['White'] = info['PGN_White']
-                    pgn_game.headers['Black'] = info['PGN_Black']
-                    pgn_game.headers['WhiteElo'] = info['PGN_White_ELO']
-                    pgn_game.headers['BlackElo'] = info['PGN_Black_ELO']
+                info =  {}
+                info = read_pgn_info()
+                pgn_game.headers['Event'] = engine_name + engine_level
+                pgn_game.headers['Date']  = datetime.datetime.today().strftime('%Y.%m.%d')
+                pgn_game.headers['Site']  = 'picochess.org'
+                pgn_game.headers['Round'] = ''
+                pgn_game.headers['White'] = info['PGN_White']
+                pgn_game.headers['Black'] = info['PGN_Black']
+                pgn_game.headers['WhiteElo'] = info['PGN_White_ELO']
+                pgn_game.headers['BlackElo'] = info['PGN_Black_ELO']
                     
         if 'ip_info' in self.shared:
             if 'location' in self.shared['ip_info']:
