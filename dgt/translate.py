@@ -216,7 +216,7 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Coach no  ', medium_text='Coach  no', small_text='co  no')
         if text_id == 'okpicotutor':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='PicTutor ok', medium_text='Tutor ok', small_text='tut ok')
+            entxt = Dgt.DISPLAY_TEXT(web_text='PicoTutor', large_text='PicTutor ok', medium_text='Tutor ok', small_text='tut ok')
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
@@ -348,7 +348,7 @@ class DgtTranslate(object):
                 estxt = entxt
                 ittxt = entxt
             elif msg == 'ANALYSIS':
-                entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Pico Tutor', medium_text='PicTutor', small_text='PTutor')
+                entxt = Dgt.DISPLAY_TEXT(web_text='Pico Tutor', large_text='Pico Tutor', medium_text='PicTutor', small_text='PTutor')
                 detxt = entxt
                 nltxt = entxt
                 frtxt = entxt
@@ -939,8 +939,8 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_menu_favorites':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Favorite Engines', large_text='Favorites', medium_text='Favorite', small_text='fav')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Favoriten Engines', large_text='Favoriten', medium_text='Favorite', small_text='fav')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Favorites', large_text='Favorites', medium_text='Favorite', small_text='favor.')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Favoriten', large_text='Favoriten', medium_text='Favorite', small_text='Favor.')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -1043,6 +1043,41 @@ class DgtTranslate(object):
             frtxt = entxt
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Partita    ', medium_text='Partita ', small_text='partit')
+        if text_id == 'game_end_menu':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Declare Game Ending', large_text='Game Ending', medium_text='Game End', small_text='gamend')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Erkläre Partieende', large_text='Partieende', medium_text='SplEnde', small_text='ende')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'game_end_white_wins':
+            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='White wins', medium_text='WhiteWin', small_text='whitew')
+            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Weiss gewinnt', medium_text='Weissgew', small_text='weissg')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'game_end_black_wins':
+            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Black wins', medium_text='BlackWin', small_text='blackw')
+            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Schwarz gewinnt', medium_text='Schwgew', small_text='schwg')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'game_end_draw':
+            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Draw', medium_text='draw', small_text='draw')
+            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Unentschieden', medium_text='unents', small_text='unent')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Partita 3  ', medium_text='Partita3', small_text='part 3')
+        if text_id == 'okgameend':
+            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok game end', medium_text='ok end', small_text='okend')
+            detxt = Dgt.DISPLAY_TEXT(web_text='ok Partieende', large_text='okSpielende', medium_text='ok ende', small_text='okend')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ok salva   ', medium_text='ok salva', small_text='oksalv')
         if text_id == 'game_save_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Save Game  ', medium_text='SaveGame', small_text='save  ')
             detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Speichern  ', medium_text='Sichern ', small_text='sicher')
