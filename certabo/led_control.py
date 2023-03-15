@@ -18,11 +18,13 @@ import time
 import traceback
 
 
+logger = logging.getLogger(__name__)
+
+
 class CertaboLedControl(object):
     LEDS_OFF_COMMAND = bytearray(8)
 
     def __init__(self, transport):
-        self.log = logging.getLogger("CertaboLedControl")
         self.transport = transport
         self.pending = deque([])
         self.stopped = False
@@ -37,7 +39,7 @@ class CertaboLedControl(object):
                 self.process_commands()
             except Exception:
                 traceback.print_exc()
-                self.log.exception("Problem while processing LED commands")
+                logger.exception("Problem while processing LED commands")
                 return
 
     def process_commands(self):
@@ -58,7 +60,7 @@ class CertaboLedControl(object):
     def write_led_command(self, cmd: bytearray):
         lock = threading.Lock()
         with lock:
-            self.log.debug(f'adding LED command {cmd}')
+            logger.debug(f'adding LED command {cmd}')
             self.pending.append(cmd)
 
     def stop(self):

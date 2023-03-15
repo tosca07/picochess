@@ -29,6 +29,8 @@ try:
 except ImportError:
     bluepy_ble_support = False
 
+logger = logging.getLogger(__name__)
+
 
 class Transport(object):
 
@@ -40,10 +42,9 @@ class Transport(object):
             self.init = False
             return
         self.wrque: queue.Queue = queue.Queue()
-        self.log = logging.getLogger('Chessnut')
         self.que = que
         self.init = True
-        self.log.debug('bluepy_ble init ok')
+        logger.debug('bluepy_ble init ok')
         self.scan_timeout = 10
         self.worker_thread_active = False
         self.worker_threader = None
@@ -52,7 +53,7 @@ class Transport(object):
         self.bp_path = os.path.dirname(os.path.abspath(bluepy.__file__))
         self.bp_helper = os.path.join(self.bp_path, 'bluepy-helper')
         if not os.path.exists(self.bp_helper):
-            self.log.warning(f'Unexpected: {self.bp_helper} does not exist!')
+            logger.warning(f'Unexpected: {self.bp_helper} does not exist!')
         self.fix_cmd = "sudo setcap 'cap_net_raw,cap_net_admin+eip' " + self.bp_helper
 
     def quit(self):
@@ -65,29 +66,29 @@ class Transport(object):
         :param iface: interface number of bluetooth adapter
         :returns: Bluetooth address of Chessnut board, or None on failure
         """
-        self.log.debug('bluepy_ble: searching for boards')
+        logger.debug('bluepy_ble: searching for boards')
 
         scanner = self._create_scanner(iface)
 
         try:
             devices = scanner.scan(self.scan_timeout)
         except Exception as e:
-            self.log.error(f'BLE scanning failed. {e}')
-            self.log.error(f'excecute: {self.fix_cmd}')
+            logger.error(f'BLE scanning failed. {e}')
+            logger.error(f'excecute: {self.fix_cmd}')
             return None
 
         devs = sorted(devices, key=lambda x: x.rssi, reverse=True)
         for b in devs:
-            self.log.debug(f'sorted by rssi {b.addr} {b.rssi}')
+            logger.debug(f'sorted by rssi {b.addr} {b.rssi}')
 
         for bledev in devs:
-            self.log.debug(
+            logger.debug(
                 f'Device {bledev.addr} ({bledev.addrType}), RSSI={bledev.rssi} dB')
             for (adtype, desc, value) in bledev.getScanData():
-                self.log.debug(f'  {desc} ({adtype}) = {value}')
+                logger.debug(f'  {desc} ({adtype}) = {value}')
                 if desc == 'Complete Local Name':
                     if 'Chessnut' in value:
-                        self.log.info(
+                        logger.info(
                             f'Autodetected Chessnut board at Bluetooth LE address: '
                             f'{bledev.addr}, signal strength (rssi): {bledev.rssi}')
                         return bledev.addr
@@ -96,17 +97,16 @@ class Transport(object):
     def _create_scanner(self, iface):
         class ScanDelegate(DefaultDelegate):
 
-            def __init__(self, log):
-                self.log = log
+            def __init__(self):
                 DefaultDelegate.__init__(self)
 
             def handleDiscovery(self, scanEntry, isNewDev, isNewData):
                 if isNewDev:
-                    self.log.debug(f'Discovered device {scanEntry.addr}')
+                    logger.debug(f'Discovered device {scanEntry.addr}')
                 elif isNewData:
-                    self.log.debug(f'Received new data from {scanEntry.addr}')
+                    logger.debug(f'Received new data from {scanEntry.addr}')
 
-        scanner = Scanner(iface=iface).withDelegate(ScanDelegate(self.log))
+        scanner = Scanner(iface=iface).withDelegate(ScanDelegate())
         return scanner
 
     def open_mt(self, address):
@@ -116,10 +116,10 @@ class Transport(object):
         :param address: bluetooth address
         :returns: True on success.
         """
-        self.log.debug('Starting worker-thread for bluepy ble')
+        logger.debug('Starting worker-thread for bluepy ble')
         self.worker_thread_active = True
         self.worker_threader = threading.Thread(
-            target=self._worker_thread, args=(self.log, address, self.wrque, self.que))
+            target=self._worker_thread, args=(address, self.wrque, self.que))
         self.worker_threader.setDaemon(True)
         self.worker_threader.start()
         timer = time.time()
@@ -149,75 +149,74 @@ class Transport(object):
     def _agent_state(self, que, state, msg):
         que.put('agent-state: ' + state + ' ' + msg)
 
-    def _device_open(self, address, device, que, log):
+    def _device_open(self, address, device, que):
 
         class PeriDelegate(DefaultDelegate):
 
-            def __init__(self, log, que):
-                self.log = log
+            def __init__(self, que):
                 self.que = que
-                self.log.debug('Init delegate for peri')
+                logger.debug('Init delegate for peri')
                 DefaultDelegate.__init__(self)
 
             def handleNotification(self, cHandle, data):
-                self.log.debug(f'BLE: Handle: {cHandle}, data: {data}')
-                self.log.debug(f'BLE received [{data}]')
+                logger.debug(f'BLE: Handle: {cHandle}, data: {data}')
+                logger.debug(f'BLE received [{data}]')
                 que.put(data)
 
-        log.debug(f'Peripheral generated {address}')
+        logger.debug(f'Peripheral generated {address}')
         try:
             services = device.getServices()
         except Exception as e:
             emsg = f'Failed to enumerate services for {address}, {e}'
-            log.error(emsg)
+            logger.error(emsg)
             self._agent_state(que, 'offline', emsg)
             return None, None
-        rx, tx = self._init_characteristics(device, services, log)
+        rx, tx = self._init_characteristics(device, services)
 
         try:
-            log.debug('Installing peripheral delegate')
-            delegate = PeriDelegate(log, que)
+            logger.debug('Installing peripheral delegate')
+            delegate = PeriDelegate(que)
             device.withDelegate(delegate)
         except Exception as e:
             emsg = f'Bluetooth LE: Failed to install peripheral delegate! {e}'
-            log.error(emsg)
+            logger.error(emsg)
             self._agent_state(que, 'offline', emsg)
             return None, None
         self._agent_state(que, 'online', 'Connected to Chessnut board via BLE')
         return rx, tx
 
-    def _init_characteristics(self, device, services, log):
+    def _init_characteristics(self, device, services):
         rx = None
         tx = None
-        log.debug(f'services: {len(services)}')
+        logger.debug(f'services: {len(services)}')
         for ser in services:
-            log.debug(f'Service: {ser}')
+            logger.debug(f'Service: {ser}')
             chrs = ser.getCharacteristics()
             for chri in chrs:
                 if chri.uuid == '1b7e8262-2877-41c3-b46e-cf057c562023':
                     rx = chri
                     rxh = chri.getHandle()
-                    log.debug('Enabling notifications')
+                    logger.debug('Enabling notifications')
                     device.writeCharacteristic(handle=rxh + 1, val=(1).to_bytes(2, byteorder='little'),
                                                withResponse=True)
                 elif chri.uuid == '1b7e8272-2877-41c3-b46e-cf057c562023':
                     tx = chri
                 if chri.supportsRead():
-                    log.debug(f'  {chri} UUID={chri.uuid} {chri.propertiesToString()} -> {chri.read()}')
+                    logger.debug(f'  {chri} UUID={chri.uuid} {chri.propertiesToString()} -> {chri.read()}')
                 else:
-                    log.debug(f'  {chri} UUID={chri.uuid} {chri.propertiesToString()}')
+                    logger.debug(f'  {chri} UUID={chri.uuid} {chri.propertiesToString()}')
         return rx, tx
 
-    def _worker_thread(self, log, address, wrque, que):
+    def _worker_thread(self, address, wrque, que):
         """
         Background thread that handles bluetooth sending and forwards data received via
         bluetooth to the queue `que`.
         """
-        device = self._create_device(address, que, log)
+        device = self._create_device(address, que)
         if device is None:
             return
 
-        rx, tx = self._device_open(address, device, que, log)
+        rx, tx = self._device_open(address, device, que)
 
         time_last_out = time.time() + 0.2
 
@@ -228,15 +227,15 @@ class Transport(object):
             bt_error = False
             self.conn_state = True
 
-        self._handle_device_data(device, address, rx, tx, que, wrque, bt_error, time_last_out, log)
+        self._handle_device_data(device, address, rx, tx, que, wrque, bt_error, time_last_out)
 
-    def _handle_device_data(self, device, address, rx, tx, que, wrque, bt_error, time_last_out, log):
+    def _handle_device_data(self, device, address, rx, tx, que, wrque, bt_error, time_last_out):
         message_delta_time = 0.1  # least 0.1 sec between outgoing btle messages
         while self.worker_thread_active:
             rep_err = False
             while bt_error:
                 bt_error, rx, tx, time_last_out = self._try_connect(device, address, rx, tx, que, rep_err,
-                                                                    time_last_out, log)
+                                                                    time_last_out)
 
             if not wrque.empty() and time.time() - time_last_out > message_delta_time:
                 msg = wrque.get()
@@ -244,7 +243,7 @@ class Transport(object):
                     tx.write(msg, withResponse=True)
                     time_last_out = time.time()
                 except Exception as e:
-                    log.error(f'bluepy_ble: failed to write {msg}: {e}')
+                    logger.error(f'bluepy_ble: failed to write {msg}: {e}')
                     bt_error = True
                     self._agent_state(que, 'offline', 'Connection to Bluetooth peripheral lost')
                 wrque.task_done()
@@ -252,14 +251,14 @@ class Transport(object):
             try:
                 self._read(device, rx)
             except Exception as e:
-                self.log.warning(f'Bluetooth read error {e}')
+                logger.warning(f'Bluetooth read error {e}')
                 bt_error = True
                 self._agent_state(que, 'offline', 'Connection to Bluetooth peripheral lost')
                 continue
             time.sleep(0.01)
         device.disconnect()
 
-    def _try_connect(self, device, address, rx, tx, que, rep_err, time_last_out, log):
+    def _try_connect(self, device, address, rx, tx, que, rep_err, time_last_out):
         time.sleep(1)
         bt_error = False
         self.init = False
@@ -267,28 +266,28 @@ class Transport(object):
             self._connect_device(device, address)
         except Exception as e:
             if not rep_err:
-                self.log.warning(f'Reconnect failed: {e} [Local bluetooth problem?]')
+                logger.warning(f'Reconnect failed: {e} [Local bluetooth problem?]')
                 rep_err = True
             bt_error = True
         if not bt_error:
-            rx, tx, time_last_out = self._on_connect(device, address, rx, tx, que, time_last_out, log)
+            rx, tx, time_last_out = self._on_connect(device, address, rx, tx, que, time_last_out)
         return bt_error, rx, tx, time_last_out
 
-    def _on_connect(self, device, address, rx, tx, que, time_last_out, log):
-        self.log.info(f'Bluetooth reconnected to {address}')
-        rx, tx = self._device_open(address, device, que, log)
+    def _on_connect(self, device, address, rx, tx, que, time_last_out):
+        logger.info(f'Bluetooth reconnected to {address}')
+        rx, tx = self._device_open(address, device, que)
         time_last_out = time.time() + 0.2
         self.init = True
         return rx, tx, time_last_out
 
-    def _create_device(self, address, que, log):
-        log.debug(f'bluepy_ble open_mt {address}')
+    def _create_device(self, address, que):
+        logger.debug(f'bluepy_ble open_mt {address}')
         try:
             device = Peripheral(address)
             device.setMTU(40)
         except Exception as e:
             emsg = f'Failed to create BLE peripheral at {address}, {e}'
-            log.error(emsg)
+            logger.error(emsg)
             self._agent_state(que, 'offline', '{}'.format(e))
             self.conn_state = False
             return None

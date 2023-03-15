@@ -41,6 +41,9 @@ from dgt.api import Message
 from dgt.util import GameResult, PlayMode, Voice, EBoard
 
 
+logger = logging.getLogger(__name__)
+
+
 class PicoTalker(object):
 
     """Handle the human speaking of events."""
@@ -56,9 +59,9 @@ class PicoTalker(object):
             if Path(voice_path).exists():
                 self.voice_path = voice_path
             else:
-                logging.warning('voice path [%s] doesnt exist', voice_path)
+                logger.warning('voice path [%s] doesnt exist', voice_path)
         except ValueError:
-            logging.warning('not valid voice parameter')
+            logger.warning('not valid voice parameter')
 
     def set_speed_factor(self, speed_factor: float):
         """Set the speed voice factor."""
@@ -67,7 +70,7 @@ class PicoTalker(object):
     def talk(self, sounds):
         """Speak out the sound part by using sox play."""
         if not self.voice_path:
-            logging.debug('picotalker turned off')
+            logger.debug('picotalker turned off')
             return False
 
         vpath = self.voice_path
@@ -80,11 +83,11 @@ class PicoTalker(object):
                     subprocess.call(command, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     result = True
                 except OSError as os_exc:
-                    logging.warning('OSError: %s => turn voice OFF', os_exc)
+                    logger.warning('OSError: %s => turn voice OFF', os_exc)
                     self.voice_path = None
                     return False
             else:
-                logging.warning('voice file not found %s', voice_file)
+                logger.warning('voice file not found %s', voice_file)
         return result
 
 
@@ -166,14 +169,14 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         self.beep_on = beep
 
         if user_voice:
-            logging.debug('creating user voice: [%s]', str(user_voice))
+            logger.debug('creating user voice: [%s]', str(user_voice))
             self.set_user(PicoTalker(user_voice, self.speed_factor))
         if computer_voice:
-            logging.debug('creating computer voice: [%s]', str(computer_voice))
+            logger.debug('creating computer voice: [%s]', str(computer_voice))
             self.set_computer(PicoTalker(computer_voice, self.speed_factor))
         if beep:
             beeper_sound = 'en:beeper'
-            logging.debug('creating beeper sound: [%s]', str(beeper_sound))
+            logger.debug('creating beeper sound: [%s]', str(beeper_sound))
             self.set_beeper(PicoTalker(beeper_sound, self.speed_factor))
 
     def calc_no_group_comments(self, filestring: str):
@@ -458,7 +461,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
             self.talk([talkfile])
 
     def say_squarepiece(self, fen_result):
-        logging.debug('molli: talker fen_result = %s', fen_result)
+        logger.debug('molli: talker fen_result = %s', fen_result)
 
         piece_parts = {
             'K': 't_king.ogg',
@@ -495,7 +498,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         square_str = rank
         square_str = square_str + ' ' + file
 
-        logging.debug('molli: talker square = %s', square_str)
+        logger.debug('molli: talker square = %s', square_str)
 
         if len(fen_result) > 2:
 
@@ -506,7 +509,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
             else:
                 voice_parts += ['white.ogg']
 
-            logging.debug('molli: talker piece = %s', piece)
+            logger.debug('molli: talker piece = %s', piece)
 
             try:
                 sound_file = piece_parts[piece]
@@ -533,7 +536,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                 if sound_file:
                     voice_parts += [sound_file]
 
-        logging.debug('molli: talker voice_parts = %s', voice_parts)
+        logger.debug('molli: talker voice_parts = %s', voice_parts)
         return voice_parts
 
     def run(self):
@@ -541,7 +544,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
         previous_move = chess.Move.null()  # Ignore repeated broadcasts of a move
         last_pos_dir = ''
-        logging.info('msg_queue ready')
+        logger.info('msg_queue ready')
         while True:
             try:
                 # Check if we have something to say
@@ -550,13 +553,13 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                 if False:  # switch-case
                     pass
                 elif isinstance(message, Message.ENGINE_FAIL):
-                    logging.debug('announcing ENGINE_FAIL')
+                    logger.debug('announcing ENGINE_FAIL')
                     self.talk(['error.ogg'])
 
                 elif isinstance(message, Message.START_NEW_GAME):
                     last_pos_dir = ''
                     if message.newgame:
-                        logging.debug('announcing START_NEW_GAME')
+                        logger.debug('announcing START_NEW_GAME')
                         self.talk(['new_game.ogg'], self.BEEPER)
                         self.talk(['newgame.ogg'])
                         self.play_game = None
@@ -565,13 +568,13 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         previous_move = chess.Move.null()
 
                 elif isinstance(message, Message.COMPUTER_MOVE):
-                    logging.debug('molli: before announcing COMPUTER_MOVE [%s]', message.move)
+                    logger.debug('molli: before announcing COMPUTER_MOVE [%s]', message.move)
                     if message.move and message.game:
                         game_copy = message.game.copy()
                         if game_copy.board_fen() == chess.STARTING_BOARD_FEN:
                             previous_move = chess.Move.null()
                         if message.move != previous_move:
-                            logging.debug('announcing COMPUTER_MOVE [%s]', message.move)
+                            logger.debug('announcing COMPUTER_MOVE [%s]', message.move)
                             game_copy.push(message.move)
                             self.talk(['computer_move.ogg'], self.BEEPER)
                             if self.eboard_type == EBoard.NOEBOARD:
@@ -591,7 +594,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
                 elif isinstance(message, Message.USER_MOVE_DONE):
                     if message.move and message.game and message.move != previous_move:
-                        logging.debug('announcing USER_MOVE_DONE [%s]', message.move)
+                        logger.debug('announcing USER_MOVE_DONE [%s]', message.move)
                         self.talk(['player_move.ogg'], self.BEEPER)
                         self.comment('beforeumove')
                         self.talk(self.say_last_move(message.game), self.USER)
@@ -602,7 +605,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
                 elif isinstance(message, Message.REVIEW_MOVE_DONE):
                     if message.move and message.game and message.move != previous_move:
-                        logging.debug('announcing REVIEW_MOVE_DONE [%s]', message.move)
+                        logger.debug('announcing REVIEW_MOVE_DONE [%s]', message.move)
                         self.talk(['player_move.ogg'], self.BEEPER)
                         self.talk(self.say_last_move(message.game), self.USER)
                         previous_move = message.move
@@ -612,7 +615,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                     previous_move = chess.Move.null()
                     last_pos_dir = ''
                     if message.result == GameResult.OUT_OF_TIME:
-                        logging.debug('announcing GAME_ENDS/TIME_CONTROL')
+                        logger.debug('announcing GAME_ENDS/TIME_CONTROL')
                         wins = 'whitewins.ogg' if message.game.turn == chess.BLACK else 'blackwins.ogg'
                         self.talk(['timelost.ogg', wins])
                         if wins == 'whitewins.ogg':
@@ -626,11 +629,11 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                             else:
                                 self.comment('uloose')
                     elif message.result == GameResult.INSUFFICIENT_MATERIAL:
-                        logging.debug('announcing GAME_ENDS/INSUFFICIENT_MATERIAL')
+                        logger.debug('announcing GAME_ENDS/INSUFFICIENT_MATERIAL')
                         self.talk(['material.ogg', 'draw.ogg'])
                         self.comment('draw')
                     elif message.result == GameResult.MATE:
-                        logging.debug('announcing GAME_ENDS/MATE')
+                        logger.debug('announcing GAME_ENDS/MATE')
                         self.comment('mate')
                         if message.game.turn == chess.BLACK:
                             # white wins
@@ -649,70 +652,70 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                             else:
                                 self.comment('uloose')
                     elif message.result == GameResult.STALEMATE:
-                        logging.debug('announcing GAME_ENDS/STALEMATE')
+                        logger.debug('announcing GAME_ENDS/STALEMATE')
                         self.talk(['stalemate.ogg'])
                         self.comment('stalemate')
                     elif message.result == GameResult.ABORT:
-                        logging.debug('announcing GAME_ENDS/ABORT')
+                        logger.debug('announcing GAME_ENDS/ABORT')
                         self.talk(['abort.ogg'])
                     elif message.result == GameResult.DRAW:
-                        logging.debug('announcing GAME_ENDS/DRAW')
+                        logger.debug('announcing GAME_ENDS/DRAW')
                         self.talk(['draw.ogg'])
                         self.comment('draw')
                     elif message.result == GameResult.WIN_WHITE:
-                        logging.debug('announcing GAME_ENDS/WHITE_WIN')
+                        logger.debug('announcing GAME_ENDS/WHITE_WIN')
                         self.talk(['whitewins.ogg'])
                         if self.play_mode == PlayMode.USER_WHITE:
                             self.comment('uwin')
                         else:
                             self.comment('uloose')
                     elif message.result == GameResult.WIN_BLACK:
-                        logging.debug('announcing GAME_ENDS/BLACK_WIN')
+                        logger.debug('announcing GAME_ENDS/BLACK_WIN')
                         self.talk(['blackwins.ogg'])
                         if self.play_mode == PlayMode.USER_BLACK:
                             self.comment('uwin')
                         else:
                             self.comment('uloose')
                     elif message.result == GameResult.FIVEFOLD_REPETITION:
-                        logging.debug('announcing GAME_ENDS/FIVEFOLD_REPETITION')
+                        logger.debug('announcing GAME_ENDS/FIVEFOLD_REPETITION')
                         self.talk(['repetition.ogg', 'draw.ogg'])
                         self.comment('draw')
                     self.talk(['bell.ogg'], self.BEEPER)
 
                 elif isinstance(message, Message.TAKE_BACK):
-                    logging.debug('announcing TAKE_BACK')
+                    logger.debug('announcing TAKE_BACK')
                     self.talk(['takeback.ogg'])
                     self.play_game = None
                     previous_move = chess.Move.null()
                     self.comment('takeback')
 
                 elif isinstance(message, Message.TIME_CONTROL):
-                    logging.debug('announcing TIME_CONTROL')
+                    logger.debug('announcing TIME_CONTROL')
                     self.talk(['confirm.ogg'], self.BEEPER)
                     self.talk(['oktime.ogg'])
 
                 elif isinstance(message, Message.INTERACTION_MODE):
-                    logging.debug('announcing INTERACTION_MODE')
+                    logger.debug('announcing INTERACTION_MODE')
                     self.talk(['okmode.ogg'])
 
                 elif isinstance(message, Message.LEVEL):
                     if message.do_speak:
-                        logging.debug('announcing LEVEL')
+                        logger.debug('announcing LEVEL')
                         self.talk(['oklevel.ogg'])
                     else:
-                        logging.debug('dont announce LEVEL cause its also an engine message')
+                        logger.debug('dont announce LEVEL cause its also an engine message')
 
                 elif isinstance(message, Message.OPENING_BOOK):
-                    logging.debug('announcing OPENING_BOOK')
+                    logger.debug('announcing OPENING_BOOK')
                     self.talk(['okbook.ogg'])
 
                 elif isinstance(message, Message.ENGINE_READY):
-                    logging.debug('announcing ENGINE_READY')
+                    logger.debug('announcing ENGINE_READY')
                     self.talk(['confirm.ogg'], self.BEEPER)
                     self.talk(['okengine.ogg'])
 
                 elif isinstance(message, Message.PLAY_MODE):
-                    logging.debug('announcing PLAY_MODE')
+                    logger.debug('announcing PLAY_MODE')
                     self.play_mode = message.play_mode
                     userplay = 'userblack.ogg' if message.play_mode == PlayMode.USER_BLACK else 'userwhite.ogg'
                     self.talk([userplay])
@@ -723,7 +726,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
                 elif isinstance(message, Message.STARTUP_INFO):
                     self.play_mode = message.info['play_mode']
-                    logging.debug('announcing PICOCHESS')
+                    logger.debug('announcing PICOCHESS')
                     self.talk(['picoChess.ogg'], self.BEEPER)
                     self.talk(['picoChess.ogg'])
                     previous_move = chess.Move.null()
@@ -734,8 +737,8 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                 elif isinstance(message, Message.CLOCK_TIME):
                     self.low_time = message.low_time
                     if self.low_time:
-                        logging.debug('time too low, disable voice - w: %i, b: %i', message.time_white,
-                                      message.time_black)
+                        logger.debug('time too low, disable voice - w: %i, b: %i', message.time_white,
+                                     message.time_black)
 
                 elif isinstance(message, Message.ALTERNATIVE_MOVE):
                     self.play_mode = message.play_mode
@@ -743,42 +746,42 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                     self.talk(['alternative_move.ogg'])
 
                 elif isinstance(message, Message.SYSTEM_SHUTDOWN):
-                    logging.debug('announcing SHUTDOWN')
+                    logger.debug('announcing SHUTDOWN')
                     self.talk(['goodbye.ogg'])
                     self.comment('shutdown')
 
                 elif isinstance(message, Message.SYSTEM_REBOOT):
-                    logging.debug('announcing REBOOT')
+                    logger.debug('announcing REBOOT')
                     self.talk(['pleasewait.ogg'])
                     self.comment('shutdown')
                     time.sleep(3)
 
                 elif isinstance(message, Message.MOVE_RETRY):
-                    logging.debug('announcing MOVE_RETRY')
+                    logger.debug('announcing MOVE_RETRY')
                     self.talk(['retry_move.ogg'])
 
                 elif isinstance(message, Message.MOVE_WRONG):
-                    logging.debug('announcing MOVE_WRONG')
+                    logger.debug('announcing MOVE_WRONG')
                     self.talk(['wrong_move.ogg'])
 
                 elif isinstance(message, Message.ONLINE_LOGIN):
-                    logging.debug('announcing ONLINE_LOGIN')
+                    logger.debug('announcing ONLINE_LOGIN')
                     self.talk(['online_login.ogg'])
 
                 elif isinstance(message, Message.SEEKING):
-                    logging.debug('announcing SEEKING')
+                    logger.debug('announcing SEEKING')
                     self.talk(['seeking.ogg'])
 
                 elif isinstance(message, Message.ONLINE_NAMES):
-                    logging.debug('announcing ONLINE_NAMES')
+                    logger.debug('announcing ONLINE_NAMES')
                     self.talk(['opponent_found.ogg'])
 
                 elif isinstance(message, Message.RESTORE_GAME):
-                    logging.debug('announcing RESTORE_GAME')
+                    logger.debug('announcing RESTORE_GAME')
                     self.talk(['last_game_restored.ogg'])
 
                 elif isinstance(message, Message.ENGINE_SETUP):
-                    logging.debug('announcing ENGINE_SETUP')
+                    logger.debug('announcing ENGINE_SETUP')
                     self.talk(['engine_setup.ogg'])
 
                 elif isinstance(message, Message.ONLINE_FAILED):
@@ -794,7 +797,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                     self.talk(['timelost.ogg'])
 
                 elif isinstance(message, Message.POSITION_FAIL):
-                    logging.debug('molli: talker orig. fen_result = %s', message.fen_result)
+                    logger.debug('molli: talker orig. fen_result = %s', message.fen_result)
                     if last_pos_dir != message.fen_result:
                         last_pos_dir = message.fen_result
                         if 'clear' in message.fen_result:
@@ -864,30 +867,30 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         self.talk(['picotutor_best_move.ogg'])
                         self.talk(self.say_tutor_move(message.game))
                     elif 'PICMATE' in message.eval_str:
-                        logging.debug('molli in picotutortalker: %s', message.eval_str)
+                        logger.debug('molli in picotutortalker: %s', message.eval_str)
                         self.talk(['picotutor_pico_mate.ogg'])
                         list_str = message.eval_str
                         list_mate = list_str.split('_')
-                        logging.debug('molli in picotutortalker: %s', list_mate[0])
-                        logging.debug('molli in picotutortalker: %s', list_mate[1])
+                        logger.debug('molli in picotutortalker: %s', list_mate[0])
+                        logger.debug('molli in picotutortalker: %s', list_mate[1])
 
                         talk_mate = 't_' + list_mate[1] + '.ogg'
-                        logging.debug('talk_mate = %s', talk_mate)
+                        logger.debug('talk_mate = %s', talk_mate)
                         self.talk([talk_mate])
                     elif 'USRMATE' in message.eval_str:
-                        logging.debug('molli in picotutortalker: %s', message.eval_str)
+                        logger.debug('molli in picotutortalker: %s', message.eval_str)
                         self.talk(['picotutor_player_mate.ogg'])
                         list_str = message.eval_str
                         list_mate = list_str.split('_')
-                        logging.debug('molli in picotutortalker: %s', list_mate[0])
-                        logging.debug('molli in picotutortalker: %s', list_mate[1])
+                        logger.debug('molli in picotutortalker: %s', list_mate[0])
+                        logger.debug('molli in picotutortalker: %s', list_mate[1])
 
                         talk_mate = 't_' + list_mate[1] + '.ogg'
-                        logging.debug('talk_mate = %s', talk_mate)
+                        logger.debug('talk_mate = %s', talk_mate)
                         self.talk([talk_mate])
 
                 elif isinstance(message, Message.PGN_GAME_END):  # for pgn replay
-                    logging.debug('announcing PGN GAME END')
+                    logger.debug('announcing PGN GAME END')
                     previous_move = chess.Move.null()
                     self.talk(['pgn_game_end.ogg'])
                     if '1-0' in message.result:
@@ -903,7 +906,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         self.talk(['game_result_unknown.ogg'])
 
                 elif isinstance(message, Message.TIMECONTROL_CHECK):
-                    logging.debug('timecontrol check')
+                    logger.debug('timecontrol check')
                     self.talk(['picotutor_notify.ogg'])
                     if message.player:
                         self.talk(['timecontrol_check_player.ogg'])
@@ -1060,7 +1063,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                 try:
                     sound_file = move_parts[part]
                 except KeyError:
-                    logging.warning('unknown char found in san: [%s : %s]', san_move, part)
+                    logger.warning('unknown char found in san: [%s : %s]', san_move, part)
                     sound_file = ''
                 if sound_file:
                     voice_parts += [sound_file]
@@ -1153,7 +1156,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                 try:
                     sound_file = move_parts[part]
                 except KeyError:
-                    logging.warning('unknown char found in san: [%s : %s]', san_move, part)
+                    logger.warning('unknown char found in san: [%s : %s]', san_move, part)
                     sound_file = ''
                 if sound_file:
                     voice_parts += [sound_file]

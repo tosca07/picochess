@@ -49,6 +49,8 @@ import chesslink.chess_link_protocol as clp
 # `magic-board.md <https://github.com/domschl/python-mchess/blob/master/mchess/magic-board.md>_
 # for details on the Chess Link protocol.
 
+logger = logging.getLogger(__name__)
+
 
 class ChessLink:
     """
@@ -121,22 +123,21 @@ class ChessLink:
                            'Linux': ['chesslink.chess_link_bluepy'],
                            'Windows': ['chesslink.chess_link_usb']}
 
-        self.log = logging.getLogger('ChessLink')
-        self.log.debug('Chess Link starting')
+        logger.debug('Chess Link starting')
         self.WHITE = 0
         self.BLACK = 1
         self.error_condition = False
         self.turn = self.WHITE
         if sys.version_info[0] < 3:
-            self.log.critical('FATAL: You need Python 3.x to run this module.')
+            logger.critical('FATAL: You need Python 3.x to run this module.')
             exit(-1)
 
         if platform.system() not in self.transports:
-            self.log.critical(f'Fatal: {platform.system()} is not a supported platform.')
+            logger.critical(f'Fatal: {platform.system()} is not a supported platform.')
             msg = 'Supported are: '
             for p in self.transports:
                 msg += '{} '.format(p)
-            self.log.debug(msg)
+            logger.debug(msg)
             exit(-1)
 
         self.appque = appque
@@ -163,7 +164,7 @@ class ChessLink:
         try:
             self._read_config()
         except Exception as e:
-            self.log.debug(f'No valid default configuration, starting board-scan: {e}')
+            logger.debug(f'No valid default configuration, starting board-scan: {e}')
         # These repetitions are caused by monolithic arch of bluepy single-threads.
         reps = 0
         # Should be replaced by async refactor at some point.
@@ -173,12 +174,12 @@ class ChessLink:
             transports_blacklist = []
         while True:
             if reps > 0:
-                self.log.warning('Retrying scan and connect after error.')
+                logger.warning('Retrying scan and connect after error.')
             if not self.found_board:
                 self._search_board(transports_blacklist)
 
             if self.mill_config is None or self.trans is None:
-                self.log.error('No transport available, cannot connect.')
+                logger.error('No transport available, cannot connect.')
                 if self.mill_config is None:
                     self.mill_config = {}
                     self.write_configuration()
@@ -205,22 +206,22 @@ class ChessLink:
                 self.mill_config['btle_iface'] = 0
                 self.write_configuration()
             if 'transport' in self.mill_config and 'address' in self.mill_config:
-                self.log.debug(f'Checking default configuration for board via '
-                               f"{self.mill_config['transport']} "
-                               f"at {self.mill_config['address']}")
+                logger.debug(f'Checking default configuration for board via '
+                             f"{self.mill_config['transport']} "
+                             f"at {self.mill_config['address']}")
                 self.orientation = self.mill_config['orientation']
                 trans = self._open_transport(self.mill_config['transport'],
                                              self.mill_config['protocol_debug'])
                 if trans is not None:
                     if trans.test_board(self.mill_config['address']) is not None:
-                        self.log.debug('Default board config used.')
+                        logger.debug('Default board config used.')
                         self.found_board = True
                         self.trans = trans
                     else:
                         if self.mill_config['autodetect'] is False:
-                            self.log.warning('Default board not available, autodetect=False.')
+                            logger.warning('Default board not available, autodetect=False.')
                         else:
-                            self.log.warning('Default board not available, start scan.')
+                            logger.warning('Default board not available, start scan.')
 
     def _search_board(self, transports_blacklist):
         if self.mill_config is None or 'autodetect' not in self.mill_config or \
@@ -234,38 +235,38 @@ class ChessLink:
                     else:
                         tri = importlib.import_module(transport)
                         self.imported_transports[transport] = tri
-                        self.log.debug(f'imported {transport}')
+                        logger.debug(f'imported {transport}')
                     tr = tri.Transport(self.trque)
-                    self.log.debug('created obj')
+                    logger.debug('created obj')
                     if tr.is_init() is True:
-                        self.log.debug(f'Transport {tr.get_name()} loaded.')
+                        logger.debug(f'Transport {tr.get_name()} loaded.')
                         if self.mill_config is not None:
                             btle = self.mill_config['btle_iface']
                         else:
                             btle = 0
                         address = tr.search_board(btle)
                         if address is not None:
-                            self.log.debug(f'Found board on transport {tr.get_name()} at address {address}')
+                            logger.debug(f'Found board on transport {tr.get_name()} at address {address}')
                             self.mill_config = {'transport': tr.get_name(), 'address': address}
                             self.trans = tr
                             self.write_configuration()
                             break
                     else:
-                        self.log.warning(f'Transport {tr.get_name()} failed to initialize')
+                        logger.warning(f'Transport {tr.get_name()} failed to initialize')
                 except Exception as e:
-                    self.log.warning(f'Internal error, import of {transport} failed: {e}')
+                    logger.warning(f'Internal error, import of {transport} failed: {e}')
 
     def _connect(self):
         address = self.mill_config['address']
         transport = self.mill_config['transport']
-        self.log.debug(f'Valid board available on {transport} at {address}')
-        self.log.debug(f'Connecting to Chess Link via {transport} at {address}')
+        logger.debug(f'Valid board available on {transport} at {address}')
+        logger.debug(f'Connecting to Chess Link via {transport} at {address}')
         self.connected = self.trans.open_mt(address)
         if self.connected:
-            self.log.info(f'Connected to Chess Link via {transport} at {address}')
+            logger.info(f'Connected to Chess Link via {transport} at {address}')
         else:
             self.trans.quit()
-            self.log.error(f'Connection to Chess Link via {transport} at {address} FAILED.')
+            logger.error(f'Connection to Chess Link via {transport} at {address} FAILED.')
             self.error_condition = True
 
     def quit(self):
@@ -310,8 +311,8 @@ class ChessLink:
                 json.dump(self.mill_config, f, indent=4)
                 return True
         except Exception as e:
-            self.log.error(f'Failed to save default configuration {self.mill_config} '
-                           f'to chess_link_config.json: {e}')
+            logger.error(f'Failed to save default configuration {self.mill_config} '
+                         f'to chess_link_config.json: {e}')
         return False
 
     def _event_worker_thread(self, que, mutex):
@@ -321,7 +322,7 @@ class ChessLink:
 
         The event worker thread is automatically started during __init__.
         """
-        self.log.debug('Chess Link worker thread started.')
+        logger.debug('Chess Link worker thread started.')
         while self.thread_active:
             if self.trque.empty() is False:
                 msg = self.trque.get()
@@ -335,7 +336,7 @@ class ChessLink:
                     else:
                         state = toks
                         emsg = ''
-                    self.log.info(f'Agent state of {self.name} changed to {state}, {emsg}')
+                    logger.info(f'Agent state of {self.name} changed to {state}, {emsg}')
                     if state == 'offline':
                         self.error_condition = True
                     else:
@@ -358,7 +359,7 @@ class ChessLink:
                                         c = rp[7 - x + y * 8]
                                         i = self.figrep['ascii'].find(c)
                                         if i == -1:
-                                            self.log.warning(f'Invalid char in raw position: {c}')
+                                            logger.warning(f'Invalid char in raw position: {c}')
                                             val_pos = False
                                             continue
                                         else:
@@ -369,17 +370,17 @@ class ChessLink:
                                                 position[7 - y][7 - x] = f
                             else:
                                 val_pos = False
-                                self.log.warning(f'Error in board position, received {len(rp)}')
+                                logger.warning(f'Error in board position, received {len(rp)}')
                                 continue
                         else:
                             val_pos = False
-                            self.log.error(f'Incomplete board position, {msg}')
+                            logger.error(f'Incomplete board position, {msg}')
                         if val_pos is True:
                             fen = self.position_to_fen(position)
                             sfen = self.short_fen(fen)
                             if sfen == "RNBKQBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbkqbnr":
                                 if self.orientation is True:
-                                    self.log.debug('Cable-left board detected.')
+                                    logger.debug('Cable-left board detected.')
                                     self.orientation = False
                                     self.write_configuration()
                                     position_inv = copy.deepcopy(position)
@@ -387,7 +388,7 @@ class ChessLink:
                                         for y in range(8):
                                             position[x][y] = position_inv[7 - x][7 - y]
                                 else:
-                                    self.log.debug('Cable-right board detected.')
+                                    logger.debug('Cable-right board detected.')
                                     self.orientation = True
                                     self.write_configuration()
                                     position_inv = copy.deepcopy(position)
@@ -415,34 +416,34 @@ class ChessLink:
                                 {'cmd': 'raw_board_position', 'fen': fen, 'actor': self.name})
                             self._check_move(position)
                     if msg[0] == 'v':
-                        self.log.debug('got version reply')
+                        logger.debug('got version reply')
                         if len(msg) == 7:
                             version = '{}.{}'.format(
                                 msg[1] + msg[2], msg[3] + msg[4])
                             self.board_version = version
                         else:
-                            self.log.warning(f'Bad length of version-reply: {len(version)}')
+                            logger.warning(f'Bad length of version-reply: {len(version)}')
 
                     if msg[0] == 'l':
-                        self.log.debug('got led-set reply')
+                        logger.debug('got led-set reply')
                     if msg[0] == 'x':
-                        self.log.debug('got led-off reply')
+                        logger.debug('got led-off reply')
                     if msg[0] == 'w':
-                        self.log.debug('got write-register reply')
+                        logger.debug('got write-register reply')
                         if len(msg) == 7:
                             reg_cont = '{}->{}'.format(
                                 msg[1] + msg[2], msg[3] + msg[4])
-                            self.log.debug(f'Register written: {reg_cont}')
+                            logger.debug(f'Register written: {reg_cont}')
                         else:
-                            self.log.warning(f'Invalid length {len(msg)} for write-register reply')
+                            logger.warning(f'Invalid length {len(msg)} for write-register reply')
                     if msg[0] == 'r':
-                        self.log.debug('got read-register reply')
+                        logger.debug('got read-register reply')
                         if len(msg) == 7:
                             reg_cont = '{}->{}'.format(
                                 msg[1] + msg[2], msg[3] + msg[4])
-                            self.log.debug(f'Register content: {reg_cont}')
+                            logger.debug(f'Register content: {reg_cont}')
                         else:
-                            self.log.warning(f'Invalid length {len(msg)} for read-register reply')
+                            logger.warning(f'Invalid length {len(msg)} for read-register reply')
 
             else:
                 time.sleep(0.01)
@@ -502,7 +503,7 @@ class ChessLink:
                     self.show_delta(self.position, eval_position,
                                     freq=0x15, ontime1=0x02, ontime2=0x01)
         else:
-            self.log.warning('Not connected to Chess Link.')
+            logger.warning('Not connected to Chess Link.')
 
     def show_deltas(self, positions, freq):
         """
@@ -533,7 +534,7 @@ class ChessLink:
             self._set_mv_led(dpos, freq)
             time.sleep(0.05)
         else:
-            self.log.warning('Not connected to Chess Link.')
+            logger.warning('Not connected to Chess Link.')
 
     def _set_mv_led(self, pos, freq):
         """
@@ -561,7 +562,7 @@ class ChessLink:
                     cmd = cmd + clp.hex2(leds[y][x])
             self.trans.write_mt(cmd)
         else:
-            self.log.warning('Not connected to Chess Link.')
+            logger.warning('Not connected to Chess Link.')
 
     def show_delta(self, pos1, pos2, freq=0x20, ontime1=0x0f, ontime2=0xf0):
         """
@@ -585,7 +586,7 @@ class ChessLink:
                             dpos[y][x] = 2
             self.set_led(dpos, freq, ontime1, ontime2)
         else:
-            self.log.warning('Not connected to Chess Link.')
+            logger.warning('Not connected to Chess Link.')
 
     def set_led(self, pos, freq, ontime1, ontime2):
         """
@@ -625,7 +626,7 @@ class ChessLink:
 
             self.trans.write_mt(cmd)
         else:
-            self.log.warning('Not connected to Chess Link.')
+            logger.warning('Not connected to Chess Link.')
 
     def set_led_off(self):
         """
@@ -634,7 +635,7 @@ class ChessLink:
         if self.connected is True:
             self.trans.write_mt('X')
         else:
-            self.log.warning('Not connected to Chess Link.')
+            logger.warning('Not connected to Chess Link.')
 
     def get_debounce(self):
         """
@@ -647,7 +648,7 @@ class ChessLink:
             cmd = 'R' + clp.hex2(2)
             self.trans.write_mt(cmd)
         else:
-            self.log.warning('Not connected to Chess Link.')
+            logger.warning('Not connected to Chess Link.')
 
     def set_debounce(self, count):
         """
@@ -659,15 +660,15 @@ class ChessLink:
         if self.connected is True:
             cmd = 'W02'
             if count < 0 or count > 4:
-                self.log.error(f'Invalid debounce count {count}, "\
+                logger.error(f'Invalid debounce count {count}, "\
                                "should be 0: no debounce, 1 .. 4: 1-4  scan times debounce')
             else:
                 # 3: no debounce, 4: 2 scans debounce, -> 7: 4 scans
                 cmd += clp.hex2(count + 3)
                 self.trans.write_mt(cmd)
-                self.log.debug(f'Setting board scan debounce to {count}')
+                logger.debug(f'Setting board scan debounce to {count}')
         else:
-            self.log.warning('Not connected to Chess Link.')
+            logger.warning('Not connected to Chess Link.')
 
     def get_led_brightness_percent(self):
         """
@@ -680,7 +681,7 @@ class ChessLink:
             cmd = 'R' + clp.hex2(4)
             self.trans.write_mt(cmd)
         else:
-            self.log.warning('Not connected to Chess Link.')
+            logger.warning('Not connected to Chess Link.')
 
     def set_led_brightness(self, level=1.0):
         """
@@ -691,15 +692,15 @@ class ChessLink:
         if self.connected is True:
             cmd = 'W04'
             if level < 0.0 or level > 1.0:
-                self.log.error(f'Invalid brightness level {level}, "\
+                logger.error(f'Invalid brightness level {level}, "\
                                "should be between 0(darkest)..1.0(brightest)')
             else:
                 ilevel = int(level * 15)
                 cmd += clp.hex2(ilevel)
                 self.trans.write_mt(cmd)
-                self.log.debug(f'Setting led brightness to {ilevel} (bri={level})')
+                logger.debug(f'Setting led brightness to {ilevel} (bri={level})')
         else:
-            self.log.warning('Not connected to Chess Link.')
+            logger.warning('Not connected to Chess Link.')
 
     def get_scan_time_ms(self):
         """
@@ -713,9 +714,9 @@ class ChessLink:
             if self.connected is True:
                 self.trans.write_mt(cmd)
             else:
-                self.log.warning('Not connected to Chess Link.')
+                logger.warning('Not connected to Chess Link.')
         else:
-            self.log.warning('Not connected to Chess Link.')
+            logger.warning('Not connected to Chess Link.')
 
     # default is scan every 40.96 ms, 24.4 scans per second.
     def set_scan_time_ms(self, scan_ms=41):
@@ -730,8 +731,8 @@ class ChessLink:
         if self.connected is True:
             cmd = 'W01'
             if scan_ms < 2.048 * 15.0 or scan_ms > 255.0 * 2.048:
-                self.log.error(f'Invalid scan_ms {scan_ms}, shouldbe between 30.72(fastest, '
-                               'might not work)..522.24(slowest, about 2 scans per sec))')
+                logger.error(f'Invalid scan_ms {scan_ms}, shouldbe between 30.72(fastest, '
+                             'might not work)..522.24(slowest, about 2 scans per sec))')
             else:
                 iscans = int(scan_ms / 2.048)
                 if iscans < 15:
@@ -740,10 +741,10 @@ class ChessLink:
                     iscans = 255
                 cmd += clp.hex2(iscans)
                 self.trans.write_mt(cmd)
-                self.log.debug(f'Setting scan_ms intervall to {iscans} -> '
-                               '{scan_ms}ms ({1000.0/scan_ms} scans per sec)')
+                logger.debug(f'Setting scan_ms intervall to {iscans} -> '
+                             '{scan_ms}ms ({1000.0/scan_ms} scans per sec)')
         else:
-            self.log.warning('Not connected to Chess Link.')
+            logger.warning('Not connected to Chess Link.')
 
     def short_fen(self, fen):
         """
@@ -757,7 +758,7 @@ class ChessLink:
         """
         i = fen.find(' ')
         if i == -1:
-            self.log.error(f'Invalid fen position <{fen}> in short_fen')
+            logger.error(f'Invalid fen position <{fen}> in short_fen')
             return None
         else:
             return fen[:i]
@@ -784,7 +785,7 @@ class ChessLink:
                         c = self.figrep['ascii'][i]
                         break
                 if c == '?':
-                    self.log.error(f'Internal FEN error, could not translation {c} at {y}{x}')
+                    logger.error(f'Internal FEN error, could not translation {c} at {y}{x}')
                     return ''
                 if c == '.':
                     blanks = blanks + 1
@@ -839,12 +840,12 @@ class ChessLink:
                         ci = self.figrep['int'][i]
                         break
                 if ci == -99:
-                    self.log.error(f'Internal FEN2 error decoding {c} at {y}{x}')
+                    logger.error(f'Internal FEN2 error decoding {c} at {y}{x}')
                     return []
                 position[7 - y][x] = ci
                 x += 1
             if y < 7 and fenp[fi] != '/':
-                self.log.error(f'Illegal fen: missing \'/\' {y}{x}: {fenp[fi]}[{fi}]')
+                logger.error(f'Illegal fen: missing \'/\' {y}{x}: {fenp[fi]}[{fi}]')
                 return []
             fi += 1
         return position
@@ -855,17 +856,17 @@ class ChessLink:
         """
         try:
             tri = importlib.import_module(transport)
-            self.log.debug(f'imported {transport}')
+            logger.debug(f'imported {transport}')
             tr = tri.Transport(self.trque, protocol_debug)
-            self.log.debug('created obj')
+            logger.debug('created obj')
             if tr.is_init() is True:
-                self.log.debug(f'Transport {tr.get_name()} loaded.')
+                logger.debug(f'Transport {tr.get_name()} loaded.')
                 return tr
             else:
-                self.log.warning(f'Transport {tr.get_name()} failed to initialize')
+                logger.warning(f'Transport {tr.get_name()} failed to initialize')
         except Exception as e:
-            self.log.warning(f'Internal error {e}, import of {transport} failed, '
-                             'transport not available.')
+            logger.warning(f'Internal error {e}, import of {transport} failed, '
+                           'transport not available.')
         return None
 
     def reset(self):
@@ -874,9 +875,9 @@ class ChessLink:
         """
         if self.connected is True:
             self.trans.write_mt('T')
-            self.log.warning('Chess Link reset initiated, will take 3 secs.')
+            logger.warning('Chess Link reset initiated, will take 3 secs.')
         else:
-            self.log.warning('Not connected to Chess Link, can\'t reset.')
+            logger.warning('Not connected to Chess Link, can\'t reset.')
         return '?'
 
     def get_version(self):
@@ -887,7 +888,7 @@ class ChessLink:
         if self.connected is True:
             self.trans.write_mt('V')
         else:
-            self.log.warning('Not connected to Chess Link, can\'t get version.')
+            logger.warning('Not connected to Chess Link, can\'t get version.')
         return '?'
 
     def get_position(self):
@@ -902,7 +903,7 @@ class ChessLink:
         if self.connected is True:
             self.trans.write_mt('S')
         else:
-            self.log.warning('Not connected to Chess Link, can\'t get position.')
+            logger.warning('Not connected to Chess Link, can\'t get position.')
         return '?'
 
     def set_orientation(self, orientation):
@@ -916,7 +917,7 @@ class ChessLink:
         """
         if orientation != self.orientation:
             self.orientation = orientation
-            self.log.info('Swapping board position')
+            logger.info('Swapping board position')
             with self.board_mutex:
                 pos = copy.deepcopy(self.position)
                 for y in range(8):

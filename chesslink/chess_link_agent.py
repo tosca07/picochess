@@ -29,13 +29,15 @@ import time
 import chesslink.chess_link as cl
 
 
+logger = logging.getLogger(__name__)
+
+
 class ChessLinkAgent:
     ''' Hardware board agent implementation '''
 
     def __init__(self, appque):
         self.name = 'ChessLinkAgent'
         self.appque = appque
-        self.log = logging.getLogger(self.name)
         self.cl_brd = cl.ChessLink(self.appque, self.name)
         self.init_position = False
 
@@ -47,26 +49,26 @@ class ChessLinkAgent:
             self.cl_brd.get_scan_time_ms()
             self.cl_brd.get_position()
         else:
-            self.log.warning('Connection to ChessLink failed.')
+            logger.warning('Connection to ChessLink failed.')
             return
 
-        self.log.debug('waiting for board position')
+        logger.debug('waiting for board position')
         start = time.time()
         warned = False
         while self.init_position is False:
             if self.cl_brd.error_condition is True:
-                self.log.info('ChessLink board not available.')
+                logger.info('ChessLink board not available.')
                 return
             if time.time() - start > 2 and warned is False:
                 warned = True
-                self.log.info('Searching for ChessLink board...')
+                logger.info('Searching for ChessLink board...')
             self.init_position = self.cl_brd.position_initialized()
             time.sleep(0.1)
 
         if self.init_position is True:
-            self.log.debug('board position received, init ok.')
+            logger.debug('board position received, init ok.')
         else:
-            self.log.error('no board position received')
+            logger.error('no board position received')
 
     def quit(self):
         self.cl_brd.quit()

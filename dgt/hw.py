@@ -25,6 +25,9 @@ from eboard import EBoard
 from dgt.api import Dgt
 
 
+logger = logging.getLogger(__name__)
+
+
 class DgtHw(DgtIface):
 
     """Handle the DgtXL/3000 communication."""
@@ -37,34 +40,34 @@ class DgtHw(DgtIface):
     def _display_on_dgt_xl(self, text: str, beep=False, left_icons=ClockIcons.NONE, right_icons=ClockIcons.NONE):
         text = text.ljust(6)
         if len(text) > 6:
-            logging.warning('(ser) clock message too long [%s]', text)
-        logging.debug('[%s]', text)
+            logger.warning('(ser) clock message too long [%s]', text)
+        logger.debug('[%s]', text)
         with self.lib_lock:
             res = self.dgtboard.set_text_xl(text, 0x03 if beep else 0x00, left_icons, right_icons)
             if not res:
-                logging.warning('SetText() returned error %i', res)
+                logger.warning('SetText() returned error %i', res)
             return res
 
     def _display_on_dgt_3000(self, text: str, beep=False):
         text = text.ljust(8)
         if len(text) > 8:
-            logging.warning('(ser) clock message too long [%s]', text)
-        logging.debug('[%s]', text)
+            logger.warning('(ser) clock message too long [%s]', text)
+        logger.debug('[%s]', text)
         with self.lib_lock:
             res = self.dgtboard.set_text_3k(bytes(text, 'utf-8'), 0x03 if beep else 0x00)
             if not res:
-                logging.warning('SetText() returned error %i', res)
+                logger.warning('SetText() returned error %i', res)
             return res
 
     def _display_on_rev2_pi(self, text: str, beep=False):
         text = text.ljust(11)
         if len(text) > 11:
-            logging.warning('(rev) clock message too long [%s]', text)
-        logging.debug('[%s]', text)
+            logger.warning('(rev) clock message too long [%s]', text)
+        logger.debug('[%s]', text)
         with self.lib_lock:
             res = self.dgtboard.set_text_rp(bytes(text, 'utf-8'), 0x03 if beep else 0x00)
             if not res:
-                logging.warning('SetText() returned error %i', res)
+                logger.warning('SetText() returned error %i', res)
             return res
 
     def display_text_on_clock(self, message: Dgt.DISPLAY_TEXT):
@@ -75,7 +78,7 @@ class DgtHw(DgtIface):
         else:
             text = message.medium_text if self.enable_dgt3000 else message.small_text
         if self.get_name() not in message.devs:
-            logging.debug('ignored %s - devs: %s', text, message.devs)
+            logger.debug('ignored %s - devs: %s', text, message.devs)
             return True
 
         if is_new_rev2:
@@ -105,7 +108,7 @@ class DgtHw(DgtIface):
             else:
                 text = text[:2].ljust(3) + text[2:].ljust(3)
         if self.get_name() not in message.devs:
-            logging.debug('ignored %s - devs: %s', text, message.devs)
+            logger.debug('ignored %s - devs: %s', text, message.devs)
             return True
         if is_new_rev2:
             return self._display_on_rev2_pi(text, message.beep)
@@ -120,20 +123,20 @@ class DgtHw(DgtIface):
     def display_time_on_clock(self, message):
         """Display the time on the dgtxl/3k/rev2."""
         if self.get_name() not in message.devs:
-            logging.debug('ignored endText - devs: %s', message.devs)
+            logger.debug('ignored endText - devs: %s', message.devs)
             return True
         if self.side_running != ClockSide.NONE or message.force:
             with self.lib_lock:
                 if self.dgtboard.l_time >= 3600 * 10 or self.dgtboard.r_time >= 3600 * 10:
-                    logging.debug('time values not set - abort function')
+                    logger.debug('time values not set - abort function')
                     return False
                 else:
                     if self.dgtboard.in_settime:
-                        logging.debug('(ser) clock still in set mode - abort function')
+                        logger.debug('(ser) clock still in set mode - abort function')
                         return False
                     return self.dgtboard.end_text()
         else:
-            logging.debug('(ser) clock isnt running - no need for endText')
+            logger.debug('(ser) clock isnt running - no need for endText')
             return True
 
     def light_squares_on_revelation(self, uci_move: str):
@@ -154,15 +157,15 @@ class DgtHw(DgtIface):
     def stop_clock(self, devs: set):
         """Stop the dgtxl/3k."""
         if self.get_name() not in devs:
-            logging.debug('ignored stopClock - devs: %s', devs)
+            logger.debug('ignored stopClock - devs: %s', devs)
             return True
-        logging.debug('(%s) clock sending stop time to clock l:%s r:%s', ','.join(devs),
-                      hms_time(self.dgtboard.l_time), hms_time(self.dgtboard.r_time))
+        logger.debug('(%s) clock sending stop time to clock l:%s r:%s', ','.join(devs),
+                     hms_time(self.dgtboard.l_time), hms_time(self.dgtboard.r_time))
         return self._resume_clock(ClockSide.NONE)
 
     def _resume_clock(self, side: ClockSide):
         if self.dgtboard.l_time >= 3600 * 10 or self.dgtboard.r_time >= 3600 * 10:
-            logging.debug('time values not set - abort function')
+            logger.debug('time values not set - abort function')
             return False
 
         l_run = r_run = 0
@@ -175,7 +178,7 @@ class DgtHw(DgtIface):
             r_hms = hms_time(self.dgtboard.r_time)
             res = self.dgtboard.set_and_run(l_run, l_hms[0], l_hms[1], l_hms[2], r_run, r_hms[0], r_hms[1], r_hms[2])
             if not res:
-                logging.warning('finally failed %i', res)
+                logger.warning('finally failed %i', res)
                 return False
             else:
                 self.side_running = side
@@ -187,21 +190,21 @@ class DgtHw(DgtIface):
     def start_clock(self, side: ClockSide, devs: set):
         """Start the dgtxl/3k."""
         if self.get_name() not in devs:
-            logging.debug('ignored startClock - devs: %s', devs)
+            logger.debug('ignored startClock - devs: %s', devs)
             return True
-        logging.debug('(%s) clock sending start time to clock l:%s r:%s', ','.join(devs),
-                      hms_time(self.dgtboard.l_time), hms_time(self.dgtboard.r_time))
+        logger.debug('(%s) clock sending start time to clock l:%s r:%s', ','.join(devs),
+                     hms_time(self.dgtboard.l_time), hms_time(self.dgtboard.r_time))
         return self._resume_clock(side)
 
     def set_clock(self, time_left: int, time_right: int, devs: set):
         """Start the dgtxl/3k."""
         if self.get_name() not in devs:
-            logging.debug('ignored setClock - devs: %s', devs)
+            logger.debug('ignored setClock - devs: %s', devs)
             return True
-        logging.debug('(%s) clock received last time from clock l:%s r:%s [ign]', ','.join(devs),
-                      hms_time(self.dgtboard.l_time), hms_time(self.dgtboard.r_time))
-        logging.debug('(%s) clock sending set time to clock l:%s r:%s [use]', ','.join(devs),
-                      hms_time(time_left), hms_time(time_right))
+        logger.debug('(%s) clock received last time from clock l:%s r:%s [ign]', ','.join(devs),
+                     hms_time(self.dgtboard.l_time), hms_time(self.dgtboard.r_time))
+        logger.debug('(%s) clock sending set time to clock l:%s r:%s [use]', ','.join(devs),
+                     hms_time(time_left), hms_time(time_right))
         self.dgtboard.in_settime = True  # it will return to false as soon SetAndRun ack received
         self.dgtboard.l_time = time_left
         self.dgtboard.r_time = time_right

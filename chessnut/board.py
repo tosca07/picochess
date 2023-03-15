@@ -25,6 +25,9 @@ from chessnut.chessnut_agent import ChessnutAgent
 from chessnut.parser import Battery
 
 
+logger = logging.getLogger(__name__)
+
+
 class ChessnutBoard(EBoard):
 
     def __init__(self):
@@ -32,7 +35,7 @@ class ChessnutBoard(EBoard):
         self.appque = queue.Queue()
 
     def light_squares_on_revelation(self, uci_move: str):
-        logging.debug('turn LEDs on - move: %s', uci_move)
+        logger.debug('turn LEDs on - move: %s', uci_move)
         dpos = [[0 for x in range(8)] for y in range(8)]
         dpos[int(uci_move[1]) - 1][ord(uci_move[0]) - ord('a')] = 1  # from
         dpos[int(uci_move[3]) - 1][ord(uci_move[2]) - ord('a')] = 1  # to
@@ -40,14 +43,14 @@ class ChessnutBoard(EBoard):
             self.agent.set_led(dpos)
 
     def light_square_on_revelation(self, square: str):
-        logging.debug('turn on LEDs - square: %s', square)
+        logger.debug('turn on LEDs - square: %s', square)
         dpos = [[0 for x in range(8)] for y in range(8)]
         dpos[int(square[1]) - 1][ord(square[0]) - ord('a')] = 1
         if self.agent is not None:
             self.agent.set_led(dpos)
 
     def clear_light_on_revelation(self):
-        logging.debug('turn LEDs off')
+        logger.debug('turn LEDs off')
         if self.agent is not None:
             self.agent.set_led_off()
 
@@ -67,7 +70,7 @@ class ChessnutBoard(EBoard):
             time.sleep(1.0)
 
         if result['state'] != 'offline':
-            logging.info('incoming_board ready')
+            logger.info('incoming_board ready')
         self._process_after_connection()
 
     def _process_after_connection(self):
@@ -114,7 +117,7 @@ class ChessnutBoard(EBoard):
                 DisplayMsg.show(Message.BATTERY(percent=int(battery_str)))
 
     def _connect(self):
-        logging.info('connecting to board')
+        logger.info('connecting to board')
         self.agent = ChessnutAgent(self.appque)
 
     def set_text_rp(self, text: bytes, beep: int):

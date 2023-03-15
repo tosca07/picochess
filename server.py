@@ -42,6 +42,9 @@ from eboard import EBoard
 client_ips = []
 
 
+logger = logging.getLogger(__name__)
+
+
 def read_pgn_info():
     info = {}
     try:
@@ -51,7 +54,7 @@ def read_pgn_info():
                 info[name.strip()] = value.strip()
         return info
     except (OSError, KeyError):
-        logging.error("Could not read pgn_game_info file")
+        logger.error("Could not read pgn_game_info file")
         info["PGN_GAME"] = "Game Error"
         info["PGN_PROBLEM"] = ""
         info["PGN_FEN"] = ""
@@ -95,7 +98,7 @@ class ChannelHandler(ServerRequestHandler):
                 move = chess.Move.from_uci(cmd)
                 Observable.fire(Event.KEYBOARD_MOVE(move=move))
         except (ValueError, IndexError):
-            logging.warning("Invalid user input [%s]", raw)
+            logger.warning("Invalid user input [%s]", raw)
 
     def post(self):
         action = self.get_argument("action")
@@ -229,7 +232,7 @@ class WebServer(threading.Thread):
 
     def run(self):
         """Call by threading.Thread start() function."""
-        logging.info("evt_queue ready")
+        logger.info("evt_queue ready")
         IOLoop.instance().start()
 
 
@@ -257,18 +260,18 @@ class WebVr(DgtIface):
         if self.side_running == ClockSide.LEFT:
             time_left = self.l_time - 1
             if time_left <= 0:
-                logging.info("negative/zero time left: %s", time_left)
+                logger.info("negative/zero time left: %s", time_left)
                 self.virtual_timer.stop()
                 time_left = 0
             self.l_time = time_left
         if self.side_running == ClockSide.RIGHT:
             time_right = self.r_time - 1
             if time_right <= 0:
-                logging.info("negative/zero time right: %s", time_right)
+                logger.info("negative/zero time right: %s", time_right)
                 self.virtual_timer.stop()
                 time_right = 0
             self.r_time = time_right
-        logging.info(
+        logger.info(
             "(web) clock new time received l:%s r:%s", hms_time(self.l_time), hms_time(self.r_time)
         )
         DisplayMsg.show(
@@ -280,7 +283,7 @@ class WebVr(DgtIface):
 
     def _display_time(self, time_left: int, time_right: int):
         if time_left >= 3600 * 10 or time_right >= 3600 * 10:
-            logging.debug("time values not set - abort function")
+            logger.debug("time values not set - abort function")
         elif self.clock_show_time:
             l_hms = hms_time(time_left)
             r_hms = hms_time(time_right)
@@ -312,11 +315,11 @@ class WebVr(DgtIface):
             else:
                 text = text[:2].ljust(3) + text[2:].ljust(3)
         if self.get_name() not in message.devs:
-            logging.debug("ignored %s - devs: %s", text, message.devs)
+            logger.debug("ignored %s - devs: %s", text, message.devs)
             return True
         self.clock_show_time = False
         self._create_clock_text()
-        logging.debug("[%s]", text)
+        logger.debug("[%s]", text)
         self.shared["clock_text"] = text
         result = {"event": "Clock", "msg": text}
         EventHandler.write_to_clients(result)
@@ -329,11 +332,11 @@ class WebVr(DgtIface):
         else:
             text = message.large_text
         if self.get_name() not in message.devs:
-            logging.debug("ignored %s - devs: %s", text, message.devs)
+            logger.debug("ignored %s - devs: %s", text, message.devs)
             return True
         self.clock_show_time = False
         self._create_clock_text()
-        logging.debug("[%s]", text)
+        logger.debug("[%s]", text)
         self.shared["clock_text"] = text
         result = {"event": "Clock", "msg": text}
         EventHandler.write_to_clients(result)
@@ -342,19 +345,19 @@ class WebVr(DgtIface):
     def display_time_on_clock(self, message):
         """Display the time on the web clock."""
         if self.get_name() not in message.devs:
-            logging.debug("ignored endText - devs: %s", message.devs)
+            logger.debug("ignored endText - devs: %s", message.devs)
             return True
         if self.side_running != ClockSide.NONE or message.force:
             self.clock_show_time = True
             self._display_time(self.l_time, self.r_time)
         else:
-            logging.debug("(web) clock isnt running - no need for endText")
+            logger.debug("(web) clock isnt running - no need for endText")
         return True
 
     def stop_clock(self, devs: set):
         """Stop the time on the web clock."""
         if self.get_name() not in devs:
-            logging.debug("ignored stopClock - devs: %s", devs)
+            logger.debug("ignored stopClock - devs: %s", devs)
             return True
         if self.virtual_timer:
             self.virtual_timer.stop()
@@ -367,7 +370,7 @@ class WebVr(DgtIface):
     def start_clock(self, side: ClockSide, devs: set):
         """Start the time on the web clock."""
         if self.get_name() not in devs:
-            logging.debug("ignored startClock - devs: %s", devs)
+            logger.debug("ignored startClock - devs: %s", devs)
             return True
         if self.virtual_timer and self.virtual_timer.is_running():
             self.virtual_timer.stop()
@@ -382,7 +385,7 @@ class WebVr(DgtIface):
     def set_clock(self, time_left: int, time_right: int, devs: set):
         """Start the time on the web clock."""
         if self.get_name() not in devs:
-            logging.debug("ignored setClock - devs: %s", devs)
+            logger.debug("ignored setClock - devs: %s", devs)
             return True
         self.l_time = time_left
         self.r_time = time_right
@@ -800,7 +803,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
 
     def run(self):
         """Call by threading.Thread start() function."""
-        logging.info("msg_queue ready")
+        logger.info("msg_queue ready")
         while True:
             # Check if we have something to display
             message = self.msg_queue.get()

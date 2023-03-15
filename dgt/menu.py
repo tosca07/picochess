@@ -73,6 +73,9 @@ from dgt.translate import DgtTranslate
 from uci.engine_provider import EngineProvider
 
 
+logger = logging.getLogger(__name__)
+
+
 class MenuState(object):
 
     """Keep the current DgtMenu State."""
@@ -430,7 +433,7 @@ class DgtMenu(object):
         if retrospeed in self.retrospeed_list:
             self.menu_engine_retrospeed_idx = self.retrospeed_list.index(retrospeed)
 
-        logging.debug(f"calculated retro speed index: {self.menu_engine_retrospeed_idx}")
+        logger.debug(f"calculated retro speed index: {self.menu_engine_retrospeed_idx}")
         self.res_engine_retrospeed_idx = self.menu_engine_retrospeed_idx
 
         self.engine_retrosound = rsound
@@ -1567,7 +1570,7 @@ class DgtMenu(object):
         factor = str(volume_factor * 5 + 50)
         for channel in ("Headphone", "Master", "HDMI"):
             volume_cmd = f"amixer sset {channel} {factor}%"
-            logging.debug(volume_cmd)
+            logger.debug(volume_cmd)
             result = subprocess.run(
                 volume_cmd,
                 stdout=subprocess.PIPE,
@@ -1576,7 +1579,7 @@ class DgtMenu(object):
                 shell=True,
             )
             if result.stdout:
-                logging.debug(result.stdout)
+                logger.debug(result.stdout)
         return
 
     def enter_sys_disp_menu(self):
@@ -2346,7 +2349,7 @@ class DgtMenu(object):
             # do action!
             fen = self.dgt_fen
             if self.flip_board != self.menu_position_reverse:
-                logging.debug(
+                logger.debug(
                     "flipping the board - %s infront now",
                     "B" if self.menu_position_reverse else "W",
                 )
@@ -2362,7 +2365,7 @@ class DgtMenu(object):
                 # self._reset_moves_and_score() done in "START_NEW_GAME"
                 text = self.save_choices()
             else:
-                logging.debug("illegal fen %s", fen)
+                logger.debug("illegal fen %s", fen)
                 DispatchDgt.fire(self.dgttranslate.text("Y10_illegalpos"))
                 text = self.dgttranslate.text("B00_scanboard")
                 text.wait = True
@@ -2461,7 +2464,7 @@ class DgtMenu(object):
         elif self.state == MenuState.ENG_MODERN_NAME_LEVEL:
             # do action!
             eng = EngineProvider.modern_engines[self.menu_modern_engine_index]
-            logging.debug("installed engines in level: %s", str(eng))
+            logger.debug("installed engines in level: %s", str(eng))
 
             level_dict = eng["level_dict"]
             if level_dict:
@@ -4189,7 +4192,7 @@ class DgtMenu(object):
             "B00_updt_version", self.updt_tags[self.updt_version][1], devs=self.updt_devs
         )
         text.rd = ClockIcons.DOT
-        logging.debug("enter update menu dev: %s", dev)
+        logger.debug("enter update menu dev: %s", dev)
         self.updt_top = True
         return text
 
@@ -4213,7 +4216,7 @@ class DgtMenu(object):
 
     def updt_down(self, dev):
         """Change the menu state after DOWN action."""
-        logging.debug("leave update menu dev: %s", dev)
+        logger.debug("leave update menu dev: %s", dev)
         self.updt_top = False
         self.updt_devs.discard(dev)
         self.enter_top_menu()
@@ -4221,7 +4224,7 @@ class DgtMenu(object):
 
     def updt_up(self, dev):
         """Change the menu state after UP action."""
-        logging.debug("leave update menu dev: %s", dev)
+        logger.debug("leave update menu dev: %s", dev)
         self.updt_top = False
         self.updt_devs.discard(dev)
         text = self.enter_top_menu()
