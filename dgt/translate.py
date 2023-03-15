@@ -216,7 +216,7 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Coach no  ', medium_text='Coach  no', small_text='co  no')
         if text_id == 'okpicotutor':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Pico Tutor ok', large_text='PicTutor ok', medium_text='Tutor ok', small_text='tut ok')
+            entxt = Dgt.DISPLAY_TEXT(web_text='PicoTutor', large_text='PicTutor ok', medium_text='Tutor ok', small_text='tut ok')
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
@@ -237,8 +237,8 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Explorer si', medium_text='Expl si ', small_text='ex si ')
         if text_id == 'picoexplorer_off':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Explorer off', medium_text='Expl off', small_text='ex off')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Explorer aus', medium_text='Expl aus', small_text='ex aus')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Explorer off', large_text='Exploreroff', medium_text='Expl off', small_text='ex off')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Explorer aus', large_text='Exploreraus', medium_text='Expl aus', small_text='ex aus')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -967,7 +967,7 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_retrosound_off':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Retro-Sound off', large_text='RetroSnd off', medium_text='RSnd.off', small_text='rsdoff')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Retro-Sound off', large_text='RetrSnd off', medium_text='RSnd.off', small_text='rsdoff')
             detxt = Dgt.DISPLAY_TEXT(web_text='Retro-Sound aus', large_text='RetrSnd aus', medium_text='RSnd aus', small_text='rsaus')
             nltxt = entxt
             frtxt = entxt
