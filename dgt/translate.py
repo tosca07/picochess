@@ -216,7 +216,7 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Coach no  ', medium_text='Coach  no', small_text='co  no')
         if text_id == 'okpicotutor':
-            entxt = Dgt.DISPLAY_TEXT(web_text='PicoTutor', large_text='PicTutor ok', medium_text='Tutor ok', small_text='tut ok')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Pico Tutor ok', large_text='PicTutor ok', medium_text='Tutor ok', small_text='tut ok')
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
