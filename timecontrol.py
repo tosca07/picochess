@@ -146,7 +146,7 @@ class TimeControl(object):
 
     def set_clock_times(self, white_time: int, black_time: int, moves_to_go: int = 0):
         """Set the times send from the clock."""
-        logger.info('set clock times w:%s b:%s', hms_time(white_time), hms_time(black_time))
+        logger.debug('set clock times w:%s b:%s', hms_time(white_time), hms_time(black_time))
         self.clock_time[chess.WHITE] = white_time
         self.clock_time[chess.BLACK] = black_time
         self.moves_to_go = moves_to_go
