@@ -20,9 +20,6 @@ from dgt.util import Beep, BeepLevel
 from dgt.api import Dgt
 
 
-logger = logging.getLogger(__name__)
-
-
 class DgtTranslate(object):
 
     """Handle translations for clock texts or moves."""
@@ -257,8 +254,9 @@ class DgtTranslate(object):
             beep = False
             if 'clear' in msg:
                 entxt = Dgt.DISPLAY_TEXT(web_text=msg, large_text=msg, medium_text=msg, small_text=msg)
+                text_de_w = 'Entferne die Figur von ' + msg[-2:]
                 text_de = 'Leere ' + msg[-2:]
-                detxt = Dgt.DISPLAY_TEXT(web_text=text_de, large_text=text_de, medium_text=text_de, small_text=text_de)
+                detxt = Dgt.DISPLAY_TEXT(web_text=text_de_w, large_text=text_de, medium_text=text_de, small_text=text_de)
                 nltxt = entxt
                 frtxt = entxt
                 estxt = entxt
@@ -444,6 +442,7 @@ class DgtTranslate(object):
                 l_move_g = l_move_g.replace('R', 'T')
                 l_move_g = l_move_g.replace('B', 'L')
                 l_move_g = l_move_g.replace('P', 'B')
+                w_msg_g = 'Tipp: ' + l_move_g
                 l_msg_g = 'Tipp ' + l_move_g
                 l_msg_g = l_msg_g.ljust(11, ' ')
                 m_move_g = msg[4:]
@@ -464,7 +463,7 @@ class DgtTranslate(object):
                 m_msg = m_msg.ljust(8, ' ')
                 m_msg_g = m_msg_g.ljust(8, ' ')
                 entxt = Dgt.DISPLAY_TEXT(web_text=w_msg[:38], large_text=l_msg[:11], medium_text=m_msg[:8], small_text=m_msg[:6])
-                detxt = Dgt.DISPLAY_TEXT(web_text=l_msg_g[:38], large_text=l_msg_g[:11], medium_text=m_msg_g[:8], small_text=m_msg_g[:6])
+                detxt = Dgt.DISPLAY_TEXT(web_text=w_msg_g[:38], large_text=l_msg_g[:11], medium_text=m_msg_g[:8], small_text=m_msg_g[:6])
                 nltxt = entxt
                 frtxt = entxt
                 estxt = entxt
@@ -472,7 +471,7 @@ class DgtTranslate(object):
             elif 'POS' in msg:
                 beep = False
                 l_msg = 'eval ' + msg[3:]
-                w_msg = 'position eval.: ' + msg[3:]
+                w_msg = 'position evaluation: ' + msg[3:]
                 l_msg = l_msg.ljust(11, ' ')
                 w_msg_de = 'Stellungsbewertung: ' + msg[3:]
                 l_msg_de = 'Wert ' + msg[3:]
@@ -2054,7 +2053,7 @@ class DgtTranslate(object):
         if entxt is None:
             beep = self.bl(BeepLevel.YES)
             entxt = Dgt.DISPLAY_TEXT(web_text=text_id, large_text=text_id, medium_text=text_id, small_text=text_id, wait=False, beep=beep, maxtime=0, devs=devs)
-            logger.warning('unknown text_id %s', text_id)
+            logging.warning('unknown text_id %s', text_id)
         if self.language == 'de' and detxt is not None:
             return self.capital_text(detxt)
         if self.language == 'nl' and nltxt is not None:
