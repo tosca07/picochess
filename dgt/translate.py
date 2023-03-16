@@ -643,7 +643,7 @@ class DgtTranslate(object):
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='uci960 si  ', medium_text='960 si  ', small_text='960 si')
         if text_id == 'picochess':
             wait = True
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='PicoChess ' + self.version, medium_text='pico ' + self.version, small_text='pic' + self.version)
+            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text=f'pChess {self.version}', medium_text=f'pico {self.version}', small_text=f'pic{self.version}')
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
