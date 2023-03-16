@@ -271,7 +271,7 @@ class WebVr(DgtIface):
                 self.virtual_timer.stop()
                 time_right = 0
             self.r_time = time_right
-        logger.info(
+        logger.debug(
             "(web) clock new time received l:%s r:%s", hms_time(self.l_time), hms_time(self.r_time)
         )
         DisplayMsg.show(
