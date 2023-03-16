@@ -141,7 +141,7 @@ class DgtPi(DgtIface):
         with self.lib_lock:
             res = self.lib.dgtpicom_set_text(bytes(text, 'utf-8'), 0x03 if beep else 0x00, left_icons.value, right_icons.value)
             if res < 0:
-                logger.warning('SetText() returned error %i, running configure', res)
+                logger.warning('SetText("%s") returned error %i, running configure', text, res)
                 self._run_configure()
                 res = self.lib.dgtpicom_set_text(bytes(text, 'utf-8'), 0x03 if beep else 0x00, left_icons.value, right_icons.value)
         if res < 0:
