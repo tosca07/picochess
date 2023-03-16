@@ -31,6 +31,9 @@ from uci.rating import Rating, Result
 from utilities import write_picochess_ini
 
 
+logger = logging.getLogger(__name__)
+
+
 class WindowsShellType:
     """Shell type supporting Windows for spur."""
     supports_which = True
@@ -80,7 +83,7 @@ class UciShell(object):
     def __init__(self, hostname=None, username=None, key_file=None, password=None, windows=False):
         super(UciShell, self).__init__()
         if hostname:
-            logging.info('connecting to [%s]', hostname)
+            logger.info('connecting to [%s]', hostname)
             shell_params = {
                 "hostname": hostname,
                 "username": username,
@@ -111,21 +114,21 @@ class UciEngine(object):
 
     def __init__(self, file: str, uci_shell: UciShell, mame_par: str):
         super(UciEngine, self).__init__()
-        logging.info('mame parameters=' + mame_par)
+        logger.info('mame parameters=' + mame_par)
         try:
             self.is_adaptive = False
             self.is_mame = False
             self.engine_rating = -1
             self.uci_elo_eval_fn = None  # saved UCI_Elo eval function
             self.shell = uci_shell.get()
-            logging.info('file ' + file)
+            logger.info('file ' + file)
             if '/mame/' in file:
                 self.is_mame = True
                 mfile = [file, mame_par]
-                logging.info(mfile)
+                logger.info(mfile)
             else:
                 mfile = [file]
-                logging.info(mfile)
+                logger.info(mfile)
             if self.shell:
                 self.engine = chess.uci.spur_spawn_engine(self.shell, mfile)
             else:
@@ -137,7 +140,7 @@ class UciEngine(object):
                 self.engine.info_handlers.append(handler)
                 self.engine.uci()
             else:
-                logging.error('engine executable [%s] not found', file)
+                logger.error('engine executable [%s] not found', file)
             self.options: dict = {}
             self.future = None
             self.show_best = True
@@ -145,9 +148,9 @@ class UciEngine(object):
             self.res = None
             self.level_support = False
         except OSError:
-            logging.exception('OS error in starting engine')
+            logger.exception('OS error in starting engine')
         except TypeError:
-            logging.exception('engine executable not found')
+            logger.exception('engine executable not found')
 
     def get_name(self):
         """Get engine name."""
@@ -220,37 +223,37 @@ class UciEngine(object):
 
     def stop(self, show_best=False):
         """Stop engine."""
-        logging.info('show_best old: %s new: %s', self.show_best, show_best)
+        logger.info('show_best old: %s new: %s', self.show_best, show_best)
         self.show_best = show_best
         if self.is_waiting():
-            logging.info('engine already stopped')
+            logger.info('engine already stopped')
             return self.res
         try:
             self.engine.stop()
         except chess.uci.EngineTerminatedException:
-            logging.error('Engine terminated')  # @todo find out, why this can happen!
+            logger.error('Engine terminated')  # @todo find out, why this can happen!
         return self.future.result()
 
     def pause_pgn_audio(self):
         """Stop engine."""
-        logging.info('pause audio old')
+        logger.info('pause audio old')
         try:
             self.engine.uci()
         except chess.uci.EngineTerminatedException:
-            logging.error('Engine terminated')  # @todo find out, why this can happen!
+            logger.error('Engine terminated')  # @todo find out, why this can happen!
 
     def go(self, time_dict: dict):
         """Go engine."""
         self.show_best = True
         time_dict['async_callback'] = self.callback
-        logging.debug('molli: timedict: %s', str(time_dict))
+        logger.debug('molli: timedict: %s', str(time_dict))
         # Observable.fire(Event.START_SEARCH())
         self.future = self.engine.go(**time_dict)
         return self.future
 
     def go_emu(self):
         """Go engine."""
-        logging.debug('molli: go_emu')
+        logger.debug('molli: go_emu')
         self.future = self.engine.go(async_callback=self.callback)
 
     def ponder(self):
@@ -273,7 +276,7 @@ class UciEngine(object):
 
     def hit(self):
         """Send a ponder hit."""
-        logging.info('show_best: %s', self.show_best)
+        logger.info('show_best: %s', self.show_best)
         self.engine.ponderhit()
         self.show_best = True
 
@@ -282,28 +285,28 @@ class UciEngine(object):
         try:
             self.res = command.result()
         except chess.uci.EngineTerminatedException:
-            logging.error('Engine terminated')  # @todo find out, why this can happen!
+            logger.error('Engine terminated')  # @todo find out, why this can happen!
             self.show_best = False
-        logging.info('res: %s', self.res)
+        logger.info('res: %s', self.res)
         # Observable.fire(Event.STOP_SEARCH())
         if self.show_best and self.res:
             Observable.fire(Event.BEST_MOVE(move=self.res.bestmove, ponder=self.res.ponder, inbook=False))
         else:
-            logging.info('event best_move not fired')
+            logger.info('event best_move not fired')
 
     def callback3(self, command):
         """Callback function."""
         try:
             self.res = command.result()
         except chess.uci.EngineTerminatedException:
-            logging.error('Engine terminated')  # @todo find out, why this can happen!
+            logger.error('Engine terminated')  # @todo find out, why this can happen!
             self.show_best = False
-        logging.info('res: %s', self.res)
+        logger.info('res: %s', self.res)
         # Observable.fire(Event.STOP_SEARCH())
         if self.show_best and self.res:
             Observable.fire(Event.BEST_MOVE(move=self.res.bestmove, ponder=self.res.ponder, inbook=False))
         else:
-            logging.info('event best_move not fired')
+            logger.info('event best_move not fired')
 
     def is_thinking(self):
         """Engine thinking."""
@@ -347,11 +350,11 @@ class UciEngine(object):
 
         self.options = options.copy()
         self._engine_rating(rating)
-        logging.debug('setting engine with options %s', self.options)
+        logger.debug('setting engine with options %s', self.options)
         self.send()
 
-        logging.debug('Loaded engine [%s]', self.get_name())
-        logging.debug('Supported options [%s]', self.get_options())
+        logger.debug('Loaded engine [%s]', self.get_name())
+        logger.debug('Supported options [%s]', self.get_options())
 
     def _engine_rating(self, rating: Optional[Rating] = None):
         """
@@ -375,7 +378,7 @@ class UciEngine(object):
                         del self.options['UCI_Elo']
                 except Exception as e:  # noqa - catch all exceptions for eval()
                     print(f'invalid option set for UCI_Elo={uci_elo_with_rating}, exception={e}')
-                    logging.error(f'invalid option set for UCI_Elo={uci_elo_with_rating}, exception={e}')
+                    logger.error(f'invalid option set for UCI_Elo={uci_elo_with_rating}, exception={e}')
                     del self.options['UCI_Elo']
             else:
                 del self.options['UCI_Elo']

@@ -38,6 +38,9 @@ import logging
 protocol_replies = {'v': 7, 's': 67, 'l': 3, 'x': 3, 'w': 7, 'r': 7}
 
 
+logger = logging.getLogger(__name__)
+
+
 def add_odd_par(b):
     """
     The chess link protocol is 7-Bit ASCII. This adds an odd-parity-bit to an ASCII char
@@ -99,12 +102,12 @@ def check_block_crc(msg):
         for b in msg[:-2]:
             gpar = gpar ^ ord(b)
         if msg[-2] + msg[-1] != hex2(gpar):
-            logging.warning(f'CRC error rep={msg} CRCs: {ord(msg[-2])}!={hex2(gpar)}')
+            logger.warning(f'CRC error rep={msg} CRCs: {ord(msg[-2])}!={hex2(gpar)}')
             return False
         else:
             return True
     else:
-        logging.warning(f'Message {msg} too short for CRC check')
+        logger.warning(f'Message {msg} too short for CRC check')
         return False
 
 

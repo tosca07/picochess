@@ -31,6 +31,9 @@ from certabo.sentio import Sentio
 from certabo.usb_transport import Transport
 
 
+logger = logging.getLogger(__name__)
+
+
 class Protocol(ParserCallback, CalibrationCallback):
     """
     This implements the 'Certabo' protocol for Certabo e-boards.
@@ -49,8 +52,7 @@ class Protocol(ParserCallback, CalibrationCallback):
         super().__init__()
         self.piece_recognition = False
         self.name = name
-        self.log = logging.getLogger('Certabo')
-        self.log.debug('Certabo starting')
+        logger.debug('Certabo starting')
         self.error_condition = False
         self.appque = appque
         self.board_mutex = threading.Lock()
@@ -76,7 +78,7 @@ class Protocol(ParserCallback, CalibrationCallback):
         try:
             self._read_config()
         except Exception as e:
-            self.log.debug(f'No valid default configuration, starting board-scan: {e}')
+            logger.debug(f'No valid default configuration, starting board-scan: {e}')
 
         self.parser = CertaboBoardMessageParser(self, self.low_gain)
 
@@ -85,7 +87,7 @@ class Protocol(ParserCallback, CalibrationCallback):
                 self._search_board()
 
             if self.config is None or self.trans is None:
-                self.log.error('Cannot connect.')
+                logger.error('Cannot connect.')
                 if self.config is None:
                     self.config = {'low_gain': self.low_gain}
                     self.write_configuration()
@@ -103,7 +105,7 @@ class Protocol(ParserCallback, CalibrationCallback):
             self.config = json.load(f)
             self.low_gain = self.config.get('low_gain', True)
             if 'address' in self.config:
-                self.log.debug(f"Checking default configuration for board at {self.config['address']}")
+                logger.debug(f"Checking default configuration for board at {self.config['address']}")
                 trans = self._open_transport()
                 if trans is not None:
                     self.device_in_config = True
@@ -111,31 +113,31 @@ class Protocol(ParserCallback, CalibrationCallback):
 
     def _search_board(self):
         tr = Transport(self.trque)
-        self.log.debug('created obj')
+        logger.debug('created obj')
         if tr.is_init():
-            self.log.debug('Transport loaded.')
+            logger.debug('Transport loaded.')
             address = tr.search_board()
             if address is not None:
-                self.log.debug(f'Found board at address {address}')
+                logger.debug(f'Found board at address {address}')
                 self.config = {'address': address, 'low_gain': self.low_gain}
                 self.trans = tr
                 self.write_configuration()
         else:
-            self.log.warning('Failed to initialize')
+            logger.warning('Failed to initialize')
 
     def _connect(self):
         address = self.config['address']
-        self.log.debug(f'Valid board available at {address}')
-        self.log.debug(f'Connecting to Certabo at {address}')
+        logger.debug(f'Valid board available at {address}')
+        logger.debug(f'Connecting to Certabo at {address}')
         self.connected = self.trans.open_mt(address)
         if self.connected:
-            self.log.info(f'Connected to Certabo at {address}')
+            logger.info(f'Connected to Certabo at {address}')
             self.led_control = CertaboLedControl(self.trans)
             self.sentio = Sentio(self, self.led_control)
             self.error_condition = False
         else:
             self.trans.quit()
-            self.log.error(f'Connection to Certabo at {address} FAILED.')
+            logger.error(f'Connection to Certabo at {address} FAILED.')
             self.error_condition = True
 
     def quit(self):
@@ -166,14 +168,14 @@ class Protocol(ParserCallback, CalibrationCallback):
                 json.dump(self.config, f, indent=4)
                 return True
         except Exception as e:
-            self.log.error(f'Failed to save default configuration {self.config} to certabo_config.json: {e}')
+            logger.error(f'Failed to save default configuration {self.config} to certabo_config.json: {e}')
         return False
 
     def _event_worker_thread(self):
         """
         The event worker thread is automatically started during __init__.
         """
-        self.log.debug('Certabo worker thread started.')
+        logger.debug('Certabo worker thread started.')
         while self.thread_active:
             if not self.trque.empty():
                 msg = self.trque.get()
@@ -187,7 +189,7 @@ class Protocol(ParserCallback, CalibrationCallback):
                     else:
                         state = toks
                         emsg = ''
-                    self.log.info(f'Agent state of {self.name} changed to {state}, {emsg}')
+                    logger.info(f'Agent state of {self.name} changed to {state}, {emsg}')
                     if state == 'offline':
                         self.error_condition = True
                     else:
@@ -256,7 +258,7 @@ class Protocol(ParserCallback, CalibrationCallback):
                 self.led_control.write_led_command(command.set_leds_calibrate())
 
     def calibration_complete(self, stones: typing.Dict[CertaboPiece, typing.Optional[str]]):
-        self.log.info('Certabo calibration complete')
+        logger.info('Certabo calibration complete')
         self.parser.update_stones(stones)
         self.calibrated = True
         self.set_led_off()
@@ -273,5 +275,5 @@ class Protocol(ParserCallback, CalibrationCallback):
         if tr.is_init():
             return tr
         else:
-            self.log.warning('USB transport failed to initialize')
+            logger.warning('USB transport failed to initialize')
         return None

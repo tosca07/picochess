@@ -27,6 +27,9 @@ from eboard import EBoard
 from dgt.board import Rev2Info
 
 
+logger = logging.getLogger(__name__)
+
+
 class DgtIface(DisplayDgt, Thread):
 
     """An Interface class for DgtHw, DgtPi, DgtVr."""
@@ -120,8 +123,8 @@ class DgtIface(DisplayDgt, Thread):
             else:
                 move_text = bit_board.san(message.move)
         else:
-            logging.warning('[%s] illegal move %s found - uci960: %s fen: %s', self.get_name(), message.move,
-                            message.uci960, message.fen)
+            logger.warning('[%s] illegal move %s found - uci960: %s fen: %s', self.get_name(), message.move,
+                           message.uci960, message.fen)
             move_text = 'er{}' if is_xl else 'err {}'
             move_text = move_text.format(message.move.uci()[:4])
 
@@ -137,7 +140,7 @@ class DgtIface(DisplayDgt, Thread):
         if self.get_name() not in message.devs:
             return True
 
-        logging.debug('(%s) handle DgtApi: %s started', ','.join(message.devs), message)
+        logger.debug('(%s) handle DgtApi: %s started', ','.join(message.devs), message)
         self.case_res = True
 
         if False:  # switch-case
@@ -162,10 +165,10 @@ class DgtIface(DisplayDgt, Thread):
             if self.side_running != ClockSide.NONE:
                 self.case_res = self.stop_clock(message.devs)
             else:
-                logging.debug('(%s) clock is already stopped', ','.join(message.devs))
+                logger.debug('(%s) clock is already stopped', ','.join(message.devs))
         elif isinstance(message, Dgt.CLOCK_VERSION):
             if 'i2c' in message.devs:
-                logging.debug('(i2c) clock found => starting the board connection')
+                logger.debug('(i2c) clock found => starting the board connection')
                 self.dgtboard.run()  # finally start the serial board connection - see picochess.py
             else:
                 if message.main == 2:
@@ -174,17 +177,17 @@ class DgtIface(DisplayDgt, Thread):
             self.promotion_done(message.uci_move)
         else:  # switch-default
             pass
-        logging.debug('(%s) handle DgtApi: %s ended', ','.join(message.devs), message)
+        logger.debug('(%s) handle DgtApi: %s ended', ','.join(message.devs), message)
         return self.case_res
 
     def _create_task(self, msg):
         res = self._process_message(msg)
         if not res:
-            logging.warning('DgtApi command %s failed result: %s', msg, res)
+            logger.warning('DgtApi command %s failed result: %s', msg, res)
 
     def run(self):
         """Call by threading.Thread start() function."""
-        logging.info('[%s] dgt_queue ready', self.get_name())
+        logger.info('[%s] dgt_queue ready', self.get_name())
         while True:
             # Check if we have something to display
             try:

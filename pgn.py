@@ -39,6 +39,9 @@ from dgt.api import Dgt, Message
 from dgt.util import GameResult, PlayMode, Mode, TimeMode
 
 
+logger = logging.getLogger(__name__)
+
+
 # molli: support for player names from online game
 class ModeInfo:
     online_mode = False
@@ -80,7 +83,7 @@ class ModeInfo:
 
     @classmethod
     def set_game_ending(cls, result):
-        logging.debug('Save game result %s', result)
+        logger.debug('Save game result %s', result)
         ModeInfo.end_result = result
 
     @classmethod
@@ -164,16 +167,16 @@ class Emailer(object):
 
     def _use_smtp(self, subject, body, path):
         # if self.smtp_server is not provided than don't try to send email via smtp service
-        logging.debug('SMTP Mail delivery: Started')
+        logger.debug('SMTP Mail delivery: Started')
         # change to smtp based mail delivery
         # depending on encrypted mail delivery, we need to import the right lib
         if self.smtp_encryption:
             # lib with ssl encryption
-            logging.debug('SMTP Mail delivery: Import SSL SMTP Lib')
+            logger.debug('SMTP Mail delivery: Import SSL SMTP Lib')
             from smtplib import SMTP_SSL as SMTP
         else:
             # lib without encryption (SMTP-port 21)
-            logging.debug('SMTP Mail delivery: Import standard SMTP Lib (no SSL encryption)')
+            logger.debug('SMTP Mail delivery: Import standard SMTP Lib (no SSL encryption)')
             from smtplib import SMTP
         conn = False
         try:
@@ -204,23 +207,23 @@ class Emailer(object):
             msg.add_header('Content-Disposition', 'attachment', filename=os.path.basename(path))
             outer.attach(msg)
 
-            logging.debug('SMTP Mail delivery: trying to connect to ' + self.smtp_server)
+            logger.debug('SMTP Mail delivery: trying to connect to ' + self.smtp_server)
             conn = SMTP(self.smtp_server)  # contact smtp server
             conn.set_debuglevel(False)  # no debug info from smtp lib
             if self.smtp_user is not None and self.smtp_pass is not None:
-                logging.debug('SMTP Mail delivery: trying to log to SMTP Server')
+                logger.debug('SMTP Mail delivery: trying to log to SMTP Server')
                 conn.login(self.smtp_user, self.smtp_pass)  # login at smtp server
 
-            logging.debug('SMTP Mail delivery: trying to send email')
+            logger.debug('SMTP Mail delivery: trying to send email')
             conn.sendmail(self.smtp_from, self.email, outer.as_string())
-            logging.debug('SMTP Mail delivery: successfuly delivered message to SMTP server')
+            logger.debug('SMTP Mail delivery: successfuly delivered message to SMTP server')
         except Exception as smtp_exc:
-            logging.error('SMTP Mail delivery: Failed')
-            logging.error('SMTP Mail delivery: ' + str(smtp_exc))
+            logger.error('SMTP Mail delivery: Failed')
+            logger.error('SMTP Mail delivery: ' + str(smtp_exc))
         finally:
             if conn:
                 conn.close()
-            logging.debug('SMTP Mail delivery: Ended')
+            logger.debug('SMTP Mail delivery: Ended')
 
     def _use_mailgun(self, subject, body):
         out = requests.post('https://api.mailgun.net/v3/picochess.org/messages',
@@ -229,7 +232,7 @@ class Emailer(object):
                                   'to': self.email,
                                   'subject': subject,
                                   'text': body})
-        logging.debug(out)
+        logger.debug(out)
 
     def set_smtp(self, sserver=None, sencryption=None, suser=None, spass=None, sfrom=None):
         """Store information for SMTP based mail delivery."""
@@ -275,7 +278,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         self.startime = datetime.datetime.now().strftime('%H:%M:%S')
 
     def _save_and_email_pgn(self, message):
-        logging.debug('Saving game to [%s]', self.file_name)
+        logger.debug('Saving game to [%s]', self.file_name)
         pgn_game = chess.pgn.Game().from_board(message.game)
 
         # Headers
@@ -324,7 +327,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
                 user_name.replace('\n', '')
                 user_name = str(user_name)
 
-            logging.debug('Play Mode %s', message.play_mode)
+            logger.debug('Play Mode %s', message.play_mode)
             if message.play_mode == PlayMode.USER_WHITE:
                 pgn_game.headers['White'] = user_name
                 pgn_game.headers['Black'] = engine_name
@@ -415,7 +418,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
 
     def _save_pgn(self, message):
         l_file_name = 'games' + os.sep + message.pgn_filename
-        logging.debug('Saving PGN game to [%s]', l_file_name)
+        logger.debug('Saving PGN game to [%s]', l_file_name)
         pgn_game = chess.pgn.Game().from_board(message.game)
 
         # Headers
@@ -428,7 +431,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         pgn_game.headers['Date'] = datetime.date.today().strftime('%Y.%m.%d')
         pgn_game.headers['Time'] = self.startime
 
-        logging.debug('molli: pgn save result = %s', ModeInfo.get_game_ending())
+        logger.debug('molli: pgn save result = %s', ModeInfo.get_game_ending())
         if pgn_game.headers['Result'] == '*':
             pgn_game.headers['Result'] = ModeInfo.get_game_ending()
 
@@ -446,8 +449,8 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         if ModeInfo.get_online_mode():
             help1 = ModeInfo.get_online_opponent()
             help2 = '(Opp.)'
-            logging.debug('Opp name %s', ModeInfo.get_online_opponent())
-            logging.debug('Own User %s', ModeInfo.get_online_opponent())
+            logger.debug('Opp name %s', ModeInfo.get_online_opponent())
+            logger.debug('Own User %s', ModeInfo.get_online_opponent())
             if help1[:5] == 'Guest':
                 engine_name = 'Opp.(Guest)'
             else:
@@ -516,7 +519,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         l_rem_time_w = str(int(l_int_time[chess.WHITE]))
         l_rem_time_b = str(int(l_int_time[chess.BLACK]))
 
-        logging.debug('molli: save pgn Time %s', str(l_timecontrol))
+        logger.debug('molli: save pgn Time %s', str(l_timecontrol))
 
         pgn_game.headers['PicoTimeControl'] = l_timecontrol
         pgn_game.headers['PicoRemTimeW'] = l_rem_time_w
@@ -539,7 +542,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         pgn_game.accept(exporter)
         file.flush()
         file.close()
-        logging.debug('molli: save pgn finished')
+        logger.debug('molli: save pgn finished')
 
     def _process_message(self, message):
         if False:  # switch-case
@@ -623,13 +626,13 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             self.startime = datetime.datetime.now().strftime('%H:%M:%S')
 
         elif isinstance(message, Message.SAVE_GAME):
-            logging.debug('molli: save game message pgn dispatch')
+            logger.debug('molli: save game message pgn dispatch')
             if message.game.move_stack:
                 self._save_pgn(message)
 
     def run(self):
         """Call by threading.Thread start() function."""
-        logging.info('msg_queue ready')
+        logger.info('msg_queue ready')
         while True:
             # Check if we have something to display
             try:

@@ -48,6 +48,9 @@ msgdisplay_devices = []
 dgtdisplay_devices = []
 
 
+logger = logging.getLogger(__name__)
+
+
 class Observable(object):
 
     """Input devices are observable."""
@@ -134,7 +137,7 @@ class RepeatedTimer(object):
             self._timer.start()
             self.timer_running = True
         else:
-            logging.info('repeated timer already running - strange!')
+            logger.info('repeated timer already running - strange!')
 
     def stop(self):
         """Stop the RepeatedTimer."""
@@ -142,7 +145,7 @@ class RepeatedTimer(object):
             self._timer.cancel()
             self.timer_running = False
         else:
-            logging.info('repeated timer already stopped - strange!')
+            logger.info('repeated timer already stopped - strange!')
 
 
 def get_opening_books():
@@ -169,7 +172,7 @@ def get_opening_books():
 def hms_time(seconds: int):
     """Transfer a seconds integer to hours,mins,secs."""
     if seconds < 0:
-        logging.warning('negative time %i', seconds)
+        logger.warning('negative time %i', seconds)
         return 0, 0, 0
     mins, secs = divmod(seconds, 60)
     hours, mins = divmod(mins, 60)
@@ -185,7 +188,7 @@ def do_popen(command, log=True, force_en_env=False):
     else:
         stdout, stderr = Popen(command, stdout=PIPE, stderr=PIPE).communicate()
     if log:
-        logging.debug([output.decode(encoding='UTF-8') for output in [stdout, stderr]])
+        logger.debug([output.decode(encoding='UTF-8') for output in [stdout, stderr]])
     return stdout.decode(encoding='UTF-8')
 
 
@@ -221,7 +224,7 @@ def update_picochess(dgtpi: bool, auto_reboot: bool, dgttranslate: DgtTranslate)
         if 'up-to-date' not in output and 'Your branch is ahead of' not in output:
             DispatchDgt.fire(dgttranslate.text('Y25_update'))
             # Update
-            logging.debug('updating picochess')
+            logger.debug('updating picochess')
             do_popen([git, 'pull', 'origin', branch])
             do_popen(['pip3', 'install', '-r', 'requirements.txt'])
             if auto_reboot:
@@ -229,14 +232,14 @@ def update_picochess(dgtpi: bool, auto_reboot: bool, dgttranslate: DgtTranslate)
             else:
                 time.sleep(2)  # give time to display the "update" message
         else:
-            logging.debug('no update available')
+            logger.debug('no update available')
     else:
-        logging.warning('wrong branch %s', branch)
+        logger.warning('wrong branch %s', branch)
 
 
 def shutdown(dgtpi: bool, dev: str):
     """Shutdown picochess."""
-    logging.debug('shutting down system requested by (%s)', dev)
+    logger.debug('shutting down system requested by (%s)', dev)
     time.sleep(5)  # give some time to send out the pgn file or speak the event
     if platform.system() == 'Windows':
         os.system('shutdown /s')
@@ -251,7 +254,7 @@ def shutdown(dgtpi: bool, dev: str):
 
 def reboot(dgtpi: bool, dev: str):
     """Reboot picochess."""
-    logging.debug('rebooting system requested by (%s)', dev)
+    logger.debug('rebooting system requested by (%s)', dev)
     time.sleep(5)  # give some time to send out the pgn file or speak the event
     if platform.system() == 'Windows':
         os.system('shutdown /r')
@@ -302,7 +305,7 @@ def write_picochess_ini(key: str, value):
         config[key] = value
         config.write()
     except (ConfigObjError, DuplicateError) as conf_exc:
-        logging.exception(conf_exc)
+        logger.exception(conf_exc)
 
 
 def get_engine_mame_par(engine_rspeed: float, engine_rsound=False) -> str:

@@ -22,6 +22,9 @@ import os
 from dgt.api import Dgt
 
 
+logger = logging.getLogger(__name__)
+
+
 def read_engine_ini(engine_shell=None, engine_path=None, filename=None):
     l_web_text = ''
     """Read engine.ini and create a library list out of it."""
@@ -34,10 +37,10 @@ def read_engine_ini(engine_shell=None, engine_path=None, filename=None):
             if not engine_path:
                 program_path = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
                 engine_path = program_path + os.sep + 'engines' + os.sep + platform.machine()
-            logging.debug('complete path without shell: %s', str(engine_path + os.sep + filename))
+            logger.debug('complete path without shell: %s', str(engine_path + os.sep + filename))
             config.read(engine_path + os.sep + filename)
         else:
-            logging.debug('complete path: %s', str(engine_path + os.sep + filename))
+            logger.debug('complete path: %s', str(engine_path + os.sep + filename))
             with engine_shell.open(engine_path + os.sep + filename, 'r') as file:
                 config.read_file(file)
     except FileNotFoundError:

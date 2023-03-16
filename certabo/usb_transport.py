@@ -55,6 +55,9 @@ except ImportError:
     usb_support = False
 
 
+logger = logging.getLogger(__name__)
+
+
 class Transport(object):
     """
     Certabo transport implementation for USB connections.
@@ -67,14 +70,13 @@ class Transport(object):
         """
         :param que: Queue that will receive events from chess board
         """
-        self.log = logging.getLogger('CertaboUSB')
         if usb_support is False:
-            self.log.error('Cannot communicate: PySerial module not installed.')
+            logger.error('Cannot communicate: PySerial module not installed.')
             self.init = False
             return
         self.que = que
         self.init = True
-        self.log.debug('USB init ok')
+        logger.debug('USB init ok')
         self.last_agent_state = None
         self.error_state = False
         self.thread_active = False
@@ -91,31 +93,31 @@ class Transport(object):
 
         :returns: Name of the port with a Certabo board, None on failure
         """
-        self.log.info('Searching for Certabo board...')
+        logger.info('Searching for Certabo board...')
         port = None
         ports = self.usb_port_search()
         if len(ports) > 0:
             if len(ports) > 1:
-                self.log.warning(f'Found {len(ports)} Certabo boards, using first found.')
+                logger.warning(f'Found {len(ports)} Certabo boards, using first found.')
             port = ports[0]
-            self.log.info(f'Autodetected Certabo board at USB port: {port}')
+            logger.info(f'Autodetected Certabo board at USB port: {port}')
         return port
 
     def test_board(self, port):
-        self.log.debug(f'Testing port: {port}')
+        logger.debug(f'Testing port: {port}')
         try:
             self.usb_dev = serial.Serial(port, 38400, timeout=2, write_timeout=1)
             self.usb_dev.dtr = 0
             msg = self.usb_read().decode(encoding='UTF-8', errors='ignore')
             if ':' in msg and '\r\n' in msg:
-                self.log.debug(f'Message found: {msg}')
+                logger.debug(f'Message found: {msg}')
                 self.usb_dev.close()
                 return True
             else:
                 self.usb_dev.close()
                 return False
         except (OSError, serial.SerialException) as e:
-            self.log.error(f'Board detection on {port} resulted in error {e}')
+            logger.error(f'Board detection on {port} resulted in error {e}')
         try:
             self.usb_dev.close()
         except (OSError, serial.SerialException):
@@ -136,13 +138,13 @@ class Transport(object):
 
         :returns: True on success, False on failure.
         """
-        self.log.debug(f'Testing port: {port}')
+        logger.debug(f'Testing port: {port}')
         try:
             s = serial.Serial(port, 38400)
             s.close()
             return True
         except (OSError, serial.SerialException) as e:
-            self.log.debug(f"Can't open port {port}, {e}")
+            logger.debug(f"Can't open port {port}, {e}")
             return False
 
     def usb_port_search(self):
@@ -157,7 +159,7 @@ class Transport(object):
         for port in ports:
             if self.usb_port_check(port):
                 if self.test_board(port):
-                    self.log.debug(f'Found board at: {port}')
+                    logger.debug(f'Found board at: {port}')
                     vports.append(port)
                     break  # only one port necessary
         return vports
@@ -172,7 +174,7 @@ class Transport(object):
             self.usb_dev.write(msg)
             self.usb_dev.flush()
         except Exception as e:
-            self.log.error(f'Failed to write {msg}: {e}')
+            logger.error(f'Failed to write {msg}: {e}')
             self.error_state = True
 
     def usb_read(self):
@@ -182,7 +184,7 @@ class Transport(object):
         try:
             return self.usb_dev.read(1024)
         except (OSError, serial.SerialException) as e:
-            self.log.error(f"Error reading from serial port, {e}")
+            logger.error(f"Error reading from serial port, {e}")
         return bytes()
 
     def agent_state(self, que, state, msg):
@@ -202,10 +204,10 @@ class Transport(object):
             self.usb_dev.dtr = 0
         except Exception as e:
             emsg = f'USB cannot open port {port}, {e}'
-            self.log.error(emsg)
+            logger.error(emsg)
             self.agent_state(self.que, 'offline', emsg)
             return False
-        self.log.debug(f'USB port {port} open')
+        logger.debug(f'USB port {port} open')
         self.thread_active = True
         self.event_thread = threading.Thread(target=self.event_worker_thread, args=(self.que,))
         self.event_thread.setDaemon(True)
@@ -216,7 +218,7 @@ class Transport(object):
         """
         Background thread that sends data received via usb to the queue `que`.
         """
-        self.log.debug('USB worker thread started.')
+        logger.debug('USB worker thread started.')
         self.agent_state(self.que, 'online', f'Connected to {self.uport}')
         self.error_state = False
         posted = False
@@ -226,7 +228,7 @@ class Transport(object):
                 try:
                     self.usb_dev.close()
                 except Exception as e:
-                    self.log.debug(f'Failed to close usb: {e}')
+                    logger.debug(f'Failed to close usb: {e}')
                 try:
                     self.usb_dev = serial.Serial(
                         self.uport, 38400, timeout=0.1)
@@ -238,7 +240,7 @@ class Transport(object):
                 except Exception as e:
                     if posted is False:
                         emsg = f'Failed to reconnect to {self.uport}, {e}'
-                        self.log.warning(emsg)
+                        logger.warning(emsg)
                         self.agent_state(self.que, 'offline', emsg)
                         posted = True
 
@@ -250,6 +252,6 @@ class Transport(object):
             if len(by) > 0:
                 que.put(by)
         except (OSError, serial.SerialException, TypeError) as e:
-            self.log.error(f"Error reading from serial port, {e}")
+            logger.error(f"Error reading from serial port, {e}")
             time.sleep(0.1)
             self.error_state = True

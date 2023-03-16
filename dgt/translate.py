@@ -20,6 +20,9 @@ from dgt.util import Beep, BeepLevel
 from dgt.api import Dgt
 
 
+logger = logging.getLogger(__name__)
+
+
 class DgtTranslate(object):
 
     """Handle translations for clock texts or moves."""
@@ -2051,7 +2054,7 @@ class DgtTranslate(object):
         if entxt is None:
             beep = self.bl(BeepLevel.YES)
             entxt = Dgt.DISPLAY_TEXT(web_text=text_id, large_text=text_id, medium_text=text_id, small_text=text_id, wait=False, beep=beep, maxtime=0, devs=devs)
-            logging.warning('unknown text_id %s', text_id)
+            logger.warning('unknown text_id %s', text_id)
         if self.language == 'de' and detxt is not None:
             return self.capital_text(detxt)
         if self.language == 'nl' and nltxt is not None:
