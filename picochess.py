@@ -168,7 +168,11 @@ class PicochessState:
         self.fen_timer = None
         self.fen_timer_running = False
         self.flag_flexible_ponder = False
+        self.flag_last_engine_emu = False
+        self.flag_last_engine_online = False
+        self.flag_last_engine_pgn = False
         self.flag_picotutor = True
+        self.flag_pgn_game_over = False
         self.flag_premove = False
         self.flag_startup = False
         self.game = None
@@ -581,9 +585,6 @@ def compute_legal_fens(game_copy: chess.Board):
 def main() -> None:
     """Main function."""
     state = PicochessState()
-    flag_last_engine_pgn = False
-    flag_last_engine_emu = False
-    flag_last_engine_online = False
 
     def det_pgn_guess_tctrl(state: PicochessState):
         state.max_guess_white = 0
@@ -2641,7 +2642,6 @@ def main() -> None:
     EngineProvider.init()
 
     Rev2Info.set_dgtpi(args.dgtpi)
-    flag_pgn_game_over = False
     state.flag_flexible_ponder = args.flexible_analysis
     state.flag_premove = args.premove
     own_user = ""
@@ -2902,13 +2902,13 @@ def main() -> None:
     pico_time = args.def_timectrl
 
     if emulation_mode():
-        flag_last_engine_emu = True
+        state.flag_last_engine_emu = True
         time_control_l, time_text_l = state.transfer_time(pico_time.split(), depth=0, node=0)
         state.tc_init_last = time_control_l.get_parameters()
 
     if pgn_mode():
         ModeInfo.set_pgn_mode(mode=True)
-        flag_last_engine_pgn = True
+        state.flag_last_engine_pgn = True
         det_pgn_guess_tctrl(state)
     else:
         ModeInfo.set_pgn_mode(mode=False)
@@ -3263,20 +3263,20 @@ def main() -> None:
                     write_picochess_ini("engine-level", state.engine_level)
 
                 if pgn_mode():
-                    if not flag_last_engine_pgn:
+                    if not state.flag_last_engine_pgn:
                         state.tc_init_last = state.time_control.get_parameters()
 
                     det_pgn_guess_tctrl(state)
 
-                    flag_last_engine_pgn = True
+                    state.flag_last_engine_pgn = True
                 elif emulation_mode():
-                    if not flag_last_engine_emu:
+                    if not state.flag_last_engine_emu:
                         state.tc_init_last = state.time_control.get_parameters()
-                    flag_last_engine_emu = True
+                    state.flag_last_engine_emu = True
                 else:
                     # molli restore last saved timecontrol
                     if (
-                        (flag_last_engine_pgn or flag_last_engine_emu)
+                        (state.flag_last_engine_pgn or state.flag_last_engine_emu)
                         and state.tc_init_last is not None
                         and not online_mode()
                         and not emulation_mode()
@@ -3291,8 +3291,8 @@ def main() -> None:
                         )
                         state.stop_clock()
                         DisplayMsg.show(Message.EXIT_MENU())
-                    flag_last_engine_pgn = False
-                    flag_last_engine_emu = False
+                    state.flag_last_engine_pgn = False
+                    state.flag_last_engine_emu = False
                     state.tc_init_last = None
 
                 state.comment_file = (
@@ -3334,14 +3334,14 @@ def main() -> None:
                 if online_mode():
                     ModeInfo.set_online_mode(mode=True)
                     logger.debug("online game fen: %s", state.game.fen())
-                    if (not flag_last_engine_online) or (
+                    if (not state.flag_last_engine_online) or (
                         state.game.board_fen() == chess.STARTING_BOARD_FEN
                     ):
                         pos960 = 518
                         Observable.fire(Event.NEW_GAME(pos960=pos960))
-                    flag_last_engine_online = True
+                    state.flag_last_engine_online = True
                 else:
-                    flag_last_engine_online = False
+                    state.flag_last_engine_online = False
                     ModeInfo.set_online_mode(mode=False)
 
                 if pgn_mode():
@@ -3394,7 +3394,7 @@ def main() -> None:
                 last_move_no = state.game.fullmove_number
                 state.takeback_active = False
                 state.flag_startup = False
-                flag_pgn_game_over = False
+                state.flag_pgn_game_over = False
                 ModeInfo.set_game_ending(
                     result="*"
                 )  # initialize game result for game saving status
@@ -4103,7 +4103,7 @@ def main() -> None:
                                     # molli: check if last move of pgn game file
                                     stop_search_and_clock()
                                     log_pgn(state)
-                                    if flag_pgn_game_over:
+                                    if state.flag_pgn_game_over:
                                         logger.debug("molli pgn: PGN END")
                                         (
                                             pgn_game_name,
@@ -4422,9 +4422,9 @@ def main() -> None:
                     logger.debug("in brain mode and pondering, ignore score %s", event.score)
                 else:
                     if event.score == 999 or event.score == -999:
-                        flag_pgn_game_over = True  # molli pgn mode: signal that pgn is at end
+                        state.flag_pgn_game_over = True  # molli pgn mode: signal that pgn is at end
                     else:
-                        flag_pgn_game_over = False
+                        state.flag_pgn_game_over = False
 
                     DisplayMsg.show(
                         Message.NEW_SCORE(
@@ -4440,9 +4440,9 @@ def main() -> None:
                     logger.debug("in brain mode and pondering, ignore depth %s", event.depth)
                 else:
                     if event.depth == 999:
-                        flag_pgn_game_over = True
+                        state.flag_pgn_game_over = True
                     else:
-                        flag_pgn_game_over = False
+                        state.flag_pgn_game_over = False
                     DisplayMsg.show(Message.NEW_DEPTH(depth=event.depth))
 
             elif isinstance(event, Event.START_SEARCH):
