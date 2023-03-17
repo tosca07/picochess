@@ -503,13 +503,13 @@ class WebDisplay(DisplayMsg, threading.Thread):
                 if self.shared["game_info"]["play_mode"] == PlayMode.USER_WHITE:
                     pgn_game.headers["White"] = user_name
                     pgn_game.headers["Black"] = engine_name + engine_level + retro_speed_str
-                    pgn_game.headers["WhiteElo"] = user_elo
-                    pgn_game.headers["BlackElo"] = comp_elo
+                    pgn_game.headers["WhiteElo"] = str(user_elo)
+                    pgn_game.headers["BlackElo"] = str(comp_elo)
                 else:
                     pgn_game.headers["White"] = engine_name + engine_level + retro_speed_str
                     pgn_game.headers["Black"] = user_name
-                    pgn_game.headers["WhiteElo"] = comp_elo
-                    pgn_game.headers["BlackElo"] = user_elo
+                    pgn_game.headers["WhiteElo"] = str(comp_elo)
+                    pgn_game.headers["BlackElo"] = str(user_elo)
             if "PGN Replay" in engine_name:
                 info = {}
                 info = read_pgn_info()
@@ -519,8 +519,8 @@ class WebDisplay(DisplayMsg, threading.Thread):
                 pgn_game.headers["Round"] = ""
                 pgn_game.headers["White"] = info["PGN_White"]
                 pgn_game.headers["Black"] = info["PGN_Black"]
-                pgn_game.headers["WhiteElo"] = info["PGN_White_ELO"]
-                pgn_game.headers["BlackElo"] = info["PGN_Black_ELO"]
+                pgn_game.headers["WhiteElo"] = str(info["PGN_White_ELO"])
+                pgn_game.headers["BlackElo"] = str(info["PGN_Black_ELO"])
 
         if "ip_info" in self.shared:
             if "location" in self.shared["ip_info"]:

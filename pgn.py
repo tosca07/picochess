@@ -304,7 +304,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             engine_level = ' ({})'.format(self.level_text.large_text)
 
         if self.level_name.startswith('Elo@'):
-            comp_elo = int(self.level_name[4:])
+            comp_elo = self.level_name[4:]
             engine_level = ''
         else:
             comp_elo = self.engine_elo
@@ -331,24 +331,24 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             if message.play_mode == PlayMode.USER_WHITE:
                 pgn_game.headers['White'] = user_name
                 pgn_game.headers['Black'] = engine_name
-                pgn_game.headers['WhiteElo'] = self.user_elo
-                pgn_game.headers['BlackElo'] = comp_elo
+                pgn_game.headers['WhiteElo'] = str(self.user_elo)
+                pgn_game.headers['BlackElo'] = str(comp_elo)
             if message.play_mode == PlayMode.USER_BLACK:
                 pgn_game.headers['White'] = engine_name
                 pgn_game.headers['Black'] = user_name
-                pgn_game.headers['WhiteElo'] = comp_elo
-                pgn_game.headers['BlackElo'] = self.user_elo
+                pgn_game.headers['WhiteElo'] = str(comp_elo)
+                pgn_game.headers['BlackElo'] = str(self.user_elo)
         else:
             if message.play_mode == PlayMode.USER_WHITE:
                 pgn_game.headers['White'] = self.user_name
                 pgn_game.headers['Black'] = self.engine_name + engine_level
-                pgn_game.headers['WhiteElo'] = self.user_elo
-                pgn_game.headers['BlackElo'] = comp_elo
+                pgn_game.headers['WhiteElo'] = str(self.user_elo)
+                pgn_game.headers['BlackElo'] = str(comp_elo)
             if message.play_mode == PlayMode.USER_BLACK:
                 pgn_game.headers['White'] = self.engine_name + engine_level
                 pgn_game.headers['Black'] = self.user_name
-                pgn_game.headers['WhiteElo'] = comp_elo
-                pgn_game.headers['BlackElo'] = self.user_elo
+                pgn_game.headers['WhiteElo'] = str(comp_elo)
+                pgn_game.headers['BlackElo'] = str(self.user_elo)
 
         # game time related tags for picochess
         l_tc_init = message.tc_init
@@ -441,7 +441,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             engine_level = ' ({})'.format(self.level_text.large_text)
 
         if self.level_name.startswith('Elo@'):
-            comp_elo = int(self.level_name[4:])
+            comp_elo = self.level_name[4:]
             engine_level = ''
         else:
             comp_elo = self.engine_elo
@@ -469,13 +469,13 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             if message.play_mode == PlayMode.USER_WHITE:
                 pgn_game.headers['White'] = user_name
                 pgn_game.headers['Black'] = engine_name
-                pgn_game.headers['WhiteElo'] = self.user_elo
-                pgn_game.headers['BlackElo'] = comp_elo
+                pgn_game.headers['WhiteElo'] = str(self.user_elo)
+                pgn_game.headers['BlackElo'] = str(comp_elo)
             if message.play_mode == PlayMode.USER_BLACK:
                 pgn_game.headers['White'] = engine_name
                 pgn_game.headers['Black'] = user_name
-                pgn_game.headers['WhiteElo'] = comp_elo
-                pgn_game.headers['BlackElo'] = self.user_elo
+                pgn_game.headers['WhiteElo'] = str(comp_elo)
+                pgn_game.headers['BlackElo'] = str(self.user_elo)
         else:
             if message.play_mode == PlayMode.USER_WHITE:
                 pgn_game.headers['White'] = self.user_name
@@ -485,8 +485,8 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             if message.play_mode == PlayMode.USER_BLACK:
                 pgn_game.headers['White'] = self.engine_name + engine_level
                 pgn_game.headers['Black'] = self.user_name
-                pgn_game.headers['WhiteElo'] = comp_elo
-                pgn_game.headers['BlackElo'] = self.user_elo
+                pgn_game.headers['WhiteElo'] = str(comp_elo)
+                pgn_game.headers['BlackElo'] = str(self.user_elo)
 
         # game time related tags for picochess
         l_tc_init = message.tc_init
