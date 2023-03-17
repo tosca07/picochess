@@ -546,7 +546,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
             self.shared["headers"].update(pgn_game.headers)
 
         def _send_headers():
-            EventHandler.write_to_clients({"event": "Header", "headers": self.shared["headers"]})
+            EventHandler.write_to_clients({"event": "Header", "headers": dict(self.shared["headers"])})
 
         def _send_title():
             if "ip_info" in self.shared:
