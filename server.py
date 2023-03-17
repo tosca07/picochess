@@ -186,7 +186,7 @@ class InfoHandler(ServerRequestHandler):
                 self.write(self.shared["ip_info"])
         if action == "get_headers":
             if "headers" in self.shared:
-                self.write(self.shared["headers"])
+                self.write(dict(self.shared["headers"]))
         if action == "get_clock_text":
             if "clock_text" in self.shared:
                 self.write(self.shared["clock_text"])
