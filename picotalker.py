@@ -46,7 +46,6 @@ class PicoTalker(object):
         self.speed_factor = 1.0
         self.set_speed_factor(speed_factor)
         self.sound = None
-        logger.debug('molli voice pfad calc.')
         try:
             (localisation_id, voice_name) = localisation_id_voice.split(':')
             voice_path = 'talker/voices/' + localisation_id + '/' + voice_name
@@ -676,7 +675,6 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         logger.debug('announcing GAME_ENDS/FIVEFOLD_REPETITION')
                         self.talk(['repetition.ogg', 'draw.ogg'])
                         self.comment('draw')
-                    self.talk(['bell.ogg'], self.BEEPER)
 
                 elif isinstance(message, Message.TAKE_BACK):
                     logger.debug('announcing TAKE_BACK')
