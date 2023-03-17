@@ -19,11 +19,6 @@
 # To install sox use:
 # sudo apt install sox
 
-###########################################################################
-# Molli: Added new framework for voice comments based on different events
-#        (to be activated via pico voice menue and additional audio files)
-###########################################################################
-
 from typing import Optional
 import threading
 import logging
@@ -40,9 +35,7 @@ from utilities import DisplayMsg
 from dgt.api import Message
 from dgt.util import GameResult, PlayMode, Voice, EBoard
 
-
 logger = logging.getLogger(__name__)
-
 
 class PicoTalker(object):
 
@@ -133,7 +126,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         self.speed_factor = (90 + (speed_factor % 10) * 5) / 100  # used by sox
         self.play_mode = PlayMode.USER_WHITE
         self.low_time = False
-        self.play_game = None  # saves the game after a computer move - used for "setpieces" to speak the move again
+        self.play_game = None
         self.setpieces_voice = setpieces_voice
         if computer_voice:
             self.pico_voice_active = True
