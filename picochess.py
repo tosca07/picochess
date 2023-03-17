@@ -2726,21 +2726,22 @@ def main() -> None:
     
     sample_beeper = False
     sample_beeper_level = 0
+    
     if args.beep_some_level > 1:
-    # samples: confirmation and button press sounds
-		sample_beeper_level = 2
-	elif args.beep_some_level == 1:
-	# samples: only confirmation sounds
-		sample_beeper_level = 1
-	else:
-		sample_beeper_level = 0
-		
-	if args.beep_config == "sample":
-		# sample sounds according to beeper_level
-		sample_beeper = True
-	else:
-		# samples: no sounds
-		sample_beeper = False
+        # samples: confirmation and button press sounds
+        sample_beeper_level = 2
+    elif args.beep_some_level == 1:
+        # samples: only confirmation sounds
+        sample_beeper_level = 1
+    else:
+        sample_beeper_level = 0
+        
+    if args.beep_config == "sample":
+        # sample sounds according to beeper_level
+        sample_beeper = True
+    else:
+        # samples: no sounds
+        sample_beeper = False
         
     PicoTalkerDisplay(
         args.user_voice,
