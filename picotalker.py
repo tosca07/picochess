@@ -37,6 +37,7 @@ from dgt.util import GameResult, PlayMode, Voice, EBoard
 
 logger = logging.getLogger(__name__)
 
+
 class PicoTalker(object):
 
     """Handle the human speaking of events."""
@@ -119,14 +120,13 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         """
         super(PicoTalkerDisplay, self).__init__()
         self.user_picotalker = None
-        ##self.computer_picotalker: Optional[PicoTalker] = None
         self.computer_picotalker = None
         self.beeper_picotalker = None
         self.eboard_type = eboard_type
-        self.speed_factor = (90 + (speed_factor % 10) * 5) / 100  # used by sox
+        self.speed_factor = (90 + (speed_factor % 10) * 5) / 100
         self.play_mode = PlayMode.USER_WHITE
         self.low_time = False
-        self.play_game = None  # saves the game after a computer move - used for "setpieces" to speak the move again
+        self.play_game = None
         self.setpieces_voice = setpieces_voice
         if computer_voice:
             self.pico_voice_active = True
