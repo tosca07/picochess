@@ -4,7 +4,7 @@ ConfigArgParse==1.5.3
 Flask==2.2.2
 paramiko==2.7.2
 pyserial==3.4
-python-chess==0.22.1
+python-chess==0.23.10
 pyOpenSSL==22.1.0
 requests==2.21.0
 spur==0.3.23

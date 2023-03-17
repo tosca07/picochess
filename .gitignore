@@ -69,3 +69,4 @@ picochess.uci
 
 # Generated files
 .bluetoothctl_history
+games/
