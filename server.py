@@ -738,10 +738,12 @@ class WebDisplay(DisplayMsg, threading.Thread):
             self.shared["last_dgt_move_msg"] = result  # not send => keep it for COMPUTER_MOVE_DONE
 
         elif isinstance(message, Message.COMPUTER_MOVE_DONE):
+            WebDisplay.result_sav = ""
             result = self.shared["last_dgt_move_msg"]
             EventHandler.write_to_clients(result)
 
         elif isinstance(message, Message.USER_MOVE_DONE):
+            WebDisplay.result_sav = ""
             pgn_str = _transfer(message.game)
             fen = _oldstyle_fen(message.game)
             mov = message.move.uci()
@@ -790,6 +792,11 @@ class WebDisplay(DisplayMsg, threading.Thread):
                 WebDisplay.result_sav = "1/2-1/2"
             elif message.result in (GameResult.WIN_WHITE, GameResult.WIN_BLACK):
                 WebDisplay.result_sav = "1-0" if message.result == GameResult.WIN_WHITE else "0-1"
+            elif message.result == GameResult.OUT_OF_TIME:
+                if message.game.turn == chess.WHITE:
+                    WebDisplay.result_sav = "0-1"
+                else:
+                    WebDisplay.result_sav = "1-0"
             else:
                 WebDisplay.result_sav = ""
             if WebDisplay.result_sav != "":

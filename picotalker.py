@@ -53,6 +53,7 @@ class PicoTalker(object):
         self.speed_factor = 1.0
         self.set_speed_factor(speed_factor)
         self.sound = None
+        logger.debug('molli voice pfad calc.')
         try:
             (localisation_id, voice_name) = localisation_id_voice.split(':')
             voice_path = 'talker/voices/' + localisation_id + '/' + voice_name
@@ -62,6 +63,7 @@ class PicoTalker(object):
                 logger.warning('voice path [%s] doesnt exist', voice_path)
         except ValueError:
             logger.warning('not valid voice parameter')
+        logger.debug('voice pfad: [%s]', self.voice_path)
 
     def set_speed_factor(self, speed_factor: float):
         """Set the speed voice factor."""
@@ -115,7 +117,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
     # add voice comment-factor
     def __init__(self, user_voice: str, computer_voice: str, speed_factor: int, setpieces_voice: bool,
-                 comment_factor: int, beep: bool, eboard_type: EBoard):
+                 comment_factor: int, sample_beeper: bool, sample_beeper_level: int, eboard_type: EBoard):
         """
         Initialize a PicoTalkerDisplay with voices for the user and/or computer players.
 
@@ -124,7 +126,8 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         """
         super(PicoTalkerDisplay, self).__init__()
         self.user_picotalker = None
-        self.computer_picotalker: Optional[PicoTalker] = None
+        ##self.computer_picotalker: Optional[PicoTalker] = None
+        self.computer_picotalker = None
         self.beeper_picotalker = None
         self.eboard_type = eboard_type
         self.speed_factor = (90 + (speed_factor % 10) * 5) / 100  # used by sox
@@ -166,7 +169,8 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         self.c_no_pawn = 0
 
         self.c_comment_factor = comment_factor
-        self.beep_on = beep
+        self.sample_beeper = sample_beeper
+        self.sample_beeper_level = sample_beeper_level
 
         if user_voice:
             logger.debug('creating user voice: [%s]', str(user_voice))
@@ -174,7 +178,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         if computer_voice:
             logger.debug('creating computer voice: [%s]', str(computer_voice))
             self.set_computer(PicoTalker(computer_voice, self.speed_factor))
-        if beep:
+        if self.sample_beeper and self.sample_beeper_level > 0:
             beeper_sound = 'en:beeper'
             logger.debug('creating beeper sound: [%s]', str(beeper_sound))
             self.set_beeper(PicoTalker(beeper_sound, self.speed_factor))
@@ -922,7 +926,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                 elif isinstance(message, Message.SHOW_TEXT):
                     if message.text_string == 'NEW_POSITION':
                         self.talk(['set_pieces_sound.ogg'], self.BEEPER)
-                        if not self.beep_on:
+                        if not self.sample_beeper or self.sample_beeper_level == 0:
                             self.talk(['set_pieces_sound.ogg'])
 
                 elif isinstance(message, Message.PICOWATCHER):
@@ -979,9 +983,9 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                     if message.type == Voice.BEEPER:
                         self.set_beeper(PicoTalker(localisation_id_voice, self.speed_factor))
                         if message.speaker == 'mute':
-                            self.beep_on = False
+                            self.sample_beeper = False
                         else:
-                            self.beep_on = True
+                            self.sample_beeper = True
                     self.talk(['confirm.ogg'], self.BEEPER)
                     self.talk(['ok.ogg'])
 
@@ -990,13 +994,14 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                     if self.setpieces_voice:
                         self.talk(['setpieces.ogg'])
                     else:
-                        if not self.beep_on:
+                        if not self.sample_beeper or self.sample_beeper_level == 0:
                             self.talk(['set_pieces_sound.ogg'])
                     if self.play_game:
                         self.talk(self.say_last_move(self.play_game), self.COMPUTER)
 
                 elif isinstance(message, Message.DGT_BUTTON):
-                    self.talk(['button_click.ogg'], self.BEEPER)
+                    if self.sample_beeper and self.sample_beeper_level > 1:
+                        self.talk(['button_click.ogg'], self.BEEPER)
                 else:  # Default
                     pass
             except queue.Empty:

@@ -32,7 +32,7 @@ beep-config = none
 
 ## beep-some-level changes the occurrence of beeps. Minimum value is 0 (no beeps), maximum is 15 (all beeps).
 ## Please keep in mind: values 0 and 15 make no sense (but are allowed) since they are the same as "Never" and "Always"
-## inside the clock menu or via the beep-config option above. (NOTE: this setting has no effect if beep-config is set to 'sample' above.
+## inside the clock menu or via the beep-config option above. (NOTE: if beep-config is set to 'sample' only values 0 (samples off), 1 (move confirmation), and 2 (move+button confirmation) will be sonsidered.
 ## The value you give here, is when using the "Sometimes" menu selection (in System/Sound). Beeps are determined by a
 ## special number which you get by adding the following events together to get the beep-some-level value:
 ##
