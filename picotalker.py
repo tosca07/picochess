@@ -19,7 +19,6 @@
 # To install sox use:
 # sudo apt install sox
 
-from typing import Optional
 import threading
 import logging
 import subprocess
