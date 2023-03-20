@@ -25,13 +25,13 @@ from dgt.api import Dgt
 logger = logging.getLogger(__name__)
 
 
-def read_engine_ini(engine_shell=None, engine_path=None, filename=None):
+def read_engine_ini(engine_shell=None, engine_path=None, filename=None) -> list[dict[str, str]]:
     l_web_text = ''
     """Read engine.ini and create a library list out of it."""
     if filename is None:
         filename = 'engines.ini'
     config = configparser.ConfigParser()
-    config.optionxform = str
+    config.optionxform = str  # type: ignore
     try:
         if engine_shell is None:
             if not engine_path:
@@ -49,11 +49,11 @@ def read_engine_ini(engine_shell=None, engine_path=None, filename=None):
     library = []
     for section in config.sections():
         parser = configparser.ConfigParser()
-        parser.optionxform = str
+        parser.optionxform = str  # type: ignore
 
-        level_dict = {}
+        level_dict: dict[str, dict] = {}
         if engine_shell is None:
-            success = parser.read(engine_path + os.sep + section + '.uci')
+            success = bool(parser.read(engine_path + os.sep + section + '.uci'))
         else:
             try:
                 with engine_shell.open(engine_path + os.sep + section + '.uci', 'r') as file:

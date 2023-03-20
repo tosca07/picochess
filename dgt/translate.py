@@ -1420,9 +1420,9 @@ class DgtTranslate(object):
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Version    ', medium_text='Version ', small_text='vers  ')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Versione   ', medium_text='Versione', small_text='versio')
         if text_id == 'info_ipadr_menu':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='IP adress  ', medium_text='IP adr  ', small_text='ip adr')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='IP Adresse ', medium_text='IP adr  ', small_text='ip adr')
-            nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='IP address ', medium_text='IP adr  ', small_text='ip adr')
+            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='IP address ', medium_text='IP adr  ', small_text='ip adr')
+            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='IP adresse ', medium_text='IP adr  ', small_text='ip adr')
+            nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='IP adres   ', medium_text='IP adr  ', small_text='ip adr')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Adr IP     ', medium_text='Adr IP  ', small_text='adr ip')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='IP dir     ', medium_text='IP dir  ', small_text='ip dir')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ind IP     ', medium_text='ind IP  ', small_text='ind ip')

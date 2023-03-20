@@ -244,10 +244,10 @@ class Emailer(object):
 
     def send(self, subject: str, body: str, path: str):
         """Send the email out."""
-        if self.email:  # check if email adress to send the pgn to is provided
+        if self.email:  # check if email address to send the pgn to is provided
             if self.mailgun_key:  # check if we have mailgun-key available to send the pgn successful
                 self._use_mailgun(subject=subject, body=body)
-            if self.smtp_server:  # check if smtp server adress provided
+            if self.smtp_server:  # check if smtp server address provided
                 self._use_smtp(subject=subject, body=body, path=path)
 
 

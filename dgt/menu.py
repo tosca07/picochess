@@ -2127,13 +2127,10 @@ class DgtMenu(object):
             text = self.enter_game_new_yesno_menu()
 
         elif self.state == MenuState.GAME_GAMETAKEBACK:
-            # do action!
             self._fire_event(Event.TAKE_BACK(take_back="TAKEBACK"))
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_oktakeback"))
 
         elif self.state == MenuState.GAME_GAMENEW_YESNO:
-            # do action!
-            # NEW_GAME EVENT
             if self.menu_game_new:
                 pos960 = 518
                 Observable.fire(Event.NEW_GAME(pos960=pos960))
@@ -2144,13 +2141,7 @@ class DgtMenu(object):
             text = self.enter_game_altmove_onoff_menu()
 
         elif self.state == MenuState.GAME_GAMEALTMOVE_ONOFF:
-            # do action!
-            config = ConfigObj("picochess.ini", default_encoding="utf8")
-            if self.menu_game_altmove:
-                config["alt-move"] = self.menu_game_altmove
-            elif "alt-move" in config:
-                del config["alt-move"]
-            config.write()
+            write_picochess_ini("alt-move", self.menu_game_altmove)
             self.res_game_altmove = self.menu_game_altmove
             event = Event.ALTMOVES(altmoves=self.menu_game_altmove)
             Observable.fire(event)
@@ -2160,42 +2151,28 @@ class DgtMenu(object):
             text = self.enter_game_contlast_onoff_menu()
 
         elif self.state == MenuState.GAME_GAMECONTLAST_ONOFF:
-            # do action!
-            config = ConfigObj("picochess.ini", default_encoding="utf8")
-            if self.menu_game_contlast:
-                config["continue-game"] = self.menu_game_contlast
-            elif "continue-game" in config:
-                del config["continue-game"]
-            config.write()
+            write_picochess_ini("continue-game", self.menu_game_contlast)
             self.res_game_contlast = self.menu_game_contlast
             event = Event.CONTLAST(contlast=self.menu_game_contlast)
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okcontlast"))
 
         elif self.state == MenuState.GAME_GAMEEND_WHITE_WINS:
-            # do action!
-            # raise event
             event = Event.DRAWRESIGN(result=GameResult.WIN_WHITE)
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okgameend"))
 
         elif self.state == MenuState.GAME_GAMEEND_BLACK_WINS:
-            # do action!
-            # raise event
             event = Event.DRAWRESIGN(result=GameResult.WIN_BLACK)
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okgameend"))
 
         elif self.state == MenuState.GAME_GAMEEND_DRAW:
-            # do action!
-            # raise event
             event = Event.DRAWRESIGN(result=GameResult.DRAW)
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okgameend"))
 
         elif self.state == MenuState.GAME_GAMESAVE_GAME1:
-            # do action!
-            # raise SAVE_PGN_EVENT
             event = Event.SAVE_GAME(pgn_filename="picochess_game_1.pgn")
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_oksavegame"))
@@ -2246,13 +2223,7 @@ class DgtMenu(object):
             text = self.enter_picotutor_picowatcher_onoff_menu()
 
         elif self.state == MenuState.PICOTUTOR_PICOWATCHER_ONOFF:
-            # do action!
-            config = ConfigObj("picochess.ini", default_encoding="utf8")
-            if self.menu_picotutor_picowatcher:
-                config["tutor-watcher"] = self.menu_picotutor_picowatcher
-            elif "tutor-watcher" in config:
-                del config["tutor-watcher"]
-            config.write()
+            write_picochess_ini("tutor-watcher", self.menu_picotutor_picowatcher)
             self.res_picotutor_picowatcher = self.menu_picotutor_picowatcher
             event = Event.PICOWATCHER(picowatcher=self.menu_picotutor_picowatcher)
             Observable.fire(event)
@@ -2262,13 +2233,7 @@ class DgtMenu(object):
             text = self.enter_picotutor_picocoach_onoff_menu()
 
         elif self.state == MenuState.PICOTUTOR_PICOCOACH_ONOFF:
-            # do action!
-            config = ConfigObj("picochess.ini", default_encoding="utf8")
-            if self.menu_picotutor_picocoach:
-                config["tutor-coach"] = self.menu_picotutor_picocoach
-            elif "tutor-coach" in config:
-                del config["tutor-coach"]
-            config.write()
+            write_picochess_ini("tutor-coach", self.menu_picotutor_picocoach)
             self.res_picotutor_picocoach = self.menu_picotutor_picocoach
             event = Event.PICOCOACH(picocoach=self.menu_picotutor_picocoach)
             Observable.fire(event)
@@ -2278,13 +2243,7 @@ class DgtMenu(object):
             text = self.enter_picotutor_picoexplorer_onoff_menu()
 
         elif self.state == MenuState.PICOTUTOR_PICOEXPLORER_ONOFF:
-            # do action!
-            config = ConfigObj("picochess.ini", default_encoding="utf8")
-            if self.menu_picotutor_picoexplorer:
-                config["tutor-explorer"] = self.menu_picotutor_picoexplorer
-            elif "tutor-explorer" in config:
-                del config["tutor-explorer"]
-            config.write()
+            write_picochess_ini("tutor-explorer", self.menu_picotutor_picoexplorer)
             self.res_picotutor_picoexplorer = self.menu_picotutor_picoexplorer
             event = Event.PICOEXPLORER(picoexplorer=self.menu_picotutor_picoexplorer)
             Observable.fire(event)
@@ -2299,10 +2258,7 @@ class DgtMenu(object):
                 text = self.enter_picotutor_picocomment_on_all_menu()
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_OFF:
-            # do action!
-            config = ConfigObj("picochess.ini", default_encoding="utf8")
-            config["tutor-comment"] = "off"
-            config.write()
+            write_picochess_ini("tutor-comment", "off")
             self.res_picotutor_picocomment = PicoComment.COM_OFF
             self.menu_picotutor_picocomment = PicoComment.COM_OFF
             event = Event.PICOCOMMENT(picocomment=self.menu_picotutor_picocomment)
@@ -2310,11 +2266,7 @@ class DgtMenu(object):
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicocomment"))
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ENG:
-            # do action!
-            config = ConfigObj("picochess.ini", default_encoding="utf8")
-            config["tutor-comment"] = "single"
-
-            config.write()
+            write_picochess_ini("tutor-comment", "single")
             self.res_picotutor_picocomment = PicoComment.COM_ON_ENG
             self.menu_picotutor_picocomment = PicoComment.COM_ON_ENG
             event = Event.PICOCOMMENT(picocomment=self.menu_picotutor_picocomment)
@@ -2322,11 +2274,7 @@ class DgtMenu(object):
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicocomment"))
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ALL:
-            # do action!
-            config = ConfigObj("picochess.ini", default_encoding="utf8")
-            config["tutor-comment"] = "all"
-
-            config.write()
+            write_picochess_ini("tutor-comment", "all")
             self.menu_picotutor_picocomment = PicoComment.COM_ON_ALL
             self.res_picotutor_picocomment = PicoComment.COM_ON_ALL
             event = Event.PICOCOMMENT(picocomment=self.menu_picotutor_picocomment)
@@ -2346,7 +2294,6 @@ class DgtMenu(object):
             text = self.enter_pos_read_menu()
 
         elif self.state == MenuState.POS_READ:
-            # do action!
             fen = self.dgt_fen
             if self.flip_board != self.menu_position_reverse:
                 logger.debug(
@@ -2388,7 +2335,6 @@ class DgtMenu(object):
             text = self.enter_time_blitz_ctrl_menu()
 
         elif self.state == MenuState.TIME_BLITZ_CTRL:
-            # do action!
             text = self._fire_timectrl(
                 self.tc_blitz_map[list(self.tc_blitz_map)[self.menu_time_blitz]]
             )
@@ -2397,7 +2343,6 @@ class DgtMenu(object):
             text = self.enter_time_fisch_ctrl_menu()
 
         elif self.state == MenuState.TIME_FISCH_CTRL:
-            # do action!
             text = self._fire_timectrl(
                 self.tc_fisch_map[list(self.tc_fisch_map)[self.menu_time_fisch]]
             )
@@ -2406,7 +2351,6 @@ class DgtMenu(object):
             text = self.enter_time_fixed_ctrl_menu()
 
         elif self.state == MenuState.TIME_FIXED_CTRL:
-            # do action!
             text = self._fire_timectrl(
                 self.tc_fixed_map[list(self.tc_fixed_map)[self.menu_time_fixed]]
             )
@@ -2415,28 +2359,24 @@ class DgtMenu(object):
             text = self.enter_time_tourn_ctrl_menu()
 
         elif self.state == MenuState.TIME_TOURN_CTRL:
-            # do action!
             text = self._fire_timectrl(self.tc_tournaments[self.menu_time_tourn])
 
         elif self.state == MenuState.TIME_DEPTH:
             text = self.enter_time_depth_ctrl_menu()
 
         elif self.state == MenuState.TIME_DEPTH_CTRL:
-            # do action!
             text = self._fire_timectrl(self.tc_depths[self.menu_time_depth])
 
         elif self.state == MenuState.TIME_NODE:
             text = self.enter_time_node_ctrl_menu()
 
         elif self.state == MenuState.TIME_NODE_CTRL:
-            # do action!
             text = self._fire_timectrl(self.tc_nodes[self.menu_time_node])
 
         elif self.state == MenuState.BOOK:
             text = self.enter_book_name_menu()
 
         elif self.state == MenuState.BOOK_NAME:
-            # do action!
             book_text = self.dgttranslate.text("B10_okbook")
             event = Event.SET_OPENING_BOOK(
                 book=self.all_books[self.menu_book], book_text=book_text, show_ok=True
@@ -2462,7 +2402,6 @@ class DgtMenu(object):
                 self.engine_restart = True
 
         elif self.state == MenuState.ENG_MODERN_NAME_LEVEL:
-            # do action!
             eng = EngineProvider.modern_engines[self.menu_modern_engine_index]
             logger.debug("installed engines in level: %s", str(eng))
 
@@ -2504,7 +2443,6 @@ class DgtMenu(object):
                 self.engine_restart = True
 
         elif self.state == MenuState.ENG_RETRO_NAME_LEVEL:
-            # do action!
             retro_eng = EngineProvider.retro_engines[self.menu_retro_engine_index]
             retro_level_dict = retro_eng["level_dict"]
             if retro_level_dict:
@@ -2548,7 +2486,6 @@ class DgtMenu(object):
                 self.engine_restart = True
 
         elif self.state == MenuState.ENG_FAV_NAME_LEVEL:
-            # do action!
             fav_eng = EngineProvider.favorite_engines[self.menu_fav_engine_index]
             fav_level_dict = fav_eng["level_dict"]
             if fav_level_dict:
@@ -2576,15 +2513,9 @@ class DgtMenu(object):
             text = self.enter_retrosound_onoff_menu()
 
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND_ONOFF:
-            # do action!
-            config = ConfigObj("picochess.ini", default_encoding="utf8")
             self.engine_retrosound = self.engine_retrosound_onoff
             self.res_engine_retrosound = self.engine_retrosound
-            if self.engine_retrosound:
-                config["rsound"] = self.engine_retrosound
-            elif "rsound" in config:
-                del config["rsound"]
-            config.write()
+            write_picochess_ini("rsound", self.engine_retrosound)
             # trigger rspped event for rsound change (does just an engine restart)
             self._fire_event(Event.RSPEED(rspeed=self.retrospeed_factor))
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okrsound"))
@@ -2595,7 +2526,6 @@ class DgtMenu(object):
             text = self.enter_retrospeed_factor_menu()
 
         elif self.state == MenuState.RETROSETTINGS_RETROSPEED_FACTOR:
-            # do action!
             retrospeed = self.retrospeed_list[self.menu_engine_retrospeed_idx]
             if retrospeed == "max.":
                 self.retrospeed_factor = 0.0
@@ -2661,14 +2591,12 @@ class DgtMenu(object):
                 text = self.enter_sys_info_battery_menu()
 
         elif self.state == MenuState.SYS_INFO_VERS:
-            # do action!
             text = self.dgttranslate.text("B10_picochess")
             text.rd = ClockIcons.DOT
             text.wait = False
             text = self._fire_dispatchdgt(text)
 
         elif self.state == MenuState.SYS_INFO_IP:
-            # do action!
             if self.int_ip:
                 msg = " ".join(self.int_ip.split(".")[:2])
                 text = self.dgttranslate.text("B07_default", msg)
@@ -2685,14 +2613,12 @@ class DgtMenu(object):
             text = self._fire_dispatchdgt(text)
 
         elif self.state == MenuState.SYS_INFO_BATTERY:
-            # do action!
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_bat_percent", self.battery))
 
         elif self.state == MenuState.SYS_SOUND:
             text = self.enter_sys_sound_beep_menu()
 
         elif self.state == MenuState.SYS_SOUND_BEEP:
-            # do action!
             self.dgttranslate.set_beep(self.menu_system_sound)
             write_picochess_ini(
                 "beep-config", self.dgttranslate.beep_to_config(self.menu_system_sound)
@@ -2710,7 +2636,6 @@ class DgtMenu(object):
             text = self.enter_sys_lang_name_menu()
 
         elif self.state == MenuState.SYS_LANG_NAME:
-            # do action!
             langs = {
                 Language.EN: "en",
                 Language.DE: "de",
@@ -2726,7 +2651,6 @@ class DgtMenu(object):
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_oklang"))
 
         elif self.state == MenuState.SYS_LOG:
-            # do action!
             if self.log_file:
                 Observable.fire(Event.EMAIL_LOG())
                 text = self._fire_dispatchdgt(self.dgttranslate.text("B10_oklogfile"))
@@ -2753,14 +2677,10 @@ class DgtMenu(object):
             text = self.enter_sys_voice_comp_mute_menu()
 
         elif self.state == MenuState.SYS_VOICE_USER_MUTE:
-            # maybe do action!
             if self.menu_system_voice_user_active:
                 text = self.enter_sys_voice_user_mute_lang_menu()
             else:
-                config = ConfigObj("picochess.ini", default_encoding="utf8")
-                if "user-voice" in config:
-                    del config["user-voice"]
-                    config.write()
+                write_picochess_ini("user-voice", None)
                 event = Event.SET_VOICE(
                     type=self.menu_system_voice, lang="en", speaker="mute", speed=2
                 )
@@ -2771,13 +2691,10 @@ class DgtMenu(object):
             text = self.enter_sys_voice_user_mute_lang_speak_menu()
 
         elif self.state == MenuState.SYS_VOICE_USER_MUTE_LANG_SPEAK:
-            # do action!
             vkey = self.voices_conf.keys()[self.menu_system_voice_user_lang]
             speakers = self.voices_conf[vkey].keys()
-            config = ConfigObj("picochess.ini", default_encoding="utf8")
             skey = speakers[self.menu_system_voice_user_speak]
-            config["user-voice"] = vkey + ":" + skey
-            config.write()
+            write_picochess_ini("user-voice", f"{vkey}:{skey}")
             event = Event.SET_VOICE(
                 type=self.menu_system_voice,
                 lang=vkey,
@@ -2788,14 +2705,10 @@ class DgtMenu(object):
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okvoice"))
 
         elif self.state == MenuState.SYS_VOICE_COMP_MUTE:
-            # maybe do action!
             if self.menu_system_voice_comp_active:
                 text = self.enter_sys_voice_comp_mute_lang_menu()
             else:
-                config = ConfigObj("picochess.ini", default_encoding="utf8")
-                if "computer-voice" in config:
-                    del config["computer-voice"]
-                    config.write()
+                write_picochess_ini("computer-voice", None)
                 event = Event.SET_VOICE(
                     type=self.menu_system_voice, lang="en", speaker="mute", speed=2
                 )
@@ -2806,13 +2719,10 @@ class DgtMenu(object):
             text = self.enter_sys_voice_comp_mute_lang_speak_menu()
 
         elif self.state == MenuState.SYS_VOICE_COMP_MUTE_LANG_SPEAK:
-            # do action!
             vkey = self.voices_conf.keys()[self.menu_system_voice_comp_lang]
             speakers = self.voices_conf[vkey].keys()
-            config = ConfigObj("picochess.ini", default_encoding="utf8")
             skey = speakers[self.menu_system_voice_comp_speak]
-            config["computer-voice"] = vkey + ":" + skey
-            config.write()
+            write_picochess_ini("computer-voice", f"{vkey}:{skey}")
             event = Event.SET_VOICE(
                 type=self.menu_system_voice,
                 lang=vkey,
@@ -2827,7 +2737,6 @@ class DgtMenu(object):
             text = self.enter_sys_voice_speed_factor_menu()
 
         elif self.state == MenuState.SYS_VOICE_SPEED_FACTOR:
-            # do action!
             assert self.menu_system_voice == Voice.SPEED, (
                 "menu item is not Voice.SPEED: %s" % self.menu_system_voice
             )
@@ -2846,7 +2755,6 @@ class DgtMenu(object):
             text = self.enter_sys_voice_volume_factor_menu()
 
         elif self.state == MenuState.SYS_VOICE_VOLUME_FACTOR:
-            # do action!
             assert self.menu_system_voice == Voice.VOLUME, (
                 "menu item is not Voice.VOLUME: %s" % self.menu_system_voice
             )
@@ -2877,26 +2785,14 @@ class DgtMenu(object):
             text = self.enter_sys_disp_confirm_yesno_menu()
 
         elif self.state == MenuState.SYS_DISP_CONFIRM_YESNO:
-            # do action!
-            config = ConfigObj("picochess.ini", default_encoding="utf8")
-            if self.menu_system_display_confirm:
-                config["disable-confirm-message"] = self.menu_system_display_confirm
-            elif "disable-confirm-message" in config:
-                del config["disable-confirm-message"]
-            config.write()
+            write_picochess_ini("disable-confirm-message", self.menu_system_display_confirm)
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okconfirm"))
 
         elif self.state == MenuState.SYS_DISP_ENGINENAME:
             text = self.enter_sys_disp_enginename_yesno_menu()
 
         elif self.state == MenuState.SYS_DISP_ENGINENAME_YESNO:
-            # do action!
-            config = ConfigObj("picochess.ini", default_encoding="utf8")
-            if not self.menu_system_display_enginename:
-                config["show-engine"] = self.menu_system_display_enginename
-            elif "show-engine" in config:
-                del config["show-engine"]
-            config.write()
+            write_picochess_ini("show-engine", self.menu_system_display_enginename)
             self.res_system_display_enginename = self.menu_system_display_enginename
             event = Event.SHOW_ENGINENAME(show_enginename=self.menu_system_display_enginename)
             Observable.fire(event)
@@ -2906,7 +2802,6 @@ class DgtMenu(object):
             text = self.enter_sys_disp_ponder_interval_menu()
 
         elif self.state == MenuState.SYS_DISP_PONDER_INTERVAL:
-            # do action!
             write_picochess_ini("ponder-interval", self.menu_system_display_ponderinterval)
             self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okponder"))
@@ -2915,13 +2810,7 @@ class DgtMenu(object):
             text = self.enter_sys_disp_capital_yesno_menu()
 
         elif self.state == MenuState.SYS_DISP_CAPTIAL_YESNO:
-            # do action!
-            config = ConfigObj("picochess.ini", default_encoding="utf8")
-            if self.menu_system_display_capital:
-                config["enable-capital-letters"] = self.menu_system_display_capital
-            elif "enable-capital-letters" in config:
-                del config["enable-capital-letters"]
-            config.write()
+            write_picochess_ini("enable-capital-letters", self.menu_system_display_capital)
             self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okcapital"))
 
@@ -2929,13 +2818,7 @@ class DgtMenu(object):
             text = self.enter_sys_disp_notation_move_menu()
 
         elif self.state == MenuState.SYS_DISP_NOTATION_MOVE:
-            # do-action!
-            config = ConfigObj("picochess.ini", default_encoding="utf8")
-            if self.menu_system_display_notation:
-                config["disable-short-notation"] = self.menu_system_display_notation
-            elif "disable-short-notation" in config:
-                del config["disable-short-notation"]
-            config.write()
+            write_picochess_ini("disable-short-notation", self.menu_system_display_notation)
             self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_oknotation"))
 

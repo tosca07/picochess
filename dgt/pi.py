@@ -19,7 +19,6 @@ import logging
 import time
 from threading import Lock, Timer
 from ctypes import cdll, c_byte, create_string_buffer, pointer
-from platform import machine
 
 from utilities import DisplayMsg, hms_time
 from dgt.api import Dgt, Message
@@ -40,7 +39,7 @@ class DgtPi(DgtIface):
         super(DgtPi, self).__init__(dgtboard)
 
         self.lib_lock = Lock()
-        self.lib = cdll.LoadLibrary('etc/dgtpicom.x86.so' if machine() == 'x86_64' else 'etc/dgtpicom.so')
+        self.lib = cdll.LoadLibrary('etc/dgtpicom.so')
 
         # keep the last time to find out errorous DGT_MSG_BWTIME messages (error: current time > last time)
         self.r_time = 3600 * 10  # max value cause 10h cant be reached by clock
