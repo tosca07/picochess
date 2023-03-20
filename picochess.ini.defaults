@@ -56,7 +56,7 @@ beep-some-level = 2
 ### will not be harmed, but you will need to leave it commented out to use PicoChess.
 ## If you are using a DGTPi or Raspberry Pi wired to a DGT 3000 clock uncomment the next line.
 #dgtpi = True
-dgtpi = True
+dgtpi = False
 
 ### You can reduce the dgtboard piece recognition by a factor from 0 to 9. Please only use this if you suffer from
 ### sliding problems (like multi voices during you slide your pieces for example moving Bf1-b5 hear Be2,d3,c4 then b5).
@@ -183,7 +183,7 @@ volume-voice = 8
 speed-voice = 2
 ## Speak last computer move again when 'set pieces' displayed
 #enable-setpieces-voice = True
-enable-setpieces-voice = True
+enable-setpieces-voice = False
 
 ## PicoChess writes pgn files at end of game. This file is created in the 'games' folder
 # pgn-file = games.pgn
@@ -217,7 +217,7 @@ ponder-interval = 3
 
 ## Should a confirmation message be displayed? If not, please active the next line
 #disable-confirm-message = True
-disable-confirm-message = True
+disable-confirm-message = False
 ## PicoChess messages can be displayed in English, German, Dutch, French, Spanish or Italian.
 ## You can set the language with the "language" option. Default is English.
 ## en = English; de = German; nl = Dutch; fr = French; es = Spanish; it = Italian
@@ -337,15 +337,15 @@ tutor-comment = all
 
 ## Pico Opening Explorer: shows the name(s) of the opening (based on chess-eco_pos.txt file). Default is off.
 #tutor-explorer = True
-tutor-explorer = True
+tutor-explorer = False
 
 ## Pico Watcher: atomatic move evaluation, blunder warning & move suggestion. Default is off.
 #tutor-watcher = True
-tutor-watcher = True
+tutor-watcher = False
 
 ## Pico Coach: move and position evaluation, move suggestion, etc. on demand. Default is off.
 #tutor-coach = True
-tutor-coach = True
+tutor-coach = False
 
 ## Engine used for PicoTutor analysis. Default is /opt/picochess/engines/armv7l/a-stockf.
 #tutor-engine = /opt/picochess/engines/armv7l/a-stockf
@@ -368,7 +368,7 @@ rspeed = 1.0
 ## Retro-Sound Setting for mame engines: default sound is off, if you want to switch it on, set rsound = True by
 ## uncommenting the next line
 #rsound = True
-rsound = True
+rsound = False
 
 # Player rating deviation for automatic adjustment of ELO, starting value: 350
 #rating-deviation = 350
