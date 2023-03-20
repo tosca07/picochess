@@ -21,6 +21,10 @@ curl -sSL https://raw.githubusercontent.com/ghislainbourgeois/picochess/master/i
 If you wish to use engines supported by the Mame emulator, you will also need
 to set the GPU Memory Split to 64 Mb minimum.
 
+Once the installation is complete, you can copy the file
+`/opt/picochess/picochess.ini.example` to `/opt/picochess/picochess.ini` and
+edit it for your specific situation.
+
 **Note**
 
 This repository does not contain all engines, books or voice samples the

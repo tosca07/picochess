@@ -2235,7 +2235,6 @@ def main() -> None:
     # Command line argument parsing
     parser = configargparse.ArgParser(
         default_config_files=[
-            os.path.join(os.path.dirname(__file__), "picochess.ini.defaults"),
             os.path.join(os.path.dirname(__file__), "picochess.ini"),
         ]
     )
