@@ -2257,7 +2257,7 @@ def main() -> None:
         "-ers",
         "--engine-remote-server",
         type=str,
-        help="adress of the remote engine server",
+        help="address of the remote engine server",
         default=None,
     )
     parser.add_argument(
@@ -2351,7 +2351,7 @@ def main() -> None:
         "-m", "--email", type=str, help="email used to send pgn/log files", default=None
     )
     parser.add_argument(
-        "-ms", "--smtp-server", type=str, help="adress of email server", default=None
+        "-ms", "--smtp-server", type=str, help="address of email server", default=None
     )
     parser.add_argument(
         "-mu", "--smtp-user", type=str, help="username for email server", default=None
