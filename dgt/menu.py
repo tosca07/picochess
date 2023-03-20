@@ -2722,7 +2722,7 @@ class DgtMenu(object):
             vkey = self.voices_conf.keys()[self.menu_system_voice_comp_lang]
             speakers = self.voices_conf[vkey].keys()
             skey = speakers[self.menu_system_voice_comp_speak]
-            write_picochess_ini("user-voice", f"{vkey}:{skey}")
+            write_picochess_ini("computer-voice", f"{vkey}:{skey}")
             event = Event.SET_VOICE(
                 type=self.menu_system_voice,
                 lang=vkey,
