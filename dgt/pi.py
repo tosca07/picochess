@@ -19,7 +19,6 @@ import logging
 import time
 from threading import Lock, Timer
 from ctypes import cdll, c_byte, create_string_buffer, pointer
-from platform import machine
 
 from utilities import DisplayMsg, hms_time
 from dgt.api import Dgt, Message
