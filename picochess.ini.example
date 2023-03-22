@@ -32,7 +32,7 @@ beep-config = none
 
 ## beep-some-level changes the occurrence of beeps. Minimum value is 0 (no beeps), maximum is 15 (all beeps).
 ## Please keep in mind: values 0 and 15 make no sense (but are allowed) since they are the same as "Never" and "Always"
-## inside the clock menu or via the beep-config option above. (NOTE: if beep-config is set to 'sample' only values 0 (samples off), 1 (move confirmation), and 2 (move+button confirmation) will be sonsidered.
+## inside the clock menu or via the beep-config option above. NOTE: if beep-config is set to 'sample' only values 0 (samples off), 1 (move confirmation), and 2 (move+button confirmation) will be considered.
 ## The value you give here, is when using the "Sometimes" menu selection (in System/Sound). Beeps are determined by a
 ## special number which you get by adding the following events together to get the beep-some-level value:
 ##
@@ -343,9 +343,9 @@ tutor-explorer = False
 #tutor-watcher = True
 tutor-watcher = False
 
-## Pico Coach: move and position evaluation, move suggestion, etc. on demand. Default is off.
-#tutor-coach = True
-tutor-coach = False
+## Pico Coach: move and position evaluation, move suggestion, etc. on demand. You can set it to „on“, „off“ or „lift“. Default is „off“, on mmeans you must trigger the evaluation via the pico tutor menu and ‚lift‘ menas you can trigger it by lifting a piece and putting it back when it is your turn (in addition you can trigger the coach via menu as well). Trigger via menu :just selcet the pico coach option = on or option = lift again. 
+#tutor-coach = lift
+tutor-coach = off
 
 ## Engine used for PicoTutor analysis. Default is /opt/picochess/engines/armv7l/a-stockf.
 #tutor-engine = /opt/picochess/engines/armv7l/a-stockf

@@ -23,7 +23,7 @@ import chess  # type: ignore
 import chess.uci  # type: ignore
 import chess.engine  # type: ignore
 from random import randint
-from dgt.util import PicoComment
+from dgt.util import PicoComment, PicoCoach
 from typing import Tuple
 
 # PicoTutor Constants
@@ -143,11 +143,14 @@ class PicoTutor:
         else:
             self.board = chess.Board()  # starting position if no other set_position command comes
 
-    def set_status(self, watcher=False, coach=False, explorer=False, comments=False):
-
+    def set_status(self, watcher=False, coach=PicoCoach.COACH_OFF, explorer=False, comments=False):
+        if coach == PicoCoach.COACH_OFF:
+            b_coach = False
+        else:
+            b_coach = True
         if self.watcher_on or self.coach_on:
             self.watcher_on = watcher
-            self.coach_on = coach
+            self.coach_on = b_coach
             self.explorer_on = explorer
             self.comments_on = comments
             if watcher or coach:
@@ -156,7 +159,7 @@ class PicoTutor:
                 self.stop()
         else:
             self.watcher_on = watcher
-            self.coach_on = coach
+            self.coach_on = b_coach
             self.explorer_on = explorer
             self.comments_on = comments
             if watcher or coach:
