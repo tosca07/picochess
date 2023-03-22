@@ -211,6 +211,13 @@ class DgtTranslate(object):
             frtxt = entxt
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='Coach si', large_text='Coach si  ', medium_text='Coach si ', small_text='c si  ')
+        if text_id == 'picocoach_lift':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Coach on (lift piece)', large_text='Coach lift', medium_text='Coach li', small_text='c on  ')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Coach an (Figur heben)', large_text='Coach heben', medium_text='Coach ein', small_text='c ein ')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = Dgt.DISPLAY_TEXT(web_text='Coach si', large_text='Coach si  ', medium_text='Coach si ', small_text='c si  ')
         if text_id == 'picocoach_off':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Coach off  ', medium_text='Coachoff', small_text='c  off')
             detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Coach aus  ', medium_text='Coachaus', small_text='c  aus')
@@ -1275,6 +1282,20 @@ class DgtTranslate(object):
         if text_id == 'picotutor_picoexplorer_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Pico Explorer', medium_text='Explorer', small_text='explor')
             detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'picotutor_picoprob_menu':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Comment probability', large_text='CommentProb', medium_text='c-probab', small_text='c-prob')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Kommentar Wahrscheinlichkeit', large_text='KommWahrsch', medium_text='KWahrsch', small_text='wahrsl')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'picocom_prob_list':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Comment probability = ' + msg, large_text='Prob ' + msg, medium_text='cprob' + msg, small_text=msg)
+            detxt = Dgt.DISPLAY_TEXT(web_text='Kommentar Wahrscheinlichkeit = ' + msg, large_text='KWahrsch ' + msg, medium_text='KWahr' + msg, small_text=msg)
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
