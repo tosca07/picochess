@@ -68,7 +68,7 @@ from dispatcher import Dispatcher
 
 from dgt.api import Dgt, Message, Event
 import dgt.util
-from dgt.util import GameResult, TimeMode, Mode, PlayMode, PicoComment
+from dgt.util import GameResult, TimeMode, Mode, PlayMode, PicoComment, PicoCoach
 from dgt.hw import DgtHw
 from dgt.pi import DgtPi
 from dgt.display import DgtDisplay
@@ -152,7 +152,6 @@ class PicochessState:
         self.best_move_displayed = None
         self.best_move_posted = False
         self.book_in_use = ""
-        self.com_factor = 0
         self.comment_file = ""
         self.dgtmenu = None
         self.dgttranslate = None
@@ -452,7 +451,7 @@ def read_pgn_info():
                 info[name.strip()] = value.strip()
         return (
             info["PGN_GAME"],
-            info["PGN_PROBLEM"],
+            info["PGN_getLEM"],
             info["PGN_FEN"],
             info["PGN_RESULT"],
             info["PGN_White"],
@@ -716,7 +715,7 @@ def main() -> None:
             and not pgn_mode()
             and (
                 state.dgtmenu.get_picowatcher()
-                or state.dgtmenu.get_picocoach()
+                or (state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF)
                 or state.dgtmenu.get_picoexplorer()
             )
             and state.picotutor is not None
@@ -1452,7 +1451,7 @@ def main() -> None:
                 if state.dgtmenu.get_picocomment() != PicoComment.COM_OFF and not game_end:
                     game_comment = ""
                     game_comment = state.picotutor.get_game_comment(
-                        pico_comment=state.dgtmenu.get_picocomment(), com_factor=state.com_factor
+                        pico_comment=state.dgtmenu.get_picocomment(), com_factor=state.dgtmenu.get_comment_factor()
                     )
                     if game_comment:
                         DisplayMsg.show(Message.SHOW_TEXT(text_string=game_comment))
@@ -1497,7 +1496,7 @@ def main() -> None:
             # molli: Chess tutor
             if (
                 picotutor_mode(state)
-                and state.dgtmenu.get_picocoach()
+                and state.dgtmenu.get_picocoach() == PicoCoach.COACH_LIFT
                 and fen != chess.STARTING_BOARD_FEN
                 and not state.take_back_locked
                 and not state.fen_error_occured
@@ -2483,7 +2482,7 @@ def main() -> None:
         type=int,
         help="comment factor from 0 to 100 for voice and written commands",
         default=100,
-        choices=range(0, 100),
+        choices=range(0, 101),
     )
     parser.add_argument(
         "-roln",
@@ -2534,8 +2533,9 @@ def main() -> None:
     parser.add_argument(
         "-coch",
         "--tutor-coach",
-        action="store_true",
-        help="Pico Coach: move and position evaluation, move suggestion etc. on demand, default is off",
+        choices=["on", "off", "lift"],
+        default="off",
+        help="Pico Coach: move and position evaluation, move suggestion etc. on demand, default is off, when selecting lift you can trigger the coach by lifting and putting back a piece",
     )
     parser.add_argument(
         "-open",
@@ -2691,10 +2691,11 @@ def main() -> None:
         args.rsound,
         args.rolling_display_ponder,
         args.show_engine,
-        args.tutor_coach,
+        PicoCoach.from_str(args.tutor_coach),
         args.tutor_watcher,
         args.tutor_explorer,
         PicoComment.from_str(args.tutor_comment),
+        args.comment_factor,
         args.continue_game,
         args.alt_move,
         state.dgttranslate,
@@ -2715,13 +2716,6 @@ def main() -> None:
     # The class dgtDisplay fires Event (Observable) & DispatchDgt (Dispatcher)
     DgtDisplay(state.dgttranslate, state.dgtmenu, state.time_control).start()
 
-    # Create PicoTalker for speech output
-    # molli: add probability factor for game comments args.com_fact
-    state.com_factor = args.comment_factor
-    logger.debug(
-        "molli: probability factor for game comments args.comment_factor %s", state.com_factor
-    )
-
     sample_beeper = False
     sample_beeper_level = 0
 
@@ -2741,16 +2735,17 @@ def main() -> None:
         # samples: no sounds
         sample_beeper = False
 
-    PicoTalkerDisplay(
+    pico_talker = PicoTalkerDisplay(
         args.user_voice,
         args.computer_voice,
         args.speed_voice,
         args.enable_setpieces_voice,
-        state.com_factor,
+        args.comment_factor,
         sample_beeper,
         sample_beeper_level,
-        board_type,
-    ).start()
+        board_type,)
+    
+    pico_talker.start()
 
     # Launch web server
     if args.web_server_port:
@@ -4528,7 +4523,7 @@ def main() -> None:
                 DisplayMsg.show(Message.ALTMOVES(altmoves=event.altmoves))
 
             elif isinstance(event, Event.PICOWATCHER):
-                if state.dgtmenu.get_picowatcher() or state.dgtmenu.get_picocoach():
+                if state.dgtmenu.get_picowatcher() or (state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF):
                     pico_calc = True
                 else:
                     pico_calc = False
@@ -4545,7 +4540,7 @@ def main() -> None:
                         state.picotutor.set_user_color(chess.BLACK)
                     else:
                         state.picotutor.set_user_color(chess.WHITE)
-                elif state.dgtmenu.get_picocoach():
+                elif state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF:
                     state.flag_picotutor = True
                 elif state.dgtmenu.get_picoexplorer():
                     state.flag_picotutor = True
@@ -4558,7 +4553,7 @@ def main() -> None:
             elif isinstance(event, Event.PICOCOACH):
 
                 pico_calc = False
-                if state.dgtmenu.get_picowatcher() or state.dgtmenu.get_picocoach():
+                if state.dgtmenu.get_picowatcher() or (state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF):
                     pico_calc = True
                 else:
                     pico_calc = False
@@ -4569,8 +4564,8 @@ def main() -> None:
                     state.dgtmenu.get_picoexplorer(),
                     state.dgtmenu.get_picocomment(),
                 )
-
-                if event.picocoach:
+                
+                if event.picocoach != PicoCoach.COACH_OFF:
                     state.flag_picotutor = True
                     state.picotutor.set_position(state.game.fen(), i_turn=state.game.turn)
                     if state.play_mode == PlayMode.USER_BLACK:
@@ -4585,13 +4580,20 @@ def main() -> None:
                     state.flag_picotutor = False
                     if pico_calc:
                         state.picotutor.stop()
-
-                DisplayMsg.show(Message.PICOCOACH(picocoach=event.picocoach))
-                if state.dgtmenu.get_picocoach() and board_type == dgt.util.EBoard.NOEBOARD:
+                    
+                if state.dgtmenu.get_picocoach() == PicoCoach.COACH_OFF:
+                    DisplayMsg.show(Message.PICOCOACH(picocoach=False))
+                elif state.dgtmenu.get_picocoach() == PicoCoach.COACH_ON and event.picocoach != 2:
+                    DisplayMsg.show(Message.PICOCOACH(picocoach=True))
+                elif state.dgtmenu.get_picocoach() == PicoCoach.COACH_LIFT and event.picocoach != 2:
+                    DisplayMsg.show(Message.PICOCOACH(picocoach=True))
+                    
+                if state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF and event.picocoach == 2:
+                    # call pico coach in case it was already set to on
                     call_pico_coach(state)
 
             elif isinstance(event, Event.PICOEXPLORER):
-                if state.dgtmenu.get_picowatcher() or state.dgtmenu.get_picocoach():
+                if state.dgtmenu.get_picowatcher() or (state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF):
                     pico_calc = True
                 else:
                     pico_calc = False
@@ -4604,7 +4606,7 @@ def main() -> None:
                 if event.picoexplorer:
                     state.flag_picotutor = True
                 else:
-                    if state.dgtmenu.get_picowatcher() or state.dgtmenu.get_picocoach():
+                    if state.dgtmenu.get_picowatcher() or (state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF):
                         state.flag_picotutor = True
                     else:
                         state.flag_picotutor = False
@@ -4659,7 +4661,11 @@ def main() -> None:
                     takeback(state)
 
             elif isinstance(event, Event.PICOCOMMENT):
-                DisplayMsg.show(Message.PICOCOMMENT(picocomment=event.picocomment))
+                if event.picocomment == 'comment-factor':
+                    pico_talker.set_comment_factor(comment_factor=state.dgtmenu.get_comment_factor())
+                    DisplayMsg.show(Message.PICOCOMMENT(picocomment='ok'))
+                else:
+                    DisplayMsg.show(Message.PICOCOMMENT(picocomment=event.picocomment))
 
             elif isinstance(event, Event.SET_TIME_CONTROL):
                 state.time_control.stop_internal(log=False)

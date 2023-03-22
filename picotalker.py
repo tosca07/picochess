@@ -46,6 +46,7 @@ class PicoTalker(object):
         self.speed_factor = 1.0
         self.set_speed_factor(speed_factor)
         self.sound = None
+        logger.debug('molli voice pfad calc.')
         try:
             (localisation_id, voice_name) = localisation_id_voice.split(':')
             voice_path = 'talker/voices/' + localisation_id + '/' + voice_name
@@ -173,6 +174,9 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
             beeper_sound = 'en:beeper'
             logger.debug('creating beeper sound: [%s]', str(beeper_sound))
             self.set_beeper(PicoTalker(beeper_sound, self.speed_factor))
+            
+    def set_comment_factor(self, comment_factor: int):
+        self.c_comment_factor = comment_factor
 
     def calc_no_group_comments(self, filestring: str):
         """
@@ -371,7 +375,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
         c_total, c_prob = self.get_total_cgroup(c_group)
 
-        if c_prob == 0:
+        if c_prob == 0 or self.c_comment_factor == 0:
             return talkfile
         # consider probability factor from picochess.ini
         if c_group == 'start' or c_group == 'name' or c_group == 'shutdown' or c_group == 'newgame' \
@@ -675,6 +679,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         logger.debug('announcing GAME_ENDS/FIVEFOLD_REPETITION')
                         self.talk(['repetition.ogg', 'draw.ogg'])
                         self.comment('draw')
+                    self.talk(['bell.ogg'], self.BEEPER)
 
                 elif isinstance(message, Message.TAKE_BACK):
                     logger.debug('announcing TAKE_BACK')
