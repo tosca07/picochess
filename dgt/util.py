@@ -240,6 +240,7 @@ class PicoTutorLoop(object):
         """Get previous item."""
         return prev_item(PicoTutor.items(), item, "errPicoTutorPrev")
 
+
 @enum.unique
 class PicoCoach(MyEnum):
     """PicoCoach Class."""
@@ -251,7 +252,7 @@ class PicoCoach(MyEnum):
     @classmethod
     def items(cls):
         return [PicoCoach.COACH_ON, PicoCoach.COACH_LIFT, PicoCoach.COACH_OFF]
-        
+
     @classmethod
     def from_str(cls, s):
         if s == "on":
@@ -277,6 +278,7 @@ class PicoCoachLoop(object):
     def prev(item: PicoCoach):
         """Get previous item."""
         return prev_item(PicoCoach.items(), item, "errPicoCoachPrev")
+
 
 @enum.unique
 class PicoComment(MyEnum):
