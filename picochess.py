@@ -1048,7 +1048,7 @@ def main() -> None:
                 fen_res = compare_fen(external_fen, internal_fen)
 
                 if not state.position_mode and fen_res:
-                   if fen_res[4] == 'K' or fen_res[4] == 'k':
+                    if fen_res[4] == 'K' or fen_res[4] == 'k':
                         state.coach_triggered = True
                     else:
                         state.coach_triggered = False
