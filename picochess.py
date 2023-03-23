@@ -451,7 +451,7 @@ def read_pgn_info():
                 info[name.strip()] = value.strip()
         return (
             info["PGN_GAME"],
-            info["PGN_getLEM"],
+            info["PGN_PROBLEM"],
             info["PGN_FEN"],
             info["PGN_RESULT"],
             info["PGN_White"],
@@ -486,8 +486,6 @@ def read_online_result():
         result_line = ""
 
     log_u.close()
-    logger.debug("Molli in read_result: %s", result_line)
-    logger.debug("Molli in read_result: %s", winner)
     return (str(result_line), str(winner))
 
 
