@@ -203,6 +203,7 @@ class PicochessState:
         self.think_time = 0
         self.time_control: TimeControl = None
         self.rating: Rating = None
+        self.coach_triggered = False
 
     @property
     def picotutor(self) -> PicoTutor:
@@ -1047,6 +1048,10 @@ def main() -> None:
                 fen_res = compare_fen(external_fen, internal_fen)
 
                 if not state.position_mode and fen_res:
+                   if fen_res[4] == 'K' or fen_res[4] == 'k':
+                        state.coach_triggered = True
+                    else:
+                        state.coach_triggered = False
                     DisplayMsg.show(Message.WRONG_FEN())
                     time.sleep(2)
                 if state.fen_error_occured and state.game.board_fen() and fen_res:
@@ -1497,11 +1502,12 @@ def main() -> None:
                 and state.dgtmenu.get_picocoach() == PicoCoach.COACH_LIFT
                 and fen != chess.STARTING_BOARD_FEN
                 and not state.take_back_locked
-                and not state.fen_error_occured
+                and state.coach_triggered
                 and not state.position_mode
                 and not state.automatic_takeback
             ):
                 call_pico_coach(state)
+                state.coach_triggered = False
             else:
                 if state.position_mode:
                     # position finally alright!
