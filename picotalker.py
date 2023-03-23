@@ -174,7 +174,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
             beeper_sound = 'en:beeper'
             logger.debug('creating beeper sound: [%s]', str(beeper_sound))
             self.set_beeper(PicoTalker(beeper_sound, self.speed_factor))
-            
+
     def set_comment_factor(self, comment_factor: int):
         self.c_comment_factor = comment_factor
 

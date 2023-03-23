@@ -2742,7 +2742,7 @@ def main() -> None:
         sample_beeper,
         sample_beeper_level,
         board_type,)
-    
+
     pico_talker.start()
 
     # Launch web server
@@ -4562,7 +4562,7 @@ def main() -> None:
                     state.dgtmenu.get_picoexplorer(),
                     state.dgtmenu.get_picocomment(),
                 )
-                
+
                 if event.picocoach != PicoCoach.COACH_OFF:
                     state.flag_picotutor = True
                     state.picotutor.set_position(state.game.fen(), i_turn=state.game.turn)
@@ -4578,14 +4578,14 @@ def main() -> None:
                     state.flag_picotutor = False
                     if pico_calc:
                         state.picotutor.stop()
-                    
+
                 if state.dgtmenu.get_picocoach() == PicoCoach.COACH_OFF:
                     DisplayMsg.show(Message.PICOCOACH(picocoach=False))
                 elif state.dgtmenu.get_picocoach() == PicoCoach.COACH_ON and event.picocoach != 2:
                     DisplayMsg.show(Message.PICOCOACH(picocoach=True))
                 elif state.dgtmenu.get_picocoach() == PicoCoach.COACH_LIFT and event.picocoach != 2:
                     DisplayMsg.show(Message.PICOCOACH(picocoach=True))
-                    
+
                 if state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF and event.picocoach == 2:
                     # call pico coach in case it was already set to on
                     call_pico_coach(state)

@@ -43,6 +43,7 @@ class TestDgtMenu(unittest.TestCase):
                        picowatcher=False,
                        picoexplorer=False,
                        picocomment=PicoComment.COM_OFF,
+                       picocomment_prob=0,
                        contlast=False,
                        altmove=False,
                        dgttranslate=trans)
