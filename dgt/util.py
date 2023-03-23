@@ -217,10 +217,11 @@ class PicoTutor(MyEnum):
     COACH = "B00_picotutor_picocoach_menu"
     EXPLORER = "B00_picotutor_picoexplorer_menu"
     COMMENT = "B00_picotutor_picocomment_menu"
+    COM_PROB = "B00_picotutor_picoprob_menu"
 
     @classmethod
     def items(cls):
-        return [PicoTutor.WATCHER, PicoTutor.COACH, PicoTutor.EXPLORER, PicoTutor.COMMENT]
+        return [PicoTutor.WATCHER, PicoTutor.COACH, PicoTutor.EXPLORER, PicoTutor.COMMENT, PicoTutor.COM_PROB]
 
 
 class PicoTutorLoop(object):
@@ -239,6 +240,43 @@ class PicoTutorLoop(object):
         """Get previous item."""
         return prev_item(PicoTutor.items(), item, "errPicoTutorPrev")
 
+@enum.unique
+class PicoCoach(MyEnum):
+    """PicoCoach Class."""
+
+    COACH_ON = "B00_picocoach_on"
+    COACH_LIFT = "B00_picocoach_lift"
+    COACH_OFF = "B00_picocoach_off"
+
+    @classmethod
+    def items(cls):
+        return [PicoCoach.COACH_ON, PicoCoach.COACH_LIFT, PicoCoach.COACH_OFF]
+        
+    @classmethod
+    def from_str(cls, s):
+        if s == "on":
+            return PicoCoach.COACH_ON
+        elif s == "off":
+            return PicoCoach.COACH_OFF
+        elif s == "lift":
+            return PicoCoach.COACH_LIFT
+        else:
+            return PicoCoach.COACH_OFF
+
+
+class PicoCoachLoop(object):
+    def __init__(self):
+        super(PicoCoachLoop, self).__init__()
+
+    @staticmethod
+    def next(item: PicoCoach):
+        """Get next item."""
+        return next_item(PicoCoach.items(), item, "errPicoCoachNext")
+
+    @staticmethod
+    def prev(item: PicoCoach):
+        """Get previous item."""
+        return prev_item(PicoCoach.items(), item, "errPicoCoachPrev")
 
 @enum.unique
 class PicoComment(MyEnum):

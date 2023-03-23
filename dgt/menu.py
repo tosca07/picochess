@@ -42,8 +42,6 @@ from dgt.util import (
     ThemeLoop,
     EngineTop,
     EngineTopLoop,
-)
-from dgt.util import (
     System,
     SystemLoop,
     Display,
@@ -64,10 +62,15 @@ from dgt.util import (
     GameReadLoop,
     PicoComment,
     PicoCommentLoop,
+    PicoCoach,
+    PicoCoachLoop,
     EngineRetroSettings,
     EngineRetroSettingsLoop,
+    Power,
+    PowerLoop,
+    GameResult,
 )
-from dgt.util import Power, PowerLoop, GameResult
+
 from dgt.api import Dgt, Event
 from dgt.translate import DgtTranslate
 from uci.engine_provider import EngineProvider
@@ -164,7 +167,7 @@ class MenuState(object):
     SYS_DISP_NOTATION = 764000
     SYS_DISP_NOTATION_MOVE = 764100  # short, long
     SYS_DISP_ENGINENAME = 765000  # molli v3
-    SYS_DISP_ENGINENAME_YESNO = 765100  # yes,no ## molli v3
+    SYS_DISP_ENGINENAME_YESNO = 765100  # yes,no
     SYS_EBOARD = 770000
     SYS_EBOARD_TYPE = 771000  # dgt, chesslink, ...
     SYS_THEME = 780000
@@ -172,15 +175,19 @@ class MenuState(object):
 
     PICOTUTOR = 800000
     PICOTUTOR_PICOWATCHER = 810000
-    PICOTUTOR_PICOWATCHER_ONOFF = 811000  # on,off
+    PICOTUTOR_PICOWATCHER_ONOFF = 811000
     PICOTUTOR_PICOCOACH = 820000
-    PICOTUTOR_PICOCOACH_ONOFF = 821000  # on,off
+    PICOTUTOR_PICOCOACH_ON = 821000
+    PICOTUTOR_PICOCOACH_LIFT = 822000
+    PICOTUTOR_PICOCOACH_OFF = 823000
     PICOTUTOR_PICOEXPLORER = 830000
-    PICOTUTOR_PICOEXPLORER_ONOFF = 831000  # all, eng, off
+    PICOTUTOR_PICOEXPLORER_ONOFF = 831000
     PICOTUTOR_PICOCOMMENT = 840000
     PICOTUTOR_PICOCOMMENT_OFF = 841000
     PICOTUTOR_PICOCOMMENT_ON_ENG = 842000
     PICOTUTOR_PICOCOMMENT_ON_ALL = 843000
+    PICOTUTOR_PICOCOMPROB = 850000
+    PICOTUTOR_PICOCOMPROB_LIST= 851000
 
     GAME = 900000
     GAME_GAMENEW = 905000
@@ -228,10 +235,11 @@ class DgtMenu(object):
         rsound: bool,
         rol_disp_brain: bool,
         show_enginename: bool,
-        picocoach: bool,
+        picocoach: PicoCoach,
         picowatcher: bool,
         picoexplorer: bool,
         picocomment: PicoComment,
+        picocomment_prob: int,
         contlast: bool,
         altmove: bool,
         dgttranslate: DgtTranslate,
@@ -249,7 +257,7 @@ class DgtMenu(object):
         self.menu_picotutor_picocoach = picocoach
         self.menu_picotutor_picoexplorer = picoexplorer
         self.menu_picotutor_picocomment = picocomment
-
+        
         self.menu_game = Game.NEW
         self.menu_game_end = GameEnd.WHITE_WINS
         self.menu_game_save = GameSave.GAME1
@@ -405,6 +413,8 @@ class DgtMenu(object):
         ]
         self.tc_depth_list = [" 1", " 2", " 3", " 4", "10", "15", "20", "25"]
         self.tc_node_list = [" 1", " 5", " 10", " 25", "50", "100", "250", "500"]
+        
+        self.com_prob_list = ["0", "5", "10", "15", "20", "25", "30", "40", "50", "60", "70", "80", "90", "100"]
 
         self.retrospeed_list = [
             "25",
@@ -435,7 +445,18 @@ class DgtMenu(object):
 
         logger.debug(f"calculated retro speed index: {self.menu_engine_retrospeed_idx}")
         self.res_engine_retrospeed_idx = self.menu_engine_retrospeed_idx
-
+        
+        self.menu_picotutor_picocomment_prob_list = "30"
+        self.menu_picocomment_prob_idx = self.com_prob_list.index("30")
+        self.menu_picotutor_picocomment_prob_list = str(picocomment_prob)
+        self.res_picotutor_picocomment_prob = int(picocomment_prob)
+        if self.menu_picotutor_picocomment_prob_list in self.com_prob_list:
+            self.menu_picocomment_prob_idx = self.com_prob_list.index(self.menu_picotutor_picocomment_prob_list)
+        else:
+            self.menu_picocomment_prob_idx = 6
+            self.menu_picotutor_picocomment_prob_list = "30"
+            self.res_picotutor_picocomment_prob = 30
+            
         self.engine_retrosound = rsound
         self.res_engine_retrosound = self.engine_retrosound
         self.engine_retrosound_onoff = self.engine_retrosound
@@ -688,6 +709,7 @@ class DgtMenu(object):
         self.res_picotutor_picowatcher = self.menu_picotutor_picowatcher
         self.res_picotutor_picoexplorer = self.menu_picotutor_picoexplorer
         self.res_picotutor_picocomment = self.menu_picotutor_picocomment
+        self.res_picotutor_picocomment_prob = int(self.menu_picotutor_picocomment_prob_list)
         self.res_picotutor = self.menu_picotutor
 
         self.res_game_game_save = self.menu_game_save
@@ -699,6 +721,10 @@ class DgtMenu(object):
         self.dgttranslate.set_notation(self.menu_system_display_notation)
         return False
 
+
+    def get_comment_factor(self):
+        return self.res_picotutor_picocomment_prob
+        
     def get_engine_rspeed(self):
         """Get the flag."""
         return self.res_engine_retrospeed
@@ -932,11 +958,22 @@ class DgtMenu(object):
         text = self.dgttranslate.text("B00_picocoach")
         return text
 
-    def enter_picotutor_picocoach_onoff_menu(self):
+    def enter_picotutor_picocoach_on_menu(self):
         """Set the menu state."""
-        self.state = MenuState.PICOTUTOR_PICOCOACH_ONOFF
-        msg = "on" if self.menu_picotutor_picocoach else "off"
-        text = self.dgttranslate.text("B00_picocoach_" + msg)
+        self.state = MenuState.PICOTUTOR_PICOCOACH_ON
+        text = self.dgttranslate.text("B00_picocoach_on")
+        return text
+    
+    def enter_picotutor_picocoach_off_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.PICOTUTOR_PICOCOACH_OFF
+        text = self.dgttranslate.text("B00_picocoach_off")
+        return text
+        
+    def enter_picotutor_picocoach_lift_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.PICOTUTOR_PICOCOACH_LIFT
+        text = self.dgttranslate.text("B00_picocoach_lift")
         return text
 
     def enter_picotutor_picoexplorer_menu(self):
@@ -974,6 +1011,19 @@ class DgtMenu(object):
         """Set the picocomment state."""
         self.state = MenuState.PICOTUTOR_PICOCOMMENT_ON_ALL
         text = self.dgttranslate.text("B00_picocomment_on_all")
+        return text
+
+    def enter_com_prob_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.PICOTUTOR_PICOCOMPROB
+        text = self.dgttranslate.text("B00_picotutor_picoprob_menu")
+        return text
+    
+    def enter_com_problist_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.PICOTUTOR_PICOCOMPROB_LIST
+        l_prob = str(self.com_prob_list[self.menu_picocomment_prob_idx])+'%'
+        text = self.dgttranslate.text("B00_picocom_prob_list", l_prob)
         return text
 
     def enter_game_menu(self):
@@ -1954,7 +2004,13 @@ class DgtMenu(object):
         elif self.state == MenuState.PICOTUTOR_PICOCOACH:
             text = self.enter_picotutor_menu()
 
-        elif self.state == MenuState.PICOTUTOR_PICOCOACH_ONOFF:
+        elif self.state == MenuState.PICOTUTOR_PICOCOACH_ON:
+            text = self.enter_picotutor_picocoach_menu()
+        
+        elif self.state == MenuState.PICOTUTOR_PICOCOACH_LIFT:
+            text = self.enter_picotutor_picocoach_menu()
+            
+        elif self.state == MenuState.PICOTUTOR_PICOCOACH_OFF:
             text = self.enter_picotutor_picocoach_menu()
 
         elif self.state == MenuState.PICOTUTOR_PICOEXPLORER:
@@ -1965,7 +2021,13 @@ class DgtMenu(object):
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT:
             text = self.enter_picotutor_menu()
-
+            
+        elif self.state == MenuState.PICOTUTOR_PICOCOMPROB:
+            text = self.enter_picotutor_menu()
+            
+        elif self.state == MenuState.PICOTUTOR_PICOCOMPROB_LIST:
+            text = self.enter_com_prob_menu()
+            
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_OFF:
             text = self.enter_picotutor_picocomment_menu()
 
@@ -2218,6 +2280,8 @@ class DgtMenu(object):
                 text = self.enter_picotutor_picoexplorer_menu()
             if self.menu_picotutor == PicoTutor.COMMENT:
                 text = self.enter_picotutor_picocomment_menu()
+            if self.menu_picotutor == PicoTutor.COM_PROB:
+                text = self.enter_com_prob_menu()
 
         elif self.state == MenuState.PICOTUTOR_PICOWATCHER:
             text = self.enter_picotutor_picowatcher_onoff_menu()
@@ -2230,15 +2294,44 @@ class DgtMenu(object):
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicowatcher"))
 
         elif self.state == MenuState.PICOTUTOR_PICOCOACH:
-            text = self.enter_picotutor_picocoach_onoff_menu()
-
-        elif self.state == MenuState.PICOTUTOR_PICOCOACH_ONOFF:
-            write_picochess_ini("tutor-coach", self.menu_picotutor_picocoach)
-            self.res_picotutor_picocoach = self.menu_picotutor_picocoach
-            event = Event.PICOCOACH(picocoach=self.menu_picotutor_picocoach)
+            if self.menu_picotutor_picocoach == PicoCoach.COACH_OFF:
+                text = self.enter_picotutor_picocoach_off_menu()
+            if self.menu_picotutor_picocoach == PicoCoach.COACH_ON:
+                text = self.enter_picotutor_picocoach_on_menu()
+            if self.menu_picotutor_picocoach == PicoCoach.COACH_LIFT:
+                text = self.enter_picotutor_picocoach_lift_menu()
+            
+        elif self.state == MenuState.PICOTUTOR_PICOCOACH_OFF:
+            l_coach_state = 0
+            write_picochess_ini("tutor-coach", "off")
+            self.menu_picotutor_picocoach = PicoCoach.COACH_OFF
+            self.res_picotutor_picocoach =  PicoCoach.COACH_OFF
+            event = Event.PICOCOACH(picocoach=l_coach_state)
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicocoach"))
 
+        elif self.state == MenuState.PICOTUTOR_PICOCOACH_ON:
+            l_coach_state = 1
+            if self.res_picotutor_picocoach == self.menu_picotutor_picocoach:
+                l_coach_state = 2
+            write_picochess_ini("tutor-coach", "on")
+            self.menu_picotutor_picocoach = PicoCoach.COACH_ON
+            self.res_picotutor_picocoach = PicoCoach.COACH_ON
+            event = Event.PICOCOACH(picocoach=l_coach_state)
+            Observable.fire(event)
+            text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicocoach"))
+
+        elif self.state == MenuState.PICOTUTOR_PICOCOACH_LIFT:
+            l_coach_state = 1
+            if self.res_picotutor_picocoach == self.menu_picotutor_picocoach:
+                l_coach_state = 2
+            write_picochess_ini("tutor-coach", "lift")
+            self.menu_picotutor_picocoach = PicoCoach.COACH_LIFT
+            self.res_picotutor_picocoach = PicoCoach.COACH_LIFT
+            event = Event.PICOCOACH(picocoach=l_coach_state)
+            Observable.fire(event)
+            text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicocoach"))
+            
         elif self.state == MenuState.PICOTUTOR_PICOEXPLORER:
             text = self.enter_picotutor_picoexplorer_onoff_menu()
 
@@ -2275,11 +2368,34 @@ class DgtMenu(object):
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ALL:
             write_picochess_ini("tutor-comment", "all")
-            self.menu_picotutor_picocomment = PicoComment.COM_ON_ALL
             self.res_picotutor_picocomment = PicoComment.COM_ON_ALL
+            self.menu_picotutor_picocomment = PicoComment.COM_ON_ALL
             event = Event.PICOCOMMENT(picocomment=self.menu_picotutor_picocomment)
             Observable.fire(event)
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicocomment"))
+            
+        elif self.state == MenuState.PICOTUTOR_PICOCOMPROB:
+            text = self.enter_com_problist_menu()
+            
+        elif self.state == MenuState.PICOTUTOR_PICOCOMPROB_LIST:
+            self.menu_picotutor_picocomment_prob_list = self.com_prob_list[self.menu_picocomment_prob_idx]
+            write_picochess_ini("comment-factor", self.menu_picotutor_picocomment_prob_list)
+            self.res_picotutor_picocomment_prob = int(self.menu_picotutor_picocomment_prob_list)
+            text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicocomment"))
+            self._fire_event(Event.PICOCOMMENT(picocomment="comment-factor"))
+
+        elif self.state == MenuState.RETROSETTINGS_RETROSPEED_FACTOR:
+            retrospeed = self.retrospeed_list[self.menu_engine_retrospeed_idx]
+            if retrospeed == "max.":
+                self.retrospeed_factor = 0.0
+                self.res_engine_retrospeed = self.retrospeed_factor
+            else:
+                self.retrospeed_factor = round(float(retrospeed) / 100, 2)
+                self.res_engine_retrospeed = self.retrospeed_factor
+            write_picochess_ini("rspeed", self.retrospeed_factor)
+            self._fire_event(Event.RSPEED(rspeed=self.retrospeed_factor))
+            text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okrspeed"))
+            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
 
         elif self.state == MenuState.POS:
             text = self.enter_pos_color_menu()
@@ -2966,8 +3082,8 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_top.value)
 
         elif self.state == MenuState.PICOTUTOR_PICOWATCHER:
-            self.state = MenuState.PICOTUTOR_PICOCOMMENT
-            self.menu_picotutor = PicoTutor.COMMENT
+            self.state = MenuState.PICOTUTOR_PICOCOMPROB
+            self.menu_picotutor = PicoTutor.COM_PROB
             text = self.dgttranslate.text(self.menu_picotutor.value)
 
         elif self.state == MenuState.PICOTUTOR_PICOWATCHER_ONOFF:
@@ -2980,10 +3096,20 @@ class DgtMenu(object):
             self.menu_picotutor = PicoTutor.WATCHER
             text = self.dgttranslate.text(self.menu_picotutor.value)
 
-        elif self.state == MenuState.PICOTUTOR_PICOCOACH_ONOFF:
-            self.menu_picotutor_picocoach = not self.menu_picotutor_picocoach
-            msg = "on" if self.menu_picotutor_picocoach else "off"
-            text = self.dgttranslate.text("B00_picocoach_" + msg)
+        elif self.state == MenuState.PICOTUTOR_PICOCOACH_ON:
+            self.state = MenuState.PICOTUTOR_PICOCOACH_OFF
+            self.menu_picotutor_picocoach = PicoCoachLoop.prev(self.menu_picotutor_picocoach)
+            text = self.dgttranslate.text(self.menu_picotutor_picocoach.value)
+                
+        elif self.state == MenuState.PICOTUTOR_PICOCOACH_LIFT:
+            self.state = MenuState.PICOTUTOR_PICOCOACH_ON
+            self.menu_picotutor_picocoach = PicoCoachLoop.prev(self.menu_picotutor_picocoach)
+            text = self.dgttranslate.text(self.menu_picotutor_picocoach.value)
+                
+        elif self.state == MenuState.PICOTUTOR_PICOCOACH_OFF:
+            self.state = MenuState.PICOTUTOR_PICOCOACH_LIFT
+            self.menu_picotutor_picocoach = PicoCoachLoop.prev(self.menu_picotutor_picocoach)
+            text = self.dgttranslate.text(self.menu_picotutor_picocoach.value)
 
         elif self.state == MenuState.PICOTUTOR_PICOEXPLORER:
             self.state = MenuState.PICOTUTOR_PICOCOACH
@@ -2999,6 +3125,17 @@ class DgtMenu(object):
             self.state = MenuState.PICOTUTOR_PICOEXPLORER
             self.menu_picotutor = PicoTutor.EXPLORER
             text = self.dgttranslate.text(self.menu_picotutor.value)
+                
+        elif self.state == MenuState.PICOTUTOR_PICOCOMPROB:
+            self.state = MenuState.PICOTUTOR_PICOCOMMENT
+            self.menu_picotutor = PicoTutor.COMMENT
+            text = self.dgttranslate.text(self.menu_picotutor.value)
+
+        elif self.state == MenuState.PICOTUTOR_PICOCOMPROB_LIST:
+            self.menu_picocomment_prob_idx = (self.menu_picocomment_prob_idx - 1) % len(self.com_prob_list)
+            self.menu_picocomment_prob_list = self.com_prob_list[self.menu_picocomment_prob_idx]
+            l_prob = self.menu_picocomment_prob_list + "%"
+            text = self.dgttranslate.text("B00_picocom_prob_list", l_prob)
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_OFF:
             self.state = MenuState.PICOTUTOR_PICOCOMMENT_ON_ALL
@@ -3573,11 +3710,21 @@ class DgtMenu(object):
             self.state = MenuState.PICOTUTOR_PICOEXPLORER
             self.menu_picotutor = PicoTutor.EXPLORER
             text = self.dgttranslate.text(self.menu_picotutor.value)
-
-        elif self.state == MenuState.PICOTUTOR_PICOCOACH_ONOFF:
-            self.menu_picotutor_picocoach = not self.menu_picotutor_picocoach
-            msg = "on" if self.menu_picotutor_picocoach else "off"
-            text = self.dgttranslate.text("B00_picocoach_" + msg)
+            
+        elif self.state == MenuState.PICOTUTOR_PICOCOACH_ON:
+            self.state = MenuState.PICOTUTOR_PICOCOACH_LIFT
+            self.menu_picotutor_picocoach = PicoCoachLoop.next(self.menu_picotutor_picocoach)
+            text = self.dgttranslate.text(self.menu_picotutor_picocoach.value)
+                
+        elif self.state == MenuState.PICOTUTOR_PICOCOACH_LIFT:
+            self.state = MenuState.PICOTUTOR_PICOCOACH_OFF
+            self.menu_picotutor_picocoach = PicoCoachLoop.next(self.menu_picotutor_picocoach)
+            text = self.dgttranslate.text(self.menu_picotutor_picocoach.value)
+                
+        elif self.state == MenuState.PICOTUTOR_PICOCOACH_OFF:
+            self.state = MenuState.PICOTUTOR_PICOCOACH_ON
+            self.menu_picotutor_picocoach = PicoCoachLoop.next(self.menu_picotutor_picocoach)
+            text = self.dgttranslate.text(self.menu_picotutor_picocoach.value)
 
         elif self.state == MenuState.PICOTUTOR_PICOEXPLORER:
             self.state = MenuState.PICOTUTOR_PICOCOMMENT
@@ -3590,8 +3737,8 @@ class DgtMenu(object):
             text = self.dgttranslate.text("B00_picoexplorer_" + msg)
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT:
-            self.state = MenuState.PICOTUTOR_PICOWATCHER
-            self.menu_picotutor = PicoTutor.WATCHER
+            self.state = MenuState.PICOTUTOR_PICOCOMPROB
+            self.menu_picotutor = PicoTutor.COM_PROB
             text = self.dgttranslate.text(self.menu_picotutor.value)
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_OFF:
@@ -3608,6 +3755,17 @@ class DgtMenu(object):
             self.state = MenuState.PICOTUTOR_PICOCOMMENT_OFF
             self.menu_picotutor_picocomment = PicoCommentLoop.next(self.menu_picotutor_picocomment)
             text = self.dgttranslate.text(self.menu_picotutor_picocomment.value)
+
+        elif self.state == MenuState.PICOTUTOR_PICOCOMPROB:
+            self.state = MenuState.PICOTUTOR_PICOWATCHER
+            self.menu_picotutor = PicoTutor.WATCHER
+            text = self.dgttranslate.text(self.menu_picotutor.value)
+
+        elif self.state == MenuState.PICOTUTOR_PICOCOMPROB_LIST:
+            self.menu_picocomment_prob_idx = (self.menu_picocomment_prob_idx + 1) % len(self.com_prob_list)
+            self.menu_picocomment_prob_list = self.com_prob_list[self.menu_picocomment_prob_idx]
+            l_prob = self.menu_picocomment_prob_list + "%"
+            text = self.dgttranslate.text("B00_picocom_prob_list", l_prob)
 
         elif self.state == MenuState.MODE:
             self.state = MenuState.POS

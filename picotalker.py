@@ -174,6 +174,9 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
             beeper_sound = 'en:beeper'
             logger.debug('creating beeper sound: [%s]', str(beeper_sound))
             self.set_beeper(PicoTalker(beeper_sound, self.speed_factor))
+            
+    def set_comment_factor(self, comment_factor: int):
+        self.c_comment_factor = comment_factor
 
     def calc_no_group_comments(self, filestring: str):
         """
@@ -372,7 +375,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
         c_total, c_prob = self.get_total_cgroup(c_group)
 
-        if c_prob == 0:
+        if c_prob == 0 or self.c_comment_factor == 0:
             return talkfile
         # consider probability factor from picochess.ini
         if c_group == 'start' or c_group == 'name' or c_group == 'shutdown' or c_group == 'newgame' \
