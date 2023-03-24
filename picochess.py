@@ -752,6 +752,7 @@ def main() -> None:
         emulation = False
         if "(mame" in engine_name or "(mess" in engine_name or engine.is_mame:
             emulation = True
+        ModeInfo.set_emulation_mode(emulation)
         return emulation
 
     def online_mode():

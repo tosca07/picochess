@@ -95,16 +95,29 @@ class ModeInfo:
         ModeInfo.online_mode = mode
         if mode:
             ModeInfo.pgn_mode = False
+            ModeInfo.emulation_mode = False
 
     @classmethod
     def get_online_mode(cls):
         return ModeInfo.online_mode
+        
+    @classmethod
+    def set_emulation_mode(cls, mode):
+        ModeInfo.emulation_mode = mode
+        if mode:
+            ModeInfo.online_mode = False
+            ModeInfo.pgn_mode = False
+
+    @classmethod
+    def get_emulation_mode(cls):
+        return ModeInfo.emulation_mode
 
     @classmethod
     def set_pgn_mode(cls, mode):
         ModeInfo.pgn_mode = mode
         if mode:
             ModeInfo.online_mode = False
+            ModeInfo.emulation_mode = False
 
     @classmethod
     def get_pgn_mode(cls):
