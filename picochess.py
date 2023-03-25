@@ -2594,7 +2594,7 @@ def main() -> None:
         "--theme",
         type=str,
         default="dark",
-        help='Web theme, "light", "dark" , "auto" or blank, default is "dark", leave blank for another light theme, or auto for a sunrise/sunset dependent theme setting',
+        help='Web theme, "light", "dark" , "time", "auto" or blank, default is "dark", leave blank for another light theme, "time" for a change according to a fixed time or "auto" for a sunrise/sunset dependent theme setting',
     )
     parser.add_argument(
         "-rspeed",
