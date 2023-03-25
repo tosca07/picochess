@@ -567,11 +567,12 @@ class EBoardLoop(object):
 class Theme(MyEnum):
     LIGHT = "B00_theme_light_menu"
     DARK = "B00_theme_dark_menu"
+    TIME = "B00_theme_time_menu"
     AUTO = "B00_theme_auto_menu"
 
     @classmethod
     def items(cls):
-        return [Theme.LIGHT, Theme.DARK, Theme.AUTO]
+        return [Theme.LIGHT, Theme.DARK, Theme.TIME, Theme.AUTO]
 
 
 class ThemeLoop(object):

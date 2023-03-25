@@ -951,8 +951,12 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_menu_favorites':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Favorites', large_text='Favorites', medium_text='Favorite', small_text='favor.')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Favoriten', large_text='Favoriten', medium_text='Favorite', small_text='Favor.')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Special & Historical Engines', large_text='Special Eng', medium_text='Special', small_text='specl')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Spezial & historische Engines', large_text='Spezial Eng', medium_text='Special', small_text='Spezl.')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -1547,14 +1551,21 @@ class DgtTranslate(object):
             ittxt = entxt
         if text_id == 'theme_light_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='Web-Theme: light', large_text='theme light', medium_text='light', small_text='light')
-            detxt = entxt
+            detxt = detxt = Dgt.DISPLAY_TEXT(web_text='Web-Theme: hell', large_text='Theme hell', medium_text='hell', small_text='hell')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
         if text_id == 'theme_dark_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='Web-Theme: dark', large_text='theme dark', medium_text='dark', small_text='dark')
-            detxt = entxt
+            detxt = Dgt.DISPLAY_TEXT(web_text='Web-Theme: dunkel', large_text='Theme dunkel', medium_text='dunkel', small_text='dunkel')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'theme_time_menu':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Web-Theme: time', large_text='theme: time', medium_text='time', small_text='time')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Web-Theme: Zeit', large_text='theme Zeit', medium_text='Zeit', small_text='zeit')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
