@@ -367,7 +367,7 @@ board-type = dgt
 #theme = dark
 theme = auto
 
-## Retrospeed Setting for mame engines: rspeed defines the speed-up factor, valid options are numbers of type float 0 to 10.0 (1 = default original machine speed, 0.5 half of the original speed, 2 = double the speed, 0 for unthrottled full speed).
+## Experimental Retro-speed section 1.0 = original, valid options are 0.2 to 2.0 or 0.01 for full speed.
 ## Only use with a Raspberry Pi 4B hardware or better. Leave it blank for the original speed.
 #rspeed = 1.0
 rspeed = 1.0
