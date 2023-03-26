@@ -100,7 +100,7 @@ class ModeInfo:
     @classmethod
     def get_online_mode(cls):
         return ModeInfo.online_mode
-        
+
     @classmethod
     def set_emulation_mode(cls, mode):
         ModeInfo.emulation_mode = mode
