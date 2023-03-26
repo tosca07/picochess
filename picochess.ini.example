@@ -1,11 +1,11 @@
 ### ===================================
-### = picochess.ini.example v3.1 =
+### =   picochess.ini.example v3.1    =
 ### ===================================
 
 ### Example and description how to configure PicoChess
 ### To use this file, simply copy this file to picochess.ini and edit the appropriate settings
-### When you want to activate a flag/line, please remove the "# " infront of it f.e. "# book = ..." becomes "book = ..."
-### Its important you keep this file valid (like here, no leading spaces), otherwise picochess won't work correctly.
+### When you want to activate a flag/line, please remove the "#" in front of it, e.g. "#book = ..." becomes "book = ..."
+### It's important you keep this file valid (like here, no leading spaces), otherwise picochess won't work correctly.
 
 ### From v0.71 on some picochess.ini values are overridden when you change their values using the menu system
 ### Perhaps its a good idea to keep a copy of "picochess.ini" before you are going live with your picochess ;-)
@@ -19,35 +19,38 @@
 ### = DGT related options =
 ### =======================
 
-## To turn OFF the leds on the Revelation II board uncomment the next line
+## To turn OFF the LEDs on the Revelation II board uncomment the next line
 #disable-revelation-leds = True
 
-## beep-config enables or disables the internal DGTPi beeper sounds. The options are "Never", "Sometimes", "Always" or
-## "Sample". "Never" disables all beeps. "Always" enables all beeps. "Sometimes" enables beeps depending on the level set by
-## the beep-some-level setting explained below. "Sample" is used to select audio samples for specific actions and require
-## correctly named sound samples (in ogg format) to be installed in the talker/voices/en/beeper folder. These samples can
-## be used with or without a DGTPi/DGT 3000.
-#beep-config = ( 'none', 'some', 'all', or 'sample')
+## beep-config enables or disables the internal DGTPi beeper sounds or allows sound samples to be used instead. The options
+## are "Never", "Sometimes", "Always" or "Sample". "Never" disables all beeps. "Always" enables all beeps. "Sometimes" enables
+## beeps depending on the level set by the beep-some-level setting below. "Sample" is used to select audio samples for specific
+## actions and requires correctly named sound samples (in ogg format) to be installed in the talker/voices/en/beeper folder.
+## These samples can be used with or without a DGTPi/DGT3000 but only support two settings of beep-some-level.
+#beep-config = ('none', 'some', 'all', or 'sample')
 beep-config = none
 
-## beep-some-level changes the occurrence of beeps. Minimum value is 0 (no beeps), maximum is 15 (all beeps).
-## Please keep in mind: values 0 and 15 make no sense (but are allowed) since they are the same as "Never" and "Always"
-## inside the clock menu or via the beep-config option above. NOTE: if beep-config is set to 'sample' only values 0 (samples off), 1 (move confirmation), and 2 (move+button confirmation) will be considered.
+## When beep-config is set to 'some', beep-some-level changes the frequency of occurrence of beeps. Minimum value is 0 (no beeps),
+## maximum is 15 (all beeps). Please keep in mind: values 0 and 15 make no sense (but are allowed) since they are the same as 
+## "Never" and "Always" inside the clock menu or via the beep-config option above ('none' or 'all' setting). 
 ## The value you give here, is when using the "Sometimes" menu selection (in System/Sound). Beeps are determined by a
 ## special number which you get by adding the following events together to get the beep-some-level value:
 ##
 ## CONFIG = 1 Takeback, GameEnd, NewGame, ComputerMove and SetPieces
 ## BUTTON = 2 All Events coming from button press
-## MAP = 4    All Events coming from Queen placing at start pos (line3-6)
+## MAP = 4    All Events coming from Queen placement from start position (rows 3-6) when used to select options
 ## OKAY = 8   All Events from "ok" (confirm) messages
 ## For example to beep on "ok messages" and "button press" events beep-some-level is: 8 (okay) + 2 (button) = 10
+##
+## When beep-config is set to 'sample' only values 0 (samples off), 1 (move confirmation), and 2 (move + button confirmation)
+## will be considered.
 #beep-some-level = 10
 beep-some-level = 2
 
-## Specify the serial port your dgt-board is connected to.
-## If you dont give a parameter picochess tries to find the board automatically (prefered usage).
+## Specify the serial port your DGT board is connected to.
+## If you don't give a parameter picochess tries to find the board automatically (preferred usage).
 #dgt-port = /dev/ttyACM0
-## Instead of connecting to a dgt board, you can also start picochess with a command line.
+## Instead of connecting to a DGT board, you can also start picochess with a command line.
 ## If so, please uncomment the next line
 #enable-console = True
 
@@ -58,7 +61,7 @@ beep-some-level = 2
 #dgtpi = True
 dgtpi = False
 
-### You can reduce the dgtboard piece recognition by a factor from 0 to 9. Please only use this if you suffer from
+### You can reduce the DGT board piece recognition by a factor from 0 to 9. Please only use this if you suffer from
 ### sliding problems (like multi voices during you slide your pieces for example moving Bf1-b5 hear Be2,d3,c4 then b5).
 #slow-slide = 5
 
@@ -66,7 +69,7 @@ dgtpi = False
 ### = Chess engine options =
 ### ========================
 
-### Options for the UCI-Chess engine
+### Options for the UCI chess engine
 ## Sets the UCI engine used at startup
 ## handle with care. If you setup this section wrong, picochess won't start.
 ## Path to the engine relative to the 'picochess' folder (local engine - standard case)
@@ -74,7 +77,7 @@ dgtpi = False
 engine = /opt/picochess/engines/armv7l/a-stockf
 
 ## What level the engine should have at startup?
-## For a (correct) value please take a look at 'engines/<your_plattform>/<engine_name>.uci'
+## For a (correct) value please take a look at 'engines/<your_platform>/<engine_name>.uci'
 #engine-level= Elo@1500
 engine-level = Elo@1500
 
@@ -115,7 +118,7 @@ book = books/h-varied.bin
 
 ### Options for sending the finished game via email service
 ### PicoChess currently implements two different ways to send a finished game via email:
-### standard SMTP email or Mailgun Webservice
+### standard SMTP email or Mailgun Web service
 ### Mail general
 ### If email is not set, PicoChess won't attempt to send the game at all
 ## email tells PicoChess to which email address the game should be send to, it should be your email address :-)
@@ -149,7 +152,7 @@ book = books/h-varied.bin
 ### ==========================================
 
 ### if mailgun-key is not set, PicoChess won't attempt to send the game via Mailgun
-## mailgun-key stores your Mailgun access key for Mailgun Webservice
+## mailgun-key stores your Mailgun access key for Mailgun Web service
 #mailgun-key = your Mailgun API access key
 
 ### =============================
@@ -161,7 +164,7 @@ book = books/h-varied.bin
 #log-file = picochess.log
 log-file = picochess.log
 ## What log level should be used 
-## Loglevel options are [debug, info, warning (default), error, critical]
+## Log level options are [debug, info, warning (default), error, critical]
 #log-level = error
 log-level = warning
 
@@ -183,14 +186,14 @@ volume-voice = 8
 speed-voice = 2
 ## Speak last computer move again when 'set pieces' displayed
 #enable-setpieces-voice = True
-enable-setpieces-voice = False
+enable-setpieces-voice = True
 
-## PicoChess writes pgn files at end of game. This file is created in the 'games' folder
+## PicoChess writes PGN files at end of game. This file is created in the 'games' folder
 # pgn-file = games.pgn
-## If you want to have your own name in the pgn file uncomment the next line and change accordingly
+## If you want to have your own name in the PGN file uncomment the next line and change accordingly
 #pgn-user = Player
 pgn-user = Player
-## If you want your own ELO ranking in the pgn file or if you want to play automatically adjusted engine levels,
+## If you want your own Elo ranking in the PGN file or if you want to play automatically adjusted engine levels,
 ## comment out the next line and change it accordingly.
 #pgn-elo = 1500
 pgn-elo = 1500
@@ -202,7 +205,7 @@ pgn-elo = 1500
 ## After an update should the machine reboot automatically? If so, please uncomment the next line
 ##enable-update-reboot = True
 
-## The port of the built-in webserver
+## The port of the built-in web server
 #web-server = 8080
 web-server = 80
 
@@ -228,7 +231,7 @@ language = en
 #disable-short-notation = True
 
 #####################################################################################################
-## Molli: Enhancements from v2.00 on
+## Enhancements from v2.00 on
 #####################################################################################################
 
 ### ==========================
@@ -266,7 +269,7 @@ comment-factor = 50
 continue-game = False
 
 #####################################################################################################
-## Molli: Enhancements from v3.00 on
+## Enhancements from v3.00 on
 #####################################################################################################
 
 ## Show engine after startup and new game event. Default is on. If you don't want this feature uncomment next line 
@@ -276,7 +279,7 @@ continue-game = False
 ## feature, uncomment the next line
 #alt-move = True
 
-## Override pgn location from picochess.ini in case the parameter 'location' is set to something different than default
+## Override PGN location from picochess.ini in case the parameter 'location' is set to something different than default
 ## value 'auto' (you can use this if you always get wrong auto location)
 #location = auto
 #location = Hamburg
@@ -292,9 +295,9 @@ location = auto
 ## non-standard values (like "4 6"), but then you cannot change them inside the (time) menu.
 ## e.g., time = m or time = g i
 ## Examples:
-##    time = 7   (time per move, eg. m = 7 seconds)
-##    time = 5 0 (game time, eg. Blitz g = 5 min. and 0 sec. increment)
-##    time = 5 3 (game time g= 5 min. plus i = 3 sec. increment)
+##    time = 7   (time per move, e.g. m = 7 seconds)
+##    time = 5 0 (game time, e.g. Blitz g = 5 min. and 0 sec. increment)
+##    time = 5 3 (game time g = 5 min. plus i = 3 sec. increment)
 ##
 ## New for v3: Tournament time control settings!
 ## Tournament time control settings: n moves in g1 minutes (plus i sec. increment) and rest of the game in g2 minutes.
@@ -306,8 +309,8 @@ location = auto
 #time = 15 10
 time = 15 10
 
-## default time control setting when leaving a mame emulated engine or the pgn engine and choosing a non mame and
-## non pgn engine
+## default time control setting when leaving a MAME emulated engine or the PGN engine and choosing a non MAME and
+## non PGN engine
 #def-timectrl = 15 10
 def-timectrl = 15 10
 
@@ -337,13 +340,17 @@ tutor-comment = all
 
 ## Pico Opening Explorer: shows the name(s) of the opening (based on chess-eco_pos.txt file). Default is off.
 #tutor-explorer = True
-tutor-explorer = False
+tutor-explorer = True
 
-## Pico Watcher: atomatic move evaluation, blunder warning & move suggestion. Default is off.
+## Pico Watcher: automatic move evaluation, blunder warning & move suggestion. Default is off.
 #tutor-watcher = True
-tutor-watcher = False
+tutor-watcher = True
 
-## Pico Coach: move and position evaluation, move suggestion, etc. on demand. You can set it to „on“, „off“ or „lift“. Default is „off“, on mmeans you must trigger the evaluation via the pico tutor menu and ‚lift‘ menas you can trigger it by lifting a piece and putting it back when it is your turn (in addition you can trigger the coach via menu as well). Trigger via menu :just selcet the pico coach option = on or option = lift again. 
+## Pico Coach: move and position evaluation, move suggestion, etc. on demand. You can set it to 'on', 'off' or 'lift'.
+## Default is 'off'. When set to 'on', you must trigger the evaluation via the PicoTutor menu. When set to 'lift‘, you can
+## trigger the evaluation by lifting a king when it is your turn, waiting for the 'set pieces' prompt, and replacing the king on its
+## original square. Additionally, you can trigger the coach via the PicoTutor menu. This is done by selecting the Pico Coach option
+## to 'on' or 'lift' again.
 #tutor-coach = lift
 tutor-coach = off
 
@@ -351,7 +358,7 @@ tutor-coach = off
 #tutor-engine = /opt/picochess/engines/armv7l/a-stockf
 
 ## Type of e-Board. Supported values: 'certabo', 'chesslink', 'chessnut', 'dgt' (default), 'noeboard' (play against
-## engine using webserver interface).
+## engine using web server interface).
 #board-type = chesslink
 board-type = dgt
 
@@ -360,17 +367,17 @@ board-type = dgt
 #theme = dark
 theme = auto
 
-## Retrospeed Setting for mame engines: rspeed defines the speed-up factor, valid options are numbers of type float 0 to 10.0 (1 = default original machine speed, 0.5 half of the original speed, 2 = double the speed, 0 for unthrottled full speed).
+## Experimental Retro-speed section 1.0 = original, valid options are 0.2 to 2.0 or 0.01 for full speed.
 ## Only use with a Raspberry Pi 4B hardware or better. Leave it blank for the original speed.
 #rspeed = 1.0
 rspeed = 1.0
 
-## Retro-Sound Setting for mame engines: default sound is off, if you want to switch it on, set rsound = True by
+## Retro-Sound Setting for MAME engines: default sound is off, if you want to switch it on, set rsound = True by
 ## uncommenting the next line
 #rsound = True
-rsound = False
+rsound = True
 
-# Player rating deviation for automatic adjustment of ELO, starting value: 350
+# Player rating deviation for automatic adjustment of Elo, starting value: 350
 #rating-deviation = 350
 rating-deviation = 350
 
