@@ -36,6 +36,8 @@ def calc_theme(theme_in: str, location_setting: str) -> str:
                 theme_out = _theme_according_to_current_time()
         else:
             theme_out = _theme_according_to_current_time()
+    elif theme_in == 'time':
+        theme_out = _theme_according_to_current_time()
     return theme_out
 
 

@@ -72,6 +72,7 @@ from dgt.util import (
 )
 
 from dgt.api import Dgt, Event
+from dgt.board import Rev2Info
 from dgt.translate import DgtTranslate
 from uci.engine_provider import EngineProvider
 
@@ -365,7 +366,7 @@ class DgtMenu(object):
         self.menu_system_eboard_type = board_type
 
         self.theme_type = theme_type
-        themes = {"light": Theme.LIGHT, "dark": Theme.DARK, "auto": Theme.AUTO}
+        themes = {"light": Theme.LIGHT, "dark": Theme.DARK, "time": Theme.TIME, "auto": Theme.AUTO}
         self.menu_system_theme_type = themes[theme_type]
 
         self.menu_system_display = Display.PONDER
@@ -2713,16 +2714,20 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_INFO_IP:
             if self.int_ip:
-                msg = " ".join(self.int_ip.split(".")[:2])
-                text = self.dgttranslate.text("B07_default", msg)
-                if len(msg) == 7:  # delete the " " for XL incase its "123 456"
-                    text.s = msg[:3] + msg[4:]
-                DispatchDgt.fire(text)
-                msg = " ".join(self.int_ip.split(".")[2:])
-                text = self.dgttranslate.text("N07_default", msg)
-                if len(msg) == 7:  # delete the " " for XL incase its "123 456"
-                    text.s = msg[:3] + msg[4:]
-                text.wait = True
+                if Rev2Info.get_web_only():
+                    msg = self.int_ip
+                    text = self.dgttranslate.text("N07_default", msg)
+                else:
+                    msg = " ".join(self.int_ip.split(".")[:2])
+                    text = self.dgttranslate.text("B07_default", msg)
+                    if len(msg) == 7:  # delete the " " for XL incase its "123 456"
+                        text.s = msg[:3] + msg[4:]
+                    DispatchDgt.fire(text)
+                    msg = " ".join(self.int_ip.split(".")[2:])
+                    text = self.dgttranslate.text("N07_default", msg)
+                    if len(msg) == 7:  # delete the " " for XL incase its "123 456"
+                        text.s = msg[:3] + msg[4:]
+                    text.wait = True
             else:
                 text = self.dgttranslate.text("B10_noipadr")
             text = self._fire_dispatchdgt(text)
@@ -2953,7 +2958,7 @@ class DgtMenu(object):
             text = self.enter_sys_theme_type_menu()
 
         elif self.state == MenuState.SYS_THEME_TYPE:
-            themes = {Theme.LIGHT: "light", Theme.DARK: "dark", Theme.AUTO: "auto"}
+            themes = {Theme.LIGHT: "light", Theme.DARK: "dark", Theme.TIME: "time", Theme.AUTO: "auto"}
             theme_type = themes[self.menu_system_theme_type]
             write_picochess_ini("theme", theme_type)
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_oktheme"))

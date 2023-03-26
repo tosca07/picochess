@@ -36,6 +36,7 @@ from dgt.api import Dgt, Event, Message
 from dgt.util import PlayMode, Mode, ClockSide, GameResult
 from dgt.iface import DgtIface
 from eboard import EBoard
+from pgn import ModeInfo
 
 # This needs to be reworked to be session based (probably by token)
 # Otherwise multiple clients behind a NAT can all play as the 'player'
@@ -470,12 +471,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
             if "rspeed" in self.shared["system_info"]:
                 rspeed = self.shared["system_info"]["rspeed"]
                 retro_speed = int(100 * round(float(rspeed), 2))
-                if (
-                    "mame" in engine_name
-                    or "MAME" in engine_name
-                    or "mess" in engine_name
-                    or "MESS" in engine_name
-                ):
+                if ModeInfo.get_emulation_mode():
                     retro_speed_str = " (" + str(retro_speed) + "%" + ")"
                     if retro_speed < 20:
                         retro_speed_str = " (full speed)"

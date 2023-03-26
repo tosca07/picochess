@@ -1553,15 +1553,22 @@ class DgtTranslate(object):
             ittxt = entxt
         if text_id == 'theme_light_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='Web-Theme: light', large_text='theme light', medium_text='light', small_text='light')
-            detxt = entxt
+            detxt = detxt = Dgt.DISPLAY_TEXT(web_text='Web-Theme: hell', large_text='Theme hell', medium_text='hell', small_text='hell')
             nltxt = Dgt.DISPLAY_TEXT(web_text='Web-Thema: licht', large_text='thema licht', medium_text='licht', small_text='licht')
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
         if text_id == 'theme_dark_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='Web-Theme: dark', large_text='theme dark', medium_text='dark', small_text='dark')
-            detxt = entxt
+            detxt = Dgt.DISPLAY_TEXT(web_text='Web-Theme: dunkel', large_text='Theme dunkel', medium_text='dunkel', small_text='dunkel')
             nltxt = Dgt.DISPLAY_TEXT(web_text='Web-Thema: donker', large_text='thema donk', medium_text='donk', small_text='donk')
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'theme_time_menu':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Web-Theme: time', large_text='theme: time', medium_text='time', small_text='time')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Web-Theme: Zeit', large_text='theme Zeit', medium_text='Zeit', small_text='zeit')
+            nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
