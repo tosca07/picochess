@@ -338,6 +338,9 @@ class DgtTranslate(object):
                 l_msgd = 'Matt in ' + msg_list[1]
                 m_msgd = 'Matt ' + msg_list[1]
                 s_msgd = 'Matt' + msg_list[1]
+                l_msgn = 'Mat in ' + msg_list[1]
+                m_msgn = 'Mat ' + msg_list[1]
+                s_msgn = 'Mat ' + msg_list[1]
                 entxt = Dgt.DISPLAY_TEXT(web_text='', large_text=l_msg, medium_text=m_msg, small_text=s_msg)
                 detxt = Dgt.DISPLAY_TEXT(web_text='', large_text=l_msgd, medium_text=m_msgd, small_text=s_msgd)
                 nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text=l_msgn, medium_text=m_msgn, small_text=s_msgn)
@@ -352,9 +355,12 @@ class DgtTranslate(object):
                 l_msgd = 'Matt in ' + msg_list[1]
                 m_msgd = 'Matt ' + msg_list[1]
                 s_msgd = 'Matt' + msg_list[1]
+                l_msgn = 'Mat in ' + msg_list[1]
+                m_msgn = 'Mat ' + msg_list[1]
+                s_msgn = 'Mat ' + msg_list[1]
                 entxt = Dgt.DISPLAY_TEXT(web_text='', large_text=l_msg, medium_text=m_msg, small_text=s_msg)
                 detxt = Dgt.DISPLAY_TEXT(web_text='', large_text=l_msgd, medium_text=m_msgd, small_text=s_msgd)
-                nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text=l_megn, medium_text=m_msgn, small_text=s_msgn)
+                nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text=l_msgn, medium_text=m_msgn, small_text=s_msgn)
                 frtxt = entxt
                 estxt = entxt
                 ittxt = entxt
