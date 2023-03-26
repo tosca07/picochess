@@ -42,26 +42,7 @@ class PicoTutor:
         self.user_color = i_player_color
         self.max_valid_moves = 200
         self.engine_path = i_engine_path
-
-        """
-        self.engine = chess.uci.popen_engine(i_engine_path)
-        self.engine2 = chess.uci.popen_engine(i_engine_path)
-        self.engine.uci()
-        self.engine2.uci()
-        self.engine.setoption({"MultiPV": self.max_valid_moves})
-        self.engine.setoption({"Contempt": 0})
-        self.engine.setoption({"Threads": c.NUM_THREADS})
-        self.engine2.setoption({"MultiPV": self.max_valid_moves})
-        self.engine2.setoption({"Contempt": 0})
-        self.engine2.setoption({"Threads": c.NUM_THREADS})
-        self.engine.isready()
-        self.engine2.isready()
-        self.info_handler = chess.uci.InfoHandler()
-        self.info_handler2 = chess.uci.InfoHandler()
-        self.engine.info_handlers.append(self.info_handler)
-        self.engine2.info_helf.engine2.info_handlers.append(self.info_handler2)
-        """
-
+        
         self.engine = None
         self.engine2 = None
 
@@ -88,6 +69,7 @@ class PicoTutor:
         self.comments_all = []
         self.comment_all_no = 0
         self.lang = i_lang
+        self.expl_start_position = True
         self.pos = False
         self.watcher_on = True
         self.coach_on = False
@@ -230,7 +212,15 @@ class PicoTutor:
         return opening_name, moves, eco
 
     def get_opening(self) -> Tuple[str, str, str, bool]:
-
+        # check if game started really from start position
+        # (otherwise we can't use opening based on just the moves)
+        
+        halfmoves = 2 * self.board.fullmove_number
+        if self.board.turn:
+            halfmoves -= 2
+        else:
+            halfmoves -= 1
+            
         diff = self.board.fullmove_number - self.last_inside_book_moveno
         inside_book_opening = False
 
@@ -243,14 +233,7 @@ class PicoTutor:
 
         opening_name, moves, eco = self._find_longest_matching_opening(played)
 
-        halfmoves = 2 * self.board.fullmove_number
-
-        if self.board.turn:
-            halfmoves -= 2
-        else:
-            halfmoves -= 1
-
-        if halfmoves <= len(moves.split()):
+        if self.expl_start_position and halfmoves <= len(moves.split()):
             inside_book_opening = True
             self.last_inside_book_moveno = self.board.fullmove_number
         else:
@@ -328,6 +311,7 @@ class PicoTutor:
         self.pv_user_move = []
         self.hint_move = chess.Move.null()
         self.mate = 0
+        self.expl_start_position = True
 
     def set_user_color(self, i_user_color):
 
@@ -352,13 +336,22 @@ class PicoTutor:
     def get_user_color(self):
         return self.user_color
 
-    def set_position(self, i_fen, i_turn=chess.WHITE):
-        if not (self.coach_on or self.watcher_on):
-            return
+    def set_position(self, i_fen, i_turn=chess.WHITE, i_ignore_expl=False):
+    
         self.reset()
-
         self.board = chess.Board(i_fen)
         chess.Board.turn = i_turn
+        
+        if i_ignore_expl:
+            fen = self.board.board_fen()
+            if fen == chess.STARTING_BOARD_FEN:
+                self.expl_start_position = True
+            else:
+                self.expl_start_position = False
+                
+        if not (self.coach_on or self.watcher_on):
+            return
+            
         self.engine.position(self.board)
         self.engine2.position(self.board)
         self.pos = True

@@ -3398,7 +3398,7 @@ def main() -> None:
                 state.game_declared = False
                 if picotutor_mode(state):
                     state.picotutor.reset()
-                    state.picotutor.set_position(state.game.fen(), i_turn=state.game.turn)
+                    state.picotutor.set_position(state.game.fen(), i_turn=state.game.turn, i_ignore_expl=True)
                     if state.play_mode == PlayMode.USER_BLACK:
                         state.picotutor.set_user_color(chess.BLACK)
                     else:
@@ -3540,7 +3540,13 @@ def main() -> None:
                     )
                     if "no_player" not in opp_user and "no_user" not in own_user:
                         switch_online(state)
-
+                    if picotutor_mode(state):
+                        state.picotutor.reset()
+                        if not state.flag_startup:
+                            if state.play_mode == PlayMode.USER_BLACK:
+                                state.picotutor.set_user_color(chess.BLACK)
+                            else:
+                                state.picotutor.set_user_color(chess.WHITE)
                 else:
                     if online_mode():
                         logger.debug("starting a new game with code: %s", event.pos960)
