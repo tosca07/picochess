@@ -899,9 +899,7 @@ def main() -> None:
         state.legal_fens = compute_legal_fens(state.game.copy())
         state.legal_fens_after_cmove = []
         state.last_legal_fens = []
-        assert engine.is_waiting(), (
-            "molli: read_pgn engine not waiting! thinking status: %s" % engine.is_thinking()
-        )
+        stop_search_and_clock()
         engine.position(copy.deepcopy(state.game))
 
         game_end = state.check_game_state()
@@ -993,9 +991,7 @@ def main() -> None:
                         set_wait_state(
                             Message.START_NEW_GAME(game=state.game.copy(), newgame=False), state
                         )
-                        assert engine.is_waiting(), (
-                            "engine not waiting! thinking status: %s" % engine.is_thinking()
-                        )
+                        stop_search_and_clock()
                         engine.position(copy.deepcopy(state.game))
                         engine.ponder()
                     else:
@@ -1018,9 +1014,7 @@ def main() -> None:
                                 Message.START_NEW_GAME(game=state.game.copy(), newgame=False),
                                 state,
                             )
-                            assert engine.is_waiting(), (
-                                "engine not waiting! thinking status: %s" % engine.is_thinking()
-                            )
+                            stop_search_and_clock()
                             engine.position(copy.deepcopy(state.game))
                             engine.ponder()
                         else:
