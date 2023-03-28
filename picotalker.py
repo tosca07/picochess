@@ -914,11 +914,13 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         self.talk(['show_enginename_off.ogg'])
 
                 elif isinstance(message, Message.SHOW_TEXT):
-                    if message.text_string == 'NEW_POSITION':
+                    if message.text_string == 'NEW_POSITION_SCAN':
+                        self.talk(['position_setup.ogg'])
+                    elif message.text_string == 'NEW_POSITION':
                         self.talk(['set_pieces_sound.ogg'], self.BEEPER)
                         if not self.sample_beeper or self.sample_beeper_level == 0:
                             self.talk(['set_pieces_sound.ogg'])
-
+                    
                 elif isinstance(message, Message.PICOWATCHER):
                     if message.picowatcher:
                         self.talk(['picowatcher_enabled.ogg'])

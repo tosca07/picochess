@@ -3387,7 +3387,8 @@ def main() -> None:
                 if engine.has_chess960():
                     engine.option("UCI_Chess960", uci960)
                     engine.send()
-
+                
+                DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION_SCAN"))
                 engine.newgame(state.game.copy())
                 state.done_computer_fen = None
                 state.done_move = state.pb_move = chess.Move.null()
