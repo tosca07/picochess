@@ -209,6 +209,28 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             except ValueError:
                 pass
             return score
+            
+    def _move_language(self, text: str, language: str, capital: bool, short: bool):
+        """Return move text for clock display."""
+        if short:
+            directory = {}
+            if language == 'de':
+                directory = {'R': 'T', 'N': 'S', 'B': 'L', 'Q': 'D'}
+            if language == 'nl':
+                directory = {'R': 'T', 'N': 'P', 'B': 'L', 'Q': 'D'}
+            if language == 'fr':
+                directory = {'R': 'T', 'N': 'C', 'B': 'F', 'Q': 'D', 'K': '@'}
+            if language == 'es':
+                directory = {'R': 'T', 'N': 'C', 'B': 'A', 'Q': 'D', 'K': '@'}
+            if language == 'it':
+                directory = {'R': 'T', 'N': 'C', 'B': 'A', 'Q': 'D', 'K': '@'}
+            for i, j in directory.items():
+                text = text.replace(i, j)
+            text = text.replace('@', 'R')  # replace the King "@" from fr, es, it languages
+        if capital:
+            return text.upper()
+        else:
+            return text
 
     def _combine_depth_and_score_and_hint(self) -> Dgt.DISPLAY_TEXT:
         score = copy.copy(self.score)
@@ -233,8 +255,10 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             move_text = bit_board.san(text.move)
         else:
             move_text = ' - '
-        score.web_text = evaluation + ' | ' + move_text
-        score.large_text = evaluation + ' | ' + move_text
+        short = True
+        move_lang = self._move_language(move_text, self.dgttranslate.language, self.dgttranslate.capital, short)
+        score.web_text = evaluation + ' | ' + move_lang
+        score.large_text = evaluation + ' | ' + move_lang
         score.rd = ClockIcons.DOT
         return score
 
