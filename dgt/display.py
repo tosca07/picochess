@@ -1206,6 +1206,8 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             if message.text_string == 'NEW_POSITION':
                 DispatchDgt.fire(self.dgttranslate.text('K20_newposition'))
                 time.sleep(1.5)
+            elif message.text_string == 'NEW_POSITION_SCAN':
+                time.sleep(0.5)
             else:
                 for string_part in self._convert_pico_string(message.text_string):
                     DispatchDgt.fire(self.dgttranslate.text('K20_default', string_part))
