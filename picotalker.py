@@ -379,7 +379,13 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
             return talkfile
             
         # consider probability factor from picochess.ini
-        c_prob = round(c_prob * (self.c_comment_factor / 100))
+        if c_group == 'start' or c_group == 'name' or c_group == 'shutdown' or c_group == 'mate' \
+            or c_group == 'stalemate' or c_group == 'draw' or c_group == 'takeback' \
+            or c_group == 'check':
+            # don't use factor for these events
+            c_prob = c_prob
+        else:
+            c_prob = round(c_prob * (self.c_comment_factor / 100))
         
         c_number = round(c_total * (100 / c_prob))
 
