@@ -32,8 +32,6 @@ class DgtTranslate(object):
         self.beep_level = beep_level
         self.language = language
         self.version = picochess_version
-        self.version_large = str(self.version)
-        self.version_large = self.version_large.replace('.', '')
         self.capital = False  # Set from dgt.menu lateron
         self.notation = False  # Set from dgt.menu lateron
 
@@ -732,7 +730,7 @@ class DgtTranslate(object):
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='uci960 si  ', medium_text='960 si  ', small_text='960 si')
         if text_id == 'picochess':
             wait = True
-            entxt = Dgt.DISPLAY_TEXT(web_text=f'PicoChess {self.version}', large_text='PicoChess' + self.version_large, medium_text=f'pico {self.version}', small_text=f'pic{self.version}')
+            entxt = Dgt.DISPLAY_TEXT(web_text=f'PicoChess {self.version}', large_text=f'pChess {self.version}', medium_text=f'pico {self.version}', small_text=f'pic{self.version}')
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
@@ -1549,8 +1547,8 @@ class DgtTranslate(object):
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Idioma     ', medium_text='Idioma  ', small_text='idioma')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Lingua     ', medium_text='Lingua  ', small_text='lingua')
         if text_id == 'system_logfile_menu':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Log file   ', medium_text='Log file', small_text='logfil')
-            detxt = entxt
+            entxt = Dgt.DISPLAY_TEXT(web_text='Send log file via email', large_text='mailLogfile', medium_text='Log file', small_text='logfil')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Sende Logfile via email', large_text='mailLogfile', medium_text='Log file', small_text='logfil')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
