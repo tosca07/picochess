@@ -32,6 +32,8 @@ class DgtTranslate(object):
         self.beep_level = beep_level
         self.language = language
         self.version = picochess_version
+        self.version_large = str(self.version)
+        self.version_large = self.version_large.replace('.', '')
         self.capital = False  # Set from dgt.menu lateron
         self.notation = False  # Set from dgt.menu lateron
 
@@ -730,7 +732,7 @@ class DgtTranslate(object):
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='uci960 si  ', medium_text='960 si  ', small_text='960 si')
         if text_id == 'picochess':
             wait = True
-            entxt = Dgt.DISPLAY_TEXT(web_text=f'PicoChess {self.version}', large_text=f'pChess {self.version}', medium_text=f'pico {self.version}', small_text=f'pic{self.version}')
+            entxt = Dgt.DISPLAY_TEXT(web_text=f'PicoChess {self.version}', large_text='PicoChess' + self.version_large, medium_text=f'pico {self.version}', small_text=f'pic{self.version}')
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
@@ -1029,8 +1031,9 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_menu_favorites':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Special & Historical Engines', large_text='Special Eng', medium_text='Special', small_text='specl')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Spezial & historische Engines', large_text='Spezial Eng', medium_text='Special', small_text='Spezl.')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Favorites', large_text='Favorites', medium_text='Favorite', small_text='favor.')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Favoriten', large_text='Favoriten', medium_text='Favorite', small_text='Favor.')
+            nltxt = Dgt.DISPLAY_TEXT(web_text='Favorieten', large_text='Favorieten', medium_text='Favor.', small_text='Favor.')
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
@@ -1365,7 +1368,7 @@ class DgtTranslate(object):
             ittxt = entxt
         if text_id == 'picotutor_picoprob_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='Comment probability', large_text='CommentProb', medium_text='c-probab', small_text='c-prob')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Kommentar Wahrscheinlichkeit', large_text='KommWahrsch', medium_text='KWahrsch', small_text='wahrsl')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Wahrscheinlichkeit', large_text='KommWahrsch', medium_text='KWahrsch', small_text='wahrsl')
             nltxt = Dgt.DISPLAY_TEXT(web_text='Commentaar percentage', large_text='Comm Perc', medium_text='CPerc', small_text='CPerc')
             frtxt = entxt
             estxt = entxt
