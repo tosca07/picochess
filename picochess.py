@@ -551,7 +551,7 @@ def compare_fen(fen_board_external="", fen_board_internal="") -> str:
     # all fields where to put new/different pieces on
     # start first with all squares to be cleared
     put_field = ""
-    for square_no in range(0, 63):
+    for square_no in range(0, 64):
         if internal_board.piece_at(square_no) != external_board.piece_at(square_no):
             if internal_board.piece_at(square_no) is None:
                 return str("clear " + chess.square_name(square_no))
