@@ -565,10 +565,9 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         elif isinstance(message, Message.SYSTEM_INFO):
             if 'engine_name' in message.info:
                 self.engine_name = message.info['engine_name']
-                if ModeInfo.get_emulation_mode():
-                    self.engine_name = self.engine_name.replace('(pos+info)', '')
-                    self.engine_name = self.engine_name.replace('(pos)', '')
-                    self.engine_name = self.engine_name.replace('(info)', '')
+                self.engine_name = self.engine_name.replace('(pos+info)', '')
+                self.engine_name = self.engine_name.replace('(pos)', '')
+                self.engine_name = self.engine_name.replace('(info)', '')
                 self.old_engine = self.engine_name
                 self.old_level_name = self.level_name
                 self.old_level_text = self.level_text
@@ -626,7 +625,12 @@ class PgnDisplay(DisplayMsg, threading.Thread):
                     break
 
         elif isinstance(message, Message.ENGINE_READY):
-            self.old_engine = self.engine_name = message.engine_name
+            self.engine_name = message.engine_name
+            self.engine_name = self.engine_name.replace('(pos+info)', '')
+            self.engine_name = self.engine_name.replace('(pos)', '')
+            self.engine_name = self.engine_name.replace('(info)', '')
+        
+            self.old_engine = self.engine_name
             self.engine_elo = message.eng['elo']
             if not message.has_levels:
                 self.level_text = None
