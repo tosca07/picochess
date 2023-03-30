@@ -631,7 +631,7 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='no avversar', medium_text='no avver', small_text='no avv')
         if text_id == 'newposition':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='new Position', medium_text='newPosit', small_text='newPos')
+            entxt = Dgt.DISPLAY_TEXT(web_text='new Position', large_text='newPosition', medium_text='newPosit', small_text='newPos')
             detxt = Dgt.DISPLAY_TEXT(web_text='neue Stellung', large_text='neue Stelng', medium_text='neueStlg', small_text='neuStl')
             nltxt = Dgt.DISPLAY_TEXT(web_text='Nwe stelling', large_text='nwe stell.', medium_text='nweStell', small_text='nweStl')
             frtxt = entxt
