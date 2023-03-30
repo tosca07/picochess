@@ -46,6 +46,7 @@ logger = logging.getLogger(__name__)
 class ModeInfo:
     online_mode = False
     pgn_mode = False
+    emulation_mode = False
     opening_name = ''
     opening_eco = ''
     online_opponent = ''
@@ -100,7 +101,7 @@ class ModeInfo:
     @classmethod
     def get_online_mode(cls):
         return ModeInfo.online_mode
-
+        
     @classmethod
     def set_emulation_mode(cls, mode):
         ModeInfo.emulation_mode = mode
@@ -371,7 +372,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             pgn_game.headers['PicoDepth'] = str(l_timectrl.depth)
         if l_timectrl.node > 0:
             pgn_game.headers['PicoNode'] = str(l_timectrl.node)
-        if 'mame' in self.engine_name or 'mess' in self.engine_name or 'MAME' in self.engine_name or 'MESS' in self.engine_name:
+        if ModeInfo.get_emulation_mode():
             rspeed_str = str(round(float(self.rspeed), 2))
             pgn_game.headers['PicoRSpeed'] = rspeed_str
 
@@ -509,7 +510,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             pgn_game.headers['PicoDepth'] = str(l_timectrl.depth)
         if l_timectrl.node > 0:
             pgn_game.headers['PicoNode'] = str(l_timectrl.node)
-        if 'mame' in self.engine_name or 'mess' in self.engine_name or 'MAME' in self.engine_name or 'MESS' in self.engine_name:
+        if ModeInfo.get_emulation_mode():
             rspeed_str = str(round(float(self.rspeed), 2))
             pgn_game.headers['PicoRSpeed'] = rspeed_str
 
@@ -564,6 +565,10 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         elif isinstance(message, Message.SYSTEM_INFO):
             if 'engine_name' in message.info:
                 self.engine_name = message.info['engine_name']
+                if ModeInfo.get_emulation_mode():
+                    self.engine_name = self.engine_name.replace('(pos+info)', '')
+                    self.engine_name = self.engine_name.replace('(pos)', '')
+                    self.engine_name = self.engine_name.replace('(info)', '')
                 self.old_engine = self.engine_name
                 self.old_level_name = self.level_name
                 self.old_level_text = self.level_text
