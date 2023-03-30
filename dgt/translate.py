@@ -1136,7 +1136,7 @@ class DgtTranslate(object):
         if text_id == 'game_end_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='Declare Game Ending', large_text='Game Ending', medium_text='Game End', small_text='gamend')
             detxt = Dgt.DISPLAY_TEXT(web_text='Erkläre Partieende', large_text='Partieende', medium_text='SplEnde', small_text='ende')
-            nltxt = Dgt.DISPLAY_TEXT(web_text='Einde party', large_text='Partyeinde', medium_txt='ParEind', small_text='eind')
+            nltxt = Dgt.DISPLAY_TEXT(web_text='Einde party', large_text='Partyeinde', medium_text='ParEind', small_text='eind')
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
