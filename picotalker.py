@@ -680,7 +680,6 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         logger.debug('announcing GAME_ENDS/FIVEFOLD_REPETITION')
                         self.talk(['repetition.ogg', 'draw.ogg'])
                         self.comment('draw')
-                    self.talk(['bell.ogg'], self.BEEPER)
 
                 elif isinstance(message, Message.TAKE_BACK):
                     logger.debug('announcing TAKE_BACK')
