@@ -449,10 +449,11 @@ class EngineRetroSettings(MyEnum):
 
     RETROSPEED = "B00_engine_menu_retrospeed"
     RETROSOUND = "B00_engine_menu_retrosound"
+    RETROINFO  = "B00_engine_menu_retroinfo"
 
     @classmethod
     def items(cls):
-        return [EngineRetroSettings.RETROSPEED, EngineRetroSettings.RETROSOUND]
+        return [EngineRetroSettings.RETROSPEED, EngineRetroSettings.RETROSOUND, EngineRetroSettings.RETROINFO]
 
 
 class EngineRetroSettingsLoop(object):

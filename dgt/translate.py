@@ -1049,6 +1049,20 @@ class DgtTranslate(object):
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
+        if text_id == 'engine_menu_retroinfo':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Retro-Engine Information', large_text='Retro-Info', medium_text='RetInfo', small_text='rinfo')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'engine_retroinfo':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Engine-Features:' + msg, large_text= msg, medium_text=msg, small_text=msg)
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
         if text_id == 'engine_retrosound_on':
             entxt = Dgt.DISPLAY_TEXT(web_text='Retro-Sound on', large_text='RetroSnd on', medium_text='Cont.on ', small_text='con.on')
             detxt = Dgt.DISPLAY_TEXT(web_text='Retro-Sound an', large_text='RetroSnd an', medium_text='RSnd an', small_text='rsndan')
@@ -1079,6 +1093,13 @@ class DgtTranslate(object):
             ittxt = entxt
         if text_id == 'okrspeed':
             entxt = Dgt.DISPLAY_TEXT(web_text='ok Retro-Speed', large_text='ok R-Speed', medium_text='ok speed  ', small_text='ok')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'okrinfo':
+            entxt = Dgt.DISPLAY_TEXT(web_text='ok Retro-Info', large_text='ok R-Info', medium_text='ok rinfo', small_text='ok')
             detxt = entxt
             nltxt = entxt
             frtxt = entxt

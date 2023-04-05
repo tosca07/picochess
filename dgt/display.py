@@ -25,7 +25,7 @@ import time
 import chess  # type: ignore
 from utilities import DisplayMsg, Observable, DispatchDgt, RepeatedTimer, write_picochess_ini
 from dgt.menu import DgtMenu
-from dgt.util import ClockSide, ClockIcons, BeepLevel, Mode, GameResult, TimeMode, PlayMode
+from dgt.util import EBoard, ClockSide, ClockIcons, BeepLevel, Mode, GameResult, TimeMode, PlayMode
 from dgt.api import Dgt, Event, Message
 from timecontrol import TimeControl
 from dgt.board import Rev2Info
@@ -658,6 +658,11 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self.play_move = move
         self.play_fen = message.game.fen()
         self.play_turn = message.game.turn
+        if self.dgtmenu.current_board_type == EBoard.NOEBOARD:
+            game_copy_dgt = message.game.copy()
+            game_copy_dgt.push(move)
+            self.dgtmenu.set_dgt_fen(game_copy_dgt.board_fen())
+        
         if ponder:
             game_copy = message.game.copy()
             game_copy.push(move)
@@ -729,6 +734,9 @@ class DgtDisplay(DisplayMsg, threading.Thread):
 
         self.last_move = message.move
         self.last_fen = message.fen
+        if self.dgtmenu.current_board_type == EBoard.NOEBOARD:
+            self.dgtmenu.set_dgt_fen(message.game.board_fen())
+
         self.last_turn = message.turn
         self.play_move = chess.Move.null()
         self.play_fen = None
