@@ -53,6 +53,7 @@ class ModeInfo:
     online_own_user = ''
     end_result = '*'
     book_in_use = ''
+    retro_engine_features = ' /'
 
     @classmethod
     def set_opening(cls, book_in_use, op_name, op_eco):
@@ -86,6 +87,10 @@ class ModeInfo:
     def set_game_ending(cls, result):
         logger.debug('Save game result %s', result)
         ModeInfo.end_result = result
+        
+    @classmethod
+    def get_retro_features(cls):
+        return ModeInfo.retro_engine_features
 
     @classmethod
     def get_game_ending(cls):
@@ -494,8 +499,8 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             if message.play_mode == PlayMode.USER_WHITE:
                 pgn_game.headers['White'] = self.user_name
                 pgn_game.headers['Black'] = self.engine_name + engine_level
-                pgn_game.headers['WhiteElo'] = self.user_elo
-                pgn_game.headers['BlackElo'] = comp_elo
+                pgn_game.headers['WhiteElo'] = str(self.user_elo)
+                pgn_game.headers['BlackElo'] = str(comp_elo)
             if message.play_mode == PlayMode.USER_BLACK:
                 pgn_game.headers['White'] = self.engine_name + engine_level
                 pgn_game.headers['Black'] = self.user_name
@@ -565,13 +570,20 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         elif isinstance(message, Message.SYSTEM_INFO):
             if 'engine_name' in message.info:
                 self.engine_name = message.info['engine_name']
-                self.engine_name = self.engine_name.replace('(pos+info)', '')
-                self.engine_name = self.engine_name.replace('(pos)', '')
-                self.engine_name = self.engine_name.replace('(info)', '')
-                self.old_engine = self.engine_name
-                self.old_level_name = self.level_name
-                self.old_level_text = self.level_text
-                self.old_engine_elo = self.engine_elo
+                ModeInfo.retro_engine_features = ' /'
+                if '(pos+info)' in self.engine_name:
+                    ModeInfo.retro_engine_features = ' pos + info'
+                    self.engine_name = self.engine_name.replace('(pos+info)', '')
+                if '(pos)' in self.engine_name:
+                    ModeInfo.retro_engine_features = ' position'
+                    self.engine_name = self.engine_name.replace('(pos)', '')
+                if '(info)' in self.engine_name:
+                    ModeInfo.retro_engine_features = ' information'
+                    self.engine_name = self.engine_name.replace('(info)', '')
+                    self.old_engine = self.engine_name
+                    self.old_level_name = self.level_name
+                    self.old_level_text = self.level_text
+                    self.old_engine_elo = self.engine_elo
             if 'user_name' in message.info:
                 self.user_name = message.info['user_name']
                 self.user_name_orig = message.info['user_name']
@@ -626,9 +638,16 @@ class PgnDisplay(DisplayMsg, threading.Thread):
 
         elif isinstance(message, Message.ENGINE_READY):
             self.engine_name = message.engine_name
-            self.engine_name = self.engine_name.replace('(pos+info)', '')
-            self.engine_name = self.engine_name.replace('(pos)', '')
-            self.engine_name = self.engine_name.replace('(info)', '')
+            ModeInfo.retro_engine_features = ' /'
+            if '(pos+info)' in self.engine_name:
+                ModeInfo.retro_engine_features = ' pos + info'
+                self.engine_name = self.engine_name.replace('(pos+info)', '')
+            if '(pos)' in self.engine_name:
+                ModeInfo.retro_engine_features = ' position'
+                self.engine_name = self.engine_name.replace('(pos)', '')
+            if '(info)' in self.engine_name:
+                ModeInfo.retro_engine_features = ' information'
+                self.engine_name = self.engine_name.replace('(info)', '')
         
             self.old_engine = self.engine_name
             self.engine_elo = message.eng['elo']
@@ -645,6 +664,15 @@ class PgnDisplay(DisplayMsg, threading.Thread):
                 self._save_and_email_pgn(message)
 
         elif isinstance(message, Message.START_NEW_GAME):
+            if '(pos+info)' in self.engine_name:
+                ModeInfo.retro_engine_features = ' pos + info'
+                self.engine_name = self.engine_name.replace('(pos+info)', '')
+            if '(pos)' in self.engine_name:
+                ModeInfo.retro_engine_features = ' position'
+                self.engine_name = self.engine_name.replace('(pos)', '')
+            if '(info)' in self.engine_name:
+                ModeInfo.retro_engine_features = ' information'
+                self.engine_name = self.engine_name.replace('(info)', '')
             self.startime = datetime.datetime.now().strftime('%H:%M:%S')
 
         elif isinstance(message, Message.SAVE_GAME):
