@@ -2193,7 +2193,12 @@ def main() -> None:
             DisplayMsg.show(msg)
             state.start_clock()
             state.legal_fens = compute_legal_fens(state.game.copy())
-
+       
+    def calc_engine_mame_par():
+        return(get_engine_mame_par(
+            state.dgtmenu.get_engine_rspeed(),
+            state.dgtmenu.get_engine_rsound()))
+            
     def takeback(state: PicochessState):
         stop_search_and_clock()
         l_error = False
@@ -2435,6 +2440,13 @@ def main() -> None:
     )
     parser.add_argument("-pi", "--dgtpi", action="store_true", help="use the DGTPi hardware")
     parser.add_argument(
+        "-csd",
+        "--clockside",
+        choices=["left", "right"],
+        default="left",
+        help="side on which you put your DGTPI/DGT3000",
+    )
+    parser.add_argument(
         "-pt",
         "--ponder-interval",
         type=int,
@@ -2610,6 +2622,7 @@ def main() -> None:
         action="store_true",
         help="en/disable mame engine sound (default is off)",
     )
+
     args, unknown = parser.parse_known_args()
 
     # Enable logging
@@ -2673,6 +2686,7 @@ def main() -> None:
         args.beep_config, args.beep_some_level, args.language, version
     )
     state.dgtmenu = DgtMenu(
+        args.clockside,
         args.disable_confirm_message,
         args.ponder_interval,
         args.user_voice,
@@ -2714,6 +2728,8 @@ def main() -> None:
 
     # The class dgtDisplay fires Event (Observable) & DispatchDgt (Dispatcher)
     DgtDisplay(state.dgttranslate, state.dgtmenu, state.time_control).start()
+    
+    ModeInfo.set_clock_side(args.clockside)
 
     sample_beeper = False
     sample_beeper_level = 0
@@ -2820,9 +2836,7 @@ def main() -> None:
     engine = UciEngine(
         file=engine_file,
         uci_shell=uci_local_shell,
-        mame_par=get_engine_mame_par(
-            state.dgtmenu.get_engine_rspeed(), state.dgtmenu.get_engine_rsound()
-        ),
+        mame_par=calc_engine_mame_par()
     )
     try:
         engine_name = engine.get_name()
@@ -3041,19 +3055,13 @@ def main() -> None:
                         engine = UciEngine(
                             file=remote_file,
                             uci_shell=uci_remote_shell,
-                            mame_par=get_engine_mame_par(
-                                state.dgtmenu.get_engine_rspeed(),
-                                state.dgtmenu.get_engine_rsound(),
-                            ),
-                        )
+                            mame_par=calc_engine_mame_par()
+                            )
                     else:
                         engine = UciEngine(
                             file=engine_file,
                             uci_shell=uci_local_shell,
-                            mame_par=get_engine_mame_par(
-                                state.dgtmenu.get_engine_rspeed(),
-                                state.dgtmenu.get_engine_rsound(),
-                            ),
+                            mame_par=calc_engine_mame_par()
                         )
                     try:
                         engine_name = engine.get_name()
@@ -3070,19 +3078,13 @@ def main() -> None:
                             engine = UciEngine(
                                 file=remote_file,
                                 uci_shell=uci_remote_shell,
-                                mame_par=get_engine_mame_par(
-                                    state.dgtmenu.get_engine_rspeed(),
-                                    state.dgtmenu.get_engine_rsound(),
-                                ),
+                                mame_par=calc_engine_mame_par()
                             )
                         else:
                             engine = UciEngine(
                                 file=old_file,
                                 uci_shell=uci_local_shell,
-                                mame_par=get_engine_mame_par(
-                                    state.dgtmenu.get_engine_rspeed(),
-                                    state.dgtmenu.get_engine_rsound(),
-                                ),
+                                mame_par=calc_engine_mame_par()
                             )
                         try:
                             engine_name = engine.get_name()
@@ -3104,19 +3106,13 @@ def main() -> None:
                                 engine = UciEngine(
                                     file=remote_file,
                                     uci_shell=uci_remote_shell,
-                                    mame_par=get_engine_mame_par(
-                                        state.dgtmenu.get_engine_rspeed(),
-                                        state.dgtmenu.get_engine_rsound(),
-                                    ),
+                                    mame_par=calc_engine_mame_par()
                                 )
                             else:
                                 engine = UciEngine(
                                     file=old_file,
                                     uci_shell=uci_local_shell,
-                                    mame_par=get_engine_mame_par(
-                                        state.dgtmenu.get_engine_rspeed(),
-                                        state.dgtmenu.get_engine_rsound(),
-                                    ),
+                                    mame_par=calc_engine_mame_par()
                                 )
                             engine.startup(old_options, state.rating)
                             engine.newgame(state.game.copy())
@@ -3161,19 +3157,13 @@ def main() -> None:
                                 engine = UciEngine(
                                     file=remote_file,
                                     uci_shell=uci_remote_shell,
-                                    mame_par=get_engine_mame_par(
-                                        state.dgtmenu.get_engine_rspeed(),
-                                        state.dgtmenu.get_engine_rsound(),
-                                    ),
+                                    mame_par=calc_engine_mame_par()
                                 )
                             else:
                                 engine = UciEngine(
                                     file=old_file,
                                     uci_shell=uci_local_shell,
-                                    mame_par=get_engine_mame_par(
-                                        state.dgtmenu.get_engine_rspeed(),
-                                        state.dgtmenu.get_engine_rsound(),
-                                    ),
+                                    mame_par=calc_engine_mame_par()
                                 )
                             try:
                                 engine_name = engine.get_name()
@@ -4629,10 +4619,7 @@ def main() -> None:
                         engine = UciEngine(
                             file=engine_file,
                             uci_shell=uci_local_shell,
-                            mame_par=get_engine_mame_par(
-                                state.dgtmenu.get_engine_rspeed(),
-                                state.dgtmenu.get_engine_rsound(),
-                            ),
+                            mame_par=calc_engine_mame_par()
                         )
                         engine.startup(old_options, state.rating)
                         stop_search_and_clock()

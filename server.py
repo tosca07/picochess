@@ -288,9 +288,14 @@ class WebVr(DgtIface):
         elif self.clock_show_time:
             l_hms = hms_time(time_left)
             r_hms = hms_time(time_right)
-            text_l = "{}:{:02d}.{:02d}".format(l_hms[0], l_hms[1], l_hms[2])
-            text_r = "{}:{:02d}.{:02d}".format(r_hms[0], r_hms[1], r_hms[2])
-            icon_d = "fa-caret-right" if self.side_running == ClockSide.RIGHT else "fa-caret-left"
+            if ModeInfo.get_clock_side() == 'left':
+                text_l = "{}:{:02d}.{:02d}".format(l_hms[0], l_hms[1], l_hms[2])
+                text_r = "{}:{:02d}.{:02d}".format(r_hms[0], r_hms[1], r_hms[2])
+                icon_d = "fa-caret-right" if self.side_running == ClockSide.RIGHT else "fa-caret-left"
+            else:
+                text_r = "{}:{:02d}.{:02d}".format(l_hms[0], l_hms[1], l_hms[2])
+                text_l = "{}:{:02d}.{:02d}".format(r_hms[0], r_hms[1], r_hms[2])
+                icon_d = "fa-caret-right" if self.side_running == ClockSide.LEFT else "fa-caret-left"
             if self.side_running == ClockSide.NONE:
                 icon_d = "fa-sort"
             text = text_l + '&nbsp;<i class="fa ' + icon_d + '"></i>&nbsp;' + text_r

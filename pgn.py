@@ -38,7 +38,6 @@ from utilities import DisplayMsg
 from dgt.api import Dgt, Message
 from dgt.util import GameResult, PlayMode, Mode, TimeMode
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -106,6 +105,14 @@ class ModeInfo:
     @classmethod
     def get_online_mode(cls):
         return ModeInfo.online_mode
+        
+    @classmethod
+    def set_clock_side(cls, side):
+        ModeInfo.clock_side = side
+
+    @classmethod
+    def get_clock_side(cls):
+        return ModeInfo.clock_side
         
     @classmethod
     def set_emulation_mode(cls, mode):
