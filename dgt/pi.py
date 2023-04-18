@@ -26,6 +26,7 @@ from dgt.util import ClockIcons, ClockSide
 from eboard import EBoard
 from dgt.iface import DgtIface
 from dgt.board import Rev2Info
+from pgn import ModeInfo
 
 
 logger = logging.getLogger(__name__)
@@ -221,9 +222,15 @@ class DgtPi(DgtIface):
 
         l_run = r_run = 0
         if side == ClockSide.LEFT:
-            l_run = 1
+            if ModeInfo.get_clock_side() == 'left':
+                l_run = 1
+            else:
+                r_run = 1
         if side == ClockSide.RIGHT:
-            r_run = 1
+            if ModeInfo.get_clock_side() == 'left':
+                r_run = 1
+            else:
+                l_run = 1
         with self.lib_lock:
             res = self.lib.dgtpicom_run(l_run, r_run)
             if res < 0:
@@ -248,9 +255,15 @@ class DgtPi(DgtIface):
 
         l_run = r_run = 0
         if side == ClockSide.LEFT:
-            l_run = 1
+            if ModeInfo.get_clock_side() == 'left':
+                l_run = 1
+            else:
+                r_run = 1
         if side == ClockSide.RIGHT:
-            r_run = 1
+            if ModeInfo.get_clock_side() == 'left':
+                r_run = 1
+            else:
+                l_run = 1
         with self.lib_lock:
             res = self.lib.dgtpicom_set_and_run(l_run, l_hms[0], l_hms[1], l_hms[2],
                                                 r_run, r_hms[0], r_hms[1], r_hms[2])
@@ -283,8 +296,13 @@ class DgtPi(DgtIface):
         logger.debug('(%s) clock sending set time to clock l:%s r:%s [use]', ','.join(devs), l_hms, r_hms)
 
         self.in_settime = True
-        self.l_time = time_left
-        self.r_time = time_right
+        if ModeInfo.get_clock_side() == 'left':
+            self.l_time = time_left
+            self.r_time = time_right
+        else:
+            self.r_time = time_left
+            self.l_time = time_right
+
         return True
 
     def promotion_done(self, uci_move: str):

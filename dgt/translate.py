@@ -32,6 +32,8 @@ class DgtTranslate(object):
         self.beep_level = beep_level
         self.language = language
         self.version = picochess_version
+        self.version_large = str(self.version)
+        self.version_large = self.version_large.replace('.', '')
         self.capital = False  # Set from dgt.menu lateron
         self.notation = False  # Set from dgt.menu lateron
 
@@ -730,7 +732,7 @@ class DgtTranslate(object):
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='uci960 si  ', medium_text='960 si  ', small_text='960 si')
         if text_id == 'picochess':
             wait = True
-            entxt = Dgt.DISPLAY_TEXT(web_text=f'PicoChess {self.version}', large_text=f'pChess {self.version}', medium_text=f'pico {self.version}', small_text=f'pic{self.version}')
+            entxt = Dgt.DISPLAY_TEXT(web_text=f'PicoChess {self.version}', large_text='PicoChess' + self.version_large, medium_text=f'pico {self.version}', small_text=f'pic{self.version}')
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
@@ -1106,7 +1108,7 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'okrsound':
-            entxt = Dgt.DISPLAY_TEXT(web_text='ok Retro-Sound', large_text='ok R-Sound', medium_text='ok rsound', small_text='ok')
+            entxt = Dgt.DISPLAY_TEXT(web_text='ok Retro-Sound', large_text='ok R-Sound', medium_text='okrsound', small_text='ok')
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
@@ -1387,14 +1389,14 @@ class DgtTranslate(object):
             ittxt = entxt
         if text_id == 'picotutor_picoprob_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='Comment probability', large_text='CommentProb', medium_text='c-probab', small_text='c-prob')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Wahrscheinlichkeit', large_text='KommWahrsch', medium_text='KWahrsch', small_text='wahrsl')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Kommentar Wahrscheinlichkeit', large_text='KommWahrsch', medium_text='KWahrsch', small_text='wahrsl')
             nltxt = Dgt.DISPLAY_TEXT(web_text='Commentaar percentage', large_text='Comm Perc', medium_text='CPerc', small_text='CPerc')
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
         if text_id == 'picocom_prob_list':
             entxt = Dgt.DISPLAY_TEXT(web_text='Comment probability = ' + msg, large_text='Prob ' + msg, medium_text='cprob' + msg, small_text=msg)
-            detxt = Dgt.DISPLAY_TEXT(web_text='Kommentar Wahrscheinlichkeit = ' + msg, large_text='KWahrsch ' + msg, medium_text='KWahr' + msg, small_text=msg)
+            detxt = Dgt.DISPLAY_TEXT(web_text='Wahrscheinlichkeit = ' + msg, large_text='KWahrsch ' + msg, medium_text='KWahr' + msg, small_text=msg)
             nltxt = Dgt.DISPLAY_TEXT(web_text='Commentaar percentage = ' + msg, large_text='Comm Perc. ' + msg, medium_text='CPerc' + msg, small_text=msg)
             frtxt = entxt
             estxt = entxt
@@ -1983,6 +1985,34 @@ class DgtTranslate(object):
         if text_id == 'ponder_interval':
             entxt = Dgt.DISPLAY_TEXT(web_text='Ponder interval' + msg, large_text='PondIntv' + msg, medium_text='PondrIv' + msg, small_text='p int' + msg)
             detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'display_clockside_menu':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Clock side', large_text='Clock side', medium_text='Clckside', small_text='clkside')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Uhrenposition', large_text='Uhren Pos.', medium_text='UhrenPos', small_text='uhrpos')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'clockside_left':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Clock position: left', large_text='Clock: left', medium_text='left', small_text='left')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Uhrenposition: links', large_text='Uhr: links', medium_text='Uhrlinks', small_text='links')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'clockside_right':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Clock position: right', large_text='Clock: right', medium_text='right', small_text='right')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Uhrenposition: rechts', large_text='Uhr: rechts', medium_text='Uhrrechts', small_text='rechts')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'okclockside':
+            entxt = Dgt.DISPLAY_TEXT(web_text='ok clock side', large_text='okClockside', medium_text='ok', small_text='ok')
+            detxt = Dgt.DISPLAY_TEXT(web_text='ok Uhrenposition', large_text='okUhrpos', medium_text='okUhrPos', small_text='ok uhr')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt

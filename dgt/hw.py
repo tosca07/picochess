@@ -23,6 +23,7 @@ from dgt.iface import DgtIface
 from dgt.util import ClockIcons, ClockSide
 from eboard import EBoard
 from dgt.api import Dgt
+from pgn import ModeInfo
 
 
 logger = logging.getLogger(__name__)
@@ -176,7 +177,10 @@ class DgtHw(DgtIface):
         with self.lib_lock:
             l_hms = hms_time(self.dgtboard.l_time)
             r_hms = hms_time(self.dgtboard.r_time)
-            res = self.dgtboard.set_and_run(l_run, l_hms[0], l_hms[1], l_hms[2], r_run, r_hms[0], r_hms[1], r_hms[2])
+            if ModeInfo.get_clock_side() == 'right':
+                res = self.dgtboard.set_and_run(r_run, r_hms[0], r_hms[1], r_hms[2], l_run, l_hms[0], l_hms[1], l_hms[2])
+            else:
+                res = self.dgtboard.set_and_run(l_run, l_hms[0], l_hms[1], l_hms[2], r_run, r_hms[0], r_hms[1], r_hms[2])
             if not res:
                 logger.warning('finally failed %i', res)
                 return False
