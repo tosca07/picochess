@@ -3176,7 +3176,7 @@ def main() -> None:
                             engine.startup(event.options, state.rating)
                         else:
                             time.sleep(2)
-                    elif emulation_mode() or pgn_mode():
+                    elif (emulation_mode() and not "pos" in engine_name) or pgn_mode():
                         # molli for emulation engine we have to reset to starting position
                         stop_search_and_clock()
                         state.game = chess.Board()
@@ -3299,7 +3299,7 @@ def main() -> None:
                 )  # for picotutor game comments like Boris & Sargon
                 state.picotutor.init_comments(state.comment_file)
 
-                if pgn_mode() or emulation_mode():
+                if pgn_mode() or (emulation_mode() and not "pos" in engine_name):
                     # molli: in these cases we can't continue from current position but
                     #        have to start a new game
                     if emulation_mode():
@@ -3349,6 +3349,9 @@ def main() -> None:
                     ModeInfo.set_pgn_mode(mode=False)
 
                 update_elo_display(state)
+                if emulation_mode() and "pos" in engine_name and state.game.board_fen() !=  chess.STARTING_BOARD_FEN:
+                    event = Event.SETUP_POSITION(fen=state.game.fen(), uci960=False)
+                    Observable.fire(event)
 
             elif isinstance(event, Event.SETUP_POSITION):
                 logger.debug("setting up custom fen: %s", event.fen)
@@ -3410,7 +3413,7 @@ def main() -> None:
 
                     if not (state.game.is_game_over() or state.game_declared):
 
-                        if emulation_mode():  # force abortion for mame ## molli mame enhance
+                        if emulation_mode() and not "pos" in engine_name:  # force abortion for mame ## molli mame enhance
                             if state.is_not_user_turn():
                                 # clock must be stopped BEFORE the "book_move" event cause SetNRun resets the clock display
                                 state.stop_clock()
@@ -4623,9 +4626,11 @@ def main() -> None:
                         )
                         engine.startup(old_options, state.rating)
                         stop_search_and_clock()
-                        state.game = chess.Board()
-                        state.game.turn = chess.WHITE
-                        state.play_mode = PlayMode.USER_WHITE
+                        if not "pos" in engine.get_name():
+                            state.game = chess.Board()
+                            state.game.turn = chess.WHITE
+                            state.play_mode = PlayMode.USER_WHITE
+                            
                         engine.newgame(state.game.copy())
                         state.done_computer_fen = None
                         state.done_move = state.pb_move = chess.Move.null()
@@ -4638,6 +4643,10 @@ def main() -> None:
                         engine_mode()
                         DisplayMsg.show(Message.RSPEED(rspeed=event.rspeed))
                         update_elo_display(state)
+                        if emulation_mode() and "pos" in engine.get_name() and state.game.board_fen() !=  chess.STARTING_BOARD_FEN:
+                            event = Event.SETUP_POSITION(fen=state.game.fen(), uci960=False)
+                            Observable.fire(event)
+                            
                     else:
                         logger.error("engine shutdown failure")
                         DisplayMsg.show(Message.ENGINE_FAIL())
