@@ -703,14 +703,14 @@ class DgtTranslate(object):
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='sin mov    ', medium_text='sin mov ', small_text='no mov')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='no mossa   ', medium_text='no mossa', small_text='nmossa')
         if text_id == 'wb':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' W       B ', medium_text=' W     B', small_text='wh  bl')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Board orientation: W-B', large_text=' W       B ', medium_text=' W     B', small_text='wh  bl')
             detxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' W       S ', medium_text=' W     S', small_text='we  sc')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' W       Z ', medium_text=' W     Z', small_text='wi  zw')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' B       N ', medium_text=' B     N', small_text='bl  no')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' B       N ', medium_text=' B     N', small_text='bl  ne')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' B       N ', medium_text=' B     N', small_text='bi  ne')
         if text_id == 'bw':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' B       W ', medium_text=' B     W', small_text='bl  wh')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Board orientation: B-W', large_text=' B       W ', medium_text=' B     W', small_text='bl  wh')
             detxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' S       W ', medium_text=' S     W', small_text='sc  we')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' Z       W ', medium_text=' Z     W', small_text='zw  wi')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' N       B ', medium_text=' N     B', small_text='no  bl')
