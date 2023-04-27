@@ -270,28 +270,28 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         c_number = 0
         c_prob = 0
         if c_group == 'beforeumove':
-            c_prob = 10
+            c_prob = 15
             c_number = self.c_no_beforeumove
         elif c_group == 'beforecmove':
-            c_prob = 10
+            c_prob = 15
             c_number = self.c_no_beforecmove
         elif c_group == 'cmove':
-            c_prob = 20
+            c_prob = 15
             c_number = self.c_no_cmove
         elif c_group == 'umove':
-            c_prob = 20
+            c_prob = 15
             c_number = self.c_no_umove
         elif c_group == 'poem':
-            c_prob = 20
+            c_prob = 15
             c_number = self.c_no_poem
         elif c_group == 'chat':
-            c_prob = 20
+            c_prob = 15
             c_number = self.c_no_chat
         elif c_group == 'newgame':
             c_prob = 100
             c_number = self.c_no_newgame
         elif c_group == 'rmove':
-            c_prob = 20
+            c_prob = 15
             c_number = self.c_no_rmove
         elif c_group == 'uwin':
             c_prob = 100
@@ -300,10 +300,10 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
             c_prob = 100
             c_number = self.c_no_uloose
         elif c_group == 'ublack':
-            c_prob = 70
+            c_prob = 50
             c_number = self.c_no_ublack
         elif c_group == 'uwhite':
-            c_prob = 70
+            c_prob = 50
             c_number = self.c_no_uwhite
         elif c_group == 'start':
             c_prob = 100
@@ -377,15 +377,16 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
         if c_prob == 0 or self.c_comment_factor == 0:
             return talkfile
+            
         # consider probability factor from picochess.ini
-        if c_group == 'start' or c_group == 'name' or c_group == 'shutdown' or c_group == 'newgame' \
-                or c_group == 'mate' or c_group == 'stalemate' or c_group == 'draw' or c_group == 'takeback' \
-                or c_group == 'check':
+        if c_group == 'start' or c_group == 'name' or c_group == 'shutdown' or c_group == 'mate' \
+            or c_group == 'stalemate' or c_group == 'draw' or c_group == 'takeback' \
+            or c_group == 'check':
             # don't use factor for these events
             c_prob = c_prob
         else:
             c_prob = round(c_prob * (self.c_comment_factor / 100))
-
+        
         c_number = round(c_total * (100 / c_prob))
 
         if c_number > 1:
@@ -679,7 +680,6 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         logger.debug('announcing GAME_ENDS/FIVEFOLD_REPETITION')
                         self.talk(['repetition.ogg', 'draw.ogg'])
                         self.comment('draw')
-                    self.talk(['bell.ogg'], self.BEEPER)
 
                 elif isinstance(message, Message.TAKE_BACK):
                     logger.debug('announcing TAKE_BACK')
@@ -919,11 +919,13 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         self.talk(['show_enginename_off.ogg'])
 
                 elif isinstance(message, Message.SHOW_TEXT):
-                    if message.text_string == 'NEW_POSITION':
+                    if message.text_string == 'NEW_POSITION_SCAN':
+                        self.talk(['position_setup.ogg'])
+                    elif message.text_string == 'NEW_POSITION':
                         self.talk(['set_pieces_sound.ogg'], self.BEEPER)
                         if not self.sample_beeper or self.sample_beeper_level == 0:
                             self.talk(['set_pieces_sound.ogg'])
-
+                    
                 elif isinstance(message, Message.PICOWATCHER):
                     if message.picowatcher:
                         self.talk(['picowatcher_enabled.ogg'])

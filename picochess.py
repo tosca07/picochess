@@ -551,7 +551,7 @@ def compare_fen(fen_board_external="", fen_board_internal="") -> str:
     # all fields where to put new/different pieces on
     # start first with all squares to be cleared
     put_field = ""
-    for square_no in range(0, 63):
+    for square_no in range(0, 64):
         if internal_board.piece_at(square_no) != external_board.piece_at(square_no):
             if internal_board.piece_at(square_no) is None:
                 return str("clear " + chess.square_name(square_no))
@@ -899,9 +899,7 @@ def main() -> None:
         state.legal_fens = compute_legal_fens(state.game.copy())
         state.legal_fens_after_cmove = []
         state.last_legal_fens = []
-        assert engine.is_waiting(), (
-            "molli: read_pgn engine not waiting! thinking status: %s" % engine.is_thinking()
-        )
+        stop_search_and_clock()
         engine.position(copy.deepcopy(state.game))
 
         game_end = state.check_game_state()
@@ -993,9 +991,7 @@ def main() -> None:
                         set_wait_state(
                             Message.START_NEW_GAME(game=state.game.copy(), newgame=False), state
                         )
-                        assert engine.is_waiting(), (
-                            "engine not waiting! thinking status: %s" % engine.is_thinking()
-                        )
+                        stop_search_and_clock()
                         engine.position(copy.deepcopy(state.game))
                         engine.ponder()
                     else:
@@ -1018,9 +1014,7 @@ def main() -> None:
                                 Message.START_NEW_GAME(game=state.game.copy(), newgame=False),
                                 state,
                             )
-                            assert engine.is_waiting(), (
-                                "engine not waiting! thinking status: %s" % engine.is_thinking()
-                            )
+                            stop_search_and_clock()
                             engine.position(copy.deepcopy(state.game))
                             engine.ponder()
                         else:
@@ -2199,7 +2193,12 @@ def main() -> None:
             DisplayMsg.show(msg)
             state.start_clock()
             state.legal_fens = compute_legal_fens(state.game.copy())
-
+       
+    def calc_engine_mame_par():
+        return(get_engine_mame_par(
+            state.dgtmenu.get_engine_rspeed(),
+            state.dgtmenu.get_engine_rsound()))
+            
     def takeback(state: PicochessState):
         stop_search_and_clock()
         l_error = False
@@ -2441,6 +2440,13 @@ def main() -> None:
     )
     parser.add_argument("-pi", "--dgtpi", action="store_true", help="use the DGTPi hardware")
     parser.add_argument(
+        "-csd",
+        "--clockside",
+        choices=["left", "right"],
+        default="left",
+        help="side on which you put your DGTPI/DGT3000",
+    )
+    parser.add_argument(
         "-pt",
         "--ponder-interval",
         type=int,
@@ -2616,6 +2622,7 @@ def main() -> None:
         action="store_true",
         help="en/disable mame engine sound (default is off)",
     )
+
     args, unknown = parser.parse_known_args()
 
     # Enable logging
@@ -2679,6 +2686,7 @@ def main() -> None:
         args.beep_config, args.beep_some_level, args.language, version
     )
     state.dgtmenu = DgtMenu(
+        args.clockside,
         args.disable_confirm_message,
         args.ponder_interval,
         args.user_voice,
@@ -2720,6 +2728,8 @@ def main() -> None:
 
     # The class dgtDisplay fires Event (Observable) & DispatchDgt (Dispatcher)
     DgtDisplay(state.dgttranslate, state.dgtmenu, state.time_control).start()
+    
+    ModeInfo.set_clock_side(args.clockside)
 
     sample_beeper = False
     sample_beeper_level = 0
@@ -2826,9 +2836,7 @@ def main() -> None:
     engine = UciEngine(
         file=engine_file,
         uci_shell=uci_local_shell,
-        mame_par=get_engine_mame_par(
-            state.dgtmenu.get_engine_rspeed(), state.dgtmenu.get_engine_rsound()
-        ),
+        mame_par=calc_engine_mame_par()
     )
     try:
         engine_name = engine.get_name()
@@ -3047,19 +3055,13 @@ def main() -> None:
                         engine = UciEngine(
                             file=remote_file,
                             uci_shell=uci_remote_shell,
-                            mame_par=get_engine_mame_par(
-                                state.dgtmenu.get_engine_rspeed(),
-                                state.dgtmenu.get_engine_rsound(),
-                            ),
-                        )
+                            mame_par=calc_engine_mame_par()
+                            )
                     else:
                         engine = UciEngine(
                             file=engine_file,
                             uci_shell=uci_local_shell,
-                            mame_par=get_engine_mame_par(
-                                state.dgtmenu.get_engine_rspeed(),
-                                state.dgtmenu.get_engine_rsound(),
-                            ),
+                            mame_par=calc_engine_mame_par()
                         )
                     try:
                         engine_name = engine.get_name()
@@ -3076,19 +3078,13 @@ def main() -> None:
                             engine = UciEngine(
                                 file=remote_file,
                                 uci_shell=uci_remote_shell,
-                                mame_par=get_engine_mame_par(
-                                    state.dgtmenu.get_engine_rspeed(),
-                                    state.dgtmenu.get_engine_rsound(),
-                                ),
+                                mame_par=calc_engine_mame_par()
                             )
                         else:
                             engine = UciEngine(
                                 file=old_file,
                                 uci_shell=uci_local_shell,
-                                mame_par=get_engine_mame_par(
-                                    state.dgtmenu.get_engine_rspeed(),
-                                    state.dgtmenu.get_engine_rsound(),
-                                ),
+                                mame_par=calc_engine_mame_par()
                             )
                         try:
                             engine_name = engine.get_name()
@@ -3110,19 +3106,13 @@ def main() -> None:
                                 engine = UciEngine(
                                     file=remote_file,
                                     uci_shell=uci_remote_shell,
-                                    mame_par=get_engine_mame_par(
-                                        state.dgtmenu.get_engine_rspeed(),
-                                        state.dgtmenu.get_engine_rsound(),
-                                    ),
+                                    mame_par=calc_engine_mame_par()
                                 )
                             else:
                                 engine = UciEngine(
                                     file=old_file,
                                     uci_shell=uci_local_shell,
-                                    mame_par=get_engine_mame_par(
-                                        state.dgtmenu.get_engine_rspeed(),
-                                        state.dgtmenu.get_engine_rsound(),
-                                    ),
+                                    mame_par=calc_engine_mame_par()
                                 )
                             engine.startup(old_options, state.rating)
                             engine.newgame(state.game.copy())
@@ -3167,19 +3157,13 @@ def main() -> None:
                                 engine = UciEngine(
                                     file=remote_file,
                                     uci_shell=uci_remote_shell,
-                                    mame_par=get_engine_mame_par(
-                                        state.dgtmenu.get_engine_rspeed(),
-                                        state.dgtmenu.get_engine_rsound(),
-                                    ),
+                                    mame_par=calc_engine_mame_par()
                                 )
                             else:
                                 engine = UciEngine(
                                     file=old_file,
                                     uci_shell=uci_local_shell,
-                                    mame_par=get_engine_mame_par(
-                                        state.dgtmenu.get_engine_rspeed(),
-                                        state.dgtmenu.get_engine_rsound(),
-                                    ),
+                                    mame_par=calc_engine_mame_par()
                                 )
                             try:
                                 engine_name = engine.get_name()
@@ -3192,7 +3176,7 @@ def main() -> None:
                             engine.startup(event.options, state.rating)
                         else:
                             time.sleep(2)
-                    elif emulation_mode() or pgn_mode():
+                    elif (emulation_mode() and not "pos" in engine_name) or pgn_mode():
                         # molli for emulation engine we have to reset to starting position
                         stop_search_and_clock()
                         state.game = chess.Board()
@@ -3315,7 +3299,7 @@ def main() -> None:
                 )  # for picotutor game comments like Boris & Sargon
                 state.picotutor.init_comments(state.comment_file)
 
-                if pgn_mode() or emulation_mode():
+                if pgn_mode() or (emulation_mode() and not "pos" in engine_name):
                     # molli: in these cases we can't continue from current position but
                     #        have to start a new game
                     if emulation_mode():
@@ -3365,6 +3349,9 @@ def main() -> None:
                     ModeInfo.set_pgn_mode(mode=False)
 
                 update_elo_display(state)
+                if emulation_mode() and "pos" in engine_name and state.game.board_fen() !=  chess.STARTING_BOARD_FEN:
+                    event = Event.SETUP_POSITION(fen=state.game.fen(), uci960=False)
+                    Observable.fire(event)
 
             elif isinstance(event, Event.SETUP_POSITION):
                 logger.debug("setting up custom fen: %s", event.fen)
@@ -3387,7 +3374,8 @@ def main() -> None:
                 if engine.has_chess960():
                     engine.option("UCI_Chess960", uci960)
                     engine.send()
-
+                
+                DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION_SCAN"))
                 engine.newgame(state.game.copy())
                 state.done_computer_fen = None
                 state.done_move = state.pb_move = chess.Move.null()
@@ -3398,7 +3386,7 @@ def main() -> None:
                 state.game_declared = False
                 if picotutor_mode(state):
                     state.picotutor.reset()
-                    state.picotutor.set_position(state.game.fen(), i_turn=state.game.turn)
+                    state.picotutor.set_position(state.game.fen(), i_turn=state.game.turn, i_ignore_expl=True)
                     if state.play_mode == PlayMode.USER_BLACK:
                         state.picotutor.set_user_color(chess.BLACK)
                     else:
@@ -3425,7 +3413,7 @@ def main() -> None:
 
                     if not (state.game.is_game_over() or state.game_declared):
 
-                        if emulation_mode():  # force abortion for mame ## molli mame enhance
+                        if emulation_mode() and not "pos" in engine_name:  # force abortion for mame ## molli mame enhance
                             if state.is_not_user_turn():
                                 # clock must be stopped BEFORE the "book_move" event cause SetNRun resets the clock display
                                 state.stop_clock()
@@ -3540,7 +3528,13 @@ def main() -> None:
                     )
                     if "no_player" not in opp_user and "no_user" not in own_user:
                         switch_online(state)
-
+                    if picotutor_mode(state):
+                        state.picotutor.reset()
+                        if not state.flag_startup:
+                            if state.play_mode == PlayMode.USER_BLACK:
+                                state.picotutor.set_user_color(chess.BLACK)
+                            else:
+                                state.picotutor.set_user_color(chess.WHITE)
                 else:
                     if online_mode():
                         logger.debug("starting a new game with code: %s", event.pos960)
@@ -4628,16 +4622,15 @@ def main() -> None:
                         engine = UciEngine(
                             file=engine_file,
                             uci_shell=uci_local_shell,
-                            mame_par=get_engine_mame_par(
-                                state.dgtmenu.get_engine_rspeed(),
-                                state.dgtmenu.get_engine_rsound(),
-                            ),
+                            mame_par=calc_engine_mame_par()
                         )
                         engine.startup(old_options, state.rating)
                         stop_search_and_clock()
-                        state.game = chess.Board()
-                        state.game.turn = chess.WHITE
-                        state.play_mode = PlayMode.USER_WHITE
+                        if not "pos" in engine.get_name():
+                            state.game = chess.Board()
+                            state.game.turn = chess.WHITE
+                            state.play_mode = PlayMode.USER_WHITE
+                            
                         engine.newgame(state.game.copy())
                         state.done_computer_fen = None
                         state.done_move = state.pb_move = chess.Move.null()
@@ -4650,6 +4643,10 @@ def main() -> None:
                         engine_mode()
                         DisplayMsg.show(Message.RSPEED(rspeed=event.rspeed))
                         update_elo_display(state)
+                        if emulation_mode() and "pos" in engine.get_name() and state.game.board_fen() !=  chess.STARTING_BOARD_FEN:
+                            event = Event.SETUP_POSITION(fen=state.game.fen(), uci960=False)
+                            Observable.fire(event)
+                            
                     else:
                         logger.error("engine shutdown failure")
                         DisplayMsg.show(Message.ENGINE_FAIL())

@@ -1,4 +1,5 @@
 # Copyright (C) 2013-2018 Jean-Francois Romang (jromang@posteo.de)
+# Copyright (C) 2013-2018 Jean-Francois Romang (jromang@posteo.de)
 #                         Shivkumar Shivaji ()
 #                         Jürgen Précour (LocutusOfPenguin@posteo.de)
 #
@@ -21,7 +22,7 @@ import logging
 from configobj import ConfigObj  # type: ignore
 from collections import OrderedDict
 from typing import Dict, List, Set
-
+from pgn import ModeInfo
 import chess  # type: ignore
 from timecontrol import TimeControl
 from utilities import Observable, DispatchDgt, get_tags, version, write_picochess_ini
@@ -131,6 +132,8 @@ class MenuState(object):
     RETROSETTINGS_RETROSPEED_FACTOR = 661100
     RETROSETTINGS_RETROSOUND = 662000
     RETROSETTINGS_RETROSOUND_ONOFF = 662100
+    RETROSETTINGS_RETROINFO = 663000
+    RETROSETTINGS_RETROINFO_SHOW = 663100
 
     SYS = 700000
     SYS_POWER = 705000
@@ -159,6 +162,8 @@ class MenuState(object):
     SYS_VOICE_VOLUME = 754000
     SYS_VOICE_VOLUME_FACTOR = 754100
     SYS_DISP = 760000
+    SYS_DISP_CLOCKSIDE = 766000
+    SYS_DISP_CLOCKSIDE_LEFTRIGHT = 766100
     SYS_DISP_CONFIRM = 761000
     SYS_DISP_CONFIRM_YESNO = 761100  # yes,no
     SYS_DISP_PONDER = 762000
@@ -219,6 +224,7 @@ class DgtMenu(object):
 
     def __init__(
         self,
+        clockside: str,
         disable_confirm: bool,
         ponder_interval: int,
         user_voice: str,
@@ -268,6 +274,7 @@ class DgtMenu(object):
 
         self.menu_game_new = False
 
+        self.menu_system_display_clockside = clockside
         self.menu_system_display_confirm = disable_confirm
         self.menu_system_display_ponderinterval = ponder_interval
         self.menu_system_display_capital = enable_capital_letters
@@ -369,7 +376,7 @@ class DgtMenu(object):
         themes = {"light": Theme.LIGHT, "dark": Theme.DARK, "time": Theme.TIME, "auto": Theme.AUTO}
         self.menu_system_theme_type = themes[theme_type]
 
-        self.menu_system_display = Display.PONDER
+        self.menu_system_display = Display.CLOCKSIDE
         self.menu_system_info = Info.VERSION
         self.menu_system_power = Power.SHUT_DOWN
 
@@ -1259,6 +1266,19 @@ class DgtMenu(object):
         text = self.dgttranslate.text(EngineTop.RETROSETTINGS.value)
         return text
 
+    def enter_retroinfo_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.RETROSETTINGS_RETROINFO
+        text = self.dgttranslate.text(EngineRetroSettings.RETROINFO.value)
+        return text
+        
+    def enter_retroinfo_show_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.RETROSETTINGS_RETROINFO_SHOW
+        info = ModeInfo.get_retro_features()
+        text = self.dgttranslate.text("B00_engine_retroinfo", info)
+        return text
+        
     def enter_retrosound_menu(self):
         """Set the menu state."""
         self.state = MenuState.RETROSETTINGS_RETROSOUND
@@ -1638,6 +1658,19 @@ class DgtMenu(object):
         text = self.dgttranslate.text(self.menu_system.value)
         return text
 
+    def enter_sys_disp_clockside_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.SYS_DISP_CLOCKSIDE
+        text = self.dgttranslate.text(Display.CLOCKSIDE.value)
+        return text
+
+    def enter_sys_disp_clockside_leftright_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.SYS_DISP_CLOCKSIDE_LEFTRIGHT
+        msg = "left" if self.menu_system_display_clockside == "left" else "right"
+        text = self.dgttranslate.text("B00_clockside_" + msg)
+        return text
+
     def enter_sys_disp_confirm_menu(self):
         """Set the menu state."""
         self.state = MenuState.SYS_DISP_CONFIRM
@@ -1865,10 +1898,16 @@ class DgtMenu(object):
 
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND:
             text = self.enter_retrosettings_menu()
-
+            
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND_ONOFF:
             text = self.enter_retrosound_menu()
-
+            
+        elif self.state == MenuState.RETROSETTINGS_RETROINFO:
+            text = self.enter_retrosettings_menu()
+            
+        elif self.state == MenuState.RETROSETTINGS_RETROINFO_SHOW:
+            text = self.enter_retroinfo_menu()
+            
         elif self.state == MenuState.SYS:
             text = self.enter_top_menu()
 
@@ -1949,6 +1988,12 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_DISP:
             text = self.enter_sys_menu()
+            
+        elif self.state == MenuState.SYS_DISP_CLOCKSIDE:
+            text = self.enter_sys_disp_menu()
+            
+        elif self.state == MenuState.SYS_DISP_CLOCKSIDE_LEFTRIGHT:
+            text = self.enter_sys_disp_clockside_menu()
 
         elif self.state == MenuState.SYS_DISP_CONFIRM:
             text = self.enter_sys_disp_menu()
@@ -2623,6 +2668,16 @@ class DgtMenu(object):
                 text = self.enter_retrospeed_menu()
             if self.menu_engine_retrosettings == EngineRetroSettings.RETROSOUND:
                 text = self.enter_retrosound_menu()
+            if self.menu_engine_retrosettings == EngineRetroSettings.RETROINFO:
+                text = self.enter_retroinfo_menu()
+
+        elif self.state == MenuState.RETROSETTINGS_RETROINFO:
+            self.menu_engine_retrosettings = EngineRetroSettings.RETROINFO
+            text = self.enter_retroinfo_show_menu()
+
+        elif self.state == MenuState.RETROSETTINGS_RETROINFO_SHOW:
+            text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okrinfo"))
+            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
 
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND:
             self.menu_engine_retrosettings = EngineRetroSettings.RETROSOUND
@@ -2892,6 +2947,8 @@ class DgtMenu(object):
         elif self.state == MenuState.SYS_DISP:
             if self.menu_system_display == Display.PONDER:
                 text = self.enter_sys_disp_ponder_menu()
+            if self.menu_system_display == Display.CLOCKSIDE:
+                text = self.enter_sys_disp_clockside_menu()
             if self.menu_system_display == Display.CONFIRM:
                 text = self.enter_sys_disp_confirm_menu()
             if self.menu_system_display == Display.ENGINENAME:
@@ -2900,6 +2957,15 @@ class DgtMenu(object):
                 text = self.enter_sys_disp_capital_menu()
             if self.menu_system_display == Display.NOTATION:
                 text = self.enter_sys_disp_notation_menu()
+
+        elif self.state == MenuState.SYS_DISP_CLOCKSIDE:
+            text = self.enter_sys_disp_clockside_leftright_menu()
+            
+        elif self.state == MenuState.SYS_DISP_CLOCKSIDE_LEFTRIGHT:
+            ModeInfo.set_clock_side(self.menu_system_display_clockside)
+            write_picochess_ini("clockside", self.menu_system_display_clockside)
+            text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okclockside"))
+            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
 
         elif self.state == MenuState.SYS_DISP_CONFIRM:
             text = self.enter_sys_disp_confirm_yesno_menu()
@@ -3333,6 +3399,13 @@ class DgtMenu(object):
             text = self.dgttranslate.text("B00_engine_retrosound_" + msg)
 
         elif self.state == MenuState.RETROSETTINGS_RETROSPEED:
+            self.state = MenuState.RETROSETTINGS_RETROINFO
+            self.menu_engine_retrosettings = EngineRetroSettingsLoop.prev(
+                self.menu_engine_retrosettings
+            )
+            text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
+            
+        elif self.state == MenuState.RETROSETTINGS_RETROINFO:
             self.state = MenuState.RETROSETTINGS_RETROSOUND
             self.menu_engine_retrosettings = EngineRetroSettingsLoop.prev(
                 self.menu_engine_retrosettings
@@ -3345,7 +3418,10 @@ class DgtMenu(object):
                 self.menu_engine_retrosettings
             )
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
-
+        
+        elif self.state == MenuState.RETROSETTINGS_RETROINFO_SHOW:
+            text = self.enter_retroinfo_show_menu()
+            
         elif self.state == MenuState.RETROSETTINGS_RETROSPEED_FACTOR:
             l_speed = ""
             self.menu_engine_retrospeed_idx = (self.menu_engine_retrospeed_idx - 1) % len(
@@ -3505,9 +3581,23 @@ class DgtMenu(object):
             self.state = MenuState.SYS_VOICE
             self.menu_system = SystemLoop.prev(self.menu_system)
             text = self.dgttranslate.text(self.menu_system.value)
+            
+        elif self.state == MenuState.SYS_DISP_CLOCKSIDE:
+            self.state = MenuState.SYS_DISP_NOTATION
+            self.menu_system_display = DisplayLoop.prev(self.menu_system_display)
+            text = self.dgttranslate.text(self.menu_system_display.value)
+
+        elif self.state == MenuState.SYS_DISP_CLOCKSIDE_LEFTRIGHT:
+            if self.menu_system_display_clockside == "left":
+                self.menu_system_display_clockside = "right"
+                msg = "right"
+            else:
+                self.menu_system_display_clockside = "left"
+                msg = "left"
+            text = self.dgttranslate.text("B00_clockside_" + msg)
 
         elif self.state == MenuState.SYS_DISP_PONDER:
-            self.state = MenuState.SYS_DISP_NOTATION
+            self.state = MenuState.SYS_DISP_CLOCKSIDE
             self.menu_system_display = DisplayLoop.prev(self.menu_system_display)
             text = self.dgttranslate.text(self.menu_system_display.value)
 
@@ -3520,7 +3610,7 @@ class DgtMenu(object):
             )
 
         elif self.state == MenuState.SYS_DISP_CONFIRM:
-            self.state = MenuState.SYS_DISP_PONDER
+            self.state = MenuState.SYS_DISP_CLOCKSIDE
             self.menu_system_display = DisplayLoop.prev(self.menu_system_display)
             text = self.dgttranslate.text(self.menu_system_display.value)
 
@@ -3943,7 +4033,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_engine.value)
 
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND:
-            self.state = MenuState.RETROSETTINGS_RETROSPEED
+            self.state = MenuState.RETROSETTINGS_RETROINFO
             self.menu_engine_retrosettings = EngineRetroSettingsLoop.next(
                 self.menu_engine_retrosettings
             )
@@ -3960,6 +4050,16 @@ class DgtMenu(object):
                 self.menu_engine_retrosettings
             )
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
+            
+        elif self.state == MenuState.RETROSETTINGS_RETROINFO:
+            self.state = MenuState.RETROSETTINGS_RETROSPEED
+            self.menu_engine_retrosettings = EngineRetroSettingsLoop.next(
+                self.menu_engine_retrosettings
+            )
+            text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
+            
+        elif self.state == MenuState.RETROSETTINGS_RETROINFO_SHOW:
+            text = self.enter_retroinfo_show_menu()
 
         elif self.state == MenuState.RETROSETTINGS_RETROSPEED_FACTOR:
             l_speed = ""
@@ -4120,9 +4220,23 @@ class DgtMenu(object):
             self.state = MenuState.SYS_EBOARD
             self.menu_system = SystemLoop.next(self.menu_system)
             text = self.dgttranslate.text(self.menu_system.value)
+            
+        elif self.state == MenuState.SYS_DISP_CLOCKSIDE:
+            self.state = MenuState.SYS_DISP_CONFIRM
+            self.menu_system_display = DisplayLoop.next(self.menu_system_display)
+            text = self.dgttranslate.text(self.menu_system_display.value)
+
+        elif self.state == MenuState.SYS_DISP_CLOCKSIDE_LEFTRIGHT:
+            if self.menu_system_display_clockside == "left":
+                self.menu_system_display_clockside = "right"
+                msg = "right"
+            else:
+                self.menu_system_display_clockside = "left"
+                msg = "left"
+            text = self.dgttranslate.text("B00_clockside_" + msg)
 
         elif self.state == MenuState.SYS_DISP_PONDER:
-            self.state = MenuState.SYS_DISP_CONFIRM
+            self.state = MenuState.SYS_DISP_CLOCKSIDE
             self.menu_system_display = DisplayLoop.next(self.menu_system_display)
             text = self.dgttranslate.text(self.menu_system_display.value)
 

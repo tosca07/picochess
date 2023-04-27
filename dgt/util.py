@@ -449,10 +449,11 @@ class EngineRetroSettings(MyEnum):
 
     RETROSPEED = "B00_engine_menu_retrospeed"
     RETROSOUND = "B00_engine_menu_retrosound"
+    RETROINFO  = "B00_engine_menu_retroinfo"
 
     @classmethod
     def items(cls):
-        return [EngineRetroSettings.RETROSPEED, EngineRetroSettings.RETROSOUND]
+        return [EngineRetroSettings.RETROSPEED, EngineRetroSettings.RETROSOUND, EngineRetroSettings.RETROINFO,]
 
 
 class EngineRetroSettingsLoop(object):
@@ -724,6 +725,7 @@ class Display(MyEnum):
 
     """Display Class."""
 
+    CLOCKSIDE = "B00_display_clockside_menu"
     PONDER = "B00_display_ponder_menu"
     CONFIRM = "B00_display_confirm_menu"
     ENGINENAME = "B00_display_enginename_menu"
@@ -733,6 +735,7 @@ class Display(MyEnum):
     @classmethod
     def items(cls):
         return [
+            Display.CLOCKSIDE,
             Display.PONDER,
             Display.CONFIRM,
             Display.ENGINENAME,

@@ -25,7 +25,7 @@ import time
 import chess  # type: ignore
 from utilities import DisplayMsg, Observable, DispatchDgt, RepeatedTimer, write_picochess_ini
 from dgt.menu import DgtMenu
-from dgt.util import ClockSide, ClockIcons, BeepLevel, Mode, GameResult, TimeMode, PlayMode
+from dgt.util import EBoard, ClockSide, ClockIcons, BeepLevel, Mode, GameResult, TimeMode, PlayMode
 from dgt.api import Dgt, Event, Message
 from timecontrol import TimeControl
 from dgt.board import Rev2Info
@@ -209,6 +209,28 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             except ValueError:
                 pass
             return score
+            
+    def _move_language(self, text: str, language: str, capital: bool, short: bool):
+        """Return move text for clock display."""
+        if short:
+            directory = {}
+            if language == 'de':
+                directory = {'R': 'T', 'N': 'S', 'B': 'L', 'Q': 'D'}
+            if language == 'nl':
+                directory = {'R': 'T', 'N': 'P', 'B': 'L', 'Q': 'D'}
+            if language == 'fr':
+                directory = {'R': 'T', 'N': 'C', 'B': 'F', 'Q': 'D', 'K': '@'}
+            if language == 'es':
+                directory = {'R': 'T', 'N': 'C', 'B': 'A', 'Q': 'D', 'K': '@'}
+            if language == 'it':
+                directory = {'R': 'T', 'N': 'C', 'B': 'A', 'Q': 'D', 'K': '@'}
+            for i, j in directory.items():
+                text = text.replace(i, j)
+            text = text.replace('@', 'R')  # replace the King "@" from fr, es, it languages
+        if capital:
+            return text.upper()
+        else:
+            return text
 
     def _combine_depth_and_score_and_hint(self) -> Dgt.DISPLAY_TEXT:
         score = copy.copy(self.score)
@@ -233,8 +255,10 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             move_text = bit_board.san(text.move)
         else:
             move_text = ' - '
-        score.web_text = evaluation + ' | ' + move_text
-        score.large_text = evaluation + ' | ' + move_text
+        short = True
+        move_lang = self._move_language(move_text, self.dgttranslate.language, self.dgttranslate.capital, short)
+        score.web_text = evaluation + ' | ' + move_lang
+        score.large_text = evaluation + ' | ' + move_lang
         score.rd = ClockIcons.DOT
         return score
 
@@ -634,6 +658,11 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self.play_move = move
         self.play_fen = message.game.fen()
         self.play_turn = message.game.turn
+        if self.dgtmenu.current_board_type == EBoard.NOEBOARD:
+            game_copy_dgt = message.game.copy()
+            game_copy_dgt.push(move)
+            self.dgtmenu.set_dgt_fen(game_copy_dgt.board_fen())
+        
         if ponder:
             game_copy = message.game.copy()
             game_copy.push(move)
@@ -705,6 +734,9 @@ class DgtDisplay(DisplayMsg, threading.Thread):
 
         self.last_move = message.move
         self.last_fen = message.fen
+        if self.dgtmenu.current_board_type == EBoard.NOEBOARD:
+            self.dgtmenu.set_dgt_fen(message.game.board_fen())
+
         self.last_turn = message.turn
         self.play_move = chess.Move.null()
         self.play_fen = None
@@ -1206,6 +1238,8 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             if message.text_string == 'NEW_POSITION':
                 DispatchDgt.fire(self.dgttranslate.text('K20_newposition'))
                 time.sleep(1.5)
+            elif message.text_string == 'NEW_POSITION_SCAN':
+                time.sleep(0.5)
             else:
                 for string_part in self._convert_pico_string(message.text_string):
                     DispatchDgt.fire(self.dgttranslate.text('K20_default', string_part))
