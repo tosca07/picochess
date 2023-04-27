@@ -23,8 +23,8 @@ from dgt.iface import DgtIface
 from dgt.util import ClockIcons, ClockSide
 from eboard import EBoard
 from dgt.api import Dgt
-from pgn import ModeInfo
 
+from pgn import ModeInfo
 
 logger = logging.getLogger(__name__)
 
@@ -140,14 +140,42 @@ class DgtHw(DgtIface):
             logger.debug('(ser) clock isnt running - no need for endText')
             return True
 
+    def flip_square(self, square):
+        file_map = {'a': 'h', 'b': 'g', 'c': 'f', 'd': 'e', 'e': 'd', 'f': 'c', 'g': 'b', 'h': 'a'}
+        rank_map = {'1': '8', '2': '7', '3': '6', '4': '5', '5': '4', '6': '3', '7': '2', '8': '1'}
+        # Reverse the file and rank of the source and destination squares
+        flipped_square = file_map[square[0]] + rank_map[square[1]]
+        return flipped_square
+        
+    def flip_move(self, move):
+        file_map = {'a': 'h', 'b': 'g', 'c': 'f', 'd': 'e', 'e': 'd', 'f': 'c', 'g': 'b', 'h': 'a'}
+        rank_map = {'1': '8', '2': '7', '3': '6', '4': '5', '5': '4', '6': '3', '7': '2', '8': '1'}
+        # Extract source and destination squares from UCI move
+        source = move[:2]
+        dest = move[2:]
+        # Reverse the file and rank of the source and destination squares
+        flipped_source = self.flip_square(source)
+        flipped_dest = self.flip_square(dest)
+        # Combine the flipped source and destination squares to create the flipped UCI move
+        flipped_move = flipped_source + flipped_dest
+        return flipped_move
+
     def light_squares_on_revelation(self, uci_move: str):
         """Light the Rev2 leds."""
-        self.dgtboard.light_squares_on_revelation(uci_move)
+        if ModeInfo.get_flipped_board():
+            new_move = self.flip_move(uci_move)
+        else:
+            new_move = uci_move
+        self.dgtboard.light_squares_on_revelation(new_move)
         return True
 
     def light_square_on_revelation(self, square: str):
         """Light the Rev2 led."""
-        self.dgtboard.light_square_on_revelation(square)
+        if ModeInfo.get_flipped_board():
+            new_square = self.flip_square(square)
+        else:
+            new_square = square
+        self.dgtboard.light_square_on_revelation(new_square)
         return True
 
     def clear_light_on_revelation(self):
@@ -177,10 +205,7 @@ class DgtHw(DgtIface):
         with self.lib_lock:
             l_hms = hms_time(self.dgtboard.l_time)
             r_hms = hms_time(self.dgtboard.r_time)
-            if ModeInfo.get_clock_side() == 'right':
-                res = self.dgtboard.set_and_run(r_run, r_hms[0], r_hms[1], r_hms[2], l_run, l_hms[0], l_hms[1], l_hms[2])
-            else:
-                res = self.dgtboard.set_and_run(l_run, l_hms[0], l_hms[1], l_hms[2], r_run, r_hms[0], r_hms[1], r_hms[2])
+            res = self.dgtboard.set_and_run(l_run, l_hms[0], l_hms[1], l_hms[2], r_run, r_hms[0], r_hms[1], r_hms[2])
             if not res:
                 logger.warning('finally failed %i', res)
                 return False
