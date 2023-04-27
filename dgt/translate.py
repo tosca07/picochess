@@ -1031,20 +1031,14 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_menu_favorites':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Special & Historical Engines', large_text='Special Eng', medium_text='Special', small_text='specl')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Spezial & historische Engines', large_text='Spezial Eng', medium_text='Special', small_text='Spezl.')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Favorites', large_text='Favorites', medium_text='Favorite', small_text='favor.')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Favoriten', large_text='Favoriten', medium_text='Favorite', small_text='Favor.')
+            nltxt = Dgt.DISPLAY_TEXT(web_text='Favorieten', large_text='Favorieten', medium_text='Favor.', small_text='Favor.')
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_menu_retrosettings':
             entxt = Dgt.DISPLAY_TEXT(web_text='Retro-Engine Settings', large_text='Retro-Settg', medium_text='Ret-Sett', small_text='rsettg')
-            detxt = entxt
-            nltxt = entxt
-            frtxt = entxt
-            estxt = entxt
-            ittxt = entxt
-        if text_id == 'engine_menu_retrowindow':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Switch to emulation window', large_text='Retro-Wind', medium_text='Ret-Wnd', small_text='retwi')
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
@@ -1066,8 +1060,36 @@ class DgtTranslate(object):
             ittxt = entxt
         if text_id == 'engine_retroinfo':
             entxt = Dgt.DISPLAY_TEXT(web_text='Engine-Features:' + msg, large_text=msg, medium_text=msg, small_text=msg)
+            detxt = Dgt.DISPLAY_TEXT(web_text='Engine-Features:' + msg, large_text=msg, medium_text=msg, small_text=msg)
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'engine_menu_retrowindow':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Switch to emulation window', large_text='Retro-Wind', medium_text='Ret-Wnd', small_text='retwi')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Wechsel zum Emulator-Fenster', large_text='EmulatorFns', medium_text='RetFenst', small_text='retfen')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'engine_menu_retrodisplay':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Retro-Artwork Display', large_text='Retro-Artwk', medium_text='RetArtwork', small_text='rartwk')
             detxt = entxt
             nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'engine_retrodisplay_on':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Retro-Artwork on', large_text='RetroArt on', medium_text='Artw.on', small_text='Art.on')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Retro-Artwork an', large_text='RetroArt an', medium_text='RArt an', small_text='rArtan')
+            nltxt = Dgt.DISPLAY_TEXT(web_text='Retro Artwork aan', large_text='RetroArt aan', medium_text='RArt aan', small_text='ratan')
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'engine_retrodisplay_off':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Retro-Artwork off', large_text='RetroArtoff', medium_text='Artw.off', small_text='Art.off')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Retro-Artwork aus', large_text='RetroArtaus', medium_text='RArt aus', small_text='rArtaus')
+            nltxt = Dgt.DISPLAY_TEXT(web_text='Retro Artwork uit', large_text='RetroArtuit', medium_text='RArt uit', small_text='ratuit')
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
