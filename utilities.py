@@ -312,6 +312,4 @@ def get_engine_mame_par(engine_rspeed: float, engine_rsound=False, engine_rdisp=
         engine_mame_par = '-speed ' + str(engine_rspeed)
     if not engine_rsound:
         engine_mame_par = engine_mame_par + ' -sound none'
-   ## if not engine_rdisp:
-   ##     engine_mame_par = engine_mame_par + ' -video none'
     return engine_mame_par

@@ -449,7 +449,7 @@ class EngineRetroSettings(MyEnum):
 
     RETROSPEED = "B00_engine_menu_retrospeed"
     RETROSOUND = "B00_engine_menu_retrosound"
-    RETROINFO  = "B00_engine_menu_retroinfo"
+    RETROINFO = "B00_engine_menu_retroinfo"
 
     @classmethod
     def items(cls):

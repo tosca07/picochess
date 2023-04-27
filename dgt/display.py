@@ -209,7 +209,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             except ValueError:
                 pass
             return score
-            
+
     def _move_language(self, text: str, language: str, capital: bool, short: bool):
         """Return move text for clock display."""
         if short:
@@ -662,7 +662,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             game_copy_dgt = message.game.copy()
             game_copy_dgt.push(move)
             self.dgtmenu.set_dgt_fen(game_copy_dgt.board_fen())
-        
+
         if ponder:
             game_copy = message.game.copy()
             game_copy.push(move)

@@ -1271,14 +1271,14 @@ class DgtMenu(object):
         self.state = MenuState.RETROSETTINGS_RETROINFO
         text = self.dgttranslate.text(EngineRetroSettings.RETROINFO.value)
         return text
-        
+
     def enter_retroinfo_show_menu(self):
         """Set the menu state."""
         self.state = MenuState.RETROSETTINGS_RETROINFO_SHOW
         info = ModeInfo.get_retro_features()
         text = self.dgttranslate.text("B00_engine_retroinfo", info)
         return text
-        
+
     def enter_retrosound_menu(self):
         """Set the menu state."""
         self.state = MenuState.RETROSETTINGS_RETROSOUND
@@ -1898,16 +1898,16 @@ class DgtMenu(object):
 
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND:
             text = self.enter_retrosettings_menu()
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND_ONOFF:
             text = self.enter_retrosound_menu()
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROINFO:
             text = self.enter_retrosettings_menu()
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROINFO_SHOW:
             text = self.enter_retroinfo_menu()
-            
+
         elif self.state == MenuState.SYS:
             text = self.enter_top_menu()
 
@@ -1988,10 +1988,10 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_DISP:
             text = self.enter_sys_menu()
-            
+
         elif self.state == MenuState.SYS_DISP_CLOCKSIDE:
             text = self.enter_sys_disp_menu()
-            
+
         elif self.state == MenuState.SYS_DISP_CLOCKSIDE_LEFTRIGHT:
             text = self.enter_sys_disp_clockside_menu()
 
@@ -2153,9 +2153,7 @@ class DgtMenu(object):
     def main_down(self):
         """Change the menu state after DOWN action == RIGHT arrow button in web interface."""
         text = self.dgttranslate.text("Y00_errormenu")
-        if False:  # switch-case
-            pass
-        elif self.state == MenuState.TOP:
+        if self.state == MenuState.TOP:
             if self.menu_top == Top.MODE:
                 text = self.enter_mode_menu()
             if self.menu_top == Top.POSITION:
@@ -2960,7 +2958,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_DISP_CLOCKSIDE:
             text = self.enter_sys_disp_clockside_leftright_menu()
-            
+
         elif self.state == MenuState.SYS_DISP_CLOCKSIDE_LEFTRIGHT:
             ModeInfo.set_clock_side(self.menu_system_display_clockside)
             write_picochess_ini("clockside", self.menu_system_display_clockside)
@@ -3404,7 +3402,7 @@ class DgtMenu(object):
                 self.menu_engine_retrosettings
             )
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROINFO:
             self.state = MenuState.RETROSETTINGS_RETROSOUND
             self.menu_engine_retrosettings = EngineRetroSettingsLoop.prev(
@@ -3418,10 +3416,10 @@ class DgtMenu(object):
                 self.menu_engine_retrosettings
             )
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
-        
+
         elif self.state == MenuState.RETROSETTINGS_RETROINFO_SHOW:
             text = self.enter_retroinfo_show_menu()
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROSPEED_FACTOR:
             l_speed = ""
             self.menu_engine_retrospeed_idx = (self.menu_engine_retrospeed_idx - 1) % len(
@@ -3581,7 +3579,7 @@ class DgtMenu(object):
             self.state = MenuState.SYS_VOICE
             self.menu_system = SystemLoop.prev(self.menu_system)
             text = self.dgttranslate.text(self.menu_system.value)
-            
+
         elif self.state == MenuState.SYS_DISP_CLOCKSIDE:
             self.state = MenuState.SYS_DISP_NOTATION
             self.menu_system_display = DisplayLoop.prev(self.menu_system_display)
@@ -3675,9 +3673,7 @@ class DgtMenu(object):
     def main_right(self):
         """Change the menu state after RIGHT action."""
         text = self.dgttranslate.text("Y00_errormenu")
-        if False:  # switch-case
-            pass
-        elif self.state == MenuState.TOP:
+        if self.state == MenuState.TOP:
             pass
 
         elif self.state == MenuState.GAME:
@@ -4050,14 +4046,14 @@ class DgtMenu(object):
                 self.menu_engine_retrosettings
             )
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROINFO:
             self.state = MenuState.RETROSETTINGS_RETROSPEED
             self.menu_engine_retrosettings = EngineRetroSettingsLoop.next(
                 self.menu_engine_retrosettings
             )
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROINFO_SHOW:
             text = self.enter_retroinfo_show_menu()
 
@@ -4220,7 +4216,7 @@ class DgtMenu(object):
             self.state = MenuState.SYS_EBOARD
             self.menu_system = SystemLoop.next(self.menu_system)
             text = self.dgttranslate.text(self.menu_system.value)
-            
+
         elif self.state == MenuState.SYS_DISP_CLOCKSIDE:
             self.state = MenuState.SYS_DISP_CONFIRM
             self.menu_system_display = DisplayLoop.next(self.menu_system_display)

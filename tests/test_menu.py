@@ -22,7 +22,8 @@ class TestDgtMenu(unittest.TestCase):
             EngineProvider.modern_engines + EngineProvider.retro_engines + EngineProvider.favorite_engines)
 
         trans = DgtTranslate('none', 0, 'en', 'version')
-        menu = DgtMenu(disable_confirm=False,
+        menu = DgtMenu(clockside='',
+                       disable_confirm=False,
                        ponder_interval=0,
                        user_voice='',
                        comp_voice='',
@@ -311,7 +312,7 @@ class TestDgtMenu(unittest.TestCase):
         self.assertEqual('Information', menu.main_right().large_text.strip())
         self.assertEqual('Sound', menu.main_right().large_text.strip())
         self.assertEqual('Language', menu.main_right().large_text.strip())
-        self.assertEqual('Log file', menu.main_right().large_text.strip())
+        self.assertEqual('mailLogfile', menu.main_right().large_text.strip())
         self.assertEqual('Voice', menu.main_right().large_text.strip())
         self.assertEqual('Display', menu.main_right().large_text.strip())
         self.assertEqual('E-Board', menu.main_right().large_text.strip())
@@ -321,7 +322,7 @@ class TestDgtMenu(unittest.TestCase):
         self.assertEqual('E-Board', menu.main_left().large_text.strip())
         self.assertEqual('Display', menu.main_left().large_text.strip())
         self.assertEqual('Voice', menu.main_left().large_text.strip())
-        self.assertEqual('Log file', menu.main_left().large_text.strip())
+        self.assertEqual('mailLogfile', menu.main_left().large_text.strip())
         self.assertEqual('Language', menu.main_left().large_text.strip())
         self.assertEqual('Sound', menu.main_left().large_text.strip())
         self.assertEqual('Information', menu.main_left().large_text.strip())

@@ -86,7 +86,7 @@ class ModeInfo:
     def set_game_ending(cls, result):
         logger.debug('Save game result %s', result)
         ModeInfo.end_result = result
-        
+
     @classmethod
     def get_retro_features(cls):
         return ModeInfo.retro_engine_features
@@ -105,7 +105,7 @@ class ModeInfo:
     @classmethod
     def get_online_mode(cls):
         return ModeInfo.online_mode
-        
+
     @classmethod
     def set_clock_side(cls, side):
         ModeInfo.clock_side = side
@@ -113,7 +113,7 @@ class ModeInfo:
     @classmethod
     def get_clock_side(cls):
         return ModeInfo.clock_side
-        
+
     @classmethod
     def set_emulation_mode(cls, mode):
         ModeInfo.emulation_mode = mode
@@ -655,7 +655,7 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             if '(info)' in self.engine_name:
                 ModeInfo.retro_engine_features = ' information'
                 self.engine_name = self.engine_name.replace('(info)', '')
-        
+
             self.old_engine = self.engine_name
             self.engine_elo = message.eng['elo']
             if not message.has_levels:

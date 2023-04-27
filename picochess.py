@@ -2193,12 +2193,11 @@ def main() -> None:
             DisplayMsg.show(msg)
             state.start_clock()
             state.legal_fens = compute_legal_fens(state.game.copy())
-       
+
     def calc_engine_mame_par():
-        return(get_engine_mame_par(
-            state.dgtmenu.get_engine_rspeed(),
-            state.dgtmenu.get_engine_rsound()))
-            
+        return get_engine_mame_par(state.dgtmenu.get_engine_rspeed(),
+                                   state.dgtmenu.get_engine_rsound())
+
     def takeback(state: PicochessState):
         stop_search_and_clock()
         l_error = False
@@ -2728,7 +2727,7 @@ def main() -> None:
 
     # The class dgtDisplay fires Event (Observable) & DispatchDgt (Dispatcher)
     DgtDisplay(state.dgttranslate, state.dgtmenu, state.time_control).start()
-    
+
     ModeInfo.set_clock_side(args.clockside)
 
     sample_beeper = False
@@ -3052,11 +3051,9 @@ def main() -> None:
                 if engine.quit():
                     # Load the new one and send args.
                     if remote_engine_mode() and flag_eng and uci_remote_shell:
-                        engine = UciEngine(
-                            file=remote_file,
-                            uci_shell=uci_remote_shell,
-                            mame_par=calc_engine_mame_par()
-                            )
+                        engine = UciEngine(file=remote_file,
+                                           uci_shell=uci_remote_shell,
+                                           mame_par=calc_engine_mame_par())
                     else:
                         engine = UciEngine(
                             file=engine_file,
@@ -3176,7 +3173,7 @@ def main() -> None:
                             engine.startup(event.options, state.rating)
                         else:
                             time.sleep(2)
-                    elif (emulation_mode() and not "pos" in engine_name) or pgn_mode():
+                    elif (emulation_mode() and "pos" not in engine_name) or pgn_mode():
                         # molli for emulation engine we have to reset to starting position
                         stop_search_and_clock()
                         state.game = chess.Board()
@@ -3299,7 +3296,7 @@ def main() -> None:
                 )  # for picotutor game comments like Boris & Sargon
                 state.picotutor.init_comments(state.comment_file)
 
-                if pgn_mode() or (emulation_mode() and not "pos" in engine_name):
+                if pgn_mode() or (emulation_mode() and "pos" not in engine_name):
                     # molli: in these cases we can't continue from current position but
                     #        have to start a new game
                     if emulation_mode():
@@ -3349,7 +3346,7 @@ def main() -> None:
                     ModeInfo.set_pgn_mode(mode=False)
 
                 update_elo_display(state)
-                if emulation_mode() and "pos" in engine_name and state.game.board_fen() !=  chess.STARTING_BOARD_FEN:
+                if emulation_mode() and "pos" in engine_name and state.game.board_fen() != chess.STARTING_BOARD_FEN:
                     event = Event.SETUP_POSITION(fen=state.game.fen(), uci960=False)
                     Observable.fire(event)
 
@@ -3374,7 +3371,7 @@ def main() -> None:
                 if engine.has_chess960():
                     engine.option("UCI_Chess960", uci960)
                     engine.send()
-                
+
                 DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION_SCAN"))
                 engine.newgame(state.game.copy())
                 state.done_computer_fen = None
@@ -3413,7 +3410,7 @@ def main() -> None:
 
                     if not (state.game.is_game_over() or state.game_declared):
 
-                        if emulation_mode() and not "pos" in engine_name:  # force abortion for mame ## molli mame enhance
+                        if emulation_mode() and "pos" not in engine_name:  # force abortion for mame ## molli mame enhance
                             if state.is_not_user_turn():
                                 # clock must be stopped BEFORE the "book_move" event cause SetNRun resets the clock display
                                 state.stop_clock()
@@ -4626,11 +4623,11 @@ def main() -> None:
                         )
                         engine.startup(old_options, state.rating)
                         stop_search_and_clock()
-                        if not "pos" in engine.get_name():
+                        if "pos" not in engine.get_name():
                             state.game = chess.Board()
                             state.game.turn = chess.WHITE
                             state.play_mode = PlayMode.USER_WHITE
-                            
+
                         engine.newgame(state.game.copy())
                         state.done_computer_fen = None
                         state.done_move = state.pb_move = chess.Move.null()
@@ -4643,10 +4640,10 @@ def main() -> None:
                         engine_mode()
                         DisplayMsg.show(Message.RSPEED(rspeed=event.rspeed))
                         update_elo_display(state)
-                        if emulation_mode() and "pos" in engine.get_name() and state.game.board_fen() !=  chess.STARTING_BOARD_FEN:
+                        if emulation_mode() and "pos" in engine.get_name() and state.game.board_fen() != chess.STARTING_BOARD_FEN:
                             event = Event.SETUP_POSITION(fen=state.game.fen(), uci960=False)
                             Observable.fire(event)
-                            
+
                     else:
                         logger.error("engine shutdown failure")
                         DisplayMsg.show(Message.ENGINE_FAIL())

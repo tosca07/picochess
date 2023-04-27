@@ -377,16 +377,16 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
         if c_prob == 0 or self.c_comment_factor == 0:
             return talkfile
-            
+
         # consider probability factor from picochess.ini
-        if c_group == 'start' or c_group == 'name' or c_group == 'shutdown' or c_group == 'mate' \
-            or c_group == 'stalemate' or c_group == 'draw' or c_group == 'takeback' \
-            or c_group == 'check':
+        if any(c_group == 'start', c_group == 'name', c_group == 'shutdown',
+                c_group == 'mate', c_group == 'stalemate', c_group == 'draw',
+                c_group == 'takeback', c_group == 'check'):
             # don't use factor for these events
             c_prob = c_prob
         else:
             c_prob = round(c_prob * (self.c_comment_factor / 100))
-        
+
         c_number = round(c_total * (100 / c_prob))
 
         if c_number > 1:
@@ -925,7 +925,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
                         self.talk(['set_pieces_sound.ogg'], self.BEEPER)
                         if not self.sample_beeper or self.sample_beeper_level == 0:
                             self.talk(['set_pieces_sound.ogg'])
-                    
+
                 elif isinstance(message, Message.PICOWATCHER):
                     if message.picowatcher:
                         self.talk(['picowatcher_enabled.ogg'])
