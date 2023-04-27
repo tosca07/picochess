@@ -912,6 +912,7 @@ class DgtMenu(object):
 
     def set_position_reverse_flipboard(self, flip_board):
         """Set the flag."""
+        ModeInfo.set_flipped_board(flip_board)
         self.res_position_reverse = self.flip_board = flip_board
 
     def get_position_reverse_flipboard(self):
@@ -2496,6 +2497,7 @@ class DgtMenu(object):
             bit_board.set_fen(bit_board.fen())
             if bit_board.is_valid():
                 self.flip_board = self.menu_position_reverse
+                self.set_position_reverse_flipboard(self.flip_board)
                 event = Event.SETUP_POSITION(fen=bit_board.fen(), uci960=self.menu_position_uci960)
                 Observable.fire(event)
                 # self._reset_moves_and_score() done in "START_NEW_GAME"

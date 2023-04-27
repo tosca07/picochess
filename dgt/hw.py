@@ -16,8 +16,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import dgt.util
 from threading import Lock
-
 from utilities import hms_time
 from dgt.iface import DgtIface
 from dgt.util import ClockIcons, ClockSide
@@ -162,19 +162,31 @@ class DgtHw(DgtIface):
 
     def light_squares_on_revelation(self, uci_move: str):
         """Light the Rev2 leds."""
-        if ModeInfo.get_flipped_board():
-            new_move = self.flip_move(uci_move)
+        if ModeInfo.get_eboard_type() == dgt.util.EBoard.DGT:
+            if ModeInfo.get_flipped_board():
+                new_move = uci_move
+            else:
+                new_move = self.flip_move(uci_move)
         else:
-            new_move = uci_move
+            if ModeInfo.get_flipped_board():
+                new_move = self.flip_move(uci_move)
+            else:
+                new_move = uci_move
         self.dgtboard.light_squares_on_revelation(new_move)
         return True
 
     def light_square_on_revelation(self, square: str):
         """Light the Rev2 led."""
-        if ModeInfo.get_flipped_board():
-            new_square = self.flip_square(square)
+        if ModeInfo.get_eboard_type() == dgt.util.EBoard.DGT:
+            if ModeInfo.get_flipped_board():
+                new_square = square
+            else:
+                new_square = self.flip_square(square)
         else:
-            new_square = square
+            if ModeInfo.get_flipped_board():
+                new_square = self.flip_square(square)
+            else:
+                new_square = square
         self.dgtboard.light_square_on_revelation(new_square)
         return True
 

@@ -25,7 +25,7 @@ import time
 import chess  # type: ignore
 from utilities import DisplayMsg, Observable, DispatchDgt, RepeatedTimer, write_picochess_ini
 from dgt.menu import DgtMenu
-from dgt.util import EBoard, ClockSide, ClockIcons, BeepLevel, Mode, GameResult, TimeMode, PlayMode
+from dgt.util import ClockSide, ClockIcons, BeepLevel, Mode, GameResult, TimeMode, PlayMode
 from dgt.api import Dgt, Event, Message
 from timecontrol import TimeControl
 from dgt.board import Rev2Info
@@ -650,7 +650,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             DispatchDgt.fire(self.dgttranslate.text('C10_ucigame' if self.uci960 else 'C10_newgame', str(pos960)))
         if self.dgtmenu.get_mode() in (Mode.NORMAL, Mode.BRAIN, Mode.OBSERVE, Mode.REMOTE, Mode.TRAINING):
             self._set_clock()
-
+    
     def _process_computer_move(self, message):
         self.force_leds_off(log=True)  # can happen in case of a book move
         move = message.move
@@ -658,11 +658,6 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self.play_move = move
         self.play_fen = message.game.fen()
         self.play_turn = message.game.turn
-        if self.dgtmenu.current_board_type == EBoard.NOEBOARD:
-            game_copy_dgt = message.game.copy()
-            game_copy_dgt.push(move)
-            self.dgtmenu.set_dgt_fen(game_copy_dgt.board_fen())
-        
         if ponder:
             game_copy = message.game.copy()
             game_copy.push(move)
@@ -681,6 +676,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
                                 lang=self.dgttranslate.language, capital=self.dgttranslate.capital,
                                 long=self.dgttranslate.notation)
         DispatchDgt.fire(disp)
+
         DispatchDgt.fire(Dgt.LIGHT_SQUARES(uci_move=move.uci(), devs={'ser', 'web'}))
         self.leds_are_on = True
         self.c_time_counter = 0
@@ -734,9 +730,6 @@ class DgtDisplay(DisplayMsg, threading.Thread):
 
         self.last_move = message.move
         self.last_fen = message.fen
-        if self.dgtmenu.current_board_type == EBoard.NOEBOARD:
-            self.dgtmenu.set_dgt_fen(message.game.board_fen())
-
         self.last_turn = message.turn
         self.play_move = chess.Move.null()
         self.play_fen = None
