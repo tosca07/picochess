@@ -930,15 +930,6 @@ def main() -> None:
 
         if state.error_fen:
             game_fen = state.game.board_fen()
-            if (
-                state.interaction_mode in (Mode.NORMAL, Mode.TRAINING, Mode.BRAIN)
-                and game_fen != chess.STARTING_BOARD_FEN
-                and not online_mode()
-                and not pgn_mode()
-                and not emulation_mode()
-                and state.error_fen != game_fen
-                and state.take_back_locked
-            ):
 
             if (
                 state.interaction_mode in (Mode.NORMAL, Mode.TRAINING, Mode.BRAIN)
