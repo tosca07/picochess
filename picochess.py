@@ -82,6 +82,7 @@ from dgt.menu import DgtMenu
 
 from picotutor import PicoTutor
 from pathlib import Path
+import subprocess
 
 ONLINE_PREFIX = "Online"
 
@@ -157,6 +158,7 @@ class PicochessState:
         self.dgttranslate = None
         self.done_computer_fen = None
         self.done_move = chess.Move.null()
+        self.engine_file = ""
         self.engine_text = None
         self.engine_level = ""
         self.new_engine_level = ""
@@ -726,7 +728,7 @@ def main() -> None:
         return enabled
 
     def get_comment_file() -> str:
-        comment_path = engine.get_file() + "_comments_" + args.language + ".txt"
+        comment_path = state.engine_file + "_comments_" + args.language + ".txt"
         logger.debug("molli comment file: %s", comment_path)
         comment_file = Path(comment_path)
         if comment_file.is_file():
@@ -2082,7 +2084,7 @@ def main() -> None:
     def get_engine_level_dict(engine_level):
         """Transfer an engine level to its level_dict plus an index."""
         for eng in EngineProvider.installed_engines:
-            if eng["file"] == engine.get_file():
+            if eng["file"] == state.engine_file:
                 level_list = sorted(eng["level_dict"])
                 try:
                     level_index = level_list.index(engine_level)
@@ -2623,6 +2625,13 @@ def main() -> None:
         help="en/disable mame engine sound (default is off)",
     )
 
+    parser.add_argument(
+        "-rdisp",
+        "--rdisplay",
+        action="store_true",
+        help="en/disable mame engine artwork display (default is false)",
+    )
+
     args, unknown = parser.parse_known_args()
 
     # Enable logging
@@ -2702,6 +2711,7 @@ def main() -> None:
         args.theme,
         round(float(args.rspeed), 2),
         args.rsound,
+        args.rdisplay,
         args.rolling_display_ponder,
         args.show_engine,
         PicoCoach.from_str(args.tutor_coach),
@@ -2832,12 +2842,21 @@ def main() -> None:
 
     if engine_file is None:
         engine_file = EngineProvider.installed_engines[0]["file"]
+    
+    state.engine_file = engine_file
+    if '/mame/' in engine_file and state.dgtmenu.get_engine_rdisplay():
+        time.sleep(3)
+        engine_file_art = engine_file + '_art'
+        my_file = Path(engine_file_art)
+        if my_file.is_file():
+            engine_file = engine_file_art
 
     engine = UciEngine(
         file=engine_file,
         uci_shell=uci_local_shell,
         mame_par=calc_engine_mame_par()
     )
+
     try:
         engine_name = engine.get_name()
     except AttributeError:
@@ -2846,7 +2865,7 @@ def main() -> None:
         DisplayMsg.show(Message.ENGINE_FAIL())
         time.sleep(2)
         sys.exit(-1)
-
+    
     # Startup - internal
     state.game = chess.Board()  # Create the current game
     fen = state.game.fen()
@@ -2912,7 +2931,7 @@ def main() -> None:
     DisplayMsg.show(
         Message.ENGINE_STARTUP(
             installed_engines=EngineProvider.installed_engines,
-            file=engine.get_file(),
+            file=state.engine_file,
             level_index=level_index,
             has_960=engine.has_chess960(),
             has_ponder=engine.has_ponder(),
@@ -2957,7 +2976,8 @@ def main() -> None:
     )
 
     ModeInfo.set_game_ending(result="*")
-
+    ModeInfo.set_flipped_board(state.dgtmenu.get_position_reverse_flipboard())
+    
     text: Dgt.DISPLAY_TEXT = state.dgtmenu.get_current_engine_name()
     state.engine_text = text
     state.dgtmenu.enter_top_menu()
@@ -3001,7 +3021,7 @@ def main() -> None:
                 )
 
             elif isinstance(event, Event.NEW_ENGINE):
-                old_file = engine.get_file()
+                old_file = state.engine_file
                 old_options = {}
                 old_options = engine.get_pgn_options()
                 engine_fallback = False
@@ -3011,6 +3031,14 @@ def main() -> None:
                 # Closeout the engine process and threads
 
                 engine_file = event.eng["file"]
+                state.engine_file = engine_file
+                
+                if '/mame/' in engine_file and state.dgtmenu.get_engine_rdisplay():
+                    engine_file_art = engine_file + '_art'
+                    my_file = Path(engine_file_art)
+                    if my_file.is_file():
+                        engine_file = engine_file_art
+                
                 help_str = engine_file.rsplit(os.sep, 1)[1]
                 remote_file = engine_remote_home + os.sep + help_str
 
@@ -3178,6 +3206,7 @@ def main() -> None:
                             time.sleep(2)
                     elif (emulation_mode() and not "pos" in engine_name) or pgn_mode():
                         # molli for emulation engine we have to reset to starting position
+                        """
                         stop_search_and_clock()
                         state.game = chess.Board()
                         state.game.turn = chess.WHITE
@@ -3191,8 +3220,16 @@ def main() -> None:
                         state.last_legal_fens = []
                         state.legal_fens_after_cmove = []
                         is_out_of_time_already = False
+                        """
+                        pos960 = 518
+                        Observable.fire(Event.NEW_GAME(pos960=pos960))
                     else:
-                        engine.newgame(state.game.copy())
+                        if state.game.move_stack and '/mame/' in engine_file and "pos" in engine_name:
+                            tmp_game = state.game.copy()
+                            tmp_game.clear_stack()
+                            engine.newgame(tmp_game)
+                        else:
+                            engine.newgame(state.game.copy())
 
                     engine_mode()
 
@@ -3298,37 +3335,32 @@ def main() -> None:
                     get_comment_file()
                 )  # for picotutor game comments like Boris & Sargon
                 state.picotutor.init_comments(state.comment_file)
+                
+                if emulation_mode():
+                    set_emulation_tctrl(state)
 
-                if pgn_mode() or (emulation_mode() and not "pos" in engine_name):
-                    # molli: in these cases we can't continue from current position but
-                    #        have to start a new game
-                    if emulation_mode():
-                        set_emulation_tctrl(state)
-                    # prepare new game
-                    if pgn_mode():
-                        (
-                            pgn_game_name,
-                            pgn_problem,
-                            pgn_fen,
-                            pgn_result,
-                            pgn_white,
-                            pgn_black,
-                        ) = read_pgn_info()
-                        if "mate in" in pgn_problem or "Mate in" in pgn_problem:
-                            set_fen_from_pgn(pgn_fen, state)
-                            state.play_mode = (
-                                PlayMode.USER_WHITE
-                                if state.game.turn == chess.WHITE
-                                else PlayMode.USER_BLACK
-                            )
-                            msg = Message.PLAY_MODE(
-                                play_mode=state.play_mode,
-                                play_mode_text=state.dgttranslate.text(state.play_mode.value),
-                            )
-                            DisplayMsg.show(msg)
-                            time.sleep(1)
-                    pos960 = 518
-                    Observable.fire(Event.NEW_GAME(pos960=pos960))
+                if pgn_mode():
+                    (
+                        pgn_game_name,
+                        pgn_problem,
+                        pgn_fen,
+                        pgn_result,
+                        pgn_white,
+                        pgn_black,
+                    ) = read_pgn_info()
+                    if "mate in" in pgn_problem or "Mate in" in pgn_problem:
+                        set_fen_from_pgn(pgn_fen, state)
+                        state.play_mode = (
+                            PlayMode.USER_WHITE
+                            if state.game.turn == chess.WHITE
+                            else PlayMode.USER_BLACK
+                        )
+                        msg = Message.PLAY_MODE(
+                            play_mode=state.play_mode,
+                            play_mode_text=state.dgttranslate.text(state.play_mode.value),
+                        )
+                        DisplayMsg.show(msg)
+                        time.sleep(1)
 
                 if online_mode():
                     ModeInfo.set_online_mode(mode=True)
@@ -3349,14 +3381,11 @@ def main() -> None:
                     ModeInfo.set_pgn_mode(mode=False)
 
                 update_elo_display(state)
-                if emulation_mode() and "pos" in engine_name and state.game.board_fen() !=  chess.STARTING_BOARD_FEN:
-                    event = Event.SETUP_POSITION(fen=state.game.fen(), uci960=False)
-                    Observable.fire(event)
 
             elif isinstance(event, Event.SETUP_POSITION):
                 logger.debug("setting up custom fen: %s", event.fen)
                 uci960 = event.uci960
-
+                
                 if state.game.move_stack:
                     if not (state.game.is_game_over() or state.game_declared):
                         result = GameResult.ABORT
@@ -3384,6 +3413,8 @@ def main() -> None:
                 state.time_control.reset()
                 state.searchmoves.reset()
                 state.game_declared = False
+                ModeInfo.set_flipped_board(state.dgtmenu.get_position_reverse_flipboard())
+                
                 if picotutor_mode(state):
                     state.picotutor.reset()
                     state.picotutor.set_position(state.game.fen(), i_turn=state.game.turn, i_ignore_expl=True)
@@ -3405,7 +3436,7 @@ def main() -> None:
                 state.position_mode = False
                 state.fen_error_occured = False
                 state.newgame_happened = True
-                newgame = state.game.move_stack or (state.game.chess960_pos() != event.pos960)
+                newgame = state.game.move_stack or (state.game.chess960_pos() != event.pos960) or state.best_move_posted or state.done_computer_fen
 
                 if newgame:
                     logger.debug("starting a new game with code: %s", event.pos960)
@@ -3413,7 +3444,7 @@ def main() -> None:
 
                     if not (state.game.is_game_over() or state.game_declared):
 
-                        if emulation_mode() and not "pos" in engine_name:  # force abortion for mame ## molli mame enhance
+                        if emulation_mode() and not "pos" in engine_name:  # force abortion for mame
                             if state.is_not_user_turn():
                                 # clock must be stopped BEFORE the "book_move" event cause SetNRun resets the clock display
                                 state.stop_clock()
@@ -3465,9 +3496,6 @@ def main() -> None:
                         ModeInfo.set_online_mode(mode=True)
                     else:
                         ModeInfo.set_online_mode(mode=False)
-
-                    if emulation_mode():
-                        DisplayMsg.show(Message.ENGINE_SETUP())
 
                     engine.newgame(state.game.copy())
 
@@ -3686,6 +3714,7 @@ def main() -> None:
                                 if state.no_guess_white > state.max_guess_white:
                                     state.last_legal_fens = []
                                     get_next_pgn_move(state)
+                ModeInfo.set_flipped_board(state.dgtmenu.get_position_reverse_flipboard())
 
             elif isinstance(event, Event.PAUSE_RESUME):
                 if pgn_mode():
@@ -4616,6 +4645,17 @@ def main() -> None:
             elif isinstance(event, Event.RSPEED):
                 if emulation_mode():
                     # restart engine with new retro speed
+                    if '/mame/' in engine_file and state.dgtmenu.get_engine_rdisplay():
+                        try:
+                            subprocess.Popen(['/opt/picochess/scripts/close_mame_popup.sh', '&'])
+                        except:
+                            pass
+                        engine_file_art = engine_file + '_art'
+                        my_file = Path(engine_file_art)
+                        if my_file.is_file():
+                            engine_file = engine_file_art
+                    else:
+                        engine_file = state.engine_file
                     old_options = engine.get_pgn_options()
                     DisplayMsg.show(Message.ENGINE_SETUP())
                     if engine.quit():

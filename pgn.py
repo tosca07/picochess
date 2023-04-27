@@ -53,6 +53,8 @@ class ModeInfo:
     end_result = '*'
     book_in_use = ''
     retro_engine_features = ' /'
+    clock_side = 'left'
+    flipped_board = False
 
     @classmethod
     def set_opening(cls, book_in_use, op_name, op_eco):
@@ -113,6 +115,14 @@ class ModeInfo:
     @classmethod
     def get_clock_side(cls):
         return ModeInfo.clock_side
+        
+    @classmethod
+    def set_flipped_board(cls, flipped):
+        ModeInfo.flipped_board = flipped
+        
+    @classmethod
+    def get_flipped_board(cls):
+        return ModeInfo.flipped_board
         
     @classmethod
     def set_emulation_mode(cls, mode):
