@@ -1059,7 +1059,7 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_retroinfo':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Engine-Features:' + msg, large_text= msg, medium_text=msg, small_text=msg)
+            entxt = Dgt.DISPLAY_TEXT(web_text='Engine-Features:' + msg, large_text=msg, medium_text=msg, small_text=msg)
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
