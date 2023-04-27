@@ -42,7 +42,7 @@ class PicoTutor:
         self.user_color = i_player_color
         self.max_valid_moves = 200
         self.engine_path = i_engine_path
-        
+
         self.engine = None
         self.engine2 = None
 
@@ -214,13 +214,13 @@ class PicoTutor:
     def get_opening(self) -> Tuple[str, str, str, bool]:
         # check if game started really from start position
         # (otherwise we can't use opening based on just the moves)
-        
+
         halfmoves = 2 * self.board.fullmove_number
         if self.board.turn:
             halfmoves -= 2
         else:
             halfmoves -= 1
-            
+
         diff = self.board.fullmove_number - self.last_inside_book_moveno
         inside_book_opening = False
 
@@ -337,21 +337,20 @@ class PicoTutor:
         return self.user_color
 
     def set_position(self, i_fen, i_turn=chess.WHITE, i_ignore_expl=False):
-    
         self.reset()
         self.board = chess.Board(i_fen)
         chess.Board.turn = i_turn
-        
+
         if i_ignore_expl:
             fen = self.board.board_fen()
             if fen == chess.STARTING_BOARD_FEN:
                 self.expl_start_position = True
             else:
                 self.expl_start_position = False
-                
+
         if not (self.coach_on or self.watcher_on):
             return
-            
+
         self.engine.position(self.board)
         self.engine2.position(self.board)
         self.pos = True

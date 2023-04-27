@@ -427,7 +427,22 @@ class DgtMenu(object):
         self.tc_depth_list = [" 1", " 2", " 3", " 4", "10", "15", "20", "25"]
         self.tc_node_list = [" 1", " 5", " 10", " 25", "50", "100", "250", "500"]
 
-        self.com_prob_list = ["0", "5", "10", "15", "20", "25", "30", "40", "50", "60", "70", "80", "90", "100"]
+        self.com_prob_list = [
+            "0",
+            "5",
+            "10",
+            "15",
+            "20",
+            "25",
+            "30",
+            "40",
+            "50",
+            "60",
+            "70",
+            "80",
+            "90",
+            "100",
+        ]
 
         self.retrospeed_list = [
             "25",
@@ -464,13 +479,15 @@ class DgtMenu(object):
         self.menu_picotutor_picocomment_prob_list = str(picocomment_prob)
         self.res_picotutor_picocomment_prob = int(picocomment_prob)
         if self.menu_picotutor_picocomment_prob_list in self.com_prob_list:
-            self.menu_picocomment_prob_idx = self.com_prob_list.index(self.menu_picotutor_picocomment_prob_list)
+            self.menu_picocomment_prob_idx = self.com_prob_list.index(
+                self.menu_picotutor_picocomment_prob_list
+            )
         else:
             self.menu_picocomment_prob_idx = 6
             self.menu_picotutor_picocomment_prob_list = "30"
             self.res_picotutor_picocomment_prob = 30
 
-        display = os.environ.get('DISPLAY')
+        display = os.environ.get("DISPLAY")
         if rdisplay and display is not None:
             self.engine_retrodisplay = rdisplay
             self.res_engine_retrodisplay = self.engine_retrodisplay
@@ -746,11 +763,10 @@ class DgtMenu(object):
     def get_comment_factor(self):
         return self.res_picotutor_picocomment_prob
 
-            
     def get_engine_rwindow(self):
         """Get the flag."""
         return self.res_engine_rwindow
-            
+
     def get_engine_rspeed(self):
         """Get the flag."""
         return self.res_engine_retrospeed
@@ -758,7 +774,7 @@ class DgtMenu(object):
     def get_engine_rsound(self):
         """Get the flag."""
         return self.res_engine_retrosound
-        
+
     def get_engine_rdisplay(self):
         """Get the flag."""
         return self.res_engine_retrodisplay
@@ -1057,8 +1073,9 @@ class DgtMenu(object):
     def enter_com_problist_menu(self):
         """Set the menu state."""
         self.state = MenuState.PICOTUTOR_PICOCOMPROB_LIST
-        text = self.dgttranslate.text("B00_picocom_prob_list",
-                                      f"{str(self.com_prob_list[self.menu_picocomment_prob_idx])}%")
+        text = self.dgttranslate.text(
+            "B00_picocom_prob_list", f"{str(self.com_prob_list[self.menu_picocomment_prob_idx])}%"
+        )
         return text
 
     def enter_game_menu(self):
@@ -1299,14 +1316,14 @@ class DgtMenu(object):
         self.state = MenuState.RETROSETTINGS_RETROINFO
         text = self.dgttranslate.text(EngineRetroSettings.RETROINFO.value)
         return text
-        
+
     def enter_retroinfo_show_menu(self):
         """Set the menu state."""
         self.state = MenuState.RETROSETTINGS_RETROINFO_SHOW
         info = ModeInfo.get_retro_features()
         text = self.dgttranslate.text("B00_engine_retroinfo", info)
         return text
-        
+
     def enter_retrosound_menu(self):
         """Set the menu state."""
         self.state = MenuState.RETROSETTINGS_RETROSOUND
@@ -1320,7 +1337,7 @@ class DgtMenu(object):
         self.res_engine_retrosound = self.engine_retrosound
         text = self.dgttranslate.text("B00_engine_retrosound_" + msg)
         return text
-        
+
     def enter_retrodisplay_menu(self):
         """Set the menu state."""
         self.state = MenuState.RETROSETTINGS_RETRODISPLAY
@@ -1332,7 +1349,7 @@ class DgtMenu(object):
         msg = "on" if self.engine_retrodisplay else "off"
         text = self.dgttranslate.text("B00_engine_retrodisplay_" + msg)
         return text
-    
+
     def enter_retrowindow_menu(self):
         """Set the menu state."""
         self.state = MenuState.RETROSETTINGS_RETROWINDOW
@@ -1684,7 +1701,7 @@ class DgtMenu(object):
     def _set_volume_voice(self, volume_factor):
         """Set the Volume-Voice."""
         factor = str(volume_factor * 5 + 50)
-        for channel in ('Headphone', 'Master', 'HDMI', 'PCM'):
+        for channel in ("Headphone", "Master", "HDMI", "PCM"):
             volume_cmd = f"amixer sset {channel} {factor}%"
             logger.debug(volume_cmd)
             result = subprocess.run(
@@ -1935,7 +1952,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.RETROSETTINGS:
             text = self.enter_engine_menu()
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROWINDOW:
             text = self.enter_retrosettings_menu()
 
@@ -1947,22 +1964,22 @@ class DgtMenu(object):
 
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND:
             text = self.enter_retrosettings_menu()
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND_ONOFF:
             text = self.enter_retrosound_menu()
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETRODISPLAY:
             text = self.enter_retrosettings_menu()
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETRODISPLAY_ONOFF:
             text = self.enter_retrodisplay_menu()
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROINFO:
             text = self.enter_retrosettings_menu()
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROINFO_SHOW:
             text = self.enter_retroinfo_menu()
-            
+
         elif self.state == MenuState.SYS:
             text = self.enter_top_menu()
 
@@ -2043,10 +2060,10 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_DISP:
             text = self.enter_sys_menu()
-            
+
         elif self.state == MenuState.SYS_DISP_CLOCKSIDE:
             text = self.enter_sys_disp_menu()
-            
+
         elif self.state == MenuState.SYS_DISP_CLOCKSIDE_LEFTRIGHT:
             text = self.enter_sys_disp_clockside_menu()
 
@@ -2208,9 +2225,7 @@ class DgtMenu(object):
     def main_down(self):
         """Change the menu state after DOWN action == RIGHT arrow button in web interface."""
         text = self.dgttranslate.text("Y00_errormenu")
-        if False:  # switch-case
-            pass
-        elif self.state == MenuState.TOP:
+        if self.state == MenuState.TOP:
             if self.menu_top == Top.MODE:
                 text = self.enter_mode_menu()
             if self.menu_top == Top.POSITION:
@@ -2478,7 +2493,9 @@ class DgtMenu(object):
             text = self.enter_com_problist_menu()
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMPROB_LIST:
-            self.menu_picotutor_picocomment_prob_list = self.com_prob_list[self.menu_picocomment_prob_idx]
+            self.menu_picotutor_picocomment_prob_list = self.com_prob_list[
+                self.menu_picocomment_prob_idx
+            ]
             write_picochess_ini("comment-factor", self.menu_picotutor_picocomment_prob_list)
             self.res_picotutor_picocomment_prob = int(self.menu_picotutor_picocomment_prob_list)
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicocomment"))
@@ -2739,7 +2756,7 @@ class DgtMenu(object):
                 self._fire_event(Event.RSPEED(rspeed=self.retrospeed_factor))
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okrsound"))
             self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROWINDOW:
             self.menu_engine_retrosettings = EngineRetroSettings.RETROWINDOW
             self.res_engine_rwindow = not self.res_engine_rwindow
@@ -2756,7 +2773,7 @@ class DgtMenu(object):
                     )
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_ok"))
             self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETRODISPLAY:
             self.menu_engine_retrosettings = EngineRetroSettings.RETRODISPLAY
             text = self.enter_retrodisplay_onoff_menu()
@@ -2764,7 +2781,7 @@ class DgtMenu(object):
         elif self.state == MenuState.RETROSETTINGS_RETRODISPLAY_ONOFF:
             self.engine_retrodisplay = self.engine_retrodisplay_onoff
             display = None
-            display = os.environ.get('DISPLAY')
+            display = os.environ.get("DISPLAY")
             if self.engine_retrodisplay and display is None:
                 DispatchDgt.fire(self.dgttranslate.text("Y10_nodesktop"))
                 text = self.enter_retrosettings_menu()
@@ -2774,7 +2791,7 @@ class DgtMenu(object):
                 write_picochess_ini("rdisplay", self.engine_retrodisplay)
                 # trigger rspped event for rsound change (does just an engine restart)
                 self._fire_event(Event.RSPEED(rspeed=self.retrospeed_factor))
-                    
+
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okrdisplay"))
             self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
 
@@ -3048,7 +3065,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_DISP_CLOCKSIDE:
             text = self.enter_sys_disp_clockside_leftright_menu()
-            
+
         elif self.state == MenuState.SYS_DISP_CLOCKSIDE_LEFTRIGHT:
             ModeInfo.set_clock_side(self.menu_system_display_clockside)
             write_picochess_ini("clockside", self.menu_system_display_clockside)
@@ -3112,7 +3129,12 @@ class DgtMenu(object):
             text = self.enter_sys_theme_type_menu()
 
         elif self.state == MenuState.SYS_THEME_TYPE:
-            themes = {Theme.LIGHT: "light", Theme.DARK: "dark", Theme.TIME: "time", Theme.AUTO: "auto"}
+            themes = {
+                Theme.LIGHT: "light",
+                Theme.DARK: "dark",
+                Theme.TIME: "time",
+                Theme.AUTO: "auto",
+            }
             theme_type = themes[self.menu_system_theme_type]
             write_picochess_ini("theme", theme_type)
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_oktheme"))
@@ -3290,7 +3312,9 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_picotutor.value)
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMPROB_LIST:
-            self.menu_picocomment_prob_idx = (self.menu_picocomment_prob_idx - 1) % len(self.com_prob_list)
+            self.menu_picocomment_prob_idx = (self.menu_picocomment_prob_idx - 1) % len(
+                self.com_prob_list
+            )
             self.menu_picocomment_prob_list = self.com_prob_list[self.menu_picocomment_prob_idx]
             l_prob = self.menu_picocomment_prob_list + "%"
             text = self.dgttranslate.text("B00_picocom_prob_list", l_prob)
@@ -3485,12 +3509,12 @@ class DgtMenu(object):
             self.engine_retrosound_onoff = not self.engine_retrosound_onoff
             msg = "on" if self.engine_retrosound_onoff else "off"
             text = self.dgttranslate.text("B00_engine_retrosound_" + msg)
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETRODISPLAY_ONOFF:
             self.engine_retrodisplay_onoff = not self.engine_retrodisplay_onoff
             msg = "on" if self.engine_retrodisplay_onoff else "off"
             text = self.dgttranslate.text("B00_engine_retrodisplay_" + msg)
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROWINDOW:
             self.state = MenuState.RETROSETTINGS_RETROINFO
             self.menu_engine_retrosettings = EngineRetroSettingsLoop.prev(
@@ -3504,14 +3528,14 @@ class DgtMenu(object):
                 self.menu_engine_retrosettings
             )
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETRODISPLAY:
             self.state = MenuState.RETROSETTINGS_RETROSOUND
             self.menu_engine_retrosettings = EngineRetroSettingsLoop.prev(
                 self.menu_engine_retrosettings
             )
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROINFO:
             self.state = MenuState.RETROSETTINGS_RETRODISPLAY
             self.menu_engine_retrosettings = EngineRetroSettingsLoop.prev(
@@ -3525,10 +3549,10 @@ class DgtMenu(object):
                 self.menu_engine_retrosettings
             )
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
-        
+
         elif self.state == MenuState.RETROSETTINGS_RETROINFO_SHOW:
             text = self.enter_retroinfo_show_menu()
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROSPEED_FACTOR:
             l_speed = ""
             self.menu_engine_retrospeed_idx = (self.menu_engine_retrospeed_idx - 1) % len(
@@ -3688,7 +3712,7 @@ class DgtMenu(object):
             self.state = MenuState.SYS_VOICE
             self.menu_system = SystemLoop.prev(self.menu_system)
             text = self.dgttranslate.text(self.menu_system.value)
-            
+
         elif self.state == MenuState.SYS_DISP_CLOCKSIDE:
             self.state = MenuState.SYS_DISP_NOTATION
             self.menu_system_display = DisplayLoop.prev(self.menu_system_display)
@@ -3782,9 +3806,7 @@ class DgtMenu(object):
     def main_right(self):
         """Change the menu state after RIGHT action."""
         text = self.dgttranslate.text("Y00_errormenu")
-        if False:  # switch-case
-            pass
-        elif self.state == MenuState.TOP:
+        if self.state == MenuState.TOP:
             pass
 
         elif self.state == MenuState.GAME:
@@ -3844,7 +3866,7 @@ class DgtMenu(object):
                 self.menu_engine_retrosettings
             )
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
-            
+
         elif self.state == MenuState.GAME_GAMEREAD_GAME1:
             self.state = MenuState.GAME_GAMEREAD_GAME2
             self.menu_game_read = GameReadLoop.next(self.menu_game_read)
@@ -3966,7 +3988,9 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_picotutor.value)
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMPROB_LIST:
-            self.menu_picocomment_prob_idx = (self.menu_picocomment_prob_idx + 1) % len(self.com_prob_list)
+            self.menu_picocomment_prob_idx = (self.menu_picocomment_prob_idx + 1) % len(
+                self.com_prob_list
+            )
             self.menu_picocomment_prob_list = self.com_prob_list[self.menu_picocomment_prob_idx]
             l_prob = self.menu_picocomment_prob_list + "%"
             text = self.dgttranslate.text("B00_picocom_prob_list", l_prob)
@@ -4149,12 +4173,11 @@ class DgtMenu(object):
             )
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
 
-
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND_ONOFF:
             self.engine_retrosound_onoff = not self.engine_retrosound_onoff
             msg = "on" if self.engine_retrosound_onoff else "off"
             text = self.dgttranslate.text("B00_engine_retrosound_" + msg)
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETRODISPLAY:
             self.state = MenuState.RETROSETTINGS_RETROINFO
             self.menu_engine_retrosettings = EngineRetroSettingsLoop.next(
@@ -4166,7 +4189,7 @@ class DgtMenu(object):
             self.engine_retrodisplay_onoff = not self.engine_retrodisplay_onoff
             msg = "on" if self.engine_retrodisplay_onoff else "off"
             text = self.dgttranslate.text("B00_engine_retrodisplay_" + msg)
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROWINDOW:
             self.state = MenuState.RETROSETTINGS_RETROSPEED
             self.menu_engine_retrosettings = EngineRetroSettingsLoop.next(
@@ -4180,14 +4203,14 @@ class DgtMenu(object):
                 self.menu_engine_retrosettings
             )
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROINFO:
             self.state = MenuState.RETROSETTINGS_RETROWINDOW
             self.menu_engine_retrosettings = EngineRetroSettingsLoop.next(
                 self.menu_engine_retrosettings
             )
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
-            
+
         elif self.state == MenuState.RETROSETTINGS_RETROINFO_SHOW:
             text = self.enter_retroinfo_show_menu()
 
@@ -4350,7 +4373,7 @@ class DgtMenu(object):
             self.state = MenuState.SYS_EBOARD
             self.menu_system = SystemLoop.next(self.menu_system)
             text = self.dgttranslate.text(self.menu_system.value)
-            
+
         elif self.state == MenuState.SYS_DISP_CLOCKSIDE:
             self.state = MenuState.SYS_DISP_CONFIRM
             self.menu_system_display = DisplayLoop.next(self.menu_system_display)
