@@ -447,13 +447,15 @@ class EngineTopLoop(object):
 
 class EngineRetroSettings(MyEnum):
 
-    RETROSPEED = "B00_engine_menu_retrospeed"
-    RETROSOUND = "B00_engine_menu_retrosound"
-    RETROINFO  = "B00_engine_menu_retroinfo"
+    RETROWINDOW  = "B00_engine_menu_retrowindow"
+    RETROSPEED   = "B00_engine_menu_retrospeed"
+    RETROSOUND   = "B00_engine_menu_retrosound"
+    RETRODISPLAY = "B00_engine_menu_retrodisplay"
+    RETROINFO    = "B00_engine_menu_retroinfo"
 
     @classmethod
     def items(cls):
-        return [EngineRetroSettings.RETROSPEED, EngineRetroSettings.RETROSOUND, EngineRetroSettings.RETROINFO,]
+        return [EngineRetroSettings.RETROWINDOW, EngineRetroSettings.RETROSPEED, EngineRetroSettings.RETROSOUND, EngineRetroSettings.RETRODISPLAY, EngineRetroSettings.RETROINFO]
 
 
 class EngineRetroSettingsLoop(object):

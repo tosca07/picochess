@@ -703,29 +703,29 @@ class DgtTranslate(object):
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='sin mov    ', medium_text='sin mov ', small_text='no mov')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='no mossa   ', medium_text='no mossa', small_text='nmossa')
         if text_id == 'wb':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Board orientation: W-B', large_text=' W       B ', medium_text=' W     B', small_text='wh  bl')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' W       S ', medium_text=' W     S', small_text='we  sc')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Board orientation: W - B', large_text=' W       B ', medium_text=' W     B', small_text='wh  bl')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Brett Orientierung: W - S', large_text=' W       S ', medium_text=' W     S', small_text='we  sc')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' W       Z ', medium_text=' W     Z', small_text='wi  zw')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' B       N ', medium_text=' B     N', small_text='bl  no')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' B       N ', medium_text=' B     N', small_text='bl  ne')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' B       N ', medium_text=' B     N', small_text='bi  ne')
         if text_id == 'bw':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Board orientation: B-W', large_text=' B       W ', medium_text=' B     W', small_text='bl  wh')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' S       W ', medium_text=' S     W', small_text='sc  we')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Board orientation: B - W', large_text=' B       W ', medium_text=' B     W', small_text='bl  wh')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Brett Orientierung: S - W', large_text=' S       W ', medium_text=' S     W', small_text='sc  we')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' Z       W ', medium_text=' Z     W', small_text='zw  wi')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' N       B ', medium_text=' N     B', small_text='no  bl')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' N       B ', medium_text=' N     B', small_text='ne  bl')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text=' N       B ', medium_text=' N     B', small_text='ne  bi')
         if text_id == '960no':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='uci960 no  ', medium_text='960 no  ', small_text='960 no')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='uci960 nein', medium_text='960 nein', small_text='960 nn')
+            entxt = Dgt.DISPLAY_TEXT(web_text='uci960 game: no', large_text='uci960 no  ', medium_text='960 no  ', small_text='960 no')
+            detxt = Dgt.DISPLAY_TEXT(web_text='uci960 Spiel: nein', large_text='uci960 nein', medium_text='960 nein', small_text='960 nn')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='uci960 nee ', medium_text='960 nee ', small_text='960nee')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='uci960 non ', medium_text='960 non ', small_text='960non')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='uci960 no  ', medium_text='960 no  ', small_text='960 no')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='uci960 no  ', medium_text='960 no  ', small_text='960 no')
         if text_id == '960yes':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='uci960 yes ', medium_text='960 yes ', small_text='960yes')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='uci960 ja  ', medium_text='960 ja  ', small_text='960 ja')
+            entxt = Dgt.DISPLAY_TEXT(web_text='uci960 game: yes', large_text='uci960 yes ', medium_text='960 yes ', small_text='960yes')
+            detxt = Dgt.DISPLAY_TEXT(web_text='uci960 Spiel: ja', large_text='uci960 ja  ', medium_text='960 ja  ', small_text='960 ja')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='uci960 ja  ', medium_text='960 ja  ', small_text='960 ja')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='uci960 oui ', medium_text='960 oui ', small_text='960oui')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='uci960 si  ', medium_text='960 si  ', small_text='960 si')
@@ -795,22 +795,22 @@ class DgtTranslate(object):
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='error menu ', medium_text='err menu', small_text='errmen')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='errore menu', medium_text='err menu', small_text='errmen')
         if text_id == 'sidewhite':
-            entxt = Dgt.DISPLAY_TEXT(web_text='side to move White', large_text='side move W', medium_text='side W  ', small_text='side w')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='W am Zug   ', medium_text='W am Zug', small_text=' w zug')
+            entxt = Dgt.DISPLAY_TEXT(web_text='side to move: White', large_text='side move W', medium_text='side W  ', small_text='side w')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Weiß am Zug', large_text='W am Zug   ', medium_text='W am Zug', small_text=' w zug')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='wit aan zet', medium_text='wit zet ', small_text=' w zet')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='aux blancs ', medium_text='mvt bl  ', small_text='mvt bl')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='lado blanco', medium_text='lado W  ', small_text='lado w')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='lato bianco', medium_text='lato b  ', small_text='lato b')
         if text_id == 'sideblack':
-            entxt = Dgt.DISPLAY_TEXT(web_text='side to move Black', large_text='side move B', medium_text='side B  ', small_text='side b')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='S am Zug   ', medium_text='S am Zug', small_text=' s zug')
+            entxt = Dgt.DISPLAY_TEXT(web_text='side to move: Black', large_text='side move B', medium_text='side B  ', small_text='side b')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Schwarz am Zug', large_text='S am Zug   ', medium_text='S am Zug', small_text=' s zug')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='zw aan zet ', medium_text='zw zet  ', small_text=' z zet')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='aux noirs  ', medium_text='mvt n   ', small_text='mvt n ')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='lado negro ', medium_text='lado B  ', small_text='lado b')
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='lato nero  ', medium_text='lato n  ', small_text='lato n')
         if text_id == 'scanboard':
-            entxt = Dgt.DISPLAY_TEXT(web_text='', large_text='scan board ', medium_text='scan    ', small_text='scan  ')
-            detxt = Dgt.DISPLAY_TEXT(web_text='', large_text='lese Stellg', medium_text='lese Stl', small_text='lese s')
+            entxt = Dgt.DISPLAY_TEXT(web_text='scan the board', large_text='scan board ', medium_text='scan    ', small_text='scan  ')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Stellung einlesen', large_text='lese Stellg', medium_text='lese Stl', small_text='lese s')
             nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='scan bord  ', medium_text='scan    ', small_text='scan  ')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='scan echiq ', medium_text='scan    ', small_text='scan  ')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='escan tabl ', medium_text='escan   ', small_text='escan ')
@@ -1059,7 +1059,7 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_retroinfo':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Engine-Features:' + msg, large_text= msg, medium_text=msg, small_text=msg)
+            entxt = Dgt.DISPLAY_TEXT(web_text='Engine-Features:' + msg, large_text=msg, medium_text=msg, small_text=msg)
             detxt = entxt
             nltxt = entxt
             frtxt = entxt
