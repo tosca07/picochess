@@ -21,18 +21,19 @@ import datetime
 import logging
 import os
 import queue
+import dgt.util
+import mimetypes
+import requests
+import chess  # type: ignore
+import chess.pgn  # type: ignore
+
 from email import encoders
 from email.mime.multipart import MIMEMultipart
 from email.mime.audio import MIMEAudio
 from email.mime.base import MIMEBase
 from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
-import mimetypes
-import requests
 from typing import Optional
-
-import chess  # type: ignore
-import chess.pgn  # type: ignore
 from timecontrol import TimeControl
 from utilities import DisplayMsg
 from dgt.api import Dgt, Message
@@ -55,6 +56,7 @@ class ModeInfo:
     retro_engine_features = ' /'
     clock_side = 'left'
     flipped_board = False
+    eboard_type = dgt.util.EBoard.DGT
 
     @classmethod
     def set_opening(cls, book_in_use, op_name, op_eco):
@@ -123,6 +125,14 @@ class ModeInfo:
     @classmethod
     def get_flipped_board(cls):
         return ModeInfo.flipped_board
+        
+    @classmethod
+    def set_eboard_type(cls, type):
+        ModeInfo.eboard_type = type
+        
+    @classmethod
+    def get_eboard_type(cls):
+        return ModeInfo.eboard_type
         
     @classmethod
     def set_emulation_mode(cls, mode):

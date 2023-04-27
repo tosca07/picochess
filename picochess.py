@@ -939,11 +939,6 @@ def main() -> None:
                 and state.error_fen != game_fen
                 and state.take_back_locked
             ):
-                # check for inverse setup
-                fen_i = state.error_fen[::-1]
-                if fen_i == game_fen:
-                    logger.debug("molli: reverse the board!")
-                    state.dgtmenu.set_position_reverse_flipboard(True)
 
             if (
                 state.interaction_mode in (Mode.NORMAL, Mode.TRAINING, Mode.BRAIN)
@@ -2676,6 +2671,8 @@ def main() -> None:
         board_type = dgt.util.EBoard[args.board_type.upper()]
     except KeyError:
         board_type = dgt.util.EBoard.DGT
+    ModeInfo.set_eboard_type(board_type)
+    
     # wire some dgt classes
     if board_type == dgt.util.EBoard.CHESSLINK:
         dgtboard: EBoard = ChessLinkBoard()
@@ -2976,7 +2973,6 @@ def main() -> None:
     )
 
     ModeInfo.set_game_ending(result="*")
-    ModeInfo.set_flipped_board(state.dgtmenu.get_position_reverse_flipboard())
     
     text: Dgt.DISPLAY_TEXT = state.dgtmenu.get_current_engine_name()
     state.engine_text = text
@@ -3205,22 +3201,7 @@ def main() -> None:
                         else:
                             time.sleep(2)
                     elif (emulation_mode() and not "pos" in engine_name) or pgn_mode():
-                        # molli for emulation engine we have to reset to starting position
-                        """
-                        stop_search_and_clock()
-                        state.game = chess.Board()
-                        state.game.turn = chess.WHITE
-                        state.play_mode = PlayMode.USER_WHITE
-                        engine.newgame(state.game.copy())
-                        state.done_computer_fen = None
-                        state.done_move = state.pb_move = chess.Move.null()
-                        state.searchmoves.reset()
-                        state.game_declared = False
-                        state.legal_fens = compute_legal_fens(state.game.copy())
-                        state.last_legal_fens = []
-                        state.legal_fens_after_cmove = []
-                        is_out_of_time_already = False
-                        """
+                        # molli for emulation engines we have to reset to starting position
                         pos960 = 518
                         Observable.fire(Event.NEW_GAME(pos960=pos960))
                     else:
@@ -3413,7 +3394,6 @@ def main() -> None:
                 state.time_control.reset()
                 state.searchmoves.reset()
                 state.game_declared = False
-                ModeInfo.set_flipped_board(state.dgtmenu.get_position_reverse_flipboard())
                 
                 if picotutor_mode(state):
                     state.picotutor.reset()
@@ -3714,7 +3694,6 @@ def main() -> None:
                                 if state.no_guess_white > state.max_guess_white:
                                     state.last_legal_fens = []
                                     get_next_pgn_move(state)
-                ModeInfo.set_flipped_board(state.dgtmenu.get_position_reverse_flipboard())
 
             elif isinstance(event, Event.PAUSE_RESUME):
                 if pgn_mode():
