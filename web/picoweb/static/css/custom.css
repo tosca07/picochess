@@ -148,12 +148,14 @@ div.dataTables_wrapper div.dataTables_length select {
 }
 
 #DGTClockText {
-    font-size: 4vh;
+    font-size: 5vh;
 }
 
 #clockbuttons {
     padding-top: 10px;
     padding-bottom: 10px;
+    padding-left: 0px;
+    padding-right: 0px;
 }
 
 .boardinfo {
@@ -171,21 +173,21 @@ div.dataTables_wrapper div.dataTables_length select {
 }
 
 .scroll_movelist {
-    height: 180px;
+    height: 160px;
     overflow: auto;
     margin-bottom: 1vh;
 } 
 
 .scroll_obooklist {
-    height: 197px;
+    height: 168px;
 } 
 
 #GameTable_wrapper {
- min-height: 197px;
+ min-height: 168px;
 }
 
 .scroll_engine {
-    height: 197px;
+    height: 168px;
     overflow: auto;
     padding-right: 12px;
     margin-left: 0px;
@@ -270,7 +272,6 @@ td.result {
 #GameTable>tbody>tr:hover>* {
     box-shadow: inset 0 0 0 9999px white;
 }
-
 
 /* start promotion */
 .promotion-overlay {
