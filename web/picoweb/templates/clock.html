@@ -97,6 +97,7 @@
             <div class="container">
                 <div class="row">
                     <div class="card">
+                        <div class="card-header" style="font-size: 3vh;">PicoChess Version 3.2</div>
                         <div class="card-body">
                             <div class="pull-left">
                                 <div id="DGTClockText"></div>
@@ -111,7 +112,7 @@
                 <div class="row">
                     <div id="clockbuttons" class="text-center">
                         <div class="btn-group btn-group-lg d-flex" role="group">
-                            <button type="button" id="ClockLeverBtn" class="btn btn-warning" data-placement="auto">
+                            <button type="button" id="ClockLeverBtn" class="btn btn-danger" data-placement="auto">
                                 <i id="leverUp" class='fa fa-long-arrow-up fa-lg'></i><i id="leverDown"
                                                                                          class='fa fa-long-arrow-down fa-lg'
                                                                                          style="display: none;"></i>
@@ -128,7 +129,7 @@
                             <button type="button" id="ClockBtn3" class="btn btn-light" data-placement="auto">
                                 <i class='fa fa-plus fa-lg'></i>
                             </button>
-                            <button type="button" id="ClockBtn4" class="btn btn-info" data-placement="auto">
+                            <button type="button" id="ClockBtn4" class="btn btn-warning" data-placement="auto">
                                 <i class='fa fa-forward fa-lg'></i>
                             </button>
                         </div>
@@ -151,12 +152,12 @@
                         <div class="card-header">
                             <ul class="nav nav-pills mb-0" id="pills-tab" role="tablist">
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link active" id="pills-home-tab" data-bs-toggle="pill"
+                                    <button class="nav-link" id="pills-home-tab" data-bs-toggle="pill"
                                             data-bs-target="#engine" type="button" role="tab">Engine
                                     </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="pills-profile-tab" data-bs-toggle="pill"
+                                    <button class="nav-link active" id="pills-profile-tab" data-bs-toggle="pill"
                                             data-bs-target="#book"
                                             type="button" role="tab">Book
                                     </button>
@@ -171,7 +172,7 @@
                         </div>
                         <div class="card-body">
                             <div class="tab-content" id="pills-tabContent">
-                                <div class="tab-pane fade show active" id="engine" role="tabpanel">
+                                <div class="tab-pane fade" id="engine" role="tabpanel">
                                     <div class="scroll_engine">
                                         <div class="row">
                                             <div class="col-4">
@@ -179,7 +180,7 @@
                                             </div>
                                             <div class="col-8">
                                                 <div class="btn-group btn-group-xs pull-right" role="group">
-                                                    <button id="analyzeBtn" class="btn btn-info"
+                                                    <button id="analyzeBtn" class="btn btn-success"
                                                             data-placement="auto">
                                                         <i class='fa fa-cog'></i>
                                                         <span id="AnalyzeText">Analyze</span>
@@ -216,7 +217,7 @@
                                     </div>
 
                                 </div>
-                                <div class="tab-pane fade" id="book" role="tabpanel" style="padding-left: 10px;">
+                                <div class="tab-pane fade show active" id="book" role="tabpanel" style="padding-left: 10px;">
                                     <div class="scroll_obooklist">
                                         <table id="BookTable" class="table compact table-bordered row-border"
                                                style="font-size: 1.6vw; text-align: center; width: 100%;">
