@@ -23,6 +23,7 @@
 import sys
 import os
 import threading
+import subprocess
 import copy
 import gc
 import logging
@@ -1479,6 +1480,15 @@ def main() -> None:
         if fen == state.game.board_fen():
             logger.debug("Already in this fen: %s", fen)
             state.flag_startup = False
+            if emulation_mode() and state.dgtmenu.get_engine_rdisplay():
+                cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
+                result = subprocess.run(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    universal_newlines=True,
+                    shell=True,
+                )
             # molli: Chess tutor
             if (
                 picotutor_mode(state)
@@ -4616,10 +4626,6 @@ def main() -> None:
                 if emulation_mode():
                     # restart engine with new retro speed
                     if '/mame/' in engine_file and state.dgtmenu.get_engine_rdisplay():
-                        try:
-                            subprocess.Popen(['/opt/picochess/scripts/close_mame_popup.sh', '&'])
-                        except:
-                            pass
                         engine_file_art = engine_file + '_art'
                         my_file = Path(engine_file_art)
                         if my_file.is_file():
