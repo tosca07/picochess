@@ -2729,14 +2729,16 @@ class DgtMenu(object):
             
         elif self.state == MenuState.RETROSETTINGS_RETROWINDOW:
             self.menu_engine_retrosettings = EngineRetroSettings.RETROWINDOW
-            cmd = "xdotool key alt+Tab; xdotool key k"
-            result = subprocess.run(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                universal_newlines=True,
-                shell=True,
-            )
+            if ModeInfo.get_emulation_mode():
+                cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
+                if self.get_engine_rdisplay():
+                    result = subprocess.run(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        universal_newlines=True,
+                        shell=True,
+                    )
             text = self._fire_dispatchdgt(self.dgttranslate.text("B10_ok"))
             self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
             
