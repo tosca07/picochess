@@ -21,6 +21,7 @@ import logging
 import copy
 import queue
 import threading
+import subprocess
 import time
 import chess  # type: ignore
 from utilities import DisplayMsg, Observable, DispatchDgt, RepeatedTimer, write_picochess_ini
@@ -34,7 +35,6 @@ from dgt.translate import DgtTranslate
 
 logger = logging.getLogger(__name__)
 
-
 class DgtDisplay(DisplayMsg, threading.Thread):
 
     """Dispatcher for Messages towards DGT hardware or back to the event system (picochess)."""
@@ -44,6 +44,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self.dgttranslate = dgttranslate
         self.dgtmenu = dgtmenu
         self.time_control = time_control
+        self.last_pos_start = True
 
         self.drawresign_fen = None
         self.show_move_or_value = 0
@@ -601,6 +602,19 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             pos960 = bit_board.chess960_pos(ignore_castling=True)
             if pos960 is not None:
                 if pos960 == 518 or self.dgtmenu.get_engine_has_960():
+                    if self.last_pos_start:
+                        # trigger window switch
+                        if ModeInfo.get_emulation_mode() and self.dgtmenu.get_engine_rdisplay():
+                            cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
+                            result = subprocess.run(
+                                cmd,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                universal_newlines=True,
+                                shell=True,
+                            )
+                    else:
+                        self.last_pos_start = True
                     logger.debug('map: New game')
                     Observable.fire(Event.NEW_GAME(pos960=pos960))
                 else:
@@ -644,6 +658,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self.force_leds_off()
         self._reset_moves_and_score()
         self.time_control.reset()
+        self.last_pos_start = True
         if message.newgame:
             pos960 = message.game.chess960_pos()
             self.uci960 = pos960 is not None and pos960 != 518
@@ -652,6 +667,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             self._set_clock()
     
     def _process_computer_move(self, message):
+        self.last_pos_start = False
         self.force_leds_off(log=True)  # can happen in case of a book move
         move = message.move
         ponder = message.ponder
@@ -719,6 +735,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             self._display_confirm('K05_okpico')
 
     def _process_user_move_done(self, message):
+        self.last_pos_start = False
         self.force_leds_off(log=True)  # can happen in case of a sliding move
 
         if self.c_last_player == 'C' or self.c_last_player == '':
