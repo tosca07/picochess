@@ -1040,7 +1040,7 @@ def main() -> None:
                         DisplayMsg.show(Message.WRONG_FEN())
                         time.sleep(2)
                 if state.fen_error_occured and state.game.board_fen() and fen_res:
-                    # molli: Picochess correction messages (not for starting position)
+                    # molli: Picochess correction messages
                     # show incorrect square(s) and piece to put or be removed
                     if fen_res:
                         state.position_mode = True
@@ -3417,6 +3417,7 @@ def main() -> None:
                 engine_name = engine.get_name()
                 state.position_mode = False
                 state.fen_error_occured = False
+                state.error_fen = None
                 state.newgame_happened = True
                 newgame = state.game.move_stack or (state.game.chess960_pos() != event.pos960) or state.best_move_posted or state.done_computer_fen
 
