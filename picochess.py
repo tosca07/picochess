@@ -1036,8 +1036,9 @@ def main() -> None:
                         state.coach_triggered = True
                     else:
                         state.coach_triggered = False
-                    DisplayMsg.show(Message.WRONG_FEN())
-                    time.sleep(2)
+                    if external_fen != chess.STARTING_BOARD_FEN:
+                        DisplayMsg.show(Message.WRONG_FEN())
+                        time.sleep(2)
                 if state.fen_error_occured and state.game.board_fen() and fen_res:
                     # molli: Picochess correction messages (not for starting position)
                     # show incorrect square(s) and piece to put or be removed
