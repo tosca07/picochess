@@ -2844,7 +2844,7 @@ def main() -> None:
     
     state.engine_file = engine_file
     if '/mame/' in engine_file and state.dgtmenu.get_engine_rdisplay():
-        time.sleep(5)
+        time.sleep(8)
         engine_file_art = engine_file + '_art'
         my_file = Path(engine_file_art)
         if my_file.is_file():
