@@ -3230,15 +3230,23 @@ def main() -> None:
                             time.sleep(2)
                     elif emulation_mode() or pgn_mode():
                         # molli for emulation engines we have to reset to starting position
-                        pos960 = 518
-                        Observable.fire(Event.NEW_GAME(pos960=pos960))
+                        stop_search_and_clock()
+                        state.game = chess.Board()
+                        state.game.turn = chess.WHITE
+                        state.play_mode = PlayMode.USER_WHITE
+                        engine.newgame(state.game.copy())
+                        state.done_computer_fen = None
+                        state.done_move = state.pb_move = chess.Move.null()
+                        state.searchmoves.reset()
+                        state.game_declared = False
+                        state.legal_fens = compute_legal_fens(state.game.copy())
+                        state.last_legal_fens = []
+                        state.legal_fens_after_cmove = []
+                        is_out_of_time_already = False
+                        msg = Message.START_NEW_GAME(game=state.game.copy(), newgame=True)
+                        DisplayMsg.show(msg)
                     else:
-                        if state.game.move_stack and '/mame/' in engine_file and "pos" in engine_name:
-                            tmp_game = state.game.copy()
-                            tmp_game.clear_stack()
-                            engine.newgame(tmp_game)
-                        else:
-                            engine.newgame(state.game.copy())
+                        engine.newgame(state.game.copy())
 
                     engine_mode()
 
@@ -3445,7 +3453,7 @@ def main() -> None:
                 state.fen_error_occured = False
                 state.error_fen = None
                 state.newgame_happened = True
-                newgame = state.game.move_stack or (state.game.chess960_pos() != event.pos960)
+                newgame = state.game.move_stack or (state.game.chess960_pos() != event.pos960) or state.best_move_posted or state.done_computer_fen
                 if newgame:
                     logger.debug("starting a new game with code: %s", event.pos960)
                     uci960 = event.pos960 != 518
@@ -3504,7 +3512,9 @@ def main() -> None:
                         ModeInfo.set_online_mode(mode=True)
                     else:
                         ModeInfo.set_online_mode(mode=False)
-
+                    
+                    if emulation_mode():
+                        engine.stop()
                     engine.newgame(state.game.copy())
 
                     state.done_computer_fen = None
