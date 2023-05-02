@@ -660,7 +660,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self.time_control.reset()
         
         if message.newgame:
-            self.last_pos_start = False
+            self.last_pos_start = True
             pos960 = message.game.chess960_pos()
             self.uci960 = pos960 is not None and pos960 != 518
             DispatchDgt.fire(self.dgttranslate.text('C10_ucigame' if self.uci960 else 'C10_newgame', str(pos960)))
