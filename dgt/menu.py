@@ -244,6 +244,7 @@ class DgtMenu(object):
         rspeed: float,
         rsound: bool,
         rdisplay: bool,
+        rwindow: bool,
         rol_disp_brain: bool,
         show_enginename: bool,
         picocoach: PicoCoach,
@@ -477,6 +478,7 @@ class DgtMenu(object):
         self.res_engine_retrosound = self.engine_retrosound
         self.engine_retrosound_onoff = self.engine_retrosound
         self.menu_engine_retrosettings = EngineRetroSettings.RETROWINDOW
+        self.res_engine_rwindow = rwindow
 
         self.tc_fixed_map = OrderedDict(
             [
@@ -740,6 +742,11 @@ class DgtMenu(object):
     def get_comment_factor(self):
         return self.res_picotutor_picocomment_prob
 
+            
+    def get_engine_rwindow(self):
+        """Get the flag."""
+        return self.res_engine_rwindow
+            
     def get_engine_rspeed(self):
         """Get the flag."""
         return self.res_engine_retrospeed
@@ -2729,9 +2736,11 @@ class DgtMenu(object):
             
         elif self.state == MenuState.RETROSETTINGS_RETROWINDOW:
             self.menu_engine_retrosettings = EngineRetroSettings.RETROWINDOW
+            self.res_engine_rwindow = not self.res_engine_rwindow
             if ModeInfo.get_emulation_mode():
-                cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
+                cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt; sleep 0.2; xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
                 if self.get_engine_rdisplay():
+                    write_picochess_ini("rwindow", self.res_engine_rwindow)
                     result = subprocess.run(
                         cmd,
                         stdout=subprocess.PIPE,

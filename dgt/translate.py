@@ -1031,9 +1031,8 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_menu_favorites':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Favorites', large_text='Favorites', medium_text='Favorite', small_text='favor.')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Favoriten', large_text='Favoriten', medium_text='Favorite', small_text='Favor.')
-            nltxt = Dgt.DISPLAY_TEXT(web_text='Favorieten', large_text='Favorieten', medium_text='Favor.', small_text='Favor.')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Special & Historical Engines', large_text='Special Eng', medium_text='Special', small_text='specl')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Spezial & historische Engines', large_text='Spezial Eng', medium_text='Special', small_text='Spezl.')
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
@@ -1044,30 +1043,9 @@ class DgtTranslate(object):
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
-        if text_id == 'engine_menu_retrosound':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Retro-Sound Setting', large_text='Retro-Sound', medium_text='RetSound', small_text='rsound')
-            detxt = entxt
-            nltxt = entxt
-            frtxt = entxt
-            estxt = entxt
-            ittxt = entxt
-        if text_id == 'engine_menu_retroinfo':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Retro-Engine Information', large_text='Retro-Info', medium_text='RetInfo', small_text='rinfo')
-            detxt = entxt
-            nltxt = entxt
-            frtxt = entxt
-            estxt = entxt
-            ittxt = entxt
-        if text_id == 'engine_retroinfo':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Engine-Features:' + msg, large_text=msg, medium_text=msg, small_text=msg)
-            detxt = Dgt.DISPLAY_TEXT(web_text='Engine-Features:' + msg, large_text=msg, medium_text=msg, small_text=msg)
-            nltxt = entxt
-            frtxt = entxt
-            estxt = entxt
-            ittxt = entxt
         if text_id == 'engine_menu_retrowindow':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Switch to emulation window', large_text='Retro-Wind', medium_text='Ret-Wnd', small_text='retwi')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Wechsel zum Emulator-Fenster', large_text='EmulatorFns', medium_text='RetFenst', small_text='retfen')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Toggle fullscreen emulation', large_text='Toggl-Retro', medium_text='Togl-Ret', small_text='togret')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Wechsel Vollbild Emulator', large_text='VollbildEmu', medium_text='VollEmu', small_text='volemu')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -1090,6 +1068,28 @@ class DgtTranslate(object):
             entxt = Dgt.DISPLAY_TEXT(web_text='Retro-Artwork off', large_text='RetroArtoff', medium_text='Artw.off', small_text='Art.off')
             detxt = Dgt.DISPLAY_TEXT(web_text='Retro-Artwork aus', large_text='RetroArtaus', medium_text='RArt aus', small_text='rArtaus')
             nltxt = Dgt.DISPLAY_TEXT(web_text='Retro Artwork uit', large_text='RetroArtuit', medium_text='RArt uit', small_text='ratuit')
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+            
+        if text_id == 'engine_menu_retrosound':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Retro-Sound Setting', large_text='Retro-Sound', medium_text='RetSound', small_text='rsound')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'engine_menu_retroinfo':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Retro-Engine Information', large_text='Retro-Info', medium_text='RetInfo', small_text='rinfo')
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'engine_retroinfo':
+            entxt = Dgt.DISPLAY_TEXT(web_text='Engine-Features:' + msg, large_text=msg, medium_text=msg, small_text=msg)
+            detxt = entxt
+            nltxt = entxt
             frtxt = entxt
             estxt = entxt
             ittxt = entxt

@@ -658,11 +658,14 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self.force_leds_off()
         self._reset_moves_and_score()
         self.time_control.reset()
-        self.last_pos_start = True
+        
         if message.newgame:
+            self.last_pos_start = False
             pos960 = message.game.chess960_pos()
             self.uci960 = pos960 is not None and pos960 != 518
             DispatchDgt.fire(self.dgttranslate.text('C10_ucigame' if self.uci960 else 'C10_newgame', str(pos960)))
+        else:
+            self.last_pos_start = True
         if self.dgtmenu.get_mode() in (Mode.NORMAL, Mode.BRAIN, Mode.OBSERVE, Mode.REMOTE, Mode.TRAINING):
             self._set_clock()
     
