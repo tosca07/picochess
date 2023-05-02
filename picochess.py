@@ -1481,15 +1481,6 @@ def main() -> None:
         if fen == state.game.board_fen():
             logger.debug("Already in this fen: %s", fen)
             state.flag_startup = False
-            if emulation_mode() and state.dgtmenu.get_engine_rdisplay():
-                cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
-                result = subprocess.run(
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    universal_newlines=True,
-                    shell=True,
-                )
             # molli: Chess tutor
             if (
                 picotutor_mode(state)
@@ -1502,8 +1493,7 @@ def main() -> None:
             ):
                 call_pico_coach(state)
                 state.coach_triggered = False
-            else:
-                if state.position_mode:
+            elif state.position_mode:
                     # position finally alright!
                     tutor_str = "POSOK"
                     msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=state.game.copy())
@@ -1513,7 +1503,15 @@ def main() -> None:
                     if not state.done_computer_fen:
                         state.start_clock()
                     DisplayMsg.show(Message.EXIT_MENU())
-
+            elif emulation_mode() and state.dgtmenu.get_engine_rdisplay():
+                cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
+                result = subprocess.run(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    universal_newlines=True,
+                    shell=True,
+                )
         # Check if we have to undo a previous move (sliding)
         elif fen in state.last_legal_fens:
             logger.info("sliding move detected")
@@ -2619,14 +2617,19 @@ def main() -> None:
         "-rsound",
         "--rsound",
         action="store_true",
-        help="en/disable mame engine sound (default is off)",
+        help="en/disable retro engine sound (default is off)",
     )
-
+    parser.add_argument(
+        "-rwind",
+        "--rwindow",
+        action="store_true",
+        help="en/disable window mode for retro display (default is on, disabling means fullscreen)",
+    )
     parser.add_argument(
         "-rdisp",
         "--rdisplay",
         action="store_true",
-        help="en/disable mame engine artwork display (default is false)",
+        help="en/disable retro engine artwork display (default is false)",
     )
 
     args, unknown = parser.parse_known_args()
@@ -2711,6 +2714,7 @@ def main() -> None:
         round(float(args.rspeed), 2),
         args.rsound,
         args.rdisplay,
+        args.rwindow,
         args.rolling_display_ponder,
         args.show_engine,
         PicoCoach.from_str(args.tutor_coach),
@@ -2881,6 +2885,17 @@ def main() -> None:
     state.book_in_use = args.book
     bookreader = chess.polyglot.open_reader(all_books[book_index]["file"])
     state.searchmoves = AlternativeMover()
+    
+    if emulation_mode() and state.dgtmenu.get_engine_rdisplay() and not state.dgtmenu.get_engine_rwindow():
+    #switch to fullscreen
+    cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
+    result = subprocess.run(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+        shell=True,
+    )
 
     if args.pgn_elo and args.pgn_elo.isnumeric() and args.rating_deviation:
         state.rating = Rating(float(args.pgn_elo), float(args.rating_deviation))
@@ -2946,7 +2961,7 @@ def main() -> None:
         state.flag_last_engine_emu = True
         time_control_l, time_text_l = state.transfer_time(pico_time.split(), depth=0, node=0)
         state.tc_init_last = time_control_l.get_parameters()
-
+    
     if pgn_mode():
         ModeInfo.set_pgn_mode(mode=True)
         state.flag_last_engine_pgn = True
@@ -3152,7 +3167,18 @@ def main() -> None:
                         else:
                             logger.error("engine shutdown failure")
                             DisplayMsg.show(Message.ENGINE_FAIL())
-
+                    
+                    if emulation_mode() and state.dgtmenu.get_engine_rdisplay() and not state.dgtmenu.get_engine_rwindow():
+                        #switch to fullscreen
+                        cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
+                        result = subprocess.run(
+                            cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            universal_newlines=True,
+                            shell=True,
+                        )
+                            
                     engine.startup(event.options, state.rating)
 
                     if online_mode():
@@ -3202,7 +3228,7 @@ def main() -> None:
                             engine.startup(event.options, state.rating)
                         else:
                             time.sleep(2)
-                    elif (emulation_mode() and not "pos" in engine_name) or pgn_mode():
+                    elif emulation_mode() or pgn_mode():
                         # molli for emulation engines we have to reset to starting position
                         pos960 = 518
                         Observable.fire(Event.NEW_GAME(pos960=pos960))

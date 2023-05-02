@@ -305,13 +305,11 @@ def write_picochess_ini(key: str, value):
         logging.exception(conf_exc)
 
 
-def get_engine_mame_par(engine_rspeed: float, engine_rsound=False, engine_rdisp=False) -> str:
+def get_engine_mame_par(engine_rspeed: float, engine_rsound=False) -> str:
     if engine_rspeed < 0.01:
         engine_mame_par = '-nothrottle'
     else:
         engine_mame_par = '-speed ' + str(engine_rspeed)
     if not engine_rsound:
         engine_mame_par = engine_mame_par + ' -sound none'
-   ## if not engine_rdisp:
-   ##     engine_mame_par = engine_mame_par + ' -video none'
     return engine_mame_par
