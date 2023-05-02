@@ -1,4 +1,4 @@
- #!/usr/bin/env python3
+#!/usr/bin/env python3
 
 # Copyright (C) 2013-2018 Jean-Francois Romang (jromang@posteo.de)
 #                         Shivkumar Shivaji ()
@@ -3445,8 +3445,7 @@ def main() -> None:
                 state.fen_error_occured = False
                 state.error_fen = None
                 state.newgame_happened = True
-                newgame = state.game.move_stack or (state.game.chess960_pos() != event.pos960) or state.best_move_posted or state.done_computer_fen
-
+                newgame = state.game.move_stack or (state.game.chess960_pos() != event.pos960)
                 if newgame:
                     logger.debug("starting a new game with code: %s", event.pos960)
                     uci960 = event.pos960 != 518
