@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ #!/usr/bin/env python3
 
 # Copyright (C) 2013-2018 Jean-Francois Romang (jromang@posteo.de)
 #                         Shivkumar Shivaji ()
@@ -2885,17 +2885,6 @@ def main() -> None:
     state.book_in_use = args.book
     bookreader = chess.polyglot.open_reader(all_books[book_index]["file"])
     state.searchmoves = AlternativeMover()
-    
-    if emulation_mode() and state.dgtmenu.get_engine_rdisplay() and not state.dgtmenu.get_engine_rwindow():
-    #switch to fullscreen
-    cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
-    result = subprocess.run(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        universal_newlines=True,
-        shell=True,
-    )
 
     if args.pgn_elo and args.pgn_elo.isnumeric() and args.rating_deviation:
         state.rating = Rating(float(args.pgn_elo), float(args.rating_deviation))
@@ -2904,6 +2893,17 @@ def main() -> None:
         args.engine_level = None
     engine_opt, level_index = get_engine_level_dict(args.engine_level)
     engine.startup(engine_opt, state.rating)
+
+    if emulation_mode() and state.dgtmenu.get_engine_rdisplay() and not state.dgtmenu.get_engine_rwindow():
+        #switch to fullscreen
+        cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            shell=True,
+        )
 
     # Startup - external
     state.engine_level = args.engine_level
@@ -3453,7 +3453,7 @@ def main() -> None:
 
                     if not (state.game.is_game_over() or state.game_declared):
 
-                        if emulation_mode() and not "pos" in engine_name:  # force abortion for mame
+                        if emulation_mode():  # force abortion for mame
                             if state.is_not_user_turn():
                                 # clock must be stopped BEFORE the "book_move" event cause SetNRun resets the clock display
                                 state.stop_clock()
