@@ -55,7 +55,7 @@ class PicoTalker(object):
             else:
                 logger.warning('voice path [%s] doesnt exist', voice_path)
         except ValueError:
-            logger.warning('not valid voice parameter')
+            logger.warning('not valid voice parameter: %s', localisation_id_voice)
         logger.debug('voice pfad: [%s]', self.voice_path)
 
     def set_speed_factor(self, speed_factor: float):
@@ -159,6 +159,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         self.c_no_bishop = 0
         self.c_no_knight = 0
         self.c_no_pawn = 0
+        self.same_cnt = 0
 
         self.c_comment_factor = comment_factor
         self.sample_beeper = sample_beeper
@@ -797,8 +798,13 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
                 elif isinstance(message, Message.POSITION_FAIL):
                     logger.debug('molli: talker orig. fen_result = %s', message.fen_result)
-                    if last_pos_dir != message.fen_result:
-                        last_pos_dir = message.fen_result
+                    if last_pos_dir == message.fen_result:
+                        self.same_cnt = self.same_cnt + 1
+                    else:
+                        self.same_cnt = 0
+                    last_pos_dir = message.fen_result
+                    
+                    if self.same_cnt % 3 == 0:
                         if 'clear' in message.fen_result:
                             fen_str = message.fen_result[-2:]
                             self.talk(['remove.ogg'])

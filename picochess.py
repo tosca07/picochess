@@ -207,7 +207,8 @@ class PicochessState:
         self.time_control: TimeControl = None
         self.rating: Rating = None
         self.coach_triggered = False
-
+        self.last_error_fen = ""
+        
     @property
     def picotutor(self) -> PicoTutor:
         if not self._picotutor:
@@ -926,12 +927,12 @@ def main() -> None:
         """Handle times up for an unhandled fen string send from board."""
         fen_i = ""
         game_fen = ""
-
         state.fen_timer_running = False
+        external_fen = ""
+        internal_fen = ""
 
         if state.error_fen:
             game_fen = state.game.board_fen()
-
             if (
                 state.interaction_mode in (Mode.NORMAL, Mode.TRAINING, Mode.BRAIN)
                 and game_fen != chess.STARTING_BOARD_FEN
@@ -1011,7 +1012,7 @@ def main() -> None:
                             DisplayMsg.show(Message.WRONG_FEN())
             else:
                 logger.info("wrong fen %s for 4 secs", state.error_fen)
-
+    
                 if online_mode():
                     # show computer opponents move again
                     if state.seeking_flag:
@@ -1025,13 +1026,22 @@ def main() -> None:
                                 wait=False,
                             )
                         )
-
                 fen_res = ""
                 internal_fen = state.game.board_fen()
                 external_fen = state.error_fen
                 fen_res = compare_fen(external_fen, internal_fen)
-
-                if not state.position_mode and fen_res:
+                #if external_fen == state.last_error_fen and internal_fen == chess.STARTING_BOARD_FEN:
+                if external_fen == state.last_error_fen:
+                    if emulation_mode() and state.dgtmenu.get_engine_rdisplay():
+                        cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
+                        result = subprocess.run(
+                            cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            universal_newlines=True,
+                            shell=True,
+                        )
+                if (not state.position_mode) and fen_res:
                     if fen_res[4] == 'K' or fen_res[4] == 'k':
                         state.coach_triggered = True
                     else:
@@ -1039,18 +1049,15 @@ def main() -> None:
                     if external_fen != chess.STARTING_BOARD_FEN:
                         DisplayMsg.show(Message.WRONG_FEN())
                         time.sleep(2)
-                if state.fen_error_occured and state.game.board_fen() and fen_res:
+                    state.position_mode = True
                     # molli: Picochess correction messages
                     # show incorrect square(s) and piece to put or be removed
-                    if fen_res:
-                        state.position_mode = True
-                        if not online_mode():
-                            state.stop_clock()
-                        msg = Message.POSITION_FAIL(fen_result=fen_res)
-                        DisplayMsg.show(msg)
-                        time.sleep(1)
-                    else:
-                        DisplayMsg.show(Message.EXIT_MENU())
+                elif state.position_mode and fen_res:
+                    if not online_mode():
+                        state.stop_clock()
+                    msg = Message.POSITION_FAIL(fen_result=fen_res)
+                    DisplayMsg.show(msg)
+                    time.sleep(1)
                 else:
                     DisplayMsg.show(Message.EXIT_MENU())
 
@@ -1095,6 +1102,7 @@ def main() -> None:
                 state.fen_error_occured = True  # to be reset in fen_handling
         state.flag_startup = False
         state.newgame_happened = False
+        state.last_error_fen = external_fen
 
     def start_fen_timer(state: PicochessState):
         """Start the fen timer in case an unhandled fen string been received from board."""
@@ -1473,7 +1481,6 @@ def main() -> None:
 
     def process_fen(fen: str, state: PicochessState):
         """Process given fen like doMove, undoMove, takebackPosition, handleSliding."""
-
         handled_fen = True
         state.error_fen = None
         legal_fens_pico = compute_legal_fens(state.game.copy())
@@ -1953,7 +1960,7 @@ def main() -> None:
             else:
                 state.error_fen = fen
                 start_fen_timer(state)
-
+            
     def call_pico_coach(state):
         if (
             (state.game.turn == chess.WHITE and state.play_mode == PlayMode.USER_WHITE)
