@@ -211,11 +211,14 @@ class UciEngine(object):
 
     def quit(self):
         """Quit engine."""
-        if self.engine.quit():  # Ask nicely
-            if self.engine.terminate():  # If you won't go nicely....
-                if self.engine.kill():  # Right that does it!
-                    return False
-        return True
+        try:
+            if self.engine.quit():  # Ask nicely
+                if self.engine.terminate():  # If you won't go nicely....
+                    if self.engine.kill():  # Right that does it!
+                        return False
+            return True
+        except chess.uci.EngineTerminatedException:
+            return True
 
     def uci(self):
         """Send start uci command."""
@@ -319,6 +322,10 @@ class UciEngine(object):
     def is_waiting(self):
         """Engine waiting."""
         return self.engine.idle
+        
+    def is_ready(self):
+        """Engine waiting."""
+        return self.engine.isready()
 
     def newgame(self, game: Board):
         """Engine sometimes need this to setup internal values."""
