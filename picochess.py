@@ -3446,6 +3446,22 @@ def main() -> None:
                     else:
                         state.picotutor.set_user_color(chess.WHITE)
                 set_wait_state(Message.START_NEW_GAME(game=state.game.copy(), newgame=True), state)
+                if emulation_mode():
+                    if state.dgtmenu.get_engine_rdisplay():
+                        cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
+                        result = subprocess.run(
+                            cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            universal_newlines=True,
+                            shell=True,
+                        )
+                    DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION"))
+                    engine.is_ready()
+                tutor_str = "POSOK"
+                msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=state.game.copy())
+                DisplayMsg.show(msg)
+                time.sleep(1)
 
             elif isinstance(event, Event.NEW_GAME):
                 last_move_no = state.game.fullmove_number
