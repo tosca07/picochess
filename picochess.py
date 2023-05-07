@@ -3238,6 +3238,7 @@ def main() -> None:
                     elif emulation_mode() or pgn_mode():
                         # molli for emulation engines we have to reset to starting position
                         stop_search_and_clock()
+                        game_fen = state.game.board_fen()
                         state.game = chess.Board()
                         state.game.turn = chess.WHITE
                         state.play_mode = PlayMode.USER_WHITE
@@ -3250,8 +3251,9 @@ def main() -> None:
                         state.last_legal_fens = []
                         state.legal_fens_after_cmove = []
                         is_out_of_time_already = False
-                        msg = Message.START_NEW_GAME(game=state.game.copy(), newgame=True)
-                        DisplayMsg.show(msg)
+                        if game_fen != chess.STARTING_BOARD_FEN:
+                            msg = Message.START_NEW_GAME(game=state.game.copy(), newgame=True)
+                            DisplayMsg.show(msg)
                     else:
                         engine.newgame(state.game.copy())
 
