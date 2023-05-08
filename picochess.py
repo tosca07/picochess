@@ -3129,6 +3129,13 @@ def main() -> None:
                                 mame_par=calc_engine_mame_par()
                             )
                         else:
+                            # restart old mame engine?
+                            if '/mame/' in old_file and state.dgtmenu.get_engine_rdisplay():
+                                old_file_art = old_file + '_art'
+                                my_file = Path(old_file_art)
+                                if my_file.is_file():
+                                    old_file = old_file_art
+
                             engine = UciEngine(
                                 file=old_file,
                                 uci_shell=uci_local_shell,
