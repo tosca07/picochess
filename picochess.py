@@ -208,6 +208,7 @@ class PicochessState:
         self.rating: Rating = None
         self.coach_triggered = False
         self.last_error_fen = ""
+        self.artwork_in_use = False
         
     @property
     def picotutor(self) -> PicoTutor:
@@ -1032,7 +1033,7 @@ def main() -> None:
                 fen_res = compare_fen(external_fen, internal_fen)
                 #if external_fen == state.last_error_fen and internal_fen == chess.STARTING_BOARD_FEN:
                 if external_fen == state.last_error_fen:
-                    if emulation_mode() and state.dgtmenu.get_engine_rdisplay():
+                    if emulation_mode() and state.dgtmenu.get_engine_rdisplay() and state.artwork_in_use:
                         cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
                         result = subprocess.run(
                             cmd,
@@ -1510,7 +1511,7 @@ def main() -> None:
                     if not state.done_computer_fen:
                         state.start_clock()
                     DisplayMsg.show(Message.EXIT_MENU())
-            elif emulation_mode() and state.dgtmenu.get_engine_rdisplay():
+            elif emulation_mode() and state.dgtmenu.get_engine_rdisplay() and state.artwork_in_use:
                 cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
                 result = subprocess.run(
                     cmd,
@@ -2854,11 +2855,13 @@ def main() -> None:
         engine_file = EngineProvider.installed_engines[0]["file"]
     
     state.engine_file = engine_file
+    state.artwork_in_use = False
     if '/mame/' in engine_file and state.dgtmenu.get_engine_rdisplay():
         time.sleep(8)
         engine_file_art = engine_file + '_art'
         my_file = Path(engine_file_art)
         if my_file.is_file():
+            state.artwork_in_use = True
             engine_file = engine_file_art
 
     engine = UciEngine(
@@ -2901,7 +2904,7 @@ def main() -> None:
     engine_opt, level_index = get_engine_level_dict(args.engine_level)
     engine.startup(engine_opt, state.rating)
 
-    if emulation_mode() and state.dgtmenu.get_engine_rdisplay() and not state.dgtmenu.get_engine_rwindow():
+    if emulation_mode() and state.dgtmenu.get_engine_rdisplay() and state.artwork_in_use and not state.dgtmenu.get_engine_rwindow():
         #switch to fullscreen
         cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
         result = subprocess.run(
@@ -3052,11 +3055,12 @@ def main() -> None:
 
                 engine_file = event.eng["file"]
                 state.engine_file = engine_file
-                
+                state.artwork_in_use = False
                 if '/mame/' in engine_file and state.dgtmenu.get_engine_rdisplay():
                     engine_file_art = engine_file + '_art'
                     my_file = Path(engine_file_art)
                     if my_file.is_file():
+                        state.artwork_in_use = True
                         engine_file = engine_file_art
                 
                 help_str = engine_file.rsplit(os.sep, 1)[1]
@@ -3130,10 +3134,12 @@ def main() -> None:
                             )
                         else:
                             # restart old mame engine?
+                            state.artwork_in_use = False
                             if '/mame/' in old_file and state.dgtmenu.get_engine_rdisplay():
                                 old_file_art = old_file + '_art'
                                 my_file = Path(old_file_art)
                                 if my_file.is_file():
+                                    state.artwork_in_use = True
                                     old_file = old_file_art
 
                             engine = UciEngine(
@@ -3182,7 +3188,7 @@ def main() -> None:
                             logger.error("engine shutdown failure")
                             DisplayMsg.show(Message.ENGINE_FAIL())
                     
-                    if emulation_mode() and state.dgtmenu.get_engine_rdisplay() and not state.dgtmenu.get_engine_rwindow():
+                    if emulation_mode() and state.dgtmenu.get_engine_rdisplay() and state.artwork_in_use and not state.dgtmenu.get_engine_rwindow():
                         #switch to fullscreen
                         cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
                         result = subprocess.run(
@@ -3456,7 +3462,7 @@ def main() -> None:
                         state.picotutor.set_user_color(chess.WHITE)
                 set_wait_state(Message.START_NEW_GAME(game=state.game.copy(), newgame=True), state)
                 if emulation_mode():
-                    if state.dgtmenu.get_engine_rdisplay():
+                    if state.dgtmenu.get_engine_rdisplay() and state.artwork_in_use:
                         cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
                         result = subprocess.run(
                             cmd,
@@ -4694,10 +4700,12 @@ def main() -> None:
             elif isinstance(event, Event.RSPEED):
                 if emulation_mode():
                     # restart engine with new retro speed
+                    state.artwork_in_use = False
                     if '/mame/' in engine_file and state.dgtmenu.get_engine_rdisplay():
                         engine_file_art = engine_file + '_art'
                         my_file = Path(engine_file_art)
                         if my_file.is_file():
+                            state.artwork_in_use = True
                             engine_file = engine_file_art
                     else:
                         engine_file = state.engine_file
