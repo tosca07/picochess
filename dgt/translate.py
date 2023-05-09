@@ -1031,8 +1031,9 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_menu_favorites':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Special & Historical Engines', large_text='Special Eng', medium_text='Special', small_text='specl')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Spezial & historische Engines', large_text='Spezial Eng', medium_text='Special', small_text='Spezl.')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Favorites', large_text='Favorites', medium_text='Favorite', small_text='favor.')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Favoriten', large_text='Favoriten', medium_text='Favorite', small_text='Favor.')
+            nltxt = Dgt.DISPLAY_TEXT(web_text='Favorieten', large_text='Favorieten', medium_text='Favor.', small_text='Favor.')
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
@@ -1044,7 +1045,7 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_menu_retrowindow':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Toggle fullscreen emulation', large_text='Toggl-Retro', medium_text='Togl-Ret', small_text='togret')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Toggle fullscreen emulation', large_text='Toggle-Retro', medium_text='Togl-Ret', small_text='togret')
             detxt = Dgt.DISPLAY_TEXT(web_text='Wechsel Vollbild Emulator', large_text='VollbildEmu', medium_text='VollEmu', small_text='volemu')
             nltxt = entxt
             frtxt = entxt
@@ -1311,16 +1312,16 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='MossaAltern', medium_text='MossaAlt', small_text='mosalt')
         if text_id == 'game_new_yes':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Start New Game: yes', large_text='NewGame:yes', medium_text='NewG:yes', small_text='ngyes')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Starte eine neue Partie: ja', large_text='NeuePart:ja', medium_text='NeueP ja', small_text='np ja')
-            nltxt = Dgt.DISPLAY_TEXT(web_text='Start nieuwe party: ja', large_text='NweParty:ja', medium_text='NweP ja', small_text='np ja')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Start New Game: yes', large_text='NewGame yes', medium_text='NewG:yes', small_text='ngyes')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Starte eine neue Partie: ja', large_text='NeuePart ja', medium_text='NeueP ja', small_text='np ja')
+            nltxt = Dgt.DISPLAY_TEXT(web_text='Start nieuwe party: ja', large_text='NweParty ja', medium_text='NweP ja', small_text='np ja')
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
         if text_id == 'game_new_no':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Start New Game: no', large_text='NewGame:no', medium_text='NewG:yes', small_text='ng no')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Start New Game: no', large_text='NewGame no', medium_text='NewG yes', small_text='ng no')
             detxt = Dgt.DISPLAY_TEXT(web_text='Starte eine neue Partie: nein', large_text='NePart nein', medium_text='NeP nein', small_text='npnein')
-            nltxt = Dgt.DISPLAY_TEXT(web_text='Start nieuwe party: nee', large_text='NwePart:nee', medium_text='Nwe P nee', small_text='npnee')
+            nltxt = Dgt.DISPLAY_TEXT(web_text='Start nieuwe party: nee', large_text='NwePart nee', medium_text='Nwe P nee', small_text='npnee')
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
@@ -1689,7 +1690,7 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'theme_time_menu':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Web-Theme: time', large_text='theme: time', medium_text='time', small_text='time')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Web-Theme: time', large_text='theme time', medium_text='time', small_text='time')
             detxt = Dgt.DISPLAY_TEXT(web_text='Web-Theme: Zeit', large_text='theme Zeit', medium_text='Zeit', small_text='zeit')
             nltxt = Dgt.DISPLAY_TEXT(web_text='Web-Thema: tijd', large_text='thema tijd', medium_text='tijd', small_text='tijd')
             frtxt = entxt
@@ -2032,8 +2033,8 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'clockside_right':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Clock position: right', large_text='Clock: right', medium_text='right', small_text='right')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Uhrenposition: rechts', large_text='Uhr: rechts', medium_text='Uhrrechts', small_text='rechts')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Clock position: right', large_text='Clock right', medium_text='right', small_text='right')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Uhrenposition: rechts', large_text='Uhr rechts', medium_text='Uhrrechts', small_text='rechts')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
