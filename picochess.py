@@ -1108,7 +1108,6 @@ def main() -> None:
     def start_fen_timer(state: PicochessState):
         """Start the fen timer in case an unhandled fen string been received from board."""
         delay = 0
-
         if state.position_mode:
             delay = 1  # if a fen error already occured don't wait too long for next check
         else:
@@ -3424,7 +3423,8 @@ def main() -> None:
             elif isinstance(event, Event.SETUP_POSITION):
                 logger.debug("setting up custom fen: %s", event.fen)
                 uci960 = event.uci960
-                
+                state.position_mode = False
+                                                    
                 if state.game.move_stack:
                     if not (state.game.is_game_over() or state.game_declared):
                         result = GameResult.ABORT
@@ -3473,6 +3473,7 @@ def main() -> None:
                         )
                     DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION"))
                     engine.is_ready()
+                state.position_mode = False
                 tutor_str = "POSOK"
                 msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=state.game.copy())
                 DisplayMsg.show(msg)
