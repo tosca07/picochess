@@ -606,7 +606,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
                         # trigger window switch
                         if ModeInfo.get_emulation_mode() and self.dgtmenu.get_engine_rdisplay():
                             cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
-                            result = subprocess.run(
+                            subprocess.run(
                                 cmd,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
