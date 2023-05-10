@@ -209,6 +209,7 @@ class PicochessState:
         self.coach_triggered = False
         self.last_error_fen = ""
         self.artwork_in_use = False
+        self.delay_fen_error = 4
         
     @property
     def picotutor(self) -> PicoTutor:
@@ -1013,7 +1014,6 @@ def main() -> None:
                             DisplayMsg.show(Message.WRONG_FEN())
             else:
                 logger.info("wrong fen %s for 4 secs", state.error_fen)
-    
                 if online_mode():
                     # show computer opponents move again
                     if state.seeking_flag:
@@ -1031,11 +1031,11 @@ def main() -> None:
                 internal_fen = state.game.board_fen()
                 external_fen = state.error_fen
                 fen_res = compare_fen(external_fen, internal_fen)
-                #if external_fen == state.last_error_fen and internal_fen == chess.STARTING_BOARD_FEN:
+                
                 if external_fen == state.last_error_fen:
                     if emulation_mode() and state.dgtmenu.get_engine_rdisplay() and state.artwork_in_use:
                         cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
-                        result = subprocess.run(
+                        subprocess.run(
                             cmd,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
@@ -1051,9 +1051,11 @@ def main() -> None:
                         DisplayMsg.show(Message.WRONG_FEN())
                         time.sleep(2)
                     state.position_mode = True
+                    state.delay_fen_error = 4
                     # molli: Picochess correction messages
                     # show incorrect square(s) and piece to put or be removed
                 elif state.position_mode and fen_res:
+                    state.delay_fen_error = 1
                     if not online_mode():
                         state.stop_clock()
                     msg = Message.POSITION_FAIL(fen_result=fen_res)
@@ -1061,6 +1063,7 @@ def main() -> None:
                     time.sleep(1)
                 else:
                     DisplayMsg.show(Message.EXIT_MENU())
+                    state.delay_fen_error = 4
 
                 if (
                     state.interaction_mode in (Mode.NORMAL, Mode.TRAINING, Mode.BRAIN)
@@ -1109,9 +1112,10 @@ def main() -> None:
         """Start the fen timer in case an unhandled fen string been received from board."""
         delay = 0
         if state.position_mode:
-            delay = 1  # if a fen error already occured don't wait too long for next check
+            delay = state.delay_fen_error # if a fen error already occured don't wait too long for next check
         else:
             delay = 4
+            state.delay_fen_error = 4
         state.fen_timer = threading.Timer(delay, expired_fen_timer, args=[state])
         state.fen_timer.start()
         state.fen_timer_running = True
@@ -1501,18 +1505,20 @@ def main() -> None:
                 call_pico_coach(state)
                 state.coach_triggered = False
             elif state.position_mode:
+                state.position_mode = False
+                if state.delay_fen_error == 1:
                     # position finally alright!
                     tutor_str = "POSOK"
                     msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=state.game.copy())
                     DisplayMsg.show(msg)
-                    state.position_mode = False
+                    state.delay_fen_error = 4
                     time.sleep(1)
                     if not state.done_computer_fen:
                         state.start_clock()
-                    DisplayMsg.show(Message.EXIT_MENU())
+                DisplayMsg.show(Message.EXIT_MENU())
             elif emulation_mode() and state.dgtmenu.get_engine_rdisplay() and state.artwork_in_use:
                 cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
-                result = subprocess.run(
+                subprocess.run(
                     cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
@@ -1936,26 +1942,26 @@ def main() -> None:
             state.flag_startup = False
             state.error_fen = None
             state.fen_error_occured = False
-            if state.position_mode:
+            if state.position_mode and state.delay_fen_error == 1:
                 tutor_str = "POSOK"
                 msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=state.game.copy())
                 DisplayMsg.show(msg)
-                state.position_mode = False
                 time.sleep(1)
                 if not state.done_computer_fen:
                     state.start_clock()
-                DisplayMsg.show(Message.EXIT_MENU())
+            DisplayMsg.show(Message.EXIT_MENU())
+            state.position_mode = False
         else:
             if fen == chess.STARTING_BOARD_FEN:
                 pos960 = 518
                 state.error_fen = None
-                if state.position_mode:
+                if state.position_mode and state.delay_fen_error == 1:
                     tutor_str = "POSOK"
                     msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=state.game.copy())
                     DisplayMsg.show(msg)
-                    state.position_mode = False
                     if not state.done_computer_fen:
                         state.start_clock()
+                state.position_mode = False
                 Observable.fire(Event.NEW_GAME(pos960=pos960))
             else:
                 state.error_fen = fen
@@ -2906,7 +2912,7 @@ def main() -> None:
     if emulation_mode() and state.dgtmenu.get_engine_rdisplay() and state.artwork_in_use and not state.dgtmenu.get_engine_rwindow():
         #switch to fullscreen
         cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
-        result = subprocess.run(
+        subprocess.run(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -3190,7 +3196,7 @@ def main() -> None:
                     if emulation_mode() and state.dgtmenu.get_engine_rdisplay() and state.artwork_in_use and not state.dgtmenu.get_engine_rwindow():
                         #switch to fullscreen
                         cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
-                        result = subprocess.run(
+                        subprocess.run(
                             cmd,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
@@ -3464,7 +3470,7 @@ def main() -> None:
                 if emulation_mode():
                     if state.dgtmenu.get_engine_rdisplay() and state.artwork_in_use:
                         cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
-                        result = subprocess.run(
+                        subprocess.run(
                             cmd,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
