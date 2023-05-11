@@ -362,6 +362,10 @@ tutor-coach = off
 #board-type = chesslink
 board-type = dgt
 
+## Clock side for DGT3000/DGTPI, default is 'left'
+#clockside = right
+clockside = left
+
 ## Web theme: 'light', 'dark‘, ‚‘time’, auto' or blank. Default is 'dark'. Leave blank for another light theme, 'time‘ for a fixed time dependent gtehme settiung or 'auto‘ for
 ## a sunrise/sunset dependent theme setting.
 #theme = dark
