@@ -1072,7 +1072,13 @@ class DgtTranslate(object):
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
-            
+        if text_id == 'no_artwork':
+            entxt = Dgt.DISPLAY_TEXT(web_text='no engine artwork file', large_text='no art.file', medium_text='noArtFil', small_text='noart')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Kein engine artwork file', large_text='keinArtFile', medium_text='ArtFile?', small_text='art?')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
         if text_id == 'engine_menu_retrosound':
             entxt = Dgt.DISPLAY_TEXT(web_text='Retro-Sound Setting', large_text='Retro-Sound', medium_text='RetSound', small_text='rsound')
             detxt = entxt
