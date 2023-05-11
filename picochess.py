@@ -14,8 +14,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
+# GNU General Public License for more details.speed
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -3067,6 +3066,8 @@ def main() -> None:
                     if my_file.is_file():
                         state.artwork_in_use = True
                         engine_file = engine_file_art
+                    else:
+                        DisplayMsg.show(Message.SHOW_TEXT(text_string="NO_ARTWORK"))
                 
                 help_str = engine_file.rsplit(os.sep, 1)[1]
                 remote_file = engine_remote_home + os.sep + help_str
@@ -3162,6 +3163,7 @@ def main() -> None:
                             sys.exit(-1)
 
                     # All done - rock'n'roll
+                    engine_file = state.engine_file
                     if state.interaction_mode == Mode.BRAIN and not engine.has_ponder():
                         logger.debug(
                             "new engine doesnt support brain mode, reverting to %s", old_file
@@ -4708,14 +4710,13 @@ def main() -> None:
                 if emulation_mode():
                     # restart engine with new retro speed
                     state.artwork_in_use = False
+                    engine_file = state.engine_file
                     if '/mame/' in engine_file and state.dgtmenu.get_engine_rdisplay():
                         engine_file_art = engine_file + '_art'
                         my_file = Path(engine_file_art)
                         if my_file.is_file():
                             state.artwork_in_use = True
                             engine_file = engine_file_art
-                    else:
-                        engine_file = state.engine_file
                     old_options = engine.get_pgn_options()
                     DisplayMsg.show(Message.ENGINE_SETUP())
                     if engine.quit():
@@ -4726,11 +4727,24 @@ def main() -> None:
                         )
                         engine.startup(old_options, state.rating)
                         stop_search_and_clock()
-                        if not "pos" in engine.get_name():
-                            state.game = chess.Board()
-                            state.game.turn = chess.WHITE
-                            state.play_mode = PlayMode.USER_WHITE
-                            
+                        print("rdisp=", state.dgtmenu.get_engine_rdisplay(), "art_in_use=", state.artwork_in_use, "rwind=", state.dgtmenu.get_engine_rwindow())
+                        if state.dgtmenu.get_engine_rdisplay() and not state.dgtmenu.get_engine_rwindow() and state.artwork_in_use:
+                            #switch to fullscreen
+                            cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
+                            subprocess.run(
+                                cmd,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                universal_newlines=True,
+                                shell=True,
+                        )
+                        game_fen = state.game.board_fen()
+                        state.game = chess.Board()
+                        state.game.turn = chess.WHITE
+                        state.play_mode = PlayMode.USER_WHITE
+                        if game_fen != chess.STARTING_BOARD_FEN:
+                            msg = Message.START_NEW_GAME(game=state.game.copy(), newgame=True)
+                            DisplayMsg.show(msg)
                         engine.newgame(state.game.copy())
                         state.done_computer_fen = None
                         state.done_move = state.pb_move = chess.Move.null()
@@ -4743,10 +4757,6 @@ def main() -> None:
                         engine_mode()
                         DisplayMsg.show(Message.RSPEED(rspeed=event.rspeed))
                         update_elo_display(state)
-                        if emulation_mode() and "pos" in engine.get_name() and state.game.board_fen() !=  chess.STARTING_BOARD_FEN:
-                            event = Event.SETUP_POSITION(fen=state.game.fen(), uci960=False)
-                            Observable.fire(event)
-                            
                     else:
                         logger.error("engine shutdown failure")
                         DisplayMsg.show(Message.ENGINE_FAIL())
