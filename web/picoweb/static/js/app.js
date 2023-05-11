@@ -1653,7 +1653,7 @@ $(function() {
                     dgtClockTextEl.html(data.msg);
                     break;
                 case 'Status':
-                    dgtClockStatusEl.html(data.msg);
+                    // dgtClockStatusEl.html(data.msg);
                     break;
                 case 'Light':
                     var tmp_board = new Chess(currentPosition.fen, chessGameType);
