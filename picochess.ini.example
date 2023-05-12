@@ -1,5 +1,5 @@
 ### ===================================
-### =   picochess.ini.example v3.1    =
+### =   picochess.ini.example v3.2    =
 ### ===================================
 
 ### Example and description how to configure PicoChess
@@ -59,7 +59,7 @@ beep-some-level = 2
 ### will not be harmed, but you will need to leave it commented out to use PicoChess.
 ## If you are using a DGTPi or Raspberry Pi wired to a DGT 3000 clock uncomment the next line.
 #dgtpi = True
-dgtpi = False
+dgtpi = True
 
 ### You can reduce the DGT board piece recognition by a factor from 0 to 9. Please only use this if you suffer from
 ### sliding problems (like multi voices during you slide your pieces for example moving Bf1-b5 hear Be2,d3,c4 then b5).
@@ -73,7 +73,7 @@ dgtpi = False
 ## Sets the UCI engine used at startup
 ## handle with care. If you setup this section wrong, picochess won't start.
 ## Path to the engine relative to the 'picochess' folder (local engine - standard case)
-#engine = /opt/picochess/engines/armv7l/NNUE/StockfishNN
+#engine = /opt/picochess/engines/armv7l/a-stockf
 engine = /opt/picochess/engines/armv7l/a-stockf
 
 ## What level the engine should have at startup?
@@ -165,8 +165,8 @@ book = books/h-varied.bin
 log-file = picochess.log
 ## What log level should be used 
 ## Log level options are [debug, info, warning (default), error, critical]
-#log-level = error
-log-level = warning
+#log-level = warning
+log-level = error
 
 ## PicoChess can use human voices for announcement
 ## Valid voice names are formed from 'talker/voices' folder structure. Please take a look there.
@@ -220,7 +220,7 @@ ponder-interval = 3
 
 ## Should a confirmation message be displayed? If not, please active the next line
 #disable-confirm-message = True
-disable-confirm-message = False
+disable-confirm-message = True
 ## PicoChess messages can be displayed in English, German, Dutch, French, Spanish or Italian.
 ## You can set the language with the "language" option. Default is English.
 ## en = English; de = German; nl = Dutch; fr = French; es = Spanish; it = Italian
@@ -229,10 +229,6 @@ language = en
 
 ## Should moves be displayed in short notation (only valid for non-XL clocks)? If not, please active the next line
 #disable-short-notation = True
-
-#####################################################################################################
-## Enhancements from v2.00 on
-#####################################################################################################
 
 ### ==========================
 ### = Enhancements from v2.0 =
@@ -268,9 +264,9 @@ comment-factor = 50
 #continue-game = True
 continue-game = False
 
-#####################################################################################################
-## Enhancements from v3.00 on
-#####################################################################################################
+### ==========================
+### = Enhancements from v3.0 =
+### ==========================
 
 ## Show engine after startup and new game event. Default is on. If you don't want this feature uncomment next line 
 #show-engine = False
@@ -362,27 +358,34 @@ tutor-coach = off
 #board-type = chesslink
 board-type = dgt
 
-## Clock side for DGT3000/DGTPI, default is 'left'
+## Clock side for DGT3000/DGTPI, default is 'left'. Switches the displayed White and Black clock times.
 #clockside = right
 clockside = left
 
-## Web theme: 'light', 'dark‘, ‚‘time’, auto' or blank. Default is 'dark'. Leave blank for another light theme, 'time‘ for a fixed time dependent gtehme settiung or 'auto‘ for
-## a sunrise/sunset dependent theme setting.
+## Web theme: 'light', 'dark‘, ‘time’, 'auto' or blank. Default is 'dark'. Leave blank for another light theme, 'time‘ for a fixed
+## time-dependent theme or 'auto‘ for a sunrise/sunset dependent theme.
 #theme = dark
 theme = auto
 
-## Retro-Artwork setting for mame engines: default artwork display is off, if you want to switch it on, set rdisplay = True 
+## Retro-Artwork setting for MAME engines: default artwork display is off. If you want to enable it, set rdisplay = True.
 ## Only use with a Raspberry Pi 4B hardware or better.
 #rdisplay = True
 rdisplay = False
 
-## Retro-Window setting for mame engines in case retro artwork display is on: default window mode  is on, if you want to switch to fullscreen, set rwindow = False
+## Retro-Window setting for MAME in case Retro-Artwork display is enabled: default window mode is on. If you want to switch to fullscreen,
+## set rwindow = False
 #rwindow = False
 rwindow = True
 
-## Retro-Sound setting for mame engines: default sound is off, if you want to switch it on, set rsound = True
+## Retro-Speed setting for MAME engines: rspeed defines the speed-up factor. Valid options are numbers of type float 0 to 10.0
+## (1.0 = default original machine speed, 0.5 half of the original speed, 2.0 = double the speed, 0 for unthrottled/full speed).
+## Only use with a Raspberry Pi 4B hardware or better. Leave it blank for the original speed.
+#rspeed = 1.0
+rspeed = 1.0
+
+## Retro-Sound setting for MAME engines: default sound is off. If you want to switch it on, set rsound = True by uncommenting the next line.
 #rsound = True
-rsound = Fale
+rsound = True
 
 # Player rating deviation for automatic adjustment of Elo, starting value: 350
 #rating-deviation = 350
