@@ -1799,8 +1799,8 @@ class DgtTranslate(object):
             ittxt = Dgt.DISPLAY_TEXT(web_text='', large_text='ness risult', medium_text='norisult', small_text='no ris')
         if text_id == 'playmode_white_user':
             wait = True
-            entxt = Dgt.DISPLAY_TEXT(web_text='Player White', large_text='Plr White', medium_text='player W', small_text='white ')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Spieler Weiß', large_text='Spr Weiss', medium_text='SpielerW', small_text='splr w')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Player White', large_text='PlayerWhite', medium_text='player W', small_text='white ')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Spieler Weiß', large_text='Splr Weiss', medium_text='SpielerW', small_text='splr w')
             nltxt = Dgt.DISPLAY_TEXT(web_text='Speler wit', large_text='speler wit ', medium_text='speler W', small_text='splr w')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='joueur B   ', medium_text='joueur B', small_text='blancs')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='jugador B  ', medium_text='jugad B ', small_text='juga b')
@@ -1808,7 +1808,7 @@ class DgtTranslate(object):
         if text_id == 'playmode_black_user':
             wait = True
             entxt = Dgt.DISPLAY_TEXT(web_text='Player Black', large_text='PlayerBlack', medium_text='player B', small_text='black ')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Spieler Schwarz', large_text='SpielerSchw', medium_text='SpielerS', small_text='splr s')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Spieler Schwarz', large_text='SplrSchwarz', medium_text='SpielerS', small_text='splr s')
             nltxt = Dgt.DISPLAY_TEXT(web_text='Speler zwart', large_text='speler zw  ', medium_text='speler z', small_text='splr z')
             frtxt = Dgt.DISPLAY_TEXT(web_text='', large_text='joueur n   ', medium_text='joueur n', small_text='noirs ')
             estxt = Dgt.DISPLAY_TEXT(web_text='', large_text='jugador n  ', medium_text='jugad n ', small_text='juga n')
