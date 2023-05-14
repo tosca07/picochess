@@ -14,7 +14,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
+# GNU General Public License for more details.speed
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -1033,6 +1033,7 @@ def main() -> None:
                 
                 if external_fen == state.last_error_fen:
                     if emulation_mode() and state.dgtmenu.get_engine_rdisplay() and state.artwork_in_use:
+                        # switch windows/tasks
                         cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
                         subprocess.run(
                             cmd,
@@ -1516,6 +1517,7 @@ def main() -> None:
                         state.start_clock()
                 DisplayMsg.show(Message.EXIT_MENU())
             elif emulation_mode() and state.dgtmenu.get_engine_rdisplay() and state.artwork_in_use:
+                # switch windows/tasks
                 cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
                 subprocess.run(
                     cmd,
@@ -2909,7 +2911,7 @@ def main() -> None:
     engine.startup(engine_opt, state.rating)
 
     if emulation_mode() and state.dgtmenu.get_engine_rdisplay() and state.artwork_in_use and not state.dgtmenu.get_engine_rwindow():
-        #switch to fullscreen
+        # switch to fullscreen
         cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
         subprocess.run(
             cmd,
@@ -3205,7 +3207,22 @@ def main() -> None:
                             universal_newlines=True,
                             shell=True,
                         )
-                            
+                        cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
+                        subprocess.run(
+                            cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            universal_newlines=True,
+                            shell=True,
+                        )
+                        cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
+                        subprocess.run(
+                            cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            universal_newlines=True,
+                            shell=True,
+                        )
                     engine.startup(event.options, state.rating)
 
                     if online_mode():
@@ -3471,6 +3488,7 @@ def main() -> None:
                 set_wait_state(Message.START_NEW_GAME(game=state.game.copy(), newgame=True), state)
                 if emulation_mode():
                     if state.dgtmenu.get_engine_rdisplay() and state.artwork_in_use:
+                        # switch windows/tasks
                         cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
                         subprocess.run(
                             cmd,
