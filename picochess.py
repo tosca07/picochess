@@ -14,7 +14,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details
+# GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
@@ -1489,6 +1489,7 @@ def main() -> None:
         handled_fen = True
         state.error_fen = None
         legal_fens_pico = compute_legal_fens(state.game.copy())
+        
         # Check for same position
         if fen == state.game.board_fen():
             logger.debug("Already in this fen: %s", fen)
@@ -1951,7 +1952,7 @@ def main() -> None:
                 time.sleep(1)
                 if not state.done_computer_fen:
                     state.start_clock()
-            DisplayMsg.show(Message.EXIT_MENU())
+                DisplayMsg.show(Message.EXIT_MENU())
             state.position_mode = False
         else:
             if fen == chess.STARTING_BOARD_FEN:
@@ -1968,7 +1969,7 @@ def main() -> None:
             else:
                 state.error_fen = fen
                 start_fen_timer(state)
-            
+                
     def call_pico_coach(state):
         if (
             (state.game.turn == chess.WHITE and state.play_mode == PlayMode.USER_WHITE)
@@ -4731,7 +4732,7 @@ def main() -> None:
                         )
                         engine.startup(old_options, state.rating)
                         stop_search_and_clock()
-                        print("rdisp=", state.dgtmenu.get_engine_rdisplay(), "art_in_use=", state.artwork_in_use, "rwind=", state.dgtmenu.get_engine_rwindow())
+                        
                         if state.dgtmenu.get_engine_rdisplay() and not state.dgtmenu.get_engine_rwindow() and state.artwork_in_use:
                             #switch to fullscreen
                             cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
