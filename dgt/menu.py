@@ -1,5 +1,6 @@
 # Copyright (C) 2013-2018 Jean-Francois Romang (jromang@posteo.de)
 # Copyright (C) 2013-2018 Jean-Francois Romang (jromang@posteo.de)
+# Copyright (C) 2013-2018 Jean-Francois Romang (jromang@posteo.de)
 #                         Shivkumar Shivaji ()
 #                         Jürgen Précour (LocutusOfPenguin@posteo.de)
 #
@@ -470,9 +471,13 @@ class DgtMenu(object):
             self.menu_picotutor_picocomment_prob_list = "30"
             self.res_picotutor_picocomment_prob = 30
 
-    
-        self.engine_retrodisplay = rdisplay
-        self.res_engine_retrodisplay = self.engine_retrodisplay
+        display = os.environ.get('DISPLAY')
+        if rdisplay and display is not None:
+            self.engine_retrodisplay = rdisplay
+            self.res_engine_retrodisplay = self.engine_retrodisplay
+        else:
+            self.engine_retrodisplay = False
+            self.res_engine_retrodisplay = False
         self.engine_retrodisplay_onoff = self.engine_retrodisplay
         self.engine_retrosound = rsound
         self.res_engine_retrosound = self.engine_retrosound
@@ -2757,13 +2762,20 @@ class DgtMenu(object):
 
         elif self.state == MenuState.RETROSETTINGS_RETRODISPLAY_ONOFF:
             self.engine_retrodisplay = self.engine_retrodisplay_onoff
-            if self.engine_retrodisplay != self.res_engine_retrodisplay:
+            display = None
+            display = os.environ.get('DISPLAY')
+            if self.engine_retrodisplay and display is None:
+                DispatchDgt.fire(self.dgttranslate.text("Y10_nodesktop"))
+                text = self.enter_retrosettings_menu()
+                text.wait = True
+            elif self.engine_retrodisplay != self.res_engine_retrodisplay:
                 self.res_engine_retrodisplay = self.engine_retrodisplay
                 write_picochess_ini("rdisplay", self.engine_retrodisplay)
                 # trigger rspped event for rsound change (does just an engine restart)
                 self._fire_event(Event.RSPEED(rspeed=self.retrospeed_factor))
-            text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okrdisplay"))
-            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+                    
+                text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okrdisplay"))
+                self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
 
         elif self.state == MenuState.RETROSETTINGS_RETROSPEED:
             self.menu_engine_retrosettings = EngineRetroSettings.RETROSPEED

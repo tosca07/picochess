@@ -1045,8 +1045,8 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_menu_retrowindow':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Toggle fullscreen emulation', large_text='Toggle-Retro', medium_text='Togl-Ret', small_text='togret')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Wechsel Vollbild Emulator', large_text='VollbildEmu', medium_text='VollEmu', small_text='volemu')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Toggle retro fullscreen/window', large_text='Toggle-Retro', medium_text='Togl-Ret', small_text='togret')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Wechsel Retro-Vollbild/Fenster', large_text='VollbildEmu', medium_text='VollEmu', small_text='volemu')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -1075,6 +1075,13 @@ class DgtTranslate(object):
         if text_id == 'no_artwork':
             entxt = Dgt.DISPLAY_TEXT(web_text='no engine artwork file', large_text='no art.file', medium_text='noArtFil', small_text='noart')
             detxt = Dgt.DISPLAY_TEXT(web_text='Kein engine artwork file', large_text='keinArtFile', medium_text='ArtFile?', small_text='art?')
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == 'nodesktop':
+            entxt = Dgt.DISPLAY_TEXT(web_text='no desktop installed', large_text='no desktop', medium_text='noDeskt', small_text='nodesk')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Kein Desktop installiert', large_text='keinDesktop', medium_text='desktop?', small_text='desktop?')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
