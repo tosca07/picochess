@@ -3275,7 +3275,7 @@ def main() -> None:
                         state.last_legal_fens = []
                         state.legal_fens_after_cmove = []
                         is_out_of_time_already = False
-                        if game_fen != chess.STARTING_BOARD_FEN:
+                        if (game_fen != chess.STARTING_BOARD_FEN) or pgn_mode():
                             msg = Message.START_NEW_GAME(game=state.game.copy(), newgame=True)
                             DisplayMsg.show(msg)
                     else:
@@ -3390,6 +3390,7 @@ def main() -> None:
                     set_emulation_tctrl(state)
 
                 if pgn_mode():
+                    pgn_fen = ""
                     (
                         pgn_game_name,
                         pgn_problem,
@@ -3398,7 +3399,7 @@ def main() -> None:
                         pgn_white,
                         pgn_black,
                     ) = read_pgn_info()
-                    if "mate in" in pgn_problem or "Mate in" in pgn_problem:
+                    if "mate in" in pgn_problem or "Mate in" in pgn_problem or pgn_fen != "":
                         set_fen_from_pgn(pgn_fen, state)
                         state.play_mode = (
                             PlayMode.USER_WHITE
@@ -3427,6 +3428,8 @@ def main() -> None:
 
                 if pgn_mode():
                     ModeInfo.set_pgn_mode(mode=True)
+                    pos960 = 518
+                    Observable.fire(Event.NEW_GAME(pos960=pos960))
                 else:
                     ModeInfo.set_pgn_mode(mode=False)
 
@@ -3495,6 +3498,8 @@ def main() -> None:
             elif isinstance(event, Event.NEW_GAME):
                 last_move_no = state.game.fullmove_number
                 state.takeback_active = False
+                state.automatic_takeback = False
+                state.reset_auto = False
                 state.flag_startup = False
                 state.flag_pgn_game_over = False
                 ModeInfo.set_game_ending(
@@ -3506,11 +3511,11 @@ def main() -> None:
                 state.error_fen = None
                 state.newgame_happened = True
                 newgame = state.game.move_stack or (state.game.chess960_pos() != event.pos960) or state.best_move_posted or state.done_computer_fen
-                if newgame:
+                if newgame or pgn_mode():
                     logger.debug("starting a new game with code: %s", event.pos960)
                     uci960 = event.pos960 != 518
 
-                    if not (state.game.is_game_over() or state.game_declared):
+                    if not (state.game.is_game_over() or state.game_declared) or pgn_mode():
 
                         if emulation_mode():  # force abortion for mame
                             if state.is_not_user_turn():
@@ -3611,6 +3616,7 @@ def main() -> None:
                         if state.max_guess > 0:
                             state.max_guess_white = state.max_guess
                             state.max_guess_black = 0
+                        pgn_fen = ""
                         (
                             pgn_game_name,
                             pgn_problem,
@@ -3619,7 +3625,7 @@ def main() -> None:
                             pgn_white,
                             pgn_black,
                         ) = read_pgn_info()
-                        if "mate in" in pgn_problem or "Mate in" in pgn_problem:
+                        if "mate in" in pgn_problem or "Mate in" in pgn_problem or pgn_fen != "":
                             set_fen_from_pgn(pgn_fen, state)
                     set_wait_state(
                         Message.START_NEW_GAME(game=state.game.copy(), newgame=newgame), state
@@ -3692,6 +3698,8 @@ def main() -> None:
                             time.sleep(1)
                         state.seeking_flag = False
                         state.best_move_displayed = None
+                        state.takeback_active = False
+                        state.automatic_takeback = False
                         state.done_computer_fen = None
                         state.done_move = state.pb_move = chess.Move.null()
                         state.legal_fens = compute_legal_fens(state.game.copy())
@@ -3707,6 +3715,9 @@ def main() -> None:
                     else:
                         logger.debug("no need to start a new game")
                         if pgn_mode():
+                            pgn_fen = ""
+                            state.takeback_active = False
+                            state.automatic_takeback = False
                             (
                                 pgn_game_name,
                                 pgn_problem,
@@ -3715,7 +3726,7 @@ def main() -> None:
                                 pgn_white,
                                 pgn_black,
                             ) = read_pgn_info()
-                            if "mate in" in pgn_problem or "Mate in" in pgn_problem:
+                            if "mate in" in pgn_problem or "Mate in" in pgn_problem or pgn_fen != "":
                                 set_fen_from_pgn(pgn_fen, state)
                                 set_wait_state(
                                     Message.START_NEW_GAME(
