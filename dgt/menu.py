@@ -1327,8 +1327,6 @@ class DgtMenu(object):
     def enter_retrodisplay_onoff_menu(self):
         self.state = MenuState.RETROSETTINGS_RETRODISPLAY_ONOFF
         msg = "on" if self.engine_retrodisplay else "off"
-
-        self.res_engine_retrodisplay = self.engine_retrodisplay
         text = self.dgttranslate.text("B00_engine_retrodisplay_" + msg)
         return text
     
@@ -2774,8 +2772,8 @@ class DgtMenu(object):
                 # trigger rspped event for rsound change (does just an engine restart)
                 self._fire_event(Event.RSPEED(rspeed=self.retrospeed_factor))
                     
-                text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okrdisplay"))
-                self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+            text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okrdisplay"))
+            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
 
         elif self.state == MenuState.RETROSETTINGS_RETROSPEED:
             self.menu_engine_retrosettings = EngineRetroSettings.RETROSPEED
