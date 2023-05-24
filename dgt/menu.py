@@ -1,6 +1,4 @@
 # Copyright (C) 2013-2018 Jean-Francois Romang (jromang@posteo.de)
-# Copyright (C) 2013-2018 Jean-Francois Romang (jromang@posteo.de)
-# Copyright (C) 2013-2018 Jean-Francois Romang (jromang@posteo.de)
 #                         Shivkumar Shivaji ()
 #                         Jürgen Précour (LocutusOfPenguin@posteo.de)
 #
