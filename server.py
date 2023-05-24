@@ -520,8 +520,9 @@ class WebDisplay(DisplayMsg, threading.Thread):
                 pgn_game.headers["Round"] = ""
                 pgn_game.headers["White"] = info["PGN_White"]
                 pgn_game.headers["Black"] = info["PGN_Black"]
-                pgn_game.headers["WhiteElo"] = str(info["PGN_White_ELO"])
-                pgn_game.headers["BlackElo"] = str(info["PGN_Black_ELO"])
+                if "PGN_White_ELO" in info and "PGN_Black_ELO" in info:
+                    pgn_game.headers["WhiteElo"] = str(info["PGN_White_ELO"])
+                    pgn_game.headers["BlackElo"] = str(info["PGN_Black_ELO"])
 
         if "ip_info" in self.shared:
             if "location" in self.shared["ip_info"]:
