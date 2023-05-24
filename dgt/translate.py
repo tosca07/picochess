@@ -1045,8 +1045,8 @@ class DgtTranslate(object):
             estxt = entxt
             ittxt = entxt
         if text_id == 'engine_menu_retrowindow':
-            entxt = Dgt.DISPLAY_TEXT(web_text='Toggle Retro-Artwork Fullscreen/Window', large_text='Full/Window', medium_text='Full/Win', small_text='fs.win')
-            detxt = Dgt.DISPLAY_TEXT(web_text='Wechsel Retro-Vollbild/Fenster', large_text='Vollb/Fnstr', medium_text='VollFnst', small_text='volfen')
+            entxt = Dgt.DISPLAY_TEXT(web_text='Toggle Fullscreen/Window', large_text='Full/Window', medium_text='Full/Win', small_text='fs.win')
+            detxt = Dgt.DISPLAY_TEXT(web_text='Wechsel Vollbild/Fenster', large_text='Vollb/Fnstr', medium_text='VollFnst', small_text='volfen')
             nltxt = entxt
             frtxt = entxt
             estxt = entxt
