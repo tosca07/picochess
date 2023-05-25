@@ -3275,9 +3275,9 @@ def main() -> None:
                         state.last_legal_fens = []
                         state.legal_fens_after_cmove = []
                         is_out_of_time_already = False
-                        if (game_fen != chess.STARTING_BOARD_FEN) or pgn_mode():
-                            msg = Message.START_NEW_GAME(game=state.game.copy(), newgame=True)
-                            DisplayMsg.show(msg)
+                        real_new_game = (game_fen != chess.STARTING_BOARD_FEN)
+                        msg = Message.START_NEW_GAME(game=state.game.copy(), newgame=real_new_game)
+                        DisplayMsg.show(msg)
                     else:
                         engine.newgame(state.game.copy())
 
@@ -3511,7 +3511,7 @@ def main() -> None:
                 state.error_fen = None
                 state.newgame_happened = True
                 newgame = state.game.move_stack or (state.game.chess960_pos() != event.pos960) or state.best_move_posted or state.done_computer_fen
-                if newgame or pgn_mode():
+                if newgame:
                     logger.debug("starting a new game with code: %s", event.pos960)
                     uci960 = event.pos960 != 518
 
