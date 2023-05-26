@@ -432,6 +432,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
     level_name_sav = ""
     engine_elo_sav = ""
     result_sav = ""
+    engine_name = "Picochess"
 
     def __init__(self, shared):
         super(WebDisplay, self).__init__()
@@ -461,7 +462,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
         pgn_game.headers["Black"] = "?"
 
         user_name = "User"
-        engine_name = "Picochess"
+        
         user_elo = "-"
         comp_elo = 2500
         rspeed = 1
@@ -472,7 +473,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
             if "user_name" in self.shared["system_info"]:
                 user_name = self.shared["system_info"]["user_name"]
             if "engine_name" in self.shared["system_info"]:
-                engine_name = self.shared["system_info"]["engine_name"]
+                WebDisplay.engine_name = self.shared["system_info"]["engine_name"]
             if "rspeed" in self.shared["system_info"]:
                 rspeed = self.shared["system_info"]["rspeed"]
                 retro_speed = int(100 * round(float(rspeed), 2))
@@ -503,18 +504,18 @@ class WebDisplay(DisplayMsg, threading.Thread):
             if "play_mode" in self.shared["game_info"]:
                 if self.shared["game_info"]["play_mode"] == PlayMode.USER_WHITE:
                     pgn_game.headers["White"] = user_name
-                    pgn_game.headers["Black"] = engine_name + engine_level + retro_speed_str
+                    pgn_game.headers["Black"] = WebDisplay.engine_name + engine_level + retro_speed_str
                     pgn_game.headers["WhiteElo"] = str(user_elo)
                     pgn_game.headers["BlackElo"] = str(comp_elo)
                 else:
-                    pgn_game.headers["White"] = engine_name + engine_level + retro_speed_str
+                    pgn_game.headers["White"] = WebDisplay.engine_name + engine_level + retro_speed_str
                     pgn_game.headers["Black"] = user_name
                     pgn_game.headers["WhiteElo"] = str(comp_elo)
                     pgn_game.headers["BlackElo"] = str(user_elo)
-            if "PGN Replay" in engine_name:
+            if "PGN Replay" in WebDisplay.engine_name:
                 info = {}
                 info = read_pgn_info()
-                pgn_game.headers["Event"] = engine_name + engine_level
+                pgn_game.headers["Event"] = WebDisplay.engine_name + engine_level
                 pgn_game.headers["Date"] = datetime.datetime.today().strftime("%Y.%m.%d")
                 pgn_game.headers["Site"] = "picochess.org"
                 pgn_game.headers["Round"] = ""
@@ -523,6 +524,9 @@ class WebDisplay(DisplayMsg, threading.Thread):
                 if "PGN_White_ELO" in info and "PGN_Black_ELO" in info:
                     pgn_game.headers["WhiteElo"] = str(info["PGN_White_ELO"])
                     pgn_game.headers["BlackElo"] = str(info["PGN_Black_ELO"])
+                else:
+                    pgn_game.headers["WhiteElo"] = "?"
+                    pgn_game.headers["BlackElo"] = "?"
 
         if "ip_info" in self.shared:
             if "location" in self.shared["ip_info"]:
@@ -531,6 +535,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
         pgn_game.headers["Time"] = self.starttime
 
     def task(self, message):
+        
         def _oldstyle_fen(game: chess.Board):
             builder = []
             builder.append(game.board_fen())
@@ -601,6 +606,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
             self._create_system_info()
             self.shared["system_info"].update(message.info)
             if "engine_name" in self.shared["system_info"]:
+                WebDisplay.engine_name = self.shared["system_info"]["engine_name"]
                 self.shared["system_info"]["old_engine"] = self.shared["system_info"][
                     "engine_name"
                 ]
@@ -624,6 +630,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
 
         elif isinstance(message, Message.ENGINE_READY):
             self._create_system_info()
+            WebDisplay.engine_name = message.engine_name
             self.shared["system_info"]["old_engine"] = self.shared["system_info"][
                 "engine_name"
             ] = message.engine_name
@@ -698,10 +705,11 @@ class WebDisplay(DisplayMsg, threading.Thread):
             _send_headers()
 
         elif isinstance(message, Message.PLAY_MODE):
-            self._create_game_info()
-            self.shared["game_info"]["play_mode"] = message.play_mode
-            _build_headers()
-            _send_headers()
+            if not "PGN Replay" in WebDisplay.engine_name:
+                self._create_game_info()
+                self.shared["game_info"]["play_mode"] = message.play_mode
+                _build_headers()
+                _send_headers()
 
         elif isinstance(message, Message.TIME_CONTROL):
             self._create_game_info()
