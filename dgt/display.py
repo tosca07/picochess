@@ -1248,7 +1248,9 @@ class DgtDisplay(DisplayMsg, threading.Thread):
 
         elif isinstance(message, Message.SHOW_TEXT):
             string_part = ''
-            if message.text_string == 'NO_ARTWORK':
+            if 'K20_' in str(message.text_string):
+                DispatchDgt.fire(self.dgttranslate.text(message.text_string))
+            elif message.text_string == 'NO_ARTWORK':
                 DispatchDgt.fire(self.dgttranslate.text('K20_no_artwork'))
                 time.sleep(2)
             elif message.text_string == 'NEW_POSITION':
