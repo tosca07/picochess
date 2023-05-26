@@ -2087,9 +2087,18 @@ def main() -> None:
                 state.reset_auto = True
             DisplayMsg.show(msg)
         else:
+            DisplayMsg.show(msg) # molli: fix for web display refresh 
+            if state.automatic_takeback and state.takeback_active:
+                if state.play_mode == PlayMode.USER_WHITE:
+                    text_pl = "K20_playmode_white_user"
+                else:
+                    text_pl = "K20_playmode_black_user"
+                DisplayMsg.show(Message.SHOW_TEXT(text_string=text_pl))
             state.automatic_takeback = False
             state.takeback_active = False
             state.reset_auto = False
+           
+            
         state.stop_fen_timer()
 
     def get_engine_level_dict(engine_level):
