@@ -210,10 +210,16 @@ class DgtHw(DgtIface):
             return False
 
         l_run = r_run = 0
-        if side == ClockSide.LEFT:
-            l_run = 1
-        if side == ClockSide.RIGHT:
-            r_run = 1
+        if ModeInfo.get_clock_side() == 'left':
+            if side == ClockSide.LEFT:
+                l_run = 1
+            if side == ClockSide.RIGHT:
+                r_run = 1
+        else:
+            if side == ClockSide.LEFT:
+                r_run = 1
+            if side == ClockSide.RIGHT:
+                l_run = 1
         with self.lib_lock:
             l_hms = hms_time(self.dgtboard.l_time)
             r_hms = hms_time(self.dgtboard.r_time)
@@ -247,8 +253,12 @@ class DgtHw(DgtIface):
         logger.debug('(%s) clock sending set time to clock l:%s r:%s [use]', ','.join(devs),
                      hms_time(time_left), hms_time(time_right))
         self.dgtboard.in_settime = True  # it will return to false as soon SetAndRun ack received
-        self.dgtboard.l_time = time_left
-        self.dgtboard.r_time = time_right
+        if ModeInfo.get_clock_side() == 'left':
+            self.dgtboard.l_time = time_left
+            self.dgtboard.r_time = time_right
+        else:
+            self.dgtboard.r_time = time_left
+            self.dgtboard.l_time = time_right
         return True
 
     def promotion_done(self, uci_move: str):
