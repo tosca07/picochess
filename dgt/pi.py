@@ -111,8 +111,12 @@ class DgtPi(DgtIface):
             times = list(clktime.raw)
             counter = (counter + 1) % 10
             if counter == 0:
-                l_hms = times[:3]
-                r_hms = times[3:]
+                if ModeInfo.get_clock_side() == 'left':
+                    l_hms = times[:3]
+                    r_hms = times[3:]
+                else:
+                    l_hms = times[3:]
+                    r_hms = times[:3]
                 logger.debug('(i2c) clock new time received l:%s r:%s', l_hms, r_hms)
                 if self.in_settime:
                     logger.debug('(i2c) clock still not finished set time, sending old time')
@@ -221,15 +225,15 @@ class DgtPi(DgtIface):
             return False
 
         l_run = r_run = 0
-        if side == ClockSide.LEFT:
-            if ModeInfo.get_clock_side() == 'left':
+        if ModeInfo.get_clock_side() == 'left':
+            if side == ClockSide.LEFT:
                 l_run = 1
-            else:
+            if side == ClockSide.RIGHT:
                 r_run = 1
-        if side == ClockSide.RIGHT:
-            if ModeInfo.get_clock_side() == 'left':
+        else:
+            if side == ClockSide.LEFT:
                 r_run = 1
-            else:
+            if side == ClockSide.RIGHT:
                 l_run = 1
         with self.lib_lock:
             res = self.lib.dgtpicom_run(l_run, r_run)
@@ -254,24 +258,32 @@ class DgtPi(DgtIface):
         logger.debug('(%s) clock sending start time to clock l:%s r:%s', ','.join(devs), l_hms, r_hms)
 
         l_run = r_run = 0
-        if side == ClockSide.LEFT:
-            if ModeInfo.get_clock_side() == 'left':
+        if ModeInfo.get_clock_side() == 'left':
+            if side == ClockSide.LEFT:
                 l_run = 1
-            else:
+            if side == ClockSide.RIGHT:
                 r_run = 1
-        if side == ClockSide.RIGHT:
-            if ModeInfo.get_clock_side() == 'left':
+        else:
+            if side == ClockSide.LEFT:
                 r_run = 1
-            else:
+            if side == ClockSide.RIGHT:
                 l_run = 1
         with self.lib_lock:
-            res = self.lib.dgtpicom_set_and_run(l_run, l_hms[0], l_hms[1], l_hms[2],
+            if ModeInfo.get_clock_side() == 'left':
+                res = self.lib.dgtpicom_set_and_run(l_run, l_hms[0], l_hms[1], l_hms[2],
                                                 r_run, r_hms[0], r_hms[1], r_hms[2])
+            else:
+                res = self.lib.dgtpicom_set_and_run(l_run, r_hms[0], r_hms[1], r_hms[2],
+                                                r_run, l_hms[0], l_hms[1], l_hms[2])
             if res < 0:
                 logger.warning('SetAndRun() returned error %i, running configure', res)
                 self._run_configure()
-                res = self.lib.dgtpicom_set_and_run(l_run, l_hms[0], l_hms[1], l_hms[2],
-                                                    r_run, r_hms[0], r_hms[1], r_hms[2])
+                if ModeInfo.get_clock_side() == 'left':
+                    res = self.lib.dgtpicom_set_and_run(l_run, l_hms[0], l_hms[1], l_hms[2],
+                                                        r_run, r_hms[0], r_hms[1], r_hms[2])
+                else:
+                    res = self.lib.dgtpicom_set_and_run(l_run, r_hms[0], r_hms[1], r_hms[2],
+                                                    r_run, l_hms[0], l_hms[1], l_hms[2])
         if res < 0:
             logger.warning('finally failed %i', res)
             return False
@@ -296,13 +308,8 @@ class DgtPi(DgtIface):
         logger.debug('(%s) clock sending set time to clock l:%s r:%s [use]', ','.join(devs), l_hms, r_hms)
 
         self.in_settime = True
-        if ModeInfo.get_clock_side() == 'left':
-            self.l_time = time_left
-            self.r_time = time_right
-        else:
-            self.r_time = time_left
-            self.l_time = time_right
-
+        self.l_time = time_left
+        self.r_time = time_right
         return True
 
     def promotion_done(self, uci_move: str):
