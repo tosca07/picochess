@@ -216,7 +216,7 @@ class DgtTranslate(object):
         if text_id == 'picocoach_lift':
             entxt = Dgt.DISPLAY_TEXT(web_text='Coach on (lift piece)', large_text='Coach lift', medium_text='Coach li', small_text='c on  ')
             detxt = Dgt.DISPLAY_TEXT(web_text='Coach an (Figur heben)', large_text='Coach heben', medium_text='Coach ein', small_text='c ein ')
-            nltxt = Dgt.DISPLAY_TEXT(web_text='', large_text='Coach aan ', medium_text='Coach aan', small_text='c aan ')
+            nltxt = Dgt.DISPLAY_TEXT(web_text='Coach aan', large_text='Coach aan ', medium_text='Coach aan', small_text='c aan ')
             frtxt = entxt
             estxt = entxt
             ittxt = Dgt.DISPLAY_TEXT(web_text='Coach si', large_text='Coach si  ', medium_text='Coach si ', small_text='c si  ')
@@ -1614,7 +1614,7 @@ class DgtTranslate(object):
         if text_id == 'system_logfile_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='Send log file via email', large_text='mailLogfile', medium_text='Log file', small_text='logfil')
             detxt = Dgt.DISPLAY_TEXT(web_text='Sende Logfile via email', large_text='mailLogfile', medium_text='Log file', small_text='logfil')
-            nltxt = entxt
+            nltxt = Dgt.DISPLAY_TEXT(web_text='Stuur Logfile via email', large_text='mailLogfile', medium_text='Log file', small_text='logfil')
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
@@ -2034,28 +2034,28 @@ class DgtTranslate(object):
         if text_id == 'display_clockside_menu':
             entxt = Dgt.DISPLAY_TEXT(web_text='Clock side', large_text='Clock side', medium_text='Clckside', small_text='clkside')
             detxt = Dgt.DISPLAY_TEXT(web_text='Uhrenposition', large_text='Uhren Pos.', medium_text='UhrenPos', small_text='uhrpos')
-            nltxt = entxt
+            nltxt = Dgt.DISPLAY_TEXT(web_text='Klokpositie', large_text='Klok kant', medium_text='Klokkant', small_text='klkknt')
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
         if text_id == 'clockside_left':
             entxt = Dgt.DISPLAY_TEXT(web_text='Clock position: left', large_text='Clock: left', medium_text='left', small_text='left')
             detxt = Dgt.DISPLAY_TEXT(web_text='Uhrenposition: links', large_text='Uhr: links', medium_text='Uhrlinks', small_text='links')
-            nltxt = entxt
+            nltxt = Dgt.DISPLAY_TEXT(web_text='Klokpositie: links', large_text='Klok links', medium_text='Klklinks', small_text='links')
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
         if text_id == 'clockside_right':
             entxt = Dgt.DISPLAY_TEXT(web_text='Clock position: right', large_text='Clock right', medium_text='right', small_text='right')
             detxt = Dgt.DISPLAY_TEXT(web_text='Uhrenposition: rechts', large_text='Uhr rechts', medium_text='Uhrrechts', small_text='rechts')
-            nltxt = entxt
+            nltxt = Dgt.DISPLAY_TEXT(web_text='Klokpositie: rechts', large_text='Klk rechts', medium_text='Klkrechts', small_text='rechts')
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
         if text_id == 'okclockside':
             entxt = Dgt.DISPLAY_TEXT(web_text='ok clock side', large_text='okClockside', medium_text='ok', small_text='ok')
             detxt = Dgt.DISPLAY_TEXT(web_text='ok Uhrenposition', large_text='okUhrpos', medium_text='okUhrPos', small_text='ok uhr')
-            nltxt = entxt
+            nltxt = Dgt.DISPLAY_TEXT(web_text='ok klokpositie', large_text='ok klok', medium_text='okklok', small_text='okklok')
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
