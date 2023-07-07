@@ -18,6 +18,7 @@
 import os
 import subprocess
 import logging
+import dgt.util
 from configobj import ConfigObj  # type: ignore
 from collections import OrderedDict
 from typing import Dict, List, Set
@@ -922,7 +923,11 @@ class DgtMenu(object):
 
     def set_position_reverse_flipboard(self, flip_board):
         """Set the flag."""
-        ModeInfo.set_flipped_board(flip_board)
+        if self.menu_system_eboard_type != dgt.util.EBoard.DGT:
+            ModeInfo.set_flipped_board(flip_board)
+        else:
+            if not flip_board:
+                ModeInfo.set_flipped_board(flip_board)
         self.res_position_reverse = self.flip_board = flip_board
 
     def get_position_reverse_flipboard(self):
