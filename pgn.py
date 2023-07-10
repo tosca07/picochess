@@ -457,6 +457,8 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             pgn_game.headers["Opening"] = ModeInfo.opening_name
             pgn_game.headers["ECO"] = ModeInfo.opening_eco
 
+        return pgn_game
+
     def _save_and_email_pgn(self, message):
         logger.debug("Saving game to [%s]", self.file_name)
         pgn_game = self._generate_pgn_from_message(message)
@@ -464,7 +466,13 @@ class PgnDisplay(DisplayMsg, threading.Thread):
 
         # If we already saved the exact same game, do not
         # save it again, and do not send an email
-        if pgn_game == self.last_saved_game:
+        logger.debug(
+            "Comparing current game to last save game:\nCurrent Game: %s\nLast Saved Game: %s",
+            pgn_game,
+            self.last_saved_game,
+        )
+        if str(pgn_game) == str(self.last_saved_game):
+            logger.debug("Current game is the same as last saved gamed, skipping")
             return
         self.last_saved_game = pgn_game
 
