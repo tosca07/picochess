@@ -392,14 +392,16 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
         # consider probability factor from picochess.ini
         if any(
-            c_group == "start",
-            c_group == "name",
-            c_group == "shutdown",
-            c_group == "mate",
-            c_group == "stalemate",
-            c_group == "draw",
-            c_group == "takeback",
-            c_group == "check",
+            (
+                c_group == "start",
+                c_group == "name",
+                c_group == "shutdown",
+                c_group == "mate",
+                c_group == "stalemate",
+                c_group == "draw",
+                c_group == "takeback",
+                c_group == "check",
+            )
         ):
             # don't use factor for these events
             c_prob = c_prob
