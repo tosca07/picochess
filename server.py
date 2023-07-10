@@ -288,14 +288,18 @@ class WebVr(DgtIface):
         elif self.clock_show_time:
             l_hms = hms_time(time_left)
             r_hms = hms_time(time_right)
-            if ModeInfo.get_clock_side() == 'left':
+            if ModeInfo.get_clock_side() == "left":
                 text_l = "{}:{:02d}.{:02d}".format(l_hms[0], l_hms[1], l_hms[2])
                 text_r = "{}:{:02d}.{:02d}".format(r_hms[0], r_hms[1], r_hms[2])
-                icon_d = "fa-caret-right" if self.side_running == ClockSide.RIGHT else "fa-caret-left"
+                icon_d = (
+                    "fa-caret-right" if self.side_running == ClockSide.RIGHT else "fa-caret-left"
+                )
             else:
                 text_r = "{}:{:02d}.{:02d}".format(l_hms[0], l_hms[1], l_hms[2])
                 text_l = "{}:{:02d}.{:02d}".format(r_hms[0], r_hms[1], r_hms[2])
-                icon_d = "fa-caret-right" if self.side_running == ClockSide.LEFT else "fa-caret-left"
+                icon_d = (
+                    "fa-caret-right" if self.side_running == ClockSide.LEFT else "fa-caret-left"
+                )
             if self.side_running == ClockSide.NONE:
                 icon_d = "fa-sort"
             text = text_l + '&nbsp;<i class="fa ' + icon_d + '"></i>&nbsp;' + text_r
@@ -462,7 +466,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
         pgn_game.headers["Black"] = "?"
 
         user_name = "User"
-        
+
         user_elo = "-"
         comp_elo = 2500
         rspeed = 1
@@ -504,11 +508,15 @@ class WebDisplay(DisplayMsg, threading.Thread):
             if "play_mode" in self.shared["game_info"]:
                 if self.shared["game_info"]["play_mode"] == PlayMode.USER_WHITE:
                     pgn_game.headers["White"] = user_name
-                    pgn_game.headers["Black"] = WebDisplay.engine_name + engine_level + retro_speed_str
+                    pgn_game.headers["Black"] = (
+                        WebDisplay.engine_name + engine_level + retro_speed_str
+                    )
                     pgn_game.headers["WhiteElo"] = str(user_elo)
                     pgn_game.headers["BlackElo"] = str(comp_elo)
                 else:
-                    pgn_game.headers["White"] = WebDisplay.engine_name + engine_level + retro_speed_str
+                    pgn_game.headers["White"] = (
+                        WebDisplay.engine_name + engine_level + retro_speed_str
+                    )
                     pgn_game.headers["Black"] = user_name
                     pgn_game.headers["WhiteElo"] = str(comp_elo)
                     pgn_game.headers["BlackElo"] = str(user_elo)
@@ -535,7 +543,6 @@ class WebDisplay(DisplayMsg, threading.Thread):
         pgn_game.headers["Time"] = self.starttime
 
     def task(self, message):
-        
         def _oldstyle_fen(game: chess.Board):
             builder = []
             builder.append(game.board_fen())
@@ -553,7 +560,9 @@ class WebDisplay(DisplayMsg, threading.Thread):
             self.shared["headers"].update(pgn_game.headers)
 
         def _send_headers():
-            EventHandler.write_to_clients({"event": "Header", "headers": dict(self.shared["headers"])})
+            EventHandler.write_to_clients(
+                {"event": "Header", "headers": dict(self.shared["headers"])}
+            )
 
         def _send_title():
             if "ip_info" in self.shared:
@@ -705,7 +714,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
             _send_headers()
 
         elif isinstance(message, Message.PLAY_MODE):
-            if not "PGN Replay" in WebDisplay.engine_name:
+            if "PGN Replay" not in WebDisplay.engine_name:
                 self._create_game_info()
                 self.shared["game_info"]["play_mode"] = message.play_mode
                 _build_headers()

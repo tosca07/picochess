@@ -83,7 +83,6 @@ from dgt.menu import DgtMenu
 
 from picotutor import PicoTutor
 from pathlib import Path
-import subprocess
 
 ONLINE_PREFIX = "Online"
 
@@ -927,7 +926,6 @@ def main() -> None:
 
     def expired_fen_timer(state: PicochessState):
         """Handle times up for an unhandled fen string send from board."""
-        fen_i = ""
         game_fen = ""
         state.fen_timer_running = False
         external_fen = ""

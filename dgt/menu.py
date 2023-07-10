@@ -2764,7 +2764,7 @@ class DgtMenu(object):
                 cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt; sleep 0.2; xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
                 if self.get_engine_rdisplay():
                     write_picochess_ini("rwindow", self.res_engine_rwindow)
-                    result = subprocess.run(
+                    subprocess.run(
                         cmd,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,

@@ -24,7 +24,6 @@ import threading
 import subprocess
 import time
 import chess  # type: ignore
-import dgt.util
 from utilities import DisplayMsg, Observable, DispatchDgt, RepeatedTimer, write_picochess_ini
 from dgt.menu import DgtMenu
 from dgt.util import ClockSide, ClockIcons, BeepLevel, Mode, GameResult, TimeMode, PlayMode
@@ -571,10 +570,6 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             logger.debug("flipping the board - B infront")
             self.dgtmenu.set_position_reverse_flipboard(True)
             print("reverse_flipboard!")
-            ##if ModeInfo.get_eboard_type() == dgt.util.EBoard.DGT:
-            ## rev2 leds behqve differently in case of flipped board
-            ##print("ModeInfo flipped RESET!")
-            ##ModeInfo.set_flipped_board(False)
 
         if self.dgtmenu.get_flip_board() and raw:  # Flip the board if needed
             fen = fen[::-1]
