@@ -489,8 +489,8 @@ class DgtMenu(object):
 
         display = os.environ.get("DISPLAY")
         if rdisplay and display is not None:
-            self.engine_retrodisplay = rdisplay
-            self.res_engine_retrodisplay = self.engine_retrodisplay
+            self.engine_retrodisplay: bool = rdisplay
+            self.res_engine_retrodisplay: bool = self.engine_retrodisplay
         else:
             self.engine_retrodisplay = False
             self.res_engine_retrodisplay = False
