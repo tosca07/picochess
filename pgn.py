@@ -37,7 +37,7 @@ from typing import Optional
 from timecontrol import TimeControl
 from utilities import DisplayMsg
 from dgt.api import Dgt, Message
-from dgt.util import GameResult, PlayMode, Mode, TimeMode
+from dgt.util import PlayMode, Mode, TimeMode
 
 logger = logging.getLogger(__name__)
 
@@ -328,9 +328,9 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         self.engine_elo = "-"
         self.mode = ""
         self.startime = datetime.datetime.now().strftime("%H:%M:%S")
+        self.last_saved_game = None
 
-    def _save_and_email_pgn(self, message):
-        logger.debug("Saving game to [%s]", self.file_name)
+    def _generate_pgn_from_message(self, message):
         pgn_game = chess.pgn.Game().from_board(message.game)
 
         # Headers
@@ -343,14 +343,11 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         pgn_game.headers["Date"] = datetime.date.today().strftime("%Y.%m.%d")
         pgn_game.headers["Time"] = self.startime
 
-        if message.result == GameResult.DRAW:
-            pgn_game.headers["Result"] = "1/2-1/2"
-        elif message.result in (GameResult.WIN_WHITE, GameResult.WIN_BLACK):
-            pgn_game.headers["Result"] = "1-0" if message.result == GameResult.WIN_WHITE else "0-1"
-        elif message.result == GameResult.OUT_OF_TIME:
-            pgn_game.headers["Result"] = "0-1" if message.game.turn == chess.WHITE else "1-0"
+        logger.debug("molli: pgn save result = %s", ModeInfo.get_game_ending())
+        if pgn_game.headers["Result"] == "*":
+            pgn_game.headers["Result"] = ModeInfo.get_game_ending()
 
-        if self.level_text is None:
+        if not self.level_text:
             engine_level = ""
         else:
             engine_level = " ({})".format(self.level_text.large_text)
@@ -364,6 +361,8 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         if ModeInfo.get_online_mode():
             help1 = ModeInfo.get_online_opponent()
             help2 = "(Opp.)"
+            logger.debug("Opp name %s", ModeInfo.get_online_opponent())
+            logger.debug("Own User %s", ModeInfo.get_online_opponent())
             if help1[:5] == "Guest":
                 engine_name = "Opp.(Guest)"
             else:
@@ -415,7 +414,6 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             pgn_game.headers["PicoRSpeed"] = rspeed_str
 
         # Timecontrol
-
         if l_timectrl.mode == TimeMode.FIXED:
             l_timecontrol = str(l_timectrl.move_time)
         elif l_timectrl.mode == TimeMode.BLITZ:
@@ -452,180 +450,46 @@ class PgnDisplay(DisplayMsg, threading.Thread):
         pgn_game.headers["PicoRemTimeW"] = l_rem_time_w
         pgn_game.headers["PicoRemTimeB"] = l_rem_time_b
 
-        # book openning information
+        # book opening information
         if ModeInfo.book_in_use:
             pgn_game.headers["PicoOpeningBook"] = ModeInfo.book_in_use
-        else:
-            pgn_game.headers["PicoOpeningBook"] = ""
         if ModeInfo.opening_name:
             pgn_game.headers["Opening"] = ModeInfo.opening_name
             pgn_game.headers["ECO"] = ModeInfo.opening_eco
-        else:
-            pgn_game.headers["Opening"] = ""
-            pgn_game.headers["ECO"] = ""
 
+    def _save_and_email_pgn(self, message):
+        logger.debug("Saving game to [%s]", self.file_name)
+        pgn_game = self._generate_pgn_from_message(message)
         pgn_game_last = pgn_game
 
-        # Save to file
-        # molli save game in a single last game
-        last_file = open(self.last_file_name, "w")
-        last_exporter = chess.pgn.FileExporter(last_file)
-        pgn_game_last.accept(last_exporter)
-        last_file.flush()
-        last_file.close()
+        # If we already saved the exact same game, do not
+        # save it again, and do not send an email
+        if pgn_game == self.last_saved_game:
+            return
+        self.last_saved_game = pgn_game
 
-        file = open(self.file_name, "a")
-        exporter = chess.pgn.FileExporter(file)
-        pgn_game.accept(exporter)
-        file.flush()
-        file.close()
+        # Save to last game file
+        with open(self.last_file_name, "w") as last_file:
+            last_exporter = chess.pgn.FileExporter(last_file)
+            pgn_game_last.accept(last_exporter)
+
+        # Append to all games file
+        with open(self.file_name, "a") as file:
+            exporter = chess.pgn.FileExporter(file)
+            pgn_game.accept(exporter)
 
         self.emailer.send("Game PGN", str(pgn_game), self.file_name)
 
     def _save_pgn(self, message):
         l_file_name = "games" + os.sep + message.pgn_filename
         logger.debug("Saving PGN game to [%s]", l_file_name)
-        pgn_game = chess.pgn.Game().from_board(message.game)
 
-        # Headers
-        if ModeInfo.get_online_mode():
-            pgn_game.headers["Event"] = "PicoChess" + self.engine_name
-        else:
-            pgn_game.headers["Event"] = "PicoChess Game"
+        pgn_game = self._generate_pgn_from_message(message)
 
-        pgn_game.headers["Site"] = self.location
-        pgn_game.headers["Date"] = datetime.date.today().strftime("%Y.%m.%d")
-        pgn_game.headers["Time"] = self.startime
+        with open(l_file_name, "w") as file:
+            exporter = chess.pgn.FileExporter(file)
+            pgn_game.accept(exporter)
 
-        logger.debug("molli: pgn save result = %s", ModeInfo.get_game_ending())
-        if pgn_game.headers["Result"] == "*":
-            pgn_game.headers["Result"] = ModeInfo.get_game_ending()
-
-        if (
-            self.level_text.large_text is None
-            or self.level_text.large_text == ""
-            or self.level_text.large_text == '""'
-        ):
-            engine_level = ""
-        else:
-            engine_level = " ({})".format(self.level_text.large_text)
-
-        if self.level_name.startswith("Elo@"):
-            comp_elo = self.level_name[4:]
-            engine_level = ""
-        else:
-            comp_elo = self.engine_elo
-
-        if ModeInfo.get_online_mode():
-            help1 = ModeInfo.get_online_opponent()
-            help2 = "(Opp.)"
-            logger.debug("Opp name %s", ModeInfo.get_online_opponent())
-            logger.debug("Own User %s", ModeInfo.get_online_opponent())
-            if help1[:5] == "Guest":
-                engine_name = "Opp.(Guest)"
-            else:
-                engine_name = ModeInfo.get_online_opponent()[:-1] + help2
-
-            help = ModeInfo.get_online_own_user()
-            if help[:5] == "Guest":
-                help2 = self.user_name
-                user_name = help2 + "(Guest)"
-            else:
-                help2 = "(" + self.user_name + ")"
-                user_name = ModeInfo.get_online_own_user()[:-1] + help2
-                user_name.replace("\n", "")
-                user_name = str(user_name)
-
-            if message.play_mode == PlayMode.USER_WHITE:
-                pgn_game.headers["White"] = user_name
-                pgn_game.headers["Black"] = engine_name
-                pgn_game.headers["WhiteElo"] = str(self.user_elo)
-                pgn_game.headers["BlackElo"] = str(comp_elo)
-            if message.play_mode == PlayMode.USER_BLACK:
-                pgn_game.headers["White"] = engine_name
-                pgn_game.headers["Black"] = user_name
-                pgn_game.headers["WhiteElo"] = str(comp_elo)
-                pgn_game.headers["BlackElo"] = str(self.user_elo)
-        else:
-            if message.play_mode == PlayMode.USER_WHITE:
-                pgn_game.headers["White"] = self.user_name
-                pgn_game.headers["Black"] = self.engine_name + engine_level
-                pgn_game.headers["WhiteElo"] = str(self.user_elo)
-                pgn_game.headers["BlackElo"] = str(comp_elo)
-            if message.play_mode == PlayMode.USER_BLACK:
-                pgn_game.headers["White"] = self.engine_name + engine_level
-                pgn_game.headers["Black"] = self.user_name
-                pgn_game.headers["WhiteElo"] = str(comp_elo)
-                pgn_game.headers["BlackElo"] = str(self.user_elo)
-
-        # game time related tags for picochess
-        l_tc_init = message.tc_init
-        l_timectrl = TimeControl(**l_tc_init)
-
-        if l_timectrl.depth > 0:
-            pgn_game.headers["PicoDepth"] = str(l_timectrl.depth)
-        if l_timectrl.node > 0:
-            pgn_game.headers["PicoNode"] = str(l_timectrl.node)
-        if ModeInfo.get_emulation_mode():
-            rspeed_str = str(round(float(self.rspeed), 2))
-            pgn_game.headers["PicoRSpeed"] = rspeed_str
-
-        # Timecontrol
-        if l_timectrl.moves_to_go_orig > 0:
-            if l_timectrl.fisch_inc > 0:
-                l_timecontrol = (
-                    str(l_timectrl.moves_to_go_orig)
-                    + " "
-                    + str(l_timectrl.game_time)
-                    + " "
-                    + str(l_timectrl.fisch_inc)
-                    + " "
-                    + str(l_timectrl.game_time2)
-                )
-            else:
-                l_timecontrol = (
-                    str(l_timectrl.moves_to_go_orig)
-                    + " "
-                    + str(l_timectrl.game_time)
-                    + " 0 "
-                    + str(l_timectrl.game_time2)
-                )
-
-        if l_timectrl.mode == TimeMode.FIXED:
-            l_timecontrol = str(l_timectrl.move_time)
-        elif l_timectrl.mode == TimeMode.BLITZ:
-            l_timecontrol = str(l_timectrl.game_time) + " " + "0"
-        elif l_timectrl.mode == TimeMode.FISCHER:
-            l_timecontrol = str(l_timectrl.game_time) + " " + str(l_timectrl.fisch_inc)
-
-        # remaining game times
-        l_int_time = l_tc_init["internal_time"]
-        l_rem_time_w = str(int(l_int_time[chess.WHITE]))
-        l_rem_time_b = str(int(l_int_time[chess.BLACK]))
-
-        logger.debug("molli: save pgn Time %s", str(l_timecontrol))
-
-        pgn_game.headers["PicoTimeControl"] = l_timecontrol
-        pgn_game.headers["PicoRemTimeW"] = l_rem_time_w
-        pgn_game.headers["PicoRemTimeB"] = l_rem_time_b
-
-        # book openning information
-        if ModeInfo.book_in_use:
-            pgn_game.headers["PicoOpeningBook"] = ModeInfo.book_in_use
-        else:
-            pgn_game.headers["PicoOpeningBook"] = ""
-        if ModeInfo.opening_name:
-            pgn_game.headers["Opening"] = ModeInfo.opening_name
-            pgn_game.headers["ECO"] = ModeInfo.opening_eco
-        else:
-            pgn_game.headers["Opening"] = "??"
-            pgn_game.headers["ECO"] = "??"
-
-        file = open(l_file_name, "w")
-        exporter = chess.pgn.FileExporter(file)
-        pgn_game.accept(exporter)
-        file.flush()
-        file.close()
         logger.debug("molli: save pgn finished")
 
     def _process_message(self, message):
