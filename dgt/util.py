@@ -221,7 +221,13 @@ class PicoTutor(MyEnum):
 
     @classmethod
     def items(cls):
-        return [PicoTutor.WATCHER, PicoTutor.COACH, PicoTutor.EXPLORER, PicoTutor.COMMENT, PicoTutor.COM_PROB]
+        return [
+            PicoTutor.WATCHER,
+            PicoTutor.COACH,
+            PicoTutor.EXPLORER,
+            PicoTutor.COMMENT,
+            PicoTutor.COM_PROB,
+        ]
 
 
 class PicoTutorLoop(object):
@@ -414,7 +420,6 @@ class TimeModeLoop(object):
 
 
 class EngineTop(MyEnum):
-
     MODERN_ENGINE = "B00_engine_menu_modern"
     RETRO_ENGINE = "B00_engine_menu_retro"
     RETROSETTINGS = "B00_engine_menu_retrosettings"
@@ -446,16 +451,21 @@ class EngineTopLoop(object):
 
 
 class EngineRetroSettings(MyEnum):
-
-    RETROWINDOW  = "B00_engine_menu_retrowindow"
-    RETROSPEED   = "B00_engine_menu_retrospeed"
-    RETROSOUND   = "B00_engine_menu_retrosound"
+    RETROWINDOW = "B00_engine_menu_retrowindow"
+    RETROSPEED = "B00_engine_menu_retrospeed"
+    RETROSOUND = "B00_engine_menu_retrosound"
     RETRODISPLAY = "B00_engine_menu_retrodisplay"
-    RETROINFO    = "B00_engine_menu_retroinfo"
+    RETROINFO = "B00_engine_menu_retroinfo"
 
     @classmethod
     def items(cls):
-        return [EngineRetroSettings.RETROWINDOW, EngineRetroSettings.RETROSPEED, EngineRetroSettings.RETROSOUND, EngineRetroSettings.RETRODISPLAY, EngineRetroSettings.RETROINFO]
+        return [
+            EngineRetroSettings.RETROWINDOW,
+            EngineRetroSettings.RETROSPEED,
+            EngineRetroSettings.RETROSOUND,
+            EngineRetroSettings.RETRODISPLAY,
+            EngineRetroSettings.RETROINFO,
+        ]
 
 
 class EngineRetroSettingsLoop(object):

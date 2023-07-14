@@ -83,7 +83,6 @@ from dgt.menu import DgtMenu
 
 from picotutor import PicoTutor
 from pathlib import Path
-import subprocess
 
 ONLINE_PREFIX = "Online"
 
@@ -210,7 +209,7 @@ class PicochessState:
         self.last_error_fen = ""
         self.artwork_in_use = False
         self.delay_fen_error = 4
-        
+
     @property
     def picotutor(self) -> PicoTutor:
         if not self._picotutor:
@@ -927,7 +926,6 @@ def main() -> None:
 
     def expired_fen_timer(state: PicochessState):
         """Handle times up for an unhandled fen string send from board."""
-        fen_i = ""
         game_fen = ""
         state.fen_timer_running = False
         external_fen = ""
@@ -1031,9 +1029,13 @@ def main() -> None:
                 internal_fen = state.game.board_fen()
                 external_fen = state.error_fen
                 fen_res = compare_fen(external_fen, internal_fen)
-                
+
                 if external_fen == state.last_error_fen:
-                    if emulation_mode() and state.dgtmenu.get_engine_rdisplay() and state.artwork_in_use:
+                    if (
+                        emulation_mode()
+                        and state.dgtmenu.get_engine_rdisplay()
+                        and state.artwork_in_use
+                    ):
                         # switch windows/tasks
                         cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
                         subprocess.run(
@@ -1044,7 +1046,7 @@ def main() -> None:
                             shell=True,
                         )
                 if (not state.position_mode) and fen_res:
-                    if fen_res[4] == 'K' or fen_res[4] == 'k':
+                    if fen_res[4] == "K" or fen_res[4] == "k":
                         state.coach_triggered = True
                     else:
                         state.coach_triggered = False
@@ -1071,7 +1073,6 @@ def main() -> None:
                     and game_fen != chess.STARTING_BOARD_FEN
                     and state.flag_startup
                 ):
-
                     if state.dgtmenu.get_enginename():
                         DisplayMsg.show(Message.ENGINE_NAME(engine_name=state.engine_text))
 
@@ -1113,7 +1114,9 @@ def main() -> None:
         """Start the fen timer in case an unhandled fen string been received from board."""
         delay = 0
         if state.position_mode:
-            delay = state.delay_fen_error # if a fen error already occured don't wait too long for next check
+            delay = (
+                state.delay_fen_error
+            )  # if a fen error already occured don't wait too long for next check
         else:
             delay = 4
             state.delay_fen_error = 4
@@ -1232,7 +1235,6 @@ def main() -> None:
         if move not in state.game.legal_moves:
             logger.warning("illegal move [%s]", move)
         else:
-
             if state.interaction_mode == Mode.BRAIN:
                 ponder_hit = move == state.pb_move
                 logger.info(
@@ -1452,7 +1454,8 @@ def main() -> None:
                 if state.dgtmenu.get_picocomment() != PicoComment.COM_OFF and not game_end:
                     game_comment = ""
                     game_comment = state.picotutor.get_game_comment(
-                        pico_comment=state.dgtmenu.get_picocomment(), com_factor=state.dgtmenu.get_comment_factor()
+                        pico_comment=state.dgtmenu.get_picocomment(),
+                        com_factor=state.dgtmenu.get_comment_factor(),
                     )
                     if game_comment:
                         DisplayMsg.show(Message.SHOW_TEXT(text_string=game_comment))
@@ -1489,7 +1492,7 @@ def main() -> None:
         handled_fen = True
         state.error_fen = None
         legal_fens_pico = compute_legal_fens(state.game.copy())
-        
+
         # Check for same position
         if fen == state.game.board_fen():
             logger.debug("Already in this fen: %s", fen)
@@ -1969,13 +1972,12 @@ def main() -> None:
             else:
                 state.error_fen = fen
                 start_fen_timer(state)
-                
+
     def call_pico_coach(state):
         if (
             (state.game.turn == chess.WHITE and state.play_mode == PlayMode.USER_WHITE)
             or (state.game.turn == chess.BLACK and state.play_mode == PlayMode.USER_BLACK)
         ) and not (state.game.is_checkmate() or state.game.is_stalemate()):
-
             state.stop_clock()
             time.sleep(0.5)
             state.stop_fen_timer()
@@ -2087,7 +2089,7 @@ def main() -> None:
                 state.reset_auto = True
             DisplayMsg.show(msg)
         else:
-            DisplayMsg.show(msg) # molli: fix for web display refresh 
+            DisplayMsg.show(msg)  # molli: fix for web display refresh
             if state.automatic_takeback and state.takeback_active:
                 if state.play_mode == PlayMode.USER_WHITE:
                     text_pl = "K20_playmode_white_user"
@@ -2097,8 +2099,7 @@ def main() -> None:
             state.automatic_takeback = False
             state.takeback_active = False
             state.reset_auto = False
-           
-            
+
         state.stop_fen_timer()
 
     def get_engine_level_dict(engine_level):
@@ -2215,12 +2216,12 @@ def main() -> None:
             DisplayMsg.show(msg)
             state.start_clock()
             state.legal_fens = compute_legal_fens(state.game.copy())
-       
+
     def calc_engine_mame_par():
-        return(get_engine_mame_par(
-            state.dgtmenu.get_engine_rspeed(),
-            state.dgtmenu.get_engine_rsound()))
-            
+        return get_engine_mame_par(
+            state.dgtmenu.get_engine_rspeed(), state.dgtmenu.get_engine_rsound()
+        )
+
     def takeback(state: PicochessState):
         stop_search_and_clock()
         l_error = False
@@ -2702,7 +2703,7 @@ def main() -> None:
     except KeyError:
         board_type = dgt.util.EBoard.DGT
     ModeInfo.set_eboard_type(board_type)
-    
+
     # wire some dgt classes
     if board_type == dgt.util.EBoard.CHESSLINK:
         dgtboard: EBoard = ChessLinkBoard()
@@ -2766,7 +2767,7 @@ def main() -> None:
 
     # The class dgtDisplay fires Event (Observable) & DispatchDgt (Dispatcher)
     DgtDisplay(state.dgttranslate, state.dgtmenu, state.time_control).start()
-    
+
     ModeInfo.set_clock_side(args.clockside)
 
     sample_beeper = False
@@ -2796,7 +2797,8 @@ def main() -> None:
         args.comment_factor,
         sample_beeper,
         sample_beeper_level,
-        board_type,)
+        board_type,
+    )
 
     pico_talker.start()
 
@@ -2870,21 +2872,19 @@ def main() -> None:
 
     if engine_file is None:
         engine_file = EngineProvider.installed_engines[0]["file"]
-    
+
     state.engine_file = engine_file
     state.artwork_in_use = False
-    if '/mame/' in engine_file and state.dgtmenu.get_engine_rdisplay():
+    if "/mame/" in engine_file and state.dgtmenu.get_engine_rdisplay():
         time.sleep(8)
-        engine_file_art = engine_file + '_art'
+        engine_file_art = engine_file + "_art"
         my_file = Path(engine_file_art)
         if my_file.is_file():
             state.artwork_in_use = True
             engine_file = engine_file_art
 
     engine = UciEngine(
-        file=engine_file,
-        uci_shell=uci_local_shell,
-        mame_par=calc_engine_mame_par()
+        file=engine_file, uci_shell=uci_local_shell, mame_par=calc_engine_mame_par()
     )
 
     try:
@@ -2895,7 +2895,7 @@ def main() -> None:
         DisplayMsg.show(Message.ENGINE_FAIL())
         time.sleep(2)
         sys.exit(-1)
-    
+
     # Startup - internal
     state.game = chess.Board()  # Create the current game
     fen = state.game.fen()
@@ -2921,7 +2921,12 @@ def main() -> None:
     engine_opt, level_index = get_engine_level_dict(args.engine_level)
     engine.startup(engine_opt, state.rating)
 
-    if emulation_mode() and state.dgtmenu.get_engine_rdisplay() and state.artwork_in_use and not state.dgtmenu.get_engine_rwindow():
+    if (
+        emulation_mode()
+        and state.dgtmenu.get_engine_rdisplay()
+        and state.artwork_in_use
+        and not state.dgtmenu.get_engine_rwindow()
+    ):
         # switch to fullscreen
         cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
         subprocess.run(
@@ -2988,7 +2993,7 @@ def main() -> None:
         state.flag_last_engine_emu = True
         time_control_l, time_text_l = state.transfer_time(pico_time.split(), depth=0, node=0)
         state.tc_init_last = time_control_l.get_parameters()
-    
+
     if pgn_mode():
         ModeInfo.set_pgn_mode(mode=True)
         state.flag_last_engine_pgn = True
@@ -3017,7 +3022,7 @@ def main() -> None:
     )
 
     ModeInfo.set_game_ending(result="*")
-    
+
     text: Dgt.DISPLAY_TEXT = state.dgtmenu.get_current_engine_name()
     state.engine_text = text
     state.dgtmenu.enter_top_menu()
@@ -3073,15 +3078,15 @@ def main() -> None:
                 engine_file = event.eng["file"]
                 state.engine_file = engine_file
                 state.artwork_in_use = False
-                if '/mame/' in engine_file and state.dgtmenu.get_engine_rdisplay():
-                    engine_file_art = engine_file + '_art'
+                if "/mame/" in engine_file and state.dgtmenu.get_engine_rdisplay():
+                    engine_file_art = engine_file + "_art"
                     my_file = Path(engine_file_art)
                     if my_file.is_file():
                         state.artwork_in_use = True
                         engine_file = engine_file_art
                     else:
                         DisplayMsg.show(Message.SHOW_TEXT(text_string="NO_ARTWORK"))
-                
+
                 help_str = engine_file.rsplit(os.sep, 1)[1]
                 remote_file = engine_remote_home + os.sep + help_str
 
@@ -3126,13 +3131,13 @@ def main() -> None:
                         engine = UciEngine(
                             file=remote_file,
                             uci_shell=uci_remote_shell,
-                            mame_par=calc_engine_mame_par()
-                            )
+                            mame_par=calc_engine_mame_par(),
+                        )
                     else:
                         engine = UciEngine(
                             file=engine_file,
                             uci_shell=uci_local_shell,
-                            mame_par=calc_engine_mame_par()
+                            mame_par=calc_engine_mame_par(),
                         )
                     try:
                         engine_name = engine.get_name()
@@ -3149,13 +3154,13 @@ def main() -> None:
                             engine = UciEngine(
                                 file=remote_file,
                                 uci_shell=uci_remote_shell,
-                                mame_par=calc_engine_mame_par()
+                                mame_par=calc_engine_mame_par(),
                             )
                         else:
                             # restart old mame engine?
                             state.artwork_in_use = False
-                            if '/mame/' in old_file and state.dgtmenu.get_engine_rdisplay():
-                                old_file_art = old_file + '_art'
+                            if "/mame/" in old_file and state.dgtmenu.get_engine_rdisplay():
+                                old_file_art = old_file + "_art"
                                 my_file = Path(old_file_art)
                                 if my_file.is_file():
                                     state.artwork_in_use = True
@@ -3164,7 +3169,7 @@ def main() -> None:
                             engine = UciEngine(
                                 file=old_file,
                                 uci_shell=uci_local_shell,
-                                mame_par=calc_engine_mame_par()
+                                mame_par=calc_engine_mame_par(),
                             )
                         try:
                             engine_name = engine.get_name()
@@ -3187,13 +3192,13 @@ def main() -> None:
                                 engine = UciEngine(
                                     file=remote_file,
                                     uci_shell=uci_remote_shell,
-                                    mame_par=calc_engine_mame_par()
+                                    mame_par=calc_engine_mame_par(),
                                 )
                             else:
                                 engine = UciEngine(
                                     file=old_file,
                                     uci_shell=uci_local_shell,
-                                    mame_par=calc_engine_mame_par()
+                                    mame_par=calc_engine_mame_par(),
                                 )
                             engine.startup(old_options, state.rating)
                             engine.newgame(state.game.copy())
@@ -3207,9 +3212,14 @@ def main() -> None:
                         else:
                             logger.error("engine shutdown failure")
                             DisplayMsg.show(Message.ENGINE_FAIL())
-                    
-                    if emulation_mode() and state.dgtmenu.get_engine_rdisplay() and state.artwork_in_use and not state.dgtmenu.get_engine_rwindow():
-                        #switch to fullscreen
+
+                    if (
+                        emulation_mode()
+                        and state.dgtmenu.get_engine_rdisplay()
+                        and state.artwork_in_use
+                        and not state.dgtmenu.get_engine_rwindow()
+                    ):
+                        # switch to fullscreen
                         cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
                         subprocess.run(
                             cmd,
@@ -3218,7 +3228,7 @@ def main() -> None:
                             universal_newlines=True,
                             shell=True,
                         )
-                        
+
                     engine.startup(event.options, state.rating)
 
                     if online_mode():
@@ -3249,13 +3259,13 @@ def main() -> None:
                                 engine = UciEngine(
                                     file=remote_file,
                                     uci_shell=uci_remote_shell,
-                                    mame_par=calc_engine_mame_par()
+                                    mame_par=calc_engine_mame_par(),
                                 )
                             else:
                                 engine = UciEngine(
                                     file=old_file,
                                     uci_shell=uci_local_shell,
-                                    mame_par=calc_engine_mame_par()
+                                    mame_par=calc_engine_mame_par(),
                                 )
                             try:
                                 engine_name = engine.get_name()
@@ -3284,7 +3294,7 @@ def main() -> None:
                         state.last_legal_fens = []
                         state.legal_fens_after_cmove = []
                         is_out_of_time_already = False
-                        real_new_game = (game_fen != chess.STARTING_BOARD_FEN)
+                        real_new_game = game_fen != chess.STARTING_BOARD_FEN
                         msg = Message.START_NEW_GAME(game=state.game.copy(), newgame=real_new_game)
                         DisplayMsg.show(msg)
                     else:
@@ -3394,7 +3404,7 @@ def main() -> None:
                     get_comment_file()
                 )  # for picotutor game comments like Boris & Sargon
                 state.picotutor.init_comments(state.comment_file)
-                
+
                 if emulation_mode():
                     set_emulation_tctrl(state)
 
@@ -3448,7 +3458,7 @@ def main() -> None:
                 logger.debug("setting up custom fen: %s", event.fen)
                 uci960 = event.uci960
                 state.position_mode = False
-                                                    
+
                 if state.game.move_stack:
                     if not (state.game.is_game_over() or state.game_declared):
                         result = GameResult.ABORT
@@ -3466,7 +3476,7 @@ def main() -> None:
                 if engine.has_chess960():
                     engine.option("UCI_Chess960", uci960)
                     engine.send()
-                
+
                 DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION_SCAN"))
                 engine.newgame(state.game.copy())
                 state.done_computer_fen = None
@@ -3476,10 +3486,12 @@ def main() -> None:
                 state.time_control.reset()
                 state.searchmoves.reset()
                 state.game_declared = False
-                
+
                 if picotutor_mode(state):
                     state.picotutor.reset()
-                    state.picotutor.set_position(state.game.fen(), i_turn=state.game.turn, i_ignore_expl=True)
+                    state.picotutor.set_position(
+                        state.game.fen(), i_turn=state.game.turn, i_ignore_expl=True
+                    )
                     if state.play_mode == PlayMode.USER_BLACK:
                         state.picotutor.set_user_color(chess.BLACK)
                     else:
@@ -3519,13 +3531,17 @@ def main() -> None:
                 state.fen_error_occured = False
                 state.error_fen = None
                 state.newgame_happened = True
-                newgame = state.game.move_stack or (state.game.chess960_pos() != event.pos960) or state.best_move_posted or state.done_computer_fen
+                newgame = (
+                    state.game.move_stack
+                    or (state.game.chess960_pos() != event.pos960)
+                    or state.best_move_posted
+                    or state.done_computer_fen
+                )
                 if newgame:
                     logger.debug("starting a new game with code: %s", event.pos960)
                     uci960 = event.pos960 != 518
 
                     if not (state.game.is_game_over() or state.game_declared) or pgn_mode():
-
                         if emulation_mode():  # force abortion for mame
                             if state.is_not_user_turn():
                                 # clock must be stopped BEFORE the "book_move" event cause SetNRun resets the clock display
@@ -3578,7 +3594,7 @@ def main() -> None:
                         ModeInfo.set_online_mode(mode=True)
                     else:
                         ModeInfo.set_online_mode(mode=False)
-                    
+
                     if emulation_mode():
                         engine.stop()
                     engine.newgame(state.game.copy())
@@ -3735,7 +3751,11 @@ def main() -> None:
                                 pgn_white,
                                 pgn_black,
                             ) = read_pgn_info()
-                            if "mate in" in pgn_problem or "Mate in" in pgn_problem or pgn_fen != "":
+                            if (
+                                "mate in" in pgn_problem
+                                or "Mate in" in pgn_problem
+                                or pgn_fen != ""
+                            ):
                                 set_fen_from_pgn(pgn_fen, state)
                                 set_wait_state(
                                     Message.START_NEW_GAME(
@@ -4225,7 +4245,6 @@ def main() -> None:
                                             )
                                         )
                             else:
-
                                 if pgn_mode():
                                     # molli: check if last move of pgn game file
                                     stop_search_and_clock()
@@ -4549,7 +4568,9 @@ def main() -> None:
                     logger.debug("in brain mode and pondering, ignore score %s", event.score)
                 else:
                     if event.score == 999 or event.score == -999:
-                        state.flag_pgn_game_over = True  # molli pgn mode: signal that pgn is at end
+                        state.flag_pgn_game_over = (
+                            True  # molli pgn mode: signal that pgn is at end
+                        )
                     else:
                         state.flag_pgn_game_over = False
 
@@ -4640,7 +4661,9 @@ def main() -> None:
                 DisplayMsg.show(Message.ALTMOVES(altmoves=event.altmoves))
 
             elif isinstance(event, Event.PICOWATCHER):
-                if state.dgtmenu.get_picowatcher() or (state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF):
+                if state.dgtmenu.get_picowatcher() or (
+                    state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF
+                ):
                     pico_calc = True
                 else:
                     pico_calc = False
@@ -4668,9 +4691,10 @@ def main() -> None:
                 DisplayMsg.show(Message.PICOWATCHER(picowatcher=event.picowatcher))
 
             elif isinstance(event, Event.PICOCOACH):
-
                 pico_calc = False
-                if state.dgtmenu.get_picowatcher() or (state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF):
+                if state.dgtmenu.get_picowatcher() or (
+                    state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF
+                ):
                     pico_calc = True
                 else:
                     pico_calc = False
@@ -4702,7 +4726,9 @@ def main() -> None:
                     DisplayMsg.show(Message.PICOCOACH(picocoach=False))
                 elif state.dgtmenu.get_picocoach() == PicoCoach.COACH_ON and event.picocoach != 2:
                     DisplayMsg.show(Message.PICOCOACH(picocoach=True))
-                elif state.dgtmenu.get_picocoach() == PicoCoach.COACH_LIFT and event.picocoach != 2:
+                elif (
+                    state.dgtmenu.get_picocoach() == PicoCoach.COACH_LIFT and event.picocoach != 2
+                ):
                     DisplayMsg.show(Message.PICOCOACH(picocoach=True))
 
                 if state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF and event.picocoach == 2:
@@ -4710,7 +4736,9 @@ def main() -> None:
                     call_pico_coach(state)
 
             elif isinstance(event, Event.PICOEXPLORER):
-                if state.dgtmenu.get_picowatcher() or (state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF):
+                if state.dgtmenu.get_picowatcher() or (
+                    state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF
+                ):
                     pico_calc = True
                 else:
                     pico_calc = False
@@ -4723,7 +4751,9 @@ def main() -> None:
                 if event.picoexplorer:
                     state.flag_picotutor = True
                 else:
-                    if state.dgtmenu.get_picowatcher() or (state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF):
+                    if state.dgtmenu.get_picowatcher() or (
+                        state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF
+                    ):
                         state.flag_picotutor = True
                     else:
                         state.flag_picotutor = False
@@ -4736,8 +4766,8 @@ def main() -> None:
                     # restart engine with new retro speed
                     state.artwork_in_use = False
                     engine_file = state.engine_file
-                    if '/mame/' in engine_file and state.dgtmenu.get_engine_rdisplay():
-                        engine_file_art = engine_file + '_art'
+                    if "/mame/" in engine_file and state.dgtmenu.get_engine_rdisplay():
+                        engine_file_art = engine_file + "_art"
                         my_file = Path(engine_file_art)
                         if my_file.is_file():
                             state.artwork_in_use = True
@@ -4748,13 +4778,17 @@ def main() -> None:
                         engine = UciEngine(
                             file=engine_file,
                             uci_shell=uci_local_shell,
-                            mame_par=calc_engine_mame_par()
+                            mame_par=calc_engine_mame_par(),
                         )
                         engine.startup(old_options, state.rating)
                         stop_search_and_clock()
-                        
-                        if state.dgtmenu.get_engine_rdisplay() and not state.dgtmenu.get_engine_rwindow() and state.artwork_in_use:
-                            #switch to fullscreen
+
+                        if (
+                            state.dgtmenu.get_engine_rdisplay()
+                            and not state.dgtmenu.get_engine_rwindow()
+                            and state.artwork_in_use
+                        ):
+                            # switch to fullscreen
                             cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
                             subprocess.run(
                                 cmd,
@@ -4762,7 +4796,7 @@ def main() -> None:
                                 stderr=subprocess.PIPE,
                                 universal_newlines=True,
                                 shell=True,
-                        )
+                            )
                         game_fen = state.game.board_fen()
                         state.game = chess.Board()
                         state.game.turn = chess.WHITE
@@ -4798,9 +4832,11 @@ def main() -> None:
                     takeback(state)
 
             elif isinstance(event, Event.PICOCOMMENT):
-                if event.picocomment == 'comment-factor':
-                    pico_talker.set_comment_factor(comment_factor=state.dgtmenu.get_comment_factor())
-                    DisplayMsg.show(Message.PICOCOMMENT(picocomment='ok'))
+                if event.picocomment == "comment-factor":
+                    pico_talker.set_comment_factor(
+                        comment_factor=state.dgtmenu.get_comment_factor()
+                    )
+                    DisplayMsg.show(Message.PICOCOMMENT(picocomment="ok"))
                 else:
                     DisplayMsg.show(Message.PICOCOMMENT(picocomment=event.picocomment))
 
