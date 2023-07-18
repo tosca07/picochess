@@ -1048,12 +1048,14 @@ def main() -> None:
                 if (not state.position_mode) and fen_res:
                     if fen_res[4] == "K" or fen_res[4] == "k":
                         state.coach_triggered = True
+                        if not picotutor_mode(state):
+                            state.position_mode = True
                     else:
+                        state.position_mode = True
                         state.coach_triggered = False
                     if external_fen != chess.STARTING_BOARD_FEN:
                         DisplayMsg.show(Message.WRONG_FEN())
                         time.sleep(2)
-                    state.position_mode = True
                     state.delay_fen_error = 4
                     # molli: Picochess correction messages
                     # show incorrect square(s) and piece to put or be removed
@@ -1974,6 +1976,8 @@ def main() -> None:
                 start_fen_timer(state)
 
     def call_pico_coach(state):
+        if state.coach_triggered:
+            state.position_mode = True
         if (
             (state.game.turn == chess.WHITE and state.play_mode == PlayMode.USER_WHITE)
             or (state.game.turn == chess.BLACK and state.play_mode == PlayMode.USER_BLACK)
