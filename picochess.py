@@ -2880,7 +2880,7 @@ def main() -> None:
     state.engine_file = engine_file
     state.artwork_in_use = False
     if "/mame/" in engine_file and state.dgtmenu.get_engine_rdisplay():
-        time.sleep(8)
+        time.sleep(20)
         engine_file_art = engine_file + "_art"
         my_file = Path(engine_file_art)
         if my_file.is_file():
@@ -2932,7 +2932,7 @@ def main() -> None:
         and not state.dgtmenu.get_engine_rwindow()
     ):
         # switch to fullscreen
-        cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
+        cmd = "xdotool keydown alt key F11; sleep 0.2; xdotool keyup alt"
         subprocess.run(
             cmd,
             stdout=subprocess.PIPE,
