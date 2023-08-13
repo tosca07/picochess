@@ -4068,7 +4068,7 @@ def main() -> None:
             elif isinstance(event, Event.REMOTE_MOVE):
                 state.flag_startup = False
                 if board_type == dgt.util.EBoard.NOEBOARD:
-                    user_move(event.move, sliding=True, state=state)
+                    user_move(event.move, sliding=False, state=state)
                 else:
                     if state.interaction_mode == Mode.REMOTE and state.is_not_user_turn():
                         stop_search_and_clock()
