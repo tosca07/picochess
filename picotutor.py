@@ -542,25 +542,29 @@ class PicoTutor:
         best_score = -999
 
         for pv_key, pv_list in pv_list.items():
-            if info_handler.info["score"][pv_key]:
-                score_val = info_handler.info["score"][pv_key]
-                move = chess.Move.null()
+        
+            try:
+                if info_handler.info["score"][pv_key]:
+                    score_val = info_handler.info["score"][pv_key]
+                    move = chess.Move.null()
 
-                score = 0
-                mate = 0
-                if score_val.cp:
-                    score = score_val.cp / 100
-                if pv_list[0]:
-                    move = pv_list[0]
-                if score_val.mate:
-                    mate = int(score_val.mate)
-                    if mate < 0:
-                        score = -999
-                    elif mate > 0:
-                        score = 999
-                legal_moves.append((pv_key, move, score, mate))
-                if score >= best_score:
-                    best_score = score
+                    score = 0
+                    mate = 0
+                    if score_val.cp:
+                        score = score_val.cp / 100
+                    if pv_list[0]:
+                        move = pv_list[0]
+                    if score_val.mate:
+                        mate = int(score_val.mate)
+                        if mate < 0:
+                            score = -999
+                        elif mate > 0:
+                            score = 999
+                    legal_moves.append((pv_key, move, score, mate))
+                    if score >= best_score:
+                        best_score = score
+            except Exception:
+                best_score = -999
 
         return best_score
 
