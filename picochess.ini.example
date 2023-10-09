@@ -74,12 +74,12 @@ dgtpi = True
 ## handle with care. If you setup this section wrong, picochess won't start.
 ## Path to the engine relative to the 'picochess' folder (local engine - standard case)
 #engine = /opt/picochess/engines/armv7l/a-stockf
-engine = /opt/picochess/engines/armv7l/a-stockf
+engine = /opt/picochess/engines/armv7l/NNUE/StockfishNN
 
 ## What level the engine should have at startup?
 ## For a (correct) value please take a look at 'engines/<your_platform>/<engine_name>.uci'
 #engine-level= Elo@1500
-engine-level = Elo@1500
+engine-level = Elo@1506
 
 ### =========================
 ### = Remote engine options =
@@ -165,8 +165,8 @@ book = books/h-varied.bin
 log-file = picochess.log
 ## What log level should be used 
 ## Log level options are [debug, info, warning (default), error, critical]
-#log-level = warning
-log-level = error
+#log-level = error
+log-level = warning
 
 ## PicoChess can use human voices for announcement
 ## Valid voice names are formed from 'talker/voices' folder structure. Please take a look there.
@@ -252,13 +252,6 @@ language = en
 ## If don't you want this please uncomment next line
 #premove = False
 
-## Probability of spoken & written comments during the game is set to 100% by default. You can set it from 0%-100%
-## Comments are only spoken if you have a specific pico voice set up with additional audio files
-## So if you don't have any voice set up with audio commentary files or you use a standard pico voice, there
-## is no need to change this parameter at all 
-#comment-factor = 50
-comment-factor = 50
-
 ## Automatically continue last game after picochess (re-)start is switched off by default.
 ## If you want this feature please uncomment next line
 #continue-game = True
@@ -330,17 +323,24 @@ node = 0
 ### = PicoTutor Options =
 ### =====================
 
-## Pico Comments: show game comments based on specific engines (= single) or in general (= all). Default is off.
+## Pico Comments: show game comments based on specific engines (= single) or in general (= all). Default is off (= off).
 #tutor-comment = single
-tutor-comment = all
+tutor-comment = off
 
-## Pico Opening Explorer: shows the name(s) of the opening (based on chess-eco_pos.txt file). Default is off.
+## Probability of spoken & written comments during the game is set to 100% by default. You can be set from 0 -100%.
+## Comments are only spoken if you have a specific pico voice set up with additional audio files.
+## So if you don't have any voice set up with audio commentary files or you use a standard pico voice, there
+## is no need to change this parameter at all.
+#comment-factor = 50
+comment-factor = 50
+
+## Pico Opening Explorer: shows the name(s) of the opening (based on chess-eco_pos.txt file). Default is off (= False).
 #tutor-explorer = True
 tutor-explorer = True
 
-## Pico Watcher: automatic move evaluation, blunder warning & move suggestion. Default is off.
+## Pico Watcher: automatic move evaluation, blunder warning & move suggestion. Default is off (= False).
 #tutor-watcher = True
-tutor-watcher = True
+tutor-watcher = False
 
 ## Pico Coach: move and position evaluation, move suggestion, etc. on demand. You can set it to 'on', 'off' or 'lift'.
 ## Default is 'off'. When set to 'on', you must trigger the evaluation via the PicoTutor menu. When set to 'lift‘, you can
@@ -352,6 +352,7 @@ tutor-coach = off
 
 ## Engine used for PicoTutor analysis. Default is /opt/picochess/engines/armv7l/a-stockf.
 #tutor-engine = /opt/picochess/engines/armv7l/a-stockf
+tutor-engine = /opt/picochess/engines/armv7l/a-stockf
 
 ## Type of e-Board. Supported values: 'certabo', 'chesslink', 'chessnut', 'dgt' (default), 'noeboard' (play against
 ## engine using web server interface).
@@ -368,8 +369,9 @@ clockside = left
 theme = auto
 
 ## Retro-Artwork setting for MAME engines: default artwork display is off. If you want to enable it, set rdisplay = True.
-## Only use with a Raspberry Pi 4B hardware or better.
-#rdisplay = True
+## Only use with a Raspberry Pi 4B hardware or better. NOTE: PicoChess will crash if no desktop GUI is installed and this setting
+## is enabled. If it does, this file will need to be manually edited to reset rdisplay to False below.
+#rdisplay = False
 rdisplay = False
 
 ## Retro-Window setting for MAME in case Retro-Artwork display is enabled: default window mode is on. If you want to switch to fullscreen,
@@ -390,4 +392,3 @@ rsound = True
 # Player rating deviation for automatic adjustment of Elo, starting value: 350
 #rating-deviation = 350
 rating-deviation = 350
-
