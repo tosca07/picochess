@@ -213,8 +213,11 @@ class UciEngine(object):
         """Quit engine."""
         if self.engine.quit():  # Ask nicely
             if self.engine.terminate():  # If you won't go nicely....
-                if self.engine.kill():  # Right that does it!
-                    return False
+                if self.is_mame:
+                    os.system('sudo pkill -9 -f mess')
+                else:
+                    if self.engine.kill():  # Right that does it!
+                        return False
         return True
 
     def uci(self):
