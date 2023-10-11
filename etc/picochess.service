@@ -8,6 +8,7 @@ Environment="XAUTHORITY=/home/pi/.Xauthority"
 Type=simple
 ExecStart=/usr/bin/python3 /opt/picochess/picochess.py
 ExecStop=/usr/bin/pkill -f picochess.py
+ExecStop=/usr/bin/pkill -9 -f mess
 WorkingDirectory=/opt/picochess/
 
 [Install]
