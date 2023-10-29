@@ -935,7 +935,7 @@ def main() -> None:
             game_fen = state.game.board_fen()
             if (
                 state.interaction_mode in (Mode.NORMAL, Mode.TRAINING, Mode.BRAIN)
-                and game_fen != chess.STARTING_BOARD_FEN
+                and state.error_fen != chess.STARTING_BOARD_FEN
                 and state.flag_startup
                 and state.dgtmenu.get_game_contlast()
                 and not online_mode()
