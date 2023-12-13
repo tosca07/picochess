@@ -306,8 +306,9 @@ def write_picochess_ini(key: str, value):
 
 
 def get_engine_mame_par(engine_rspeed: float, engine_rsound=False) -> str:
-    if engine_rspeed < 0.01:
-        engine_mame_par = '-nothrottle'
+    if engine_rspeed <= 0.1:
+        engine_mame_par = '-speed ' + '30'
+        """engine_mame_par = '-nothrottle' no longer warks with our newest mame"""
     else:
         engine_mame_par = '-speed ' + str(engine_rspeed)
     if not engine_rsound:
