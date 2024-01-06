@@ -18,6 +18,9 @@ source /opt/picochess_venv/bin/activate
 
 cd picochess
 
+ln -sf /opt/picochess/etc/dgtpicom_$(uname -m) /opt/picochess/etc/dgtpicom
+ln -sf /opt/picochess/etc/dgtpicom.$(uname -m).so /opt/picochess/etc/dgtpicom.so
+
 pip3 install --upgrade -r requirements.txt
 
 cp etc/dgtpi.service /etc/systemd/system/
