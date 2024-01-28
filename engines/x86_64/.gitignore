@@ -1,4 +1,3 @@
 # Ignore any engines out of the first 8 [a-h] ones
 [i-z]-*
-engines.ini
 games.pgn
