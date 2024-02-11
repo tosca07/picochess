@@ -243,7 +243,7 @@ def shutdown(dgtpi: bool, dev: str):
     elif dgtpi:
         dgt_functions = cdll.LoadLibrary('etc/dgtpicom.so')
         dgt_functions.dgtpicom_off(1)
-        os.system('shutdown -h now')
+        os.system('sudo shutdown -h now')
         time.sleep(5)
     else:
         os.system('sudo shutdown -h now')
@@ -306,9 +306,8 @@ def write_picochess_ini(key: str, value):
 
 
 def get_engine_mame_par(engine_rspeed: float, engine_rsound=False) -> str:
-    if engine_rspeed <= 0.1:
-        engine_mame_par = '-speed ' + '30'
-        """engine_mame_par = '-nothrottle' no longer warks with our newest mame"""
+    if engine_rspeed < 0.01:
+        engine_mame_par = '-nothrottle'
     else:
         engine_mame_par = '-speed ' + str(engine_rspeed)
     if not engine_rsound:
