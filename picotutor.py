@@ -78,11 +78,7 @@ class PicoTutor:
 
         try:
             with open("chess-eco_pos.txt") as fp:
-                self.book_data = list(
-                    csv.DictReader(
-                        filter(lambda row: row[0] != "#", fp.readlines()), delimiter="|"
-                    )
-                )
+                self.book_data = list(csv.DictReader(filter(lambda row: row[0] != "#", fp.readlines()), delimiter="|"))
         except EnvironmentError:
             self.book_data = []
 
@@ -108,9 +104,7 @@ class PicoTutor:
                 self.comment_no = len(self.comments)
 
         try:
-            general_comment_file = (
-                "/opt/picochess/engines/armv7l/general_game_comments_" + i_lang + ".txt"
-            )
+            general_comment_file = "/opt/picochess/engines/armv7l/general_game_comments_" + i_lang + ".txt"
             with open(general_comment_file) as fp:
                 self.comments_all = fp.readlines()
         except Exception:
@@ -314,7 +308,6 @@ class PicoTutor:
         self.expl_start_position = True
 
     def set_user_color(self, i_user_color):
-
         self.pause()
         self.history = []
         self.history2 = []
@@ -542,7 +535,6 @@ class PicoTutor:
         best_score = -999
 
         for pv_key, pv_list in pv_list.items():
-        
             try:
                 if info_handler.info["score"][pv_key]:
                     score_val = info_handler.info["score"][pv_key]
@@ -581,7 +573,7 @@ class PicoTutor:
 
             # collect possible good alternative moves
             self.legal_moves.sort(key=self.sort_score, reverse=True)
-            for (pv_key, move, score, mate) in self.legal_moves:
+            for pv_key, move, score, mate in self.legal_moves:
                 if move:
                     diff = abs(best_score - score)
                     if diff <= 0.2:
@@ -635,16 +627,12 @@ class PicoTutor:
 
         # best deep engine score/move
         if self.legal_moves:
-            best_pv, best_move, best_score, best_mate = self.legal_moves[
-                0
-            ]  # tupel (pv,move,score,mate)
+            best_pv, best_move, best_score, best_mate = self.legal_moves[0]  # tupel (pv,move,score,mate)
 
         # calculate diffs based on low depth search for obvious moves
         if len(self.history2) > 0:
             try:
-                low_pv, low_move, low_score, low_mate = self.history2[
-                    -1
-                ]  # last evaluation = for current user move
+                low_pv, low_move, low_score, low_mate = self.history2[-1]  # last evaluation = for current user move
             except IndexError:
                 low_score = 0.0
                 eval_string = ""
@@ -677,11 +665,7 @@ class PicoTutor:
             eval_string = "?"
 
         # Dubious
-        elif (
-            best_deep_diff > c.DUBIOUS_TH
-            and abs(deep_low_diff) > c.UNCLEAR_DIFF
-            and score_hist_diff > c.POS_INCREASE
-        ):
+        elif best_deep_diff > c.DUBIOUS_TH and abs(deep_low_diff) > c.UNCLEAR_DIFF and score_hist_diff > c.POS_INCREASE:
             eval_string = "?!"
 
         ###############################################################
@@ -697,9 +681,7 @@ class PicoTutor:
                 eval_string2 = "!!"
 
         # good move
-        elif (
-            best_deep_diff <= c.GOOD_MOVE_TH and deep_low_diff > c.GOOD_IMPROVE_TH and legal_no > 1
-        ):
+        elif best_deep_diff <= c.GOOD_MOVE_TH and deep_low_diff > c.GOOD_IMPROVE_TH and legal_no > 1:
             eval_string2 = "!"
 
         # interesting move
