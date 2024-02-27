@@ -526,6 +526,8 @@ class PgnDisplay(DisplayMsg, threading.Thread):
                 self.user_name_orig = message.info["user_name"]
             if "user_elo" in message.info:
                 self.user_elo = message.info["user_elo"]
+            if "engine_elo" in message.info:
+                self.engine_elo = message.info["engine_elo"]
             if "rspeed" in message.info:
                 self.rspeed = message.info["rspeed"]
 
@@ -538,6 +540,8 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             self.old_level_name = self.level_name
             self.old_level_text = self.level_text
             self.old_engine_elo = self.engine_elo
+            if "engine_elo" in message.info:
+                self.engine_elo = message.info["engine_elo"]
 
         elif isinstance(message, Message.LEVEL):
             self.level_text = message.level_text
