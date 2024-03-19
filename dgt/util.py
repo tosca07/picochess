@@ -530,11 +530,12 @@ class SystemLoop(object):
 
 class Power(MyEnum):
     SHUT_DOWN = "B00_power_shut_down_menu"
+    EXIT = "B00_power_exit_menu"
     RESTART = "B00_power_restart_menu"
 
     @classmethod
     def items(cls):
-        return [Power.SHUT_DOWN, Power.RESTART]
+        return [Power.SHUT_DOWN, Power.EXIT, Power.RESTART]
 
 
 class PowerLoop(object):

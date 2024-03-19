@@ -140,8 +140,9 @@ class MenuState(object):
 
     SYS = 700000
     SYS_POWER = 705000
-    SYS_POWER_SHUT_DOWN = 706000
-    SYS_POWER_RESTART = 707000
+    SYS_POWER_SHUT_DOWN = 705100
+    SYS_POWER_EXIT = 705200
+    SYS_POWER_RESTART = 705300
     SYS_INFO = 710000
     SYS_INFO_VERS = 711000
     SYS_INFO_IP = 712000
@@ -1541,6 +1542,12 @@ class DgtMenu(object):
         self.state = MenuState.SYS_POWER_RESTART
         text = self.dgttranslate.text(self.menu_system_power.value)
         return text
+        
+    def enter_sys_power_exit_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.SYS_POWER_EXIT
+        text = self.dgttranslate.text(self.menu_system_power.value)
+        return text
 
     def enter_sys_info_menu(self):
         """Set the menu state."""
@@ -1700,7 +1707,7 @@ class DgtMenu(object):
 
     def _set_volume_voice(self, volume_factor):
         """Set the Volume-Voice."""
-        factor = str(volume_factor * 5 + 50)
+        factor = str(volume_factor * 5 + 20)
         for channel in ("Headphone", "Master", "HDMI", "PCM"):
             volume_cmd = f"amixer sset {channel} {factor}%"
             logger.debug(volume_cmd)
@@ -1990,6 +1997,9 @@ class DgtMenu(object):
             text = self.enter_sys_power_menu()
 
         elif self.state == MenuState.SYS_POWER_RESTART:
+            text = self.enter_sys_power_menu()
+
+        elif self.state == MenuState.SYS_POWER_EXIT:
             text = self.enter_sys_power_menu()
 
         elif self.state == MenuState.SYS_INFO:
@@ -2849,6 +2859,8 @@ class DgtMenu(object):
                 text = self.enter_sys_power_shut_down_menu()
             if self.menu_system_power == Power.RESTART:
                 text = self.enter_sys_power_restart_menu()
+            if self.menu_system_power == Power.EXIT:
+                text = self.enter_sys_power_exit_menu()
 
         elif self.state == MenuState.SYS_POWER_SHUT_DOWN:
             text = self.dgttranslate.text("B10_power_shut_down_menu")
@@ -2857,6 +2869,10 @@ class DgtMenu(object):
         elif self.state == MenuState.SYS_POWER_RESTART:
             text = self.dgttranslate.text("B10_power_restart_menu")
             self._fire_event(Event.REBOOT(dev="menu"))
+            
+        elif self.state == MenuState.SYS_POWER_EXIT:
+            text = self.dgttranslate.text("B10_power_exit_menu")
+            self._fire_event(Event.EXIT(dev="menu"))
 
         elif self.state == MenuState.SYS_INFO:
             if self.menu_system_info == Info.VERSION:
@@ -3580,6 +3596,11 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_system_power.value)
 
         elif self.state == MenuState.SYS_POWER_RESTART:
+            self.state = MenuState.SYS_POWER_EXIT
+            self.menu_system_power = PowerLoop.prev(self.menu_system_power)
+            text = self.dgttranslate.text(self.menu_system_power.value)
+            
+        elif self.state == MenuState.SYS_POWER_EXIT:
             self.state = MenuState.SYS_POWER_SHUT_DOWN
             self.menu_system_power = PowerLoop.prev(self.menu_system_power)
             text = self.dgttranslate.text(self.menu_system_power.value)
@@ -4236,12 +4257,17 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_system.value)
 
         elif self.state == MenuState.SYS_POWER_SHUT_DOWN:
-            self.state = MenuState.SYS_POWER_RESTART
+            self.state = MenuState.SYS_POWER_EXIT
             self.menu_system_power = PowerLoop.next(self.menu_system_power)
             text = self.dgttranslate.text(self.menu_system_power.value)
 
         elif self.state == MenuState.SYS_POWER_RESTART:
             self.state = MenuState.SYS_POWER_SHUT_DOWN
+            self.menu_system_power = PowerLoop.next(self.menu_system_power)
+            text = self.dgttranslate.text(self.menu_system_power.value)
+            
+        elif self.state == MenuState.SYS_POWER_EXIT:
+            self.state = MenuState.SYS_POWER_RESTART
             self.menu_system_power = PowerLoop.next(self.menu_system_power)
             text = self.dgttranslate.text(self.menu_system_power.value)
 

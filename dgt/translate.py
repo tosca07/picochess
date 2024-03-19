@@ -3226,6 +3226,23 @@ class DgtTranslate(object):
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
+        if text_id == "power_exit_menu":
+            entxt = Dgt.DISPLAY_TEXT(
+                web_text="Exit PicoChess",
+                large_text="Exit Pico",
+                medium_text="Exit ",
+                small_text="exit",
+            )
+            detxt = Dgt.DISPLAY_TEXT(
+                web_text="PicoChess beenden",
+                large_text="Beenden",
+                medium_text="beenden",
+                small_text="ende",
+            )
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
         if text_id == "top_game_menu":
             entxt = Dgt.DISPLAY_TEXT(
                 web_text="",

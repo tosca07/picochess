@@ -65,6 +65,7 @@ class EventApi():
     SET_TIME_CONTROL = 'EVT_SET_TIME_CONTROL'  # User sets time control
     SHUTDOWN = 'EVT_SHUTDOWN'  # User wants to shutdown the machine
     REBOOT = 'EVT_REBOOT'  # User wants to reboot the machine
+    EXIT = 'EVT_EXIT' # User wants to exit picochess
     ALTERNATIVE_MOVE = 'EVT_ALTERNATIVE_MOVE'  # User wants engine to recalculate the position
     EMAIL_LOG = 'EVT_EMAIL_LOG'  # User want to send the log file by eMail
     SET_VOICE = 'EVT_SET_VOICE'  # User sets a new voice
@@ -152,6 +153,7 @@ class MessageApi():
     SWITCH_SIDES = 'MSG_SWITCH_SIDES'  # Forget the engines move, and let it be user's turn
     SYSTEM_SHUTDOWN = 'MSG_SYSTEM_SHUTDOWN'  # Sends a Shutdown
     SYSTEM_REBOOT = 'MSG_SYSTEM_REBOOT'  # Sends a Reboot
+    SYSTEM_EXIT = 'MSG_SYSTEM_EXIT'  # Sends an EXIT
     SET_VOICE = 'MSG_SET_VOICE'  # User chooses a new voice
     SHOW_ENGINENAME = 'MSG_SHOW_ENGINENAME'
     PICOWATCHER = 'MSG_PICOWATCHER'  # picowatcher on/off
@@ -276,6 +278,7 @@ class Message():
     SWITCH_SIDES = ClassFactory(MessageApi.SWITCH_SIDES, ['game', 'move'])
     SYSTEM_SHUTDOWN = ClassFactory(MessageApi.SYSTEM_SHUTDOWN, [])
     SYSTEM_REBOOT = ClassFactory(MessageApi.SYSTEM_REBOOT, [])
+    SYSTEM_EXIT = ClassFactory(MessageApi.SYSTEM_EXIT, [])
     SET_VOICE = ClassFactory(MessageApi.SET_VOICE, ['type', 'lang', 'speaker', 'speed'])
     SHOW_ENGINENAME = ClassFactory(MessageApi.SHOW_ENGINENAME, ['show_enginename'])
     PICOWATCHER = ClassFactory(MessageApi.PICOWATCHER, ['picowatcher'])
@@ -335,6 +338,7 @@ class Event():
     SET_TIME_CONTROL = ClassFactory(EventApi.SET_TIME_CONTROL, ['tc_init', 'time_text', 'show_ok'])
     SHUTDOWN = ClassFactory(EventApi.SHUTDOWN, ['dev'])
     REBOOT = ClassFactory(EventApi.REBOOT, ['dev'])
+    EXIT = ClassFactory(EventApi.EXIT, ['dev'])
     ALTERNATIVE_MOVE = ClassFactory(EventApi.ALTERNATIVE_MOVE, [])
     EMAIL_LOG = ClassFactory(EventApi.EMAIL_LOG, [])
     SET_VOICE = ClassFactory(EventApi.SET_VOICE, ['type', 'lang', 'speaker', 'speed'])
