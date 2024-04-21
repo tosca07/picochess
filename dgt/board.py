@@ -606,7 +606,7 @@ class DgtBoard(EBoard):
                     self.btctl.stdin.flush()
                     # get already-paired devices since BlueZ > 5.43 no longer lists already-paired
                     # devices when bluetoothctl is started in a shell
-                    self.btctl.stdin.write("paired-devices\n")
+                    self.btctl.stdin.write("devices Paired\n")
                     self.btctl.stdin.flush()
                 elif 'Discovering: yes' in self.bt_line:
                     self.bt_state = 4
