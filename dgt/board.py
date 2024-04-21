@@ -558,7 +558,7 @@ class DgtBoard(EBoard):
                 # get rid of old rfcomm
                 if path.exists('/dev/rfcomm123'):
                     logger.debug('BT releasing /dev/rfcomm123')
-                    subprocess.call(['rfcomm', 'release', '123'])
+                    subprocess.call(['sudo', 'rfcomm', 'release', '123'])
                     subprocess.call(['cat', '/dev/rfcomm123'])  # Lucas
                 self.bt_current_device = -1
                 self.bt_mac_list = []
@@ -675,7 +675,7 @@ class DgtBoard(EBoard):
             if self.bt_state == 6:
                 # now try rfcomm
                 self.bt_state = 7
-                self.bt_rfcomm = subprocess.Popen('rfcomm connect 123 ' + self.bt_mac_list[self.bt_current_device],
+                self.bt_rfcomm = subprocess.Popen('sudo rfcomm connect 123 ' + self.bt_mac_list[self.bt_current_device],
                                                   stdin=subprocess.PIPE,
                                                   stdout=subprocess.PIPE,
                                                   stderr=subprocess.PIPE,
