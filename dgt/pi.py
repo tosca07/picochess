@@ -23,7 +23,7 @@ from ctypes import cdll, c_byte, create_string_buffer, pointer
 from utilities import DisplayMsg, hms_time
 from dgt.api import Dgt, Message
 from dgt.util import ClockIcons, ClockSide
-from eboard import EBoard
+from eboard.eboard import EBoard
 from dgt.iface import DgtIface
 from dgt.board import Rev2Info
 from pgn import ModeInfo

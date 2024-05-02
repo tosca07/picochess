@@ -25,7 +25,7 @@ from serial import Serial, SerialException, STOPBITS_ONE, PARITY_NONE, EIGHTBITS
 import time
 from typing import List, Optional, Tuple
 
-from eboard import EBoard
+from eboard.eboard import EBoard
 from dgt.util import DgtAck, DgtClk, DgtCmd, DgtMsg, ClockIcons, ClockSide, enum
 from dgt.api import Message, Dgt
 from utilities import RepeatedTimer, DisplayMsg, hms_time

@@ -1707,7 +1707,7 @@ class DgtMenu(object):
 
     def _set_volume_voice(self, volume_factor):
         """Set the Volume-Voice."""
-        factor = str(volume_factor * 5 + 20)
+        factor = str(volume_factor * 5)
         for channel in ("Headphone", "Master", "HDMI", "PCM"):
             volume_cmd = f"amixer sset {channel} {factor}%"
             logger.debug(volume_cmd)
@@ -3724,7 +3724,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_system_voice.value)
 
         elif self.state == MenuState.SYS_VOICE_VOLUME_FACTOR:
-            self.menu_system_voice_volumefactor = (self.menu_system_voice_volumefactor - 1) % 11
+            self.menu_system_voice_volumefactor = (self.menu_system_voice_volumefactor - 1) % 21
             text = self.dgttranslate.text(
                 "B00_voice_volume", str(self.menu_system_voice_volumefactor)
             )
@@ -4390,7 +4390,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_system_voice.value)
 
         elif self.state == MenuState.SYS_VOICE_VOLUME_FACTOR:
-            self.menu_system_voice_volumefactor = (self.menu_system_voice_volumefactor + 1) % 11
+            self.menu_system_voice_volumefactor = (self.menu_system_voice_volumefactor + 1) % 21
             text = self.dgttranslate.text(
                 "B00_voice_volume", str(self.menu_system_voice_volumefactor)
             )

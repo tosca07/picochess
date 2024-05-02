@@ -23,7 +23,7 @@ from chess import Board  # type: ignore
 from utilities import DisplayDgt
 from dgt.util import ClockSide
 from dgt.api import Dgt
-from eboard import EBoard
+from eboard.eboard import EBoard
 from dgt.board import Rev2Info
 
 

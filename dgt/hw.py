@@ -20,7 +20,7 @@ from threading import Lock
 from utilities import hms_time
 from dgt.iface import DgtIface
 from dgt.util import ClockIcons, ClockSide
-from eboard import EBoard
+from eboard.eboard import EBoard
 from dgt.api import Dgt
 
 from pgn import ModeInfo

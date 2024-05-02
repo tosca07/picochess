@@ -4976,6 +4976,18 @@ class DgtTranslate(object):
             frtxt = entxt
             estxt = entxt
             ittxt = entxt
+        if text_id == "eboard_ichessone_menu":
+            entxt = Dgt.DISPLAY_TEXT(
+                web_text="",
+                large_text="iChessOne  ",
+                medium_text="iChess1 ",
+                small_text="ichess",
+            )
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
         if text_id == "eboard_noeboard_menu":
             entxt = Dgt.DISPLAY_TEXT(
                 web_text="no E-Board (Web-Play)",
