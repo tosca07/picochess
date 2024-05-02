@@ -30,11 +30,11 @@ import logging
 from logging.handlers import RotatingFileHandler
 import time
 import queue
-import configargparse  # type: ignore
 import paramiko
 import math
 from typing import Any, List, Optional, Set, Tuple
 
+from configuration import Configuration
 from uci.engine import UciShell, UciEngine
 from uci.engine_provider import EngineProvider
 from uci.rating import Rating, determine_result
@@ -74,11 +74,12 @@ from dgt.util import GameResult, TimeMode, Mode, PlayMode, PicoComment, PicoCoac
 from dgt.hw import DgtHw
 from dgt.pi import DgtPi
 from dgt.display import DgtDisplay
-from eboard import EBoard
+from eboard.eboard import EBoard
 from dgt.board import DgtBoard, Rev2Info
-from chesslink.board import ChessLinkBoard
-from chessnut.board import ChessnutBoard
-from certabo.board import CertaboBoard
+from eboard.chesslink.board import ChessLinkBoard
+from eboard.chessnut.board import ChessnutBoard
+from eboard.ichessone.board import IChessOneBoard
+from eboard.certabo.board import CertaboBoard
 from dgt.translate import DgtTranslate
 from dgt.menu import DgtMenu
 
@@ -2265,407 +2266,8 @@ def main() -> None:
                 pos960 = 518
                 Observable.fire(Event.NEW_GAME(pos960=pos960))
 
-    # Command line argument parsing
-    parser = configargparse.ArgParser(
-        default_config_files=[
-            os.path.join(os.path.dirname(__file__), "picochess.ini"),
-        ]
-    )
-    parser.add_argument(
-        "-e",
-        "--engine",
-        type=str,
-        help="UCI engine filename/path such as 'engines/aarch64/a-stockf'",
-        default=None,
-    )
-    parser.add_argument("-el", "--engine-level", type=str, help="UCI engine level", default=None)
-    parser.add_argument(
-        "-er",
-        "--engine-remote",
-        type=str,
-        help="UCI engine filename/path such as 'engines/aarch64/a-stockf'",
-        default=None,
-    )
-    parser.add_argument(
-        "-ers",
-        "--engine-remote-server",
-        type=str,
-        help="address of the remote engine server",
-        default=None,
-    )
-    parser.add_argument(
-        "-eru", "--engine-remote-user", type=str, help="username for the remote engine server"
-    )
-    parser.add_argument(
-        "-erp", "--engine-remote-pass", type=str, help="password for the remote engine server"
-    )
-    parser.add_argument(
-        "-erk", "--engine-remote-key", type=str, help="key file for the remote engine server"
-    )
-    parser.add_argument(
-        "-erh",
-        "--engine-remote-home",
-        type=str,
-        help="engine home path for the remote engine server",
-        default="",
-    )
-    parser.add_argument(
-        "-d",
-        "--dgt-port",
-        type=str,
-        help="enable dgt board on the given serial port such as '/dev/ttyUSB0'",
-    )
-    parser.add_argument(
-        "-b",
-        "--book",
-        type=str,
-        help="path of book such as 'books/b-flank.bin'",
-        default="books/h-varied.bin",
-    )
-    parser.add_argument(
-        "-t",
-        "--time",
-        type=str,
-        default="5 0",
-        help="Time settings <FixSec> or <StMin IncSec> like '10'(move) or '5 0'(game) or '3 2'(fischer) or '40 120 60' (tournament). \
-                        All values must be below 999",
-    )
-    parser.add_argument(
-        "-dept",
-        "--depth",
-        type=int,
-        default=0,
-        choices=range(0, 99),
-        help="searchdepth per move for the engine",
-    )
-    parser.add_argument(
-        "-node",
-        "--node",
-        type=int,
-        default=0,
-        choices=range(0, 99),
-        help="search nodes per move for the engine",
-    )
-    parser.add_argument(
-        "-norl", "--disable-revelation-leds", action="store_true", help="disable Revelation leds"
-    )
-    parser.add_argument(
-        "-l",
-        "--log-level",
-        choices=["notset", "debug", "info", "warning", "error", "critical"],
-        default="warning",
-        help="logging level",
-    )
-    parser.add_argument("-lf", "--log-file", type=str, help="log to the given file")
-    parser.add_argument(
-        "-pf", "--pgn-file", type=str, help="pgn file used to store the games", default="games.pgn"
-    )
-    parser.add_argument(
-        "-pu", "--pgn-user", type=str, help="user name for the pgn file", default=None
-    )
-    parser.add_argument(
-        "-pe",
-        "--pgn-elo",
-        type=str,
-        help="user elo for the pgn file, also used for auto-adjusting the elo",
-        default="-",
-    )
-    parser.add_argument(
-        "-w",
-        "--web-server",
-        dest="web_server_port",
-        nargs="?",
-        const=80,
-        type=int,
-        metavar="PORT",
-        help="launch web server",
-    )
-    parser.add_argument(
-        "-m", "--email", type=str, help="email used to send pgn/log files", default=None
-    )
-    parser.add_argument(
-        "-ms", "--smtp-server", type=str, help="address of email server", default=None
-    )
-    parser.add_argument(
-        "-mu", "--smtp-user", type=str, help="username for email server", default=None
-    )
-    parser.add_argument(
-        "-mp", "--smtp-pass", type=str, help="password for email server", default=None
-    )
-    parser.add_argument(
-        "-me",
-        "--smtp-encryption",
-        action="store_true",
-        help="use ssl encryption connection to email server",
-    )
-    parser.add_argument(
-        "-mf", "--smtp-from", type=str, help="From email", default="no-reply@picochess.org"
-    )
-    parser.add_argument(
-        "-mk",
-        "--mailgun-key",
-        type=str,
-        help="key used to send emails via Mailgun Webservice",
-        default=None,
-    )
-    parser.add_argument(
-        "-bc",
-        "--beep-config",
-        choices=["none", "some", "all", "sample"],
-        help="sets standard beep config",
-        default="some",
-    )
-    parser.add_argument(
-        "-bs",
-        "--beep-some-level",
-        type=int,
-        default=0x03,
-        help="sets (some-)beep level from 0(=no beeps) to 15(=all beeps)",
-    )
-    parser.add_argument("-uv", "--user-voice", type=str, help="voice for user", default=None)
-    parser.add_argument(
-        "-cv", "--computer-voice", type=str, help="voice for computer", default=None
-    )
-    parser.add_argument(
-        "-sv",
-        "--speed-voice",
-        type=int,
-        help="voice speech factor from 0(=90%%) to 9(=135%%)",
-        default=2,
-        choices=range(0, 10),
-    )
-    parser.add_argument(
-        "-vv",
-        "--volume-voice",
-        type=int,
-        help="voice volume factor from 0(=50%%) to 10(=100%%)",
-        default=10,
-        choices=range(0, 11),
-    )
-    parser.add_argument(
-        "-sp",
-        "--enable-setpieces-voice",
-        action="store_true",
-        help="speak last computer move again when 'set pieces' displayed",
-    )
-    parser.add_argument(
-        "-u", "--enable-update", action="store_true", help="enable picochess updates"
-    )
-    parser.add_argument(
-        "-ur", "--enable-update-reboot", action="store_true", help="reboot system after update"
-    )
-    parser.add_argument(
-        "-nocm",
-        "--disable-confirm-message",
-        action="store_true",
-        help="disable confirmation messages",
-    )
-    parser.add_argument(
-        "-v",
-        "--version",
-        action="version",
-        version="%(prog)s version {}".format(version),
-        help="show current version",
-        default=None,
-    )
-    parser.add_argument("-pi", "--dgtpi", action="store_true", help="use the DGTPi hardware")
-    parser.add_argument(
-        "-csd",
-        "--clockside",
-        choices=["left", "right"],
-        default="left",
-        help="side on which you put your DGTPI/DGT3000",
-    )
-    parser.add_argument(
-        "-pt",
-        "--ponder-interval",
-        type=int,
-        default=3,
-        choices=range(1, 9),
-        help="how long each part of ponder display should be visible (default=3secs)",
-    )
-    parser.add_argument(
-        "-lang",
-        "--language",
-        choices=["en", "de", "nl", "fr", "es", "it"],
-        default="en",
-        help="picochess language",
-    )
-    parser.add_argument(
-        "-c", "--enable-console", action="store_true", help="use console interface"
-    )
-    parser.add_argument(
-        "-cl",
-        "--enable-capital-letters",
-        action="store_true",
-        help="clock messages in capital letters",
-    )
-    parser.add_argument(
-        "-noet",
-        "--disable-et",
-        action="store_true",
-        help="some clocks need this to work - deprecated",
-    )
-    parser.add_argument(
-        "-ss",
-        "--slow-slide",
-        type=int,
-        default=0,
-        choices=range(0, 10),
-        help="extra wait time factor for a stable board position (sliding detect)",
-    )
-    parser.add_argument(
-        "-nosn", "--disable-short-notation", action="store_true", help="disable short notation"
-    )
-    parser.add_argument(
-        "-comf",
-        "--comment-factor",
-        type=int,
-        help="comment factor from 0 to 100 for voice and written commands",
-        default=100,
-        choices=range(0, 101),
-    )
-    parser.add_argument(
-        "-roln",
-        "--rolling-display-normal",
-        action="store_true",
-        help="switch on rolling display normal mode",
-    )
-    parser.add_argument(
-        "-rolp",
-        "--rolling-display-ponder",
-        action="store_true",
-        help="switch on rolling display ponder mode",
-    )
-    parser.add_argument(
-        "-flex",
-        "--flexible-analysis",
-        action="store_false",
-        help="switch off flexible analysis mode",
-    )
-    parser.add_argument(
-        "-prem", "--premove", action="store_false", help="switch off premove detection"
-    )
-    parser.add_argument(
-        "-ctga",
-        "--continue-game",
-        action="store_true",
-        help="continue last game after (re)start of picochess",
-    )
-    parser.add_argument(
-        "-seng",
-        "--show-engine",
-        action="store_false",
-        help="show engine after startup and new game",
-    )
-    parser.add_argument(
-        "-teng",
-        "--tutor-engine",
-        type=str,
-        default="/opt/picochess/engines/aarch64/a-stockf",
-        help="engine used for PicoTutor analysis",
-    )
-    parser.add_argument(
-        "-watc",
-        "--tutor-watcher",
-        action="store_true",
-        help="Pico Watcher: atomatic move evaluation, blunder warning & move suggestion, default is off",
-    )
-    parser.add_argument(
-        "-coch",
-        "--tutor-coach",
-        choices=["on", "off", "lift"],
-        default="off",
-        help="Pico Coach: move and position evaluation, move suggestion etc. on demand, default is off, when selecting lift you can trigger the coach by lifting and putting back a piece",
-    )
-    parser.add_argument(
-        "-open",
-        "--tutor-explorer",
-        action="store_true",
-        help="Pico Opening Explorer: shows the name(s) of the opening (based on ECO file), default is off",
-    )
-    parser.add_argument(
-        "-tcom",
-        "--tutor-comment",
-        type=str,
-        default="off",
-        help="show game comments based on specific engines (=single) or in general (=all). Default value is off",
-    )
-    parser.add_argument(
-        "-loc",
-        "--location",
-        type=str,
-        default="auto",
-        help="determine automatically location for pgn file if set to auto, otherwise the location string which is set will be used",
-    )
-    parser.add_argument(
-        "-dtcs",
-        "--def-timectrl",
-        type=str,
-        default="5 0",
-        help="default time control setting when leaving an emulation engine after startup",
-    )
-    parser.add_argument(
-        "-altm",
-        "--alt-move",
-        action="store_true",
-        help="Playing direct alternative move for pico: default is off",
-    )
-    parser.add_argument(
-        "-odec",
-        "--online-decrement",
-        type=float,
-        default=2.0,
-        help="Seconds to be subtracted after each own online move in order to sync with server times",
-    )
-    parser.add_argument(
-        "-board",
-        "--board-type",
-        type=str,
-        default="dgt",
-        help='Type of e-board: "dgt", "certabo", "chesslink", "chessnut" or "noeboard" (for basic web-play only), default is "dgt"',
-    )
-    parser.add_argument(
-        "-theme",
-        "--theme",
-        type=str,
-        default="dark",
-        help='Web theme, "light", "dark" , "time", "auto" or blank, default is "dark", leave blank for another light theme, "time" for a change according to a fixed time or "auto" for a sunrise/sunset dependent theme setting',
-    )
-    parser.add_argument(
-        "-rspeed",
-        "--rspeed",
-        type=str,
-        default="1.0",
-        help="RetroSpeed factor for mame eingines, 0.0 for fullspeed, 1.0 for original speed, 0.5 for half of the original speed or any other value from 0.0 to 7.0",
-    )
-    parser.add_argument(
-        "-ratdev",
-        "--rating-deviation",
-        type=str,
-        help="Player rating deviation for automatic adjustment of ELO",
-        default=350,
-    )
-    parser.add_argument(
-        "-rsound",
-        "--rsound",
-        action="store_true",
-        help="en/disable retro engine sound (default is off)",
-    )
-    parser.add_argument(
-        "-rwind",
-        "--rwindow",
-        action="store_true",
-        help="en/disable window mode for retro display (default is on, disabling means fullscreen)",
-    )
-    parser.add_argument(
-        "-rdisp",
-        "--rdisplay",
-        action="store_true",
-        help="en/disable retro engine artwork display (default is false)",
-    )
-
-    args, unknown = parser.parse_known_args()
+    config = Configuration()
+    args, unknown = config._args, config.unknown
 
     # Enable logging
     if args.log_file:
@@ -2716,6 +2318,8 @@ def main() -> None:
         dgtboard: EBoard = ChessLinkBoard()
     elif board_type == dgt.util.EBoard.CHESSNUT:
         dgtboard = ChessnutBoard()
+    elif board_type == dgt.util.EBoard.ICHESSONE:
+        dgtboard = IChessOneBoard()
     elif board_type == dgt.util.EBoard.CERTABO:
         dgtboard = CertaboBoard()
     else:
@@ -2741,7 +2345,7 @@ def main() -> None:
         args.log_file,
         args.engine_remote_server,
         args.rolling_display_normal,
-        max(0, min(10, args.volume_voice)),
+        max(0, min(20, args.volume_voice)),
         board_type,
         args.theme,
         round(float(args.rspeed), 2),

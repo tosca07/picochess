@@ -16,7 +16,7 @@ class Configuration:
             "-e",
             "--engine",
             type=str,
-            help="UCI engine filename/path such as 'engines/armv7l/a-stockf'",
+            help="UCI engine filename/path such as 'engines/aarch64/a-stockf'",
             default=None,
         )
         self.parser.add_argument("-el", "--engine-level", type=str, help="UCI engine level", default=None)
@@ -24,7 +24,7 @@ class Configuration:
             "-er",
             "--engine-remote",
             type=str,
-            help="UCI engine filename/path such as 'engines/armv7l/a-stockf'",
+            help="UCI engine filename/path such as 'engines/aarch64/a-stockf'",
             default=None,
         )
         self.parser.add_argument(
@@ -179,9 +179,9 @@ class Configuration:
             "-vv",
             "--volume-voice",
             type=int,
-            help="voice volume factor from 0(=50%%) to 10(=100%%)",
-            default=10,
-            choices=range(0, 11),
+            help="voice volume factor from 0(=muted) to 20(=100%%)",
+            default=14,
+            choices=range(0, 21),
         )
         self.parser.add_argument(
             "-sp",
@@ -303,7 +303,7 @@ class Configuration:
             "-teng",
             "--tutor-engine",
             type=str,
-            default="/opt/picochess/engines/armv7l/a-stockf",
+            default="/opt/picochess/engines/aarch64/a-stockf",
             help="engine used for PicoTutor analysis",
         )
         self.parser.add_argument(
@@ -364,7 +364,7 @@ class Configuration:
             "--board-type",
             type=str,
             default="dgt",
-            help='Type of e-board: "dgt", "certabo", "chesslink", "chessnut" or "noeboard" (for basic web-play only), default is "dgt"',
+            help='Type of e-board: "dgt", "certabo", "chesslink", "chessnut", "ichessone" or "noeboard" (for basic web-play only), default is "dgt"',
         )
         self.parser.add_argument(
             "-theme",

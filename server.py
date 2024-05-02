@@ -35,7 +35,7 @@ from web.picoweb import picoweb as pw
 from dgt.api import Dgt, Event, Message
 from dgt.util import PlayMode, Mode, ClockSide, GameResult
 from dgt.iface import DgtIface
-from eboard import EBoard
+from eboard.eboard import EBoard
 from pgn import ModeInfo
 
 # This needs to be reworked to be session based (probably by token)
@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 def read_pgn_info():
     info = {}
     try:
-        with open("pgn_game_info.txt") as info_file:
+        with open("/opt/picochess/engines/aarch64/extra/pgn_game_info.txt") as info_file:
             for line in info_file:
                 name, value = line.partition("=")[::2]
                 info[name.strip()] = value.strip()
