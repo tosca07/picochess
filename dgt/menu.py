@@ -3134,12 +3134,23 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_EBOARD_TYPE:
             eboard_type = self.menu_system_eboard_type.name.lower()
-            write_picochess_ini("board-type", eboard_type)
-            text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okeboard"))
-            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
-            if eboard_type != self.current_board_type:
-                # only reboot if e-board type is different from the current e-board type
-                self._fire_event(Event.REBOOT(dev="menu"))
+            if "noeboard" in eboard_type:
+                if self.int_ip is None and not Rev2Info.get_web_only():
+                    self.enter_top_menu()
+                    return False
+                write_picochess_ini("board-type", eboard_type)
+                text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okeboard"))
+                self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+                if eboard_type != self.current_board_type:
+                    # only reboot if e-board type is different from the current e-board type
+                    self._fire_event(Event.REBOOT(dev="menu"))
+            else:
+                write_picochess_ini("board-type", eboard_type)
+                text = self._fire_dispatchdgt(self.dgttranslate.text("B10_okeboard"))
+                self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+                if eboard_type != self.current_board_type:
+                    # only reboot if e-board type is different from the current e-board type
+                    self._fire_event(Event.REBOOT(dev="menu"))
 
         elif self.state == MenuState.SYS_THEME:
             text = self.enter_sys_theme_type_menu()
