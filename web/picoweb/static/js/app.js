@@ -1,4 +1,5 @@
-// if you don't want the last move of each player side to be "highlighted", set the variable highlight_move to
+
+,// if you don't want the last move of each player side to be "highlighted", set the variable highlight_move to
 // HIGHLIGHT_OFF
 const HIGHLIGHT_OFF = 0;
 const HIGHLIGHT_ON = 1;
@@ -39,24 +40,33 @@ var simpleNags = {
     '142': '&#8979',
     '146': 'N'
 };
-var myvoice = "";
-var voices = speechSynthesis.getVoices();
-/* for Safari we need to pick an English voice explicitly, otherwise the system default is used */
-for (i = 0; i < voices.length; i++) {
-    if (voices[i].lang == "en-US") {
-        myvoice = voices[i];
-        break;
+var speechAvailable = true
+ if (typeof speechSynthesis === "undefined") {
+     speechAvailable = false
+ }
+ if (speechAvailable) {
+     var myvoice = "";
+     var voices = speechSynthesis.getVoices();
+     // for Safari we need to pick an English voice explicitly, otherwise the system default is used
+     for (i = 0; i < voices.length; i++) {
+         if (voices[i].lang == "en-US") {
+             myvoice = voices[i];
+             break;
+         }
+     }
+ }
+
+function talk(text) {
+    if (speechAvailable) {
+        var msg = new SpeechSynthesisUtterance(text);
+        msg.lang = "en-US";
+        if (myvoice != "") {
+            msg.voice = myvoice;
+        }
+        window.speechSynthesis.speak(msg);
     }
 }
 
-function talk(text) {
-    var msg = new SpeechSynthesisUtterance(text);
-    msg.lang = "en-US";
-    if (myvoice != "") {
-        msg.voice = myvoice;
-    }
-    window.speechSynthesis.speak(msg);
-}
 talk("Hello, welcome to Picochess!");
 
 function saymove(move, board) {
