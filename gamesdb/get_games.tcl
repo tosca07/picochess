@@ -29,7 +29,7 @@ proc search {fen} {
     # initialize gameNum with the first game in the filter
     set gameNum [sc_filter first]
     set i 0
-    set MAX_GAMES 5
+    set MAX_GAMES 50
     while {$gameNum != 0 && $i < $MAX_GAMES} {
         incr i
         # load game
