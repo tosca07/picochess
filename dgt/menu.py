@@ -1709,7 +1709,7 @@ class DgtMenu(object):
         """Set the Volume-Voice."""
         factor = str(volume_factor * 5)
         for channel in ("Headphone", "Master", "HDMI", "PCM"):
-            volume_cmd = f"amixer sset {channel} {factor}%"
+            volume_cmd = f"amixer -M sset {channel} {factor}%"
             logger.debug(volume_cmd)
             result = subprocess.run(
                 volume_cmd,
