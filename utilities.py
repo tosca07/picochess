@@ -39,7 +39,7 @@ from configobj import ConfigObj, ConfigObjError, DuplicateError  # type: ignore
 from typing import Optional
 
 # picochess version
-version = '3.3'
+version = '3.2'
 
 evt_queue: queue.Queue = queue.Queue()
 dispatch_queue: queue.Queue = queue.Queue()
@@ -237,7 +237,13 @@ def update_picochess(dgtpi: bool, auto_reboot: bool, dgttranslate: DgtTranslate)
 def shutdown(dgtpi: bool, dev: str):
     """Shutdown picochess."""
     logging.debug('shutting down system requested by (%s)', dev)
-    time.sleep(5)  # give some time to send out the pgn file or speak the event
+    
+    try:
+        subprocess.run(['python3', 'home/pi/drupebox/drupebox.py'])
+    except FileNotFoundError:
+        pass
+
+    time.sleep(10)  # give some time to send out the pgn file or speak the event
     if platform.system() == 'Windows':
         os.system('shutdown /s')
     elif dgtpi:
@@ -251,7 +257,12 @@ def shutdown(dgtpi: bool, dev: str):
 def exit(dgtpi: bool, dev: str):
     """exit picochess."""
     logging.debug('exit picochess requested by (%s)', dev)
-    time.sleep(5)  # give some time to send out the pgn file or speak the event
+    try:
+        subprocess.run(['python3', '/home/pi/drupebox/drupebox.py'])
+    except FileNotFoundError:
+        pass
+      
+    time.sleep(10)  # give some time to send out the pgn file or speak the event
     if platform.system() == 'Windows':
         os.system('sudo pkill -f chromium')
         os.system('sudo systemctl stop picochess')
@@ -270,7 +281,11 @@ def exit(dgtpi: bool, dev: str):
 def reboot(dgtpi: bool, dev: str):
     """Reboot picochess."""
     logging.debug('rebooting system requested by (%s)', dev)
-    time.sleep(5)  # give some time to send out the pgn file or speak the event
+    try:
+        subprocess.run(['python3', '/home/pi/drupebox/drupebox.py'])
+    except FileNotFoundError:
+        pass
+    time.sleep(10)  # give some time to send out the pgn file or speak the event
     if platform.system() == 'Windows':
         os.system('shutdown /r')
     elif dgtpi:
