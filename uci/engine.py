@@ -33,6 +33,7 @@ from utilities import write_picochess_ini
 
 UCI_ELO = "UCI_Elo"
 UCI_ELO_NON_STANDARD = "UCI Elo"
+UCI_ELO_NON_STANDARD2 = "UCI_Limit"
 
 logger = logging.getLogger(__name__)
 
@@ -374,6 +375,8 @@ class UciEngine(object):
             uci_elo_option_string = UCI_ELO
         elif UCI_ELO_NON_STANDARD in self.options:
             uci_elo_option_string = UCI_ELO_NON_STANDARD
+        elif UCI_ELO_NON_STANDARD2 in self.options:
+            uci_elo_option_string = UCI_ELO_NON_STANDARD2
         if uci_elo_option_string is not None:
             uci_elo_option = self.options[uci_elo_option_string].strip()
             if uci_elo_option.lower() == "auto" and rating is not None:
@@ -424,6 +427,8 @@ class UciEngine(object):
             self.options[UCI_ELO] = str(int(self.engine_rating))
         elif UCI_ELO_NON_STANDARD in self.options:
             self.options[UCI_ELO_NON_STANDARD] = str(int(self.engine_rating))
+        elif UCI_ELO_NON_STANDARD2 in self.options:
+            self.options[UCI_ELO_NON_STANDARD2] = str(int(self.engine_rating))
 
     def _save_rating(self, new_rating: Rating):
         write_picochess_ini("pgn-elo", max(500, int(new_rating.rating)))
