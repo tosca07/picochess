@@ -2832,16 +2832,10 @@ class DgtTranslate(object):
             ittxt = entxt
         if text_id == "engine_menu_favorites":
             entxt = Dgt.DISPLAY_TEXT(
-                web_text="Favorites",
-                large_text="Favorites",
-                medium_text="Favorite",
-                small_text="favor.",
+                web_text='Special & Historical Engines', large_text='Special Eng', medium_text='Special', small_text='specl'
             )
             detxt = Dgt.DISPLAY_TEXT(
-                web_text="Favoriten",
-                large_text="Favoriten",
-                medium_text="Favorite",
-                small_text="Favor.",
+                web_text='Spezial & historische Engines', large_text='Spezial Eng', medium_text='Special', small_text='Spezl.'
             )
             nltxt = Dgt.DISPLAY_TEXT(
                 web_text="Favorieten",
@@ -3069,6 +3063,18 @@ class DgtTranslate(object):
                 large_text="Speed " + msg,
                 medium_text="speed   " + msg,
                 small_text="speed" + msg,
+            )
+            detxt = entxt
+            nltxt = entxt
+            frtxt = entxt
+            estxt = entxt
+            ittxt = entxt
+        if text_id == "okrdisplay":
+            entxt = Dgt.DISPLAY_TEXT(
+                web_text="ok Retro-Display",
+                large_text="ok R-Displ",
+                medium_text="ok displ",
+                small_text="ok",
             )
             detxt = entxt
             nltxt = entxt
