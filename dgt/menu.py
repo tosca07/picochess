@@ -1,4 +1,4 @@
-# Copyright (C) 2013-2018 Jean-Francois Romang (jromang@posteo.de)
+x# Copyright (C) 2013-2018 Jean-Francois Romang (jromang@posteo.de)
 #                         Shivkumar Shivaji ()
 #                         Jürgen Précour (LocutusOfPenguin@posteo.de)
 #
@@ -166,18 +166,18 @@ class MenuState(object):
     SYS_VOICE_VOLUME = 754000
     SYS_VOICE_VOLUME_FACTOR = 754100
     SYS_DISP = 760000
-    SYS_DISP_CLOCKSIDE = 766000
-    SYS_DISP_CLOCKSIDE_LEFTRIGHT = 766100
-    SYS_DISP_CONFIRM = 761000
-    SYS_DISP_CONFIRM_YESNO = 761100  # yes,no
-    SYS_DISP_PONDER = 762000
-    SYS_DISP_PONDER_INTERVAL = 762100  # 1-8
-    SYS_DISP_CAPITAL = 763000
-    SYS_DISP_CAPTIAL_YESNO = 763100  # yes, no
-    SYS_DISP_NOTATION = 764000
-    SYS_DISP_NOTATION_MOVE = 764100  # short, long
-    SYS_DISP_ENGINENAME = 765000  # molli v3
-    SYS_DISP_ENGINENAME_YESNO = 765100  # yes,no
+    SYS_DISP_CLOCKSIDE = 761000
+    SYS_DISP_CLOCKSIDE_LEFTRIGHT = 761100
+    SYS_DISP_CONFIRM = 762000
+    SYS_DISP_CONFIRM_YESNO = 762100  # yes,no
+    SYS_DISP_PONDER = 763000
+    SYS_DISP_PONDER_INTERVAL = 763100  # 1-8
+    SYS_DISP_CAPITAL = 764000
+    SYS_DISP_CAPTIAL_YESNO = 764100  # yes, no
+    SYS_DISP_NOTATION = 765000
+    SYS_DISP_NOTATION_MOVE = 765100  # short, long
+    SYS_DISP_ENGINENAME = 766000  # molli v3
+    SYS_DISP_ENGINENAME_YESNO = 766100  # yes,no
     SYS_EBOARD = 770000
     SYS_EBOARD_TYPE = 771000  # dgt, chesslink, ...
     SYS_THEME = 780000
