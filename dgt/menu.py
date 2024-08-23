@@ -3773,7 +3773,7 @@ class DgtMenu(object):
             )
 
         elif self.state == MenuState.SYS_DISP_CONFIRM:
-            self.state = MenuState.SYS_DISP_CLOCKSIDE
+            self.state = MenuState.SYS_DISP_PONDER
             self.menu_system_display = DisplayLoop.prev(self.menu_system_display)
             text = self.dgttranslate.text(self.menu_system_display.value)
 
@@ -4412,7 +4412,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_system.value)
 
         elif self.state == MenuState.SYS_DISP_CLOCKSIDE:
-            self.state = MenuState.SYS_DISP_CONFIRM
+            self.state = MenuState.SYS_DISP_PONDER
             self.menu_system_display = DisplayLoop.next(self.menu_system_display)
             text = self.dgttranslate.text(self.menu_system_display.value)
 
@@ -4426,7 +4426,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text("B00_clockside_" + msg)
 
         elif self.state == MenuState.SYS_DISP_PONDER:
-            self.state = MenuState.SYS_DISP_CLOCKSIDE
+            self.state = MenuState.SYS_DISP_CONFIRM
             self.menu_system_display = DisplayLoop.next(self.menu_system_display)
             text = self.dgttranslate.text(self.menu_system_display.value)
 
@@ -4469,7 +4469,7 @@ class DgtMenu(object):
             text = self.dgttranslate.text("B00_capital_" + msg)
 
         elif self.state == MenuState.SYS_DISP_NOTATION:
-            self.state = MenuState.SYS_DISP_PONDER
+            self.state = MenuState.SYS_DISP_CLOCKSIDE
             self.menu_system_display = DisplayLoop.next(self.menu_system_display)
             text = self.dgttranslate.text(self.menu_system_display.value)
 
