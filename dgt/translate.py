@@ -23,8 +23,8 @@
 #
 
 import logging
-from dgt.util import Beep, BeepLevel # type: ignore
-from dgt.api import Dgt # type: ignore
+from dgt.util import Beep, BeepLevel
+from dgt.api import Dgt
 
 
 logger = logging.getLogger(__name__)
@@ -76,7 +76,7 @@ class DgtTranslate(object):
         """Set capital letters."""
         self.capital = capital
 
-    def capital_text(self, text: Dgt.DISPLAY_TEXT) -> Dgt.DISPLAY_TEXT: # type: ignore
+    def capital_text(self, text: Dgt.DISPLAY_TEXT) -> Dgt.DISPLAY_TEXT:
         """Transfer text to capital text or not."""
         if self.capital:
             text.web_text = text.web_text.upper()
@@ -894,7 +894,7 @@ class DgtTranslate(object):
                     small_text=m_msg[:6],
                 )
                 detxt = Dgt.DISPLAY_TEXT(
-                    web_text=w_msg_g[:38],
+                    web_text=l_msg_g[:38],
                     large_text=l_msg_g[:11],
                     medium_text=m_msg_g[:8],
                     small_text=m_msg_g[:6],
@@ -1392,7 +1392,7 @@ class DgtTranslate(object):
                 medium_text="seeking ",
                 small_text="seek..",
             )
-            entxt = Dgt.DISPLAY_TEXT(
+            ittxt = Dgt.DISPLAY_TEXT(
                 web_text="Ricerca in corso... ",
                 large_text="Ricerca... ",
                 medium_text="Ricerca ",
@@ -2283,10 +2283,10 @@ class DgtTranslate(object):
         if text_id == "okpico":
             wait = True
             entxt = Dgt.DISPLAY_TEXT(
-                web_text="Ok Pico",
-                large_text="ok Pico    ",
-                medium_text="ok Pico ",
-                small_text="OkPico",
+                web_text="",
+                large_text="ok pico    ",
+                medium_text="ok pico ",
+                small_text="okpico",
             )
             detxt = entxt
             nltxt = entxt
@@ -3042,13 +3042,22 @@ class DgtTranslate(object):
             estxt = entxt
         if text_id == "engine_menu_favorites":
             entxt = Dgt.DISPLAY_TEXT(
-                web_text='Special & Historical Engines', large_text='Special Eng', medium_text='Special', small_text='specl'
+                web_text='Special & Historical Engines',
+                large_text='Special Eng',
+                medium_text='Special',
+                small_text='specl'
             )
             detxt = Dgt.DISPLAY_TEXT(
-                web_text='Spezial & historische Engines', large_text='Spezial Eng', medium_text='Special', small_text='Spezl.'
+                web_text='Spezial & historische Engines',
+                large_text='Spezial Eng',
+                medium_text='Special',
+                small_text='Spezl.'
             )
             ittxt = Dgt.DISPLAY_TEXT(
-                web_text='Scelta motori preferiti e speciali', large_text='M.Pref/Spec', medium_text='Speciali', small_text='Spec. '
+                web_text='Scelta motori preferiti e speciali',
+                large_text='M.Pref/Spec',
+                medium_text='Speciali',
+                small_text='Spec. '
             )
             nltxt = Dgt.DISPLAY_TEXT(
                 web_text="Favorieten",
@@ -5413,12 +5422,6 @@ class DgtTranslate(object):
                 medium_text="noeboard",
                 small_text="none",
             )
-            entxt = Dgt.DISPLAY_TEXT(
-                web_text="Nessuna (usare interfaccia Web)",
-                large_text="no E-Board",
-                medium_text="noeboard",
-                small_text="none",
-            )
             detxt = Dgt.DISPLAY_TEXT(
                 web_text="kein E-Board (Web-Play)",
                 large_text="kein EBoard",
@@ -7435,7 +7438,7 @@ class DgtTranslate(object):
                 small_text="  long",
             )
             detxt = Dgt.DISPLAY_TEXT(
-                web_text="Notation lang",
+                web_text="",
                 large_text="Notatn lang",
                 medium_text="Ntn lang",
                 small_text="ntlang",
