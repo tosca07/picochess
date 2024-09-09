@@ -4272,12 +4272,6 @@ def main() -> None:
                 DisplayMsg.show(Message.ALTMOVES(altmoves=event.altmoves))
 
             elif isinstance(event, Event.PICOWATCHER):
-                if state.dgtmenu.get_picowatcher() or (
-                    state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF
-                ):
-                    pico_calc = True
-                else:
-                    pico_calc = False
                 state.picotutor.set_status(
                     state.dgtmenu.get_picowatcher(),
                     state.dgtmenu.get_picocoach(),
@@ -4297,19 +4291,10 @@ def main() -> None:
                     state.flag_picotutor = True
                 else:
                     state.flag_picotutor = False
-                    if pico_calc:
-                        state.picotutor.stop()
+                    
                 DisplayMsg.show(Message.PICOWATCHER(picowatcher=event.picowatcher))
 
             elif isinstance(event, Event.PICOCOACH):
-                pico_calc = False
-                if state.dgtmenu.get_picowatcher() or (
-                    state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF
-                ):
-                    pico_calc = True
-                else:
-                    pico_calc = False
-
                 state.picotutor.set_status(
                     state.dgtmenu.get_picowatcher(),
                     state.dgtmenu.get_picocoach(),
@@ -4330,8 +4315,6 @@ def main() -> None:
                     state.flag_picotutor = True
                 else:
                     state.flag_picotutor = False
-                    if pico_calc:
-                        state.picotutor.stop()
 
                 if state.dgtmenu.get_picocoach() == PicoCoach.COACH_OFF:
                     DisplayMsg.show(Message.PICOCOACH(picocoach=False))
@@ -4347,12 +4330,6 @@ def main() -> None:
                     call_pico_coach(state)
 
             elif isinstance(event, Event.PICOEXPLORER):
-                if state.dgtmenu.get_picowatcher() or (
-                    state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF
-                ):
-                    pico_calc = True
-                else:
-                    pico_calc = False
                 state.picotutor.set_status(
                     state.dgtmenu.get_picowatcher(),
                     state.dgtmenu.get_picocoach(),
@@ -4368,8 +4345,7 @@ def main() -> None:
                         state.flag_picotutor = True
                     else:
                         state.flag_picotutor = False
-                        if pico_calc:
-                            state.picotutor.stop()
+    
                 DisplayMsg.show(Message.PICOEXPLORER(picoexplorer=event.picoexplorer))
 
             elif isinstance(event, Event.RSPEED):

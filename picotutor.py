@@ -130,25 +130,17 @@ class PicoTutor:
             b_coach = False
         else:
             b_coach = True
-        if self.watcher_on or self.coach_on:
-            self.watcher_on = watcher
-            self.coach_on = b_coach
-            self.explorer_on = explorer
-            self.comments_on = comments
-            if watcher or coach:
-                self.reset()
-            else:
-                self.stop()
-        else:
-            self.watcher_on = watcher
-            self.coach_on = b_coach
-            self.explorer_on = explorer
-            self.comments_on = comments
-            if watcher or coach:
-                self.reset()
-            else:
-                pass
 
+        self.watcher_on = watcher
+        self.coach_on = b_coach
+        self.explorer_on = explorer
+        self.comments_on = comments
+        
+        self.stop()
+                    
+        if watcher or b_coach:
+            self._reset_int()
+            
     def get_game_comment(self, pico_comment=PicoComment.COM_OFF, com_factor=0):
         max_range = 0
         max_range_all = 0
@@ -273,6 +265,48 @@ class PicoTutor:
             return "", False
 
     def reset(self):
+        self.pos = False
+        self.legal_moves = []
+        self.legal_moves2 = []
+        self.op = []
+        self.user_color = chess.WHITE
+        self.board = chess.Board()
+
+        self.stop()
+
+        if self.watcher_on or self.coach_on:
+            self.engine = chess.uci.popen_engine(self.engine_path)
+            self.engine2 = chess.uci.popen_engine(self.engine_path)
+            self.engine.uci()
+            self.engine2.uci()
+            self.engine.setoption({"MultiPV": self.max_valid_moves})
+            self.engine.setoption({"Contempt": 0})
+            self.engine.setoption({"Threads": c.NUM_THREADS})
+            self.engine2.setoption({"MultiPV": self.max_valid_moves})
+            self.engine2.setoption({"Contempt": 0})
+            self.engine2.setoption({"Threads": c.NUM_THREADS})
+            self.engine.isready()
+            self.engine2.isready()
+            self.info_handler = chess.uci.InfoHandler()
+            self.info_handler2 = chess.uci.InfoHandler()
+            self.engine.info_handlers.append(self.info_handler)
+            self.engine2.info_handlers.append(self.info_handler2)
+            self.engine.position(self.board)
+            self.engine2.position(self.board)
+
+        self.history = []
+        self.history2 = []
+        self.history.append((0, chess.Move.null(), 0.00, 0))
+        self.history2.append((0, chess.Move.null(), 0.00, 0))
+
+        self.alt_best_moves = []
+        self.pv_best_move = []
+        self.pv_user_move = []
+        self.hint_move = chess.Move.null()
+        self.mate = 0
+        self.expl_start_position = True#
+
+    def _reset_int(self):
         self.pos = False
         self.legal_moves = []
         self.legal_moves2 = []
