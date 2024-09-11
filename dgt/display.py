@@ -562,18 +562,17 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         )  # try a standard board and check for any starting pos
         if bit_board.chess960_pos(ignore_castling=True):
             logger.debug("flipping the board - W infront")
-            self.dgtmenu.set_position_reverse_flipboard(False)
+            self.dgtmenu.set_position_reverse_flipboard(False, self.play_mode)
         bit_board = chess.Board(
             fen[::-1] + " w - - 0 1"
         )  # try a revered board and check for any starting pos
         if bit_board.chess960_pos(ignore_castling=True):
             logger.debug("flipping the board - B infront")
-            self.dgtmenu.set_position_reverse_flipboard(True)
-            print("reverse_flipboard!")
+            self.dgtmenu.set_position_reverse_flipboard(True, self.play_mode)
+
 
         if self.dgtmenu.get_flip_board() and raw:  # Flip the board if needed
             fen = fen[::-1]
-            print("inverted fen!")
 
         logger.debug("DGT-Fen [%s]", fen)
         if fen == self.dgtmenu.get_dgt_fen():
