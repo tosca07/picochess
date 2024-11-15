@@ -1,13 +1,16 @@
 PicoChess
 =========
 
-Stand alone chess computer based on [Raspberry Pi](http://www.raspberrypi.org/). Supports DGT electronic clocks and many electronic chess boards.
+Stand alone chess computer based on Raspberry PI. Supports DGT electronic clocks and many electronic chess boards.
+This is an update to fix the technical debt; the existing Picochess was using very old chess and web modules.
+This first baseline has the latest chess and web python modules now. The target is to update all python modules.
+This version will run on PI Bookworm with the latest python
 
 Requirements
 ------------
 
-- Raspberry Pi 2 or newer
-- RaspiOS Bullseye installed and configured
+- Raspberry Pi 3 or newer recommended
+- RaspiOS Bookworm (latest) recommended
 
 Installation
 ------------
