@@ -2534,11 +2534,12 @@ class DgtMenu(object):
                 fen = fen[::-1]
             fen += " {0} KQkq - 0 1".format("w" if self.menu_position_whitetomove else "b")
             # ask python-chess to correct the castling string
-            bit_board = chess.Board(fen, self.menu_position_uci960)
+            bit_board = chess.Board(fen)
             bit_board.set_fen(bit_board.fen())
             if bit_board.is_valid():
                 self.flip_board = self.menu_position_reverse
-                self.set_position_reverse_flipboard(self.flip_board)
+                # @todo figure out PlayMode white or black here
+                self.set_position_reverse_flipboard(self.flip_board, PlayMode.USER_WHITE)
                 event = Event.SETUP_POSITION(fen=bit_board.fen(), uci960=self.menu_position_uci960)
                 Observable.fire(event)
                 # self._reset_moves_and_score() done in "START_NEW_GAME"
@@ -3056,7 +3057,7 @@ class DgtMenu(object):
                 "menu item is not Voice.VOLUME: %s" % self.menu_system_voice
             )
             write_picochess_ini("volume-voice", str(self.menu_system_voice_volumefactor))
-            text = self._set_volume_voice(self.menu_system_voice_volumefactor)
+            self._set_volume_voice(self.menu_system_voice_volumefactor)
             event = Event.SET_VOICE(
                 type=self.menu_system_voice,
                 lang="en",

@@ -54,7 +54,7 @@ class TestAlternativeMover(unittest.TestCase):
         bookreader.weighted_choice.side_effect = [book_move, IndexError()]
         move = self.testee.book(bookreader, self.game)
 
-        self.assertEqual(move, chess.uci.BestMove(self.e2e4, None))
+        self.assertEqual(move, chess.engine.BestMove(self.e2e4, None))
 
     def test_book_2_moves_in_book(self):
         bookreader = mock.create_autospec(chess.polyglot.MemoryMappedReader)
@@ -64,7 +64,7 @@ class TestAlternativeMover(unittest.TestCase):
         bookreader.weighted_choice.side_effect = [book_move, book_move_2]
         move = self.testee.book(bookreader, self.game)
 
-        self.assertEqual(move, chess.uci.BestMove(self.e2e4, e4e2))
+        self.assertEqual(move, chess.engine.BestMove(self.e2e4, e4e2))
 
     def test_book_exclude_side_effect(self):
         bookreader = mock.create_autospec(chess.polyglot.MemoryMappedReader)

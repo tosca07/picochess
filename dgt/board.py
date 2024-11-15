@@ -28,7 +28,8 @@ from typing import List, Optional, Tuple
 from eboard.eboard import EBoard
 from dgt.util import DgtAck, DgtClk, DgtCmd, DgtMsg, ClockIcons, ClockSide, enum
 from dgt.api import Message, Dgt
-from utilities import RepeatedTimer, DisplayMsg, hms_time
+from utilities import AsyncRepeatingTimer, DisplayMsg, hms_time
+import asyncio
 
 
 logger = logging.getLogger(__name__)
@@ -81,7 +82,8 @@ class DgtBoard(EBoard):
 
     """Handle the DGT board communication."""
 
-    def __init__(self, device: str, disable_revelation_leds: bool, is_pi: bool, disable_end: bool, field_factor=0):
+    def __init__(self, device: str, disable_revelation_leds: bool, is_pi: bool, 
+                 disable_end: bool, loop: asyncio.AbstractEventLoop, field_factor=0):
         super(DgtBoard, self).__init__()
         self.given_device = device
         self.device = device
@@ -92,6 +94,7 @@ class DgtBoard(EBoard):
 
         self.is_pi = is_pi
         self.disable_end = disable_end  # @todo for test - XL needs a "end_text" maybe!
+        self.loop = loop
         self.field_factor = field_factor % 10
 
         self.serial = None
@@ -102,7 +105,7 @@ class DgtBoard(EBoard):
         self.clock_lock: float = 0.0  # serial connected clock is locked
         self.last_clock_command: list = []  # Used for resend last (failed) clock command
         self.enable_ser_clock: Optional[bool] = None  # None = "unknown status" False="only board found" True="clock also found"
-        self.watchdog_timer = RepeatedTimer(1, self._watchdog)
+        self.watchdog_timer = AsyncRepeatingTimer(1, self._watchdog, self.loop)
         # bluetooth vars for Jessie upwards & autoconnect
         self.btctl = None
         self.bt_rfcomm = None
@@ -541,6 +544,8 @@ class DgtBoard(EBoard):
         self.write_command([DgtCmd.DGT_SEND_VERSION])  # Get board version
 
     def _watchdog(self):
+        """ callback by repeated timer """
+        logger.debug("running watchdog")
         if self.clock_lock and not self.is_pi:
             if time.time() - self.clock_lock > 2:
                 logger.warning('(ser) clock is locked over 2secs')

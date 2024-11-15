@@ -24,6 +24,8 @@ from typing import Dict, Set
 from utilities import DisplayDgt, DispatchDgt, dispatch_queue
 from dgt.api import Dgt, DgtApi
 from dgt.menu import DgtMenu
+import asyncio
+from constants import FLOAT_MSG_WAIT
 
 
 logger = logging.getLogger(__name__)
@@ -153,40 +155,48 @@ class Dispatcher(DispatchDgt, Thread):
 
     def run(self):
         """Call by threading.Thread start() function."""
+        asyncio.run(self.process_dispatch_queue())
+
+
+    async def process_dispatch_queue(self):
+        """ Consume the dispatch event queue """
         logger.info('dispatch_queue ready')
         while True:
             # Check if we have something to display
             try:
-                msg = dispatch_queue.get()
+                msg = dispatch_queue.get_nowait()
                 logger.debug('received command from dispatch_queue: %s devs: %s', msg, ','.join(msg.devs))
-
-                for dev in msg.devs & self.devices:
-                    message = deepcopy(msg)
-                    if self.maxtimer_running[dev]:
-                        if hasattr(message, 'wait'):
-                            if message.wait:
-                                self.tasks[dev].append(message)
-                                logger.debug('(%s) tasks delayed: %s', dev, self.tasks[dev])
-                                continue
-                            else:
-                                logger.debug('ignore former maxtime - dev: %s', dev)
-                                self.stop_maxtimer(dev)
-                                if self.tasks[dev]:
-                                    logger.debug('delete following (%s) tasks: %s', dev, self.tasks[dev])
-                                    while self.tasks[dev]:  # but do the last CLOCK_START()
-                                        command = self.tasks[dev].pop()
-                                        if repr(command) == DgtApi.CLOCK_START:  # clock might be in set mode
-                                            logger.debug('processing (last) delayed clock start command')
-                                            with self.process_lock[dev]:
-                                                self._process_message(command, dev)
-                                            break
-                                    self.tasks[dev] = []
-                        else:
-                            logger.debug('command doesnt change the clock display => (%s) max timer ignored', dev)
-                    else:
-                        logger.debug('(%s) max timer not running => processing command: %s', dev, message)
-
-                    with self.process_lock[dev]:
-                        self._process_message(message, dev)
+                self.process_dispatch_message(deepcopy(msg))
             except queue.Empty:
-                pass
+                await asyncio.sleep(FLOAT_MSG_WAIT)
+
+
+    def process_dispatch_message(self, message):
+        """ Process the dispatch message """
+        for dev in message.devs & self.devices:
+            if self.maxtimer_running[dev]:
+                if hasattr(message, 'wait'):
+                    if message.wait:
+                        self.tasks[dev].append(message)
+                        logger.debug('(%s) tasks delayed: %s', dev, self.tasks[dev])
+                        continue
+                    else:
+                        logger.debug('ignore former maxtime - dev: %s', dev)
+                        self.stop_maxtimer(dev)
+                        if self.tasks[dev]:
+                            logger.debug('delete following (%s) tasks: %s', dev, self.tasks[dev])
+                            while self.tasks[dev]:  # but do the last CLOCK_START()
+                                command = self.tasks[dev].pop()
+                                if repr(command) == DgtApi.CLOCK_START:  # clock might be in set mode
+                                    logger.debug('processing (last) delayed clock start command')
+                                    with self.process_lock[dev]:
+                                        self._process_message(command, dev)
+                                    break
+                            self.tasks[dev] = []
+                else:
+                    logger.debug('command doesnt change the clock display => (%s) max timer ignored', dev)
+            else:
+                logger.debug('(%s) max timer not running => processing command: %s', dev, message)
+
+            with self.process_lock[dev]:
+                self._process_message(message, dev)

@@ -44,7 +44,7 @@ class MockEngine(object):
         pass
 
 
-@patch("chess.uci.popen_engine", new=MockEngine)
+@patch("chess.engine.SimpleEngine.popen_uci", new=MockEngine)
 class TestEngine(unittest.TestCase):
     def test_engine_uses_elo(self):
         eng = UciEngine('some_test_engine', UciShell(), '')

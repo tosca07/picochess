@@ -30,18 +30,17 @@ import logging
 from logging.handlers import RotatingFileHandler
 import time
 import queue
-import paramiko
 import math
 from typing import Any, List, Optional, Set, Tuple
+import paramiko
+import chess.pgn  # type: ignore
+import chess.polyglot  # type: ignore
+import chess.engine  # type: ignore
 
 from configuration import Configuration
 from uci.engine import UciShell, UciEngine
 from uci.engine_provider import EngineProvider
 from uci.rating import Rating, determine_result
-import chess  # type: ignore
-import chess.pgn  # type: ignore
-import chess.polyglot  # type: ignore
-import chess.uci  # type: ignore
 
 from timecontrol import TimeControl
 from theme import calc_theme
@@ -85,9 +84,10 @@ from dgt.menu import DgtMenu
 
 from picotutor import PicoTutor
 from pathlib import Path
+import asyncio
+from constants import FLOAT_MSG_WAIT
 
 ONLINE_PREFIX = "Online"
-
 
 logger = logging.getLogger(__name__)
 
@@ -107,22 +107,22 @@ class AlternativeMover:
             return set(game.legal_moves)
         return searchmoves
 
-    def book(self, bookreader, game_copy: chess.Board):
+    def book(self, bookreader: chess.polyglot.MemoryMappedReader, game_copy: chess.Board):
         """Get a BookMove or None from game position."""
         try:
-            choice = bookreader.weighted_choice(game_copy, self._excludedmoves)
+            choice = bookreader.weighted_choice(game_copy, exclude_moves=self._excludedmoves)
         except IndexError:
             return None
 
-        book_move = choice.move()
+        book_move = choice.move
         self.exclude(book_move)
         game_copy.push(book_move)
         try:
             choice = bookreader.weighted_choice(game_copy)
-            book_ponder = choice.move()
+            book_ponder = choice.move
         except IndexError:
             book_ponder = None
-        return chess.uci.BestMove(book_move, book_ponder)
+        return chess.engine.BestMove(book_move, book_ponder)
 
     def check_book(self, bookreader, game_copy: chess.Board) -> bool:
         """Checks if a BookMove exists in current game position."""
@@ -131,7 +131,7 @@ class AlternativeMover:
         except IndexError:
             return False
 
-        book_move = choice.move()
+        book_move = choice.move
 
         if book_move:
             return True
@@ -178,7 +178,7 @@ class PicochessState:
         self.flag_pgn_game_over = False
         self.flag_premove = False
         self.flag_startup = False
-        self.game = None
+        self.game = None  # is this going to hold the chess.Board
         self.game_declared = False  # User declared resignation or draw
         self.interaction_mode = Mode.NORMAL
         self.last_legal_fens: List[Any] = []
@@ -503,6 +503,8 @@ def read_online_user_info() -> Tuple[str, str, str, str, int, int]:
     opp_user = "unknown"
     login = "failed"
     own_color = ""
+    game_time = 0
+    fischer_inc = 0
 
     try:
         log_u = open("online_game.txt", "r")
@@ -588,9 +590,15 @@ def compute_legal_fens(game_copy: chess.Board):
     return fens
 
 
-def main() -> None:
+async def main() -> None:
     """Main function."""
+    main_loop = asyncio.get_running_loop()
     state = PicochessState()
+    own_user = ""
+    opp_user = ""
+    game_time = 0
+    fischer_inc = 0
+    login = ""
 
     def det_pgn_guess_tctrl(state: PicochessState):
         state.max_guess_white = 0
@@ -750,12 +758,6 @@ def main() -> None:
         else:
             return False
 
-    def remote_engine_mode():
-        if "remote" in engine_file:
-            return True
-        else:
-            return False
-
     def emulation_mode():
         emulation = False
         if "(mame" in engine_name or "(mess" in engine_name or engine.is_mame:
@@ -908,7 +910,7 @@ def main() -> None:
         state.legal_fens_after_cmove = []
         state.last_legal_fens = []
         stop_search_and_clock()
-        engine.position(copy.deepcopy(state.game))
+        # engine.position(copy.deepcopy(state.game))
 
         game_end = state.check_game_state()
         if game_end:
@@ -986,8 +988,7 @@ def main() -> None:
                             Message.START_NEW_GAME(game=state.game.copy(), newgame=False), state
                         )
                         stop_search_and_clock()
-                        engine.position(copy.deepcopy(state.game))
-                        engine.ponder()
+                        engine.ponder(copy.deepcopy(state.game))
                     else:
                         # ask python-chess to correct the castling string
                         bit_board = chess.Board(fen2)
@@ -1009,8 +1010,7 @@ def main() -> None:
                                 state,
                             )
                             stop_search_and_clock()
-                            engine.position(copy.deepcopy(state.game))
-                            engine.ponder()
+                            engine.ponder(copy.deepcopy(state.game))
                         else:
                             logger.info("wrong fen %s for 4 secs", state.error_fen)
                             DisplayMsg.show(Message.WRONG_FEN())
@@ -1150,7 +1150,7 @@ def main() -> None:
             book_res and (pgn_mode() and state.pgn_book_test)
         ):
             Observable.fire(
-                Event.BEST_MOVE(move=book_res.bestmove, ponder=book_res.ponder, inbook=True)
+                Event.BEST_MOVE(move=book_res.move, ponder=book_res.ponder, inbook=True)
             )
         else:
             while not engine.is_waiting():
@@ -1160,8 +1160,16 @@ def main() -> None:
             if searchlist:
                 # molli: otherwise might lead to problems with internal books
                 uci_dict["searchmoves"] = state.searchmoves.all(game)
-            engine.position(copy.deepcopy(game))
-            engine.go(uci_dict)
+            # engine.position(copy.deepcopy(game))  # deepcopy not really needed
+            try:
+                engine_res = engine.go(uci_dict, game)
+            except Exception:
+                logger.error("fatal error no move received from engine")
+            # dont push game move onto board here - Event.BEST_MOVE does it
+            logger.debug("engine moved %s", engine_res.move.uci)
+            Observable.fire(
+                Event.BEST_MOVE(move=engine_res.move, ponder=engine_res.ponder, inbook=False)
+            )
         state.automatic_takeback = False
 
     def mame_endgame(game: chess.Board, timec: TimeControl, msg: Message, searchlist=False):
@@ -1174,18 +1182,20 @@ def main() -> None:
         while not engine.is_waiting():
             time.sleep(0.05)
             logger.warning("engine is still not waiting")
-        engine.position(copy.deepcopy(game))
+        # engine.position(copy.deepcopy(game))
 
-    def analyse(game: chess.Board, msg: Message):
+    def analyse(game: chess.Board, msg: Message) -> chess.engine.PlayResult:
         """Start a new ponder search on the current game."""
         DisplayMsg.show(msg)
-        engine.position(copy.deepcopy(game))
-        engine.ponder()
+        engine_res = engine.ponder(game)
+        logger.debug("engine ponder result %s", engine_res.move.uci)
+        return engine_res
 
-    def observe(game: chess.Board, msg: Message):
+    def observe(game: chess.Board, msg: Message) -> chess.engine.PlayResult:
         """Start a new ponder search on the current game."""
-        analyse(game, msg)
+        engine_res = analyse(game, msg)        
         state.start_clock()
+        return engine_res
 
     def brain(game: chess.Board, timec: TimeControl, state: PicochessState):
         """Start a new permanent brain search on the game with pondering move made."""
@@ -1200,10 +1210,13 @@ def main() -> None:
                 state.pb_move,
                 game_copy.fen(),
             )
-            engine.position(game_copy)
-            engine.brain(timec.uci())
+            engine_res = engine.brain(game_copy)
         else:
-            logger.info("ignore permanent brain cause no pondering move available")
+            # first time we do not have any hint move
+            # this code is almost duplicate of above but kept separate for now
+            game_copy = copy.deepcopy(game)
+            engine_res = engine.brain(game_copy)
+            state.pb_move = engine_res.move  # hint move is best move engine would make
 
     def stop_search_and_clock(ponder_hit=False):
         """Depending on the interaction mode stop search and clock."""
@@ -1286,7 +1299,7 @@ def main() -> None:
             state.done_move = chess.Move.null()
             fen = state.game.fen()
             turn = state.game.turn
-            state.game.push(move)
+            state.game.push(move)  # this is where user move is made
             eval_str = ""
 
             if picotutor_mode(state) and not state.position_mode and not state.takeback_active:
@@ -1389,7 +1402,7 @@ def main() -> None:
                         DisplayMsg.show(game_end)
                         state.legal_fens_after_cmove = []  # molli
                 else:
-                    if state.interaction_mode in (Mode.NORMAL, Mode.TRAINING) or not ponder_hit:
+                    if state.interaction_mode in (Mode.NORMAL, Mode.TRAINING):
                         if not state.check_game_state():
                             # molli: automatic takeback of blunder moves for mame engines
                             if emulation_mode() and eval_str == "??" and state.last_move != move:
@@ -1408,10 +1421,28 @@ def main() -> None:
                                 logger.info("starting think()")
                                 think(state.game, state.time_control, msg, state)
                     else:
-                        logger.info("think() not started cause ponderhit")
+                        assert(state.interaction_mode == Mode.BRAIN)
+                        logger.info("new temporary implementation of ponderhit")
                         DisplayMsg.show(msg)
                         state.start_clock()
-                        engine.hit()  # finally tell the engine
+                        # send move to engine to update hint
+                        game_copy = copy.deepcopy(state.game)  # not necessary
+                        engine_res = engine.brain(game_copy)
+                        logger.debug("engine ponder result %s", engine_res.move.uci)
+                        state.pb_move = engine_res.move  # engine made move is hint
+                        # @todo what message should be used to display hint?
+                        # using computer move now
+                        DisplayMsg.show(Message.EXIT_MENU())
+                        msg = Message.COMPUTER_MOVE(
+                                move=engine_res.move,
+                                ponder=False,
+                                game=game_copy,
+                                wait=False
+                        )
+                        DisplayMsg.show(msg)
+                        
+
+
                 state.last_move = move
             elif state.interaction_mode == Mode.REMOTE:
                 msg = Message.USER_MOVE_DONE(move=move, fen=fen, turn=turn, game=state.game.copy())
@@ -1440,7 +1471,18 @@ def main() -> None:
                     DisplayMsg.show(msg)
                     DisplayMsg.show(game_end)
                 else:
-                    analyse(state.game, msg)
+                    engine_res = analyse(state.game, msg)
+                    state.pb_move = engine_res.move  # engines move
+                    # @todo what message should be used to display hint?
+                    # using computer move now
+                    DisplayMsg.show(Message.EXIT_MENU())
+                    msg = Message.COMPUTER_MOVE(
+                            move=engine_res.move,
+                            ponder=False,
+                            game=state.game,
+                            wait=False
+                    )
+                    DisplayMsg.show(msg)
 
             if (
                 picotutor_mode(state)
@@ -2122,27 +2164,19 @@ def main() -> None:
                     break
         return {}, None
 
-    def engine_mode():
-        ponder_mode = analyse_mode = False
-        if state.interaction_mode == Mode.BRAIN:
-            ponder_mode = True
-        elif state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
-            analyse_mode = True
-        engine.mode(ponder=ponder_mode, analyse=analyse_mode)
-
     def switch_online(state: PicochessState):
         color = ""
 
         if online_mode():
             login, own_color, own_user, opp_user, game_time, fischer_inc = read_online_user_info()
             logger.debug("molli own_color in switch_online [%s]", own_color)
-            logger.debug("molli own_user in switch_online [%s]", own_user)
-            logger.debug("molli opp_user in switch_online [%s]", opp_user)
+            logger.debug("molli self.own_user in switch_online [%s]", own_user)
+            logger.debug("molli self.opp_user in switch_online [%s]", opp_user)
             logger.debug("molli game_time in switch_online [%s]", game_time)
             logger.debug("molli fischer_inc in switch_online [%s]", fischer_inc)
 
             ModeInfo.set_online_mode(mode=True)
-            ModeInfo.set_online_own_user(name=own_user)
+            ModeInfo.set_online_self.own_user(name=own_user)
             ModeInfo.set_online_opponent(name=opp_user)
 
             if len(own_color) > 1:
@@ -2299,11 +2333,6 @@ def main() -> None:
     Rev2Info.set_dgtpi(args.dgtpi)
     state.flag_flexible_ponder = args.flexible_analysis
     state.flag_premove = args.premove
-    own_user = ""
-    opp_user = ""
-    game_time = 0
-    fischer_inc = 0
-    login = ""
     state.set_location = args.location
     state.online_decrement = args.online_decrement
 
@@ -2328,7 +2357,8 @@ def main() -> None:
             args.disable_revelation_leds,
             args.dgtpi,
             args.disable_et,
-            args.slow_slide,
+            main_loop,
+            args.slow_slide
         )
     state.dgttranslate = DgtTranslate(
         args.beep_config, args.beep_some_level, args.language, version
@@ -2641,14 +2671,59 @@ def main() -> None:
     if state.dgtmenu.get_enginename():
         DisplayMsg.show(Message.ENGINE_NAME(engine_name=state.engine_text))
 
-    # Event loop
-    logger.info("evt_queue ready")
-    while True:
-        try:
-            event = evt_queue.get()
-        except queue.Empty:
-            pass
-        else:
+    class MainLoop():
+        """ main turned into a class  """
+
+        def __init__(self, own_user, opp_user, game_time,
+                     fischer_inc, login, engine,
+                     uci_remote_shell, book_index,
+                     loop : asyncio.AbstractEventLoop):
+            self.loop = loop
+            self._task = None  # placeholder for message consumer task
+            self.own_user = own_user
+            self.opp_user = opp_user
+            self.game_time = game_time
+            self.fischer_inc = fischer_inc
+            self.login = login
+            self.engine = engine
+            self.uci_remote_shell = uci_remote_shell
+            self.book_index = book_index
+
+
+        def engine_mode(self):
+            ponder_mode = analyse_mode = False
+            if state.interaction_mode == Mode.BRAIN:
+                ponder_mode = True
+            elif state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
+                analyse_mode = True
+            self.engine.mode(ponder=ponder_mode, analyse=analyse_mode)
+
+
+        def remote_engine_mode(self):
+            if "remote" in engine_file:
+                return True
+            else:
+                return False
+
+
+        def start(self):
+            """ start the main loop with its message consumer """
+            self._task = self.loop.create_task(self.event_consumer())
+
+
+        async def event_consumer(self):
+            """ Event consumer for main """
+            logger.info("evt_queue ready")
+            while True:
+                try:
+                    event = evt_queue.get_nowait()
+                    self.process_main_events(event)
+                except queue.Empty:
+                    await asyncio.sleep(FLOAT_MSG_WAIT)
+
+
+        def process_main_events(self, event):
+            """ Consume event from evt_queue """
             logger.debug("received event from evt_queue: %s", event)
             if isinstance(event, Event.FEN):
                 process_fen(event.fen, state)
@@ -2666,7 +2741,7 @@ def main() -> None:
 
             elif isinstance(event, Event.LEVEL):
                 if event.options:
-                    engine.startup(event.options, state.rating)
+                    self.engine.startup(event.options, state.rating)
                 state.new_engine_level = event.level_name
                 DisplayMsg.show(
                     Message.LEVEL(
@@ -2679,7 +2754,7 @@ def main() -> None:
             elif isinstance(event, Event.NEW_ENGINE):
                 old_file = state.engine_file
                 old_options = {}
-                old_options = engine.get_pgn_options()
+                old_options = self.engine.get_pgn_options()
                 engine_fallback = False
                 # Stop the old engine cleanly
                 if not emulation_mode():
@@ -2709,12 +2784,12 @@ def main() -> None:
                 logger.debug("molli check_ssh:%s", flag_eng)
                 DisplayMsg.show(Message.ENGINE_SETUP())
 
-                if remote_engine_mode():
+                if self.remote_engine_mode():
                     if flag_eng:
-                        if not uci_remote_shell:
+                        if not self.uci_remote_shell:
                             if remote_windows():
                                 logger.info("molli: Remote Windows Connection")
-                                uci_remote_shell = UciShell(
+                                self.uci_remote_shell = UciShell(
                                     hostname=args.engine_remote_server,
                                     username=args.engine_remote_user,
                                     key_file=args.engine_remote_key,
@@ -2723,7 +2798,7 @@ def main() -> None:
                                 )
                             else:
                                 logger.info("molli: Remote Mac/UNIX Connection")
-                                uci_remote_shell = UciShell(
+                                self.uci_remote_shell = UciShell(
                                     hostname=args.engine_remote_server,
                                     username=args.engine_remote_user,
                                     key_file=args.engine_remote_key,
@@ -2736,22 +2811,22 @@ def main() -> None:
                         DisplayMsg.show(Message.REMOTE_FAIL())
                         time.sleep(2)
 
-                if engine.quit():
+                if self.engine.quit():
                     # Load the new one and send args.
-                    if remote_engine_mode() and flag_eng and uci_remote_shell:
-                        engine = UciEngine(
+                    if self.remote_engine_mode() and flag_eng and self.uci_remote_shell:
+                        self.engine = UciEngine(
                             file=remote_file,
-                            uci_shell=uci_remote_shell,
+                            uci_shell=self.uci_remote_shell,
                             mame_par=calc_engine_mame_par(),
                         )
                     else:
-                        engine = UciEngine(
+                        self.engine = UciEngine(
                             file=engine_file,
                             uci_shell=uci_local_shell,
                             mame_par=calc_engine_mame_par(),
                         )
                     try:
-                        engine_name = engine.get_name()
+                        engine_name = self.engine.get_name()
                     except AttributeError:
                         # New engine failed to start, restart old engine
                         logger.error("new engine failed to start, reverting to %s", old_file)
@@ -2761,10 +2836,10 @@ def main() -> None:
                         help_str = old_file.rsplit(os.sep, 1)[1]
                         remote_file = engine_remote_home + os.sep + help_str
 
-                        if remote_engine_mode() and flag_eng and uci_remote_shell:
-                            engine = UciEngine(
+                        if self.remote_engine_mode() and flag_eng and self.uci_remote_shell:
+                            self.engine = UciEngine(
                                 file=remote_file,
-                                uci_shell=uci_remote_shell,
+                                uci_shell=self.uci_remote_shell,
                                 mame_par=calc_engine_mame_par(),
                             )
                         else:
@@ -2777,13 +2852,13 @@ def main() -> None:
                                     state.artwork_in_use = True
                                     old_file = old_file_art
 
-                            engine = UciEngine(
+                            self.engine = UciEngine(
                                 file=old_file,
                                 uci_shell=uci_local_shell,
                                 mame_par=calc_engine_mame_par(),
                             )
                         try:
-                            engine_name = engine.get_name()
+                            engine_name = self.engine.get_name()
                         except AttributeError:
                             # Help - old engine failed to restart. There is no engine
                             logger.error("no engines started")
@@ -2793,28 +2868,28 @@ def main() -> None:
 
                     # All done - rock'n'roll
                     engine_file = state.engine_file
-                    if state.interaction_mode == Mode.BRAIN and not engine.has_ponder():
+                    if state.interaction_mode == Mode.BRAIN and not self.engine.has_ponder():
                         logger.debug(
                             "new engine doesnt support brain mode, reverting to %s", old_file
                         )
                         engine_fallback = True
-                        if engine.quit():
-                            if remote_engine_mode() and flag_eng and uci_remote_shell:
-                                engine = UciEngine(
+                        if self.engine.quit():
+                            if self.remote_engine_mode() and flag_eng and self.uci_remote_shell:
+                                self.engine = UciEngine(
                                     file=remote_file,
-                                    uci_shell=uci_remote_shell,
+                                    uci_shell=self.uci_remote_shell,
                                     mame_par=calc_engine_mame_par(),
                                 )
                             else:
-                                engine = UciEngine(
+                                self.engine = UciEngine(
                                     file=old_file,
                                     uci_shell=uci_local_shell,
                                     mame_par=calc_engine_mame_par(),
                                 )
-                            engine.startup(old_options, state.rating)
-                            engine.newgame(state.game.copy())
+                            self.engine.startup(old_options, state.rating)
+                            self.engine.newgame(state.game.copy())
                             try:
-                                engine_name = engine.get_name()
+                                engine_name = self.engine.get_name()
                             except AttributeError:
                                 logger.error("no engines started")
                                 DisplayMsg.show(Message.ENGINE_FAIL())
@@ -2840,23 +2915,23 @@ def main() -> None:
                             shell=True,
                         )
 
-                    engine.startup(event.options, state.rating)
+                    self.engine.startup(event.options, state.rating)
 
                     if online_mode():
                         state.stop_clock()
                         DisplayMsg.show(Message.ONLINE_LOGIN())
                         # check if login successful (correct server & correct user)
                         (
-                            login,
+                            self.login,
                             own_color,
-                            own_user,
-                            opp_user,
-                            game_time,
-                            fischer_inc,
+                            self.self.own_user,
+                            self.self.opp_user,
+                            self.game_time,
+                            self.fischer_inc,
                         ) = read_online_user_info()
-                        logger.debug("molli online login: %s", login)
+                        logger.debug("molli online login: %s", self.login)
 
-                        if "ok" not in login:
+                        if "ok" not in self.login:
                             # server connection failed: check settings!
                             DisplayMsg.show(Message.ONLINE_FAILED())
                             time.sleep(3)
@@ -2866,27 +2941,27 @@ def main() -> None:
                             help_str = old_file.rsplit(os.sep, 1)[1]
                             remote_file = engine_remote_home + os.sep + help_str
 
-                            if remote_engine_mode() and flag_eng and uci_remote_shell:
-                                engine = UciEngine(
+                            if self.remote_engine_mode() and flag_eng and self.uci_remote_shell:
+                                self.engine = UciEngine(
                                     file=remote_file,
-                                    uci_shell=uci_remote_shell,
+                                    uci_shell=self.uci_remote_shell,
                                     mame_par=calc_engine_mame_par(),
                                 )
                             else:
-                                engine = UciEngine(
+                                self.engine = UciEngine(
                                     file=old_file,
                                     uci_shell=uci_local_shell,
                                     mame_par=calc_engine_mame_par(),
                                 )
                             try:
-                                engine_name = engine.get_name()
+                                engine_name = self.engine.get_name()
                             except AttributeError:
                                 # Help - old engine failed to restart. There is no engine
                                 logger.error("no engines started")
                                 DisplayMsg.show(Message.ENGINE_FAIL())
                                 time.sleep(3)
                                 sys.exit(-1)
-                            engine.startup(event.options, state.rating)
+                            self.engine.startup(event.options, state.rating)
                         else:
                             time.sleep(2)
                     elif emulation_mode() or pgn_mode():
@@ -2896,7 +2971,7 @@ def main() -> None:
                         state.game = chess.Board()
                         state.game.turn = chess.WHITE
                         state.play_mode = PlayMode.USER_WHITE
-                        engine.newgame(state.game.copy())
+                        self.engine.newgame(state.game.copy())
                         state.done_computer_fen = None
                         state.done_move = state.pb_move = chess.Move.null()
                         state.searchmoves.reset()
@@ -2909,9 +2984,9 @@ def main() -> None:
                         msg = Message.START_NEW_GAME(game=state.game.copy(), newgame=real_new_game)
                         DisplayMsg.show(msg)
                     else:
-                        engine.newgame(state.game.copy())
+                        self.engine.newgame(state.game.copy())
 
-                    engine_mode()
+                    self.engine_mode()
 
                     if engine_fallback:
                         msg = Message.ENGINE_FAIL()
@@ -2942,9 +3017,9 @@ def main() -> None:
                             eng=event.eng,
                             engine_name=engine_name,
                             eng_text=event.eng_text,
-                            has_levels=engine.has_levels(),
-                            has_960=engine.has_chess960(),
-                            has_ponder=engine.has_ponder(),
+                            has_levels=self.engine.has_levels(),
+                            has_960=self.engine.has_chess960(),
+                            has_ponder=self.engine.has_ponder(),
                             show_ok=event.show_ok,
                         )
                     # Schedule cleanup of old objects
@@ -2969,7 +3044,7 @@ def main() -> None:
                 state.dgtmenu.exit_menu()
                 # here dont care if engine supports pondering, cause Mode.NORMAL from startup
                 if (
-                    not remote_engine_mode()
+                    not self.remote_engine_mode()
                     and not online_mode()
                     and not pgn_mode()
                     and not engine_fallback
@@ -3081,15 +3156,15 @@ def main() -> None:
                                 game=state.game.copy(),
                             )
                         )
-                state.game = chess.Board(event.fen, uci960)
+                state.game = chess.Board(event.fen)  # check what uci960 should do here
                 # see new_game
                 stop_search_and_clock()
-                if engine.has_chess960():
-                    engine.option("UCI_Chess960", uci960)
-                    engine.send()
+                if self.engine.has_chess960():
+                    self.engine.option("UCI_Chess960", uci960)
+                    self.engine.send()
 
                 DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION_SCAN"))
-                engine.newgame(state.game.copy())
+                self.engine.newgame(state.game.copy())
                 state.done_computer_fen = None
                 state.done_move = state.pb_move = chess.Move.null()
                 state.legal_fens_after_cmove = []
@@ -3120,7 +3195,7 @@ def main() -> None:
                             shell=True,
                         )
                     DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION"))
-                    engine.is_ready()
+                    self.engine.is_ready()
                 state.position_mode = False
                 tutor_str = "POSOK"
                 msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=state.game.copy())
@@ -3137,7 +3212,7 @@ def main() -> None:
                 ModeInfo.set_game_ending(
                     result="*"
                 )  # initialize game result for game saving status
-                engine_name = engine.get_name()
+                engine_name = self.engine.get_name()
                 state.position_mode = False
                 state.fen_error_occured = False
                 state.error_fen = None
@@ -3190,16 +3265,16 @@ def main() -> None:
                     stop_search_and_clock()
 
                     # see setup_position
-                    if engine.has_chess960():
-                        engine.option("UCI_Chess960", uci960)
-                        engine.send()
+                    if self.engine.has_chess960():
+                        self.engine.option("UCI_Chess960", uci960)
+                        self.engine.send()
 
                     if state.interaction_mode == Mode.TRAINING:
-                        engine.stop()
+                        self.engine.stop()
 
                     if online_mode():
                         DisplayMsg.show(Message.SEEKING())
-                        engine.stop()
+                        self.engine.stop()
                         state.seeking_flag = True
                         state.stop_fen_timer()
                         ModeInfo.set_online_mode(mode=True)
@@ -3207,8 +3282,8 @@ def main() -> None:
                         ModeInfo.set_online_mode(mode=False)
 
                     if emulation_mode():
-                        engine.stop()
-                    engine.newgame(state.game.copy())
+                        self.engine.stop()
+                    self.engine.newgame(state.game.copy())
 
                     state.done_computer_fen = None
                     state.done_move = state.pb_move = chess.Move.null()
@@ -3221,24 +3296,24 @@ def main() -> None:
                     if online_mode():
                         time.sleep(0.5)
                         (
-                            login,
+                            self.login,
                             own_color,
-                            own_user,
-                            opp_user,
-                            game_time,
-                            fischer_inc,
+                            self.own_user,
+                            self.opp_user,
+                            self.game_time,
+                            self.fischer_inc,
                         ) = read_online_user_info()
-                        if "no_user" in own_user and not login == "ok":
+                        if "no_user" in self.own_user and not self.login == "ok":
                             # user login failed check login settings!!!
                             DisplayMsg.show(Message.ONLINE_USER_FAILED())
                             time.sleep(3)
-                        elif "no_player" in opp_user:
+                        elif "no_player" in self.opp_user:
                             # no opponent found start new game or engine again!!!
                             DisplayMsg.show(Message.ONLINE_NO_OPPONENT())
                             time.sleep(3)
                         else:
                             DisplayMsg.show(
-                                Message.ONLINE_NAMES(own_user=own_user, opp_user=opp_user)
+                                Message.ONLINE_NAMES(own_user=self.own_user, opp_user=self.opp_user)
                             )
                             time.sleep(3)
                         state.seeking_flag = False
@@ -3266,7 +3341,7 @@ def main() -> None:
                     set_wait_state(
                         Message.START_NEW_GAME(game=state.game.copy(), newgame=newgame), state
                     )
-                    if "no_player" not in opp_user and "no_user" not in own_user:
+                    if "no_player" not in self.opp_user and "no_user" not in self.own_user:
                         switch_online(state)
                     if picotutor_mode(state):
                         state.picotutor.reset()
@@ -3298,38 +3373,38 @@ def main() -> None:
                         stop_search_and_clock()
                         state.stop_fen_timer()
 
-                        if engine.has_chess960():
-                            engine.option("UCI_Chess960", uci960)
-                            engine.send()
+                        if self.engine.has_chess960():
+                            self.engine.option("UCI_Chess960", uci960)
+                            self.engine.send()
 
                         state.time_control.reset()
                         state.searchmoves.reset()
 
                         DisplayMsg.show(Message.SEEKING())
-                        engine.stop()
+                        self.engine.stop()
                         state.seeking_flag = True
 
-                        engine.newgame(state.game.copy())
+                        self.engine.newgame(state.game.copy())
 
                         (
-                            login,
+                            self.login,
                             own_color,
-                            own_user,
-                            opp_user,
-                            game_time,
-                            fischer_inc,
+                            self.own_user,
+                            self.opp_user,
+                            self.game_time,
+                            self.fischer_inc,
                         ) = read_online_user_info()
-                        if "no_user" in own_user:
+                        if "no_user" in self.own_user:
                             # user login failed check login settings!!!
                             DisplayMsg.show(Message.ONLINE_USER_FAILED())
                             time.sleep(3)
-                        elif "no_player" in opp_user:
+                        elif "no_player" in self.opp_user:
                             # no opponent found start new game & search!!!
                             DisplayMsg.show(Message.ONLINE_NO_OPPONENT())
                             time.sleep(3)
                         else:
                             DisplayMsg.show(
-                                Message.ONLINE_NAMES(own_user=own_user, opp_user=opp_user)
+                                Message.ONLINE_NAMES(own_user=self.own_user, opp_user=self.opp_user)
                             )
                             time.sleep(1)
                         state.seeking_flag = False
@@ -3346,7 +3421,7 @@ def main() -> None:
                         set_wait_state(
                             Message.START_NEW_GAME(game=state.game.copy(), newgame=newgame), state
                         )
-                        if "no_player" not in opp_user and "no_user" not in own_user:
+                        if "no_player" not in self.opp_user and "no_user" not in self.own_user:
                             switch_online(state)
                     else:
                         logger.debug("no need to start a new game")
@@ -3438,11 +3513,11 @@ def main() -> None:
 
             elif isinstance(event, Event.PAUSE_RESUME):
                 if pgn_mode():
-                    engine.pause_pgn_audio()
+                    self.engine.pause_pgn_audio()  # @todo this does not do anything
                 else:
-                    if engine.is_thinking():
+                    if self.engine.is_thinking():
                         state.stop_clock()
-                        engine.stop(show_best=True)
+                        self.engine.stop(show_best=True)
                     elif not state.done_computer_fen:
                         if state.time_control.internal_running():
                             state.stop_clock()
@@ -3503,7 +3578,7 @@ def main() -> None:
                     if bit_board.is_valid():
                         state.game = chess.Board(bit_board.fen())
                         stop_search_and_clock()
-                        engine.newgame(state.game.copy())
+                        self.engine.newgame(state.game.copy())
                         state.done_computer_fen = None
                         state.done_move = state.pb_move = chess.Move.null()
                         state.time_control.reset()
@@ -3512,8 +3587,8 @@ def main() -> None:
                         state.legal_fens = compute_legal_fens(state.game.copy())
                         state.legal_fens_after_cmove = []
                         state.last_legal_fens = []
-                        engine.position(copy.deepcopy(state.game))
-                        engine.ponder()
+                        engine_res = self.engine.ponder(copy.deepcopy(state.game))
+                        logger.debug("engine ponder result %s", engine_res.move.uci)
                         state.play_mode = (
                             PlayMode.USER_WHITE
                             if state.game.turn == chess.WHITE
@@ -3530,7 +3605,7 @@ def main() -> None:
                         DisplayMsg.show(Message.EXIT_MENU())
 
                 elif state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
-                    if not engine.is_waiting():
+                    if not self.engine.is_waiting():
                         stop_search_and_clock()
                     state.automatic_takeback = False
                     state.takeback_active = False
@@ -3597,7 +3672,7 @@ def main() -> None:
                         DisplayMsg.show(Message.SWITCH_SIDES(game=state.game.copy(), move=move))
 
                 elif state.interaction_mode == Mode.REMOTE:
-                    if not engine.is_waiting():
+                    if not self.engine.is_waiting():
                         stop_search_and_clock()
 
                     state.last_legal_fens = []
@@ -3875,7 +3950,7 @@ def main() -> None:
                                         l_game_copy = state.game.copy()
                                         l_game_copy.pop()
                                         l_found = state.searchmoves.check_book(
-                                            bookreader, l_game_copy
+                                            self.bookreader, l_game_copy
                                         )
 
                                         if not l_found:
@@ -4062,7 +4137,7 @@ def main() -> None:
 
                                 game_end = state.check_game_state()
                                 if game_end:
-                                    update_elo(state, game_end.result)
+                                    update_elo(state, game_end)
                                     state.legal_fens = []
                                     state.legal_fens_after_cmove = []
                                     if online_mode():
@@ -4135,7 +4210,8 @@ def main() -> None:
                                         op_in_book,
                                     ) = state.picotutor.get_opening()
                                     if op_in_book and op_name:
-                                        ModeInfo.set_opening(
+                                        logger.debug("opening book set to %s", op_name)
+                                        ModeInfo.set_opening(                                            
                                             state.book_in_use, str(op_name), op_eco
                                         )
                                         DisplayMsg.show(Message.SHOW_TEXT(text_string=op_name))
@@ -4154,7 +4230,7 @@ def main() -> None:
                     )
 
             elif isinstance(event, Event.NEW_PV):
-                if state.interaction_mode == Mode.BRAIN and engine.is_pondering():
+                if state.interaction_mode == Mode.BRAIN and self.engine.is_pondering():
                     logger.debug("in brain mode and pondering ignore pv %s", event.pv[:3])
                 else:
                     # illegal moves can occur if a pv from the engine arrives at the same time as an user move
@@ -4171,11 +4247,11 @@ def main() -> None:
                             state.game.fen(),
                         )
                         logger.info(
-                            "engine status: t:%s p:%s", engine.is_thinking(), engine.is_pondering()
+                            "engine status: t:%s p:%s", self.engine.is_thinking(), self.engine.is_pondering()
                         )
 
             elif isinstance(event, Event.NEW_SCORE):
-                if state.interaction_mode == Mode.BRAIN and engine.is_pondering():
+                if state.interaction_mode == Mode.BRAIN and self.engine.is_pondering():
                     logger.debug("in brain mode and pondering, ignore score %s", event.score)
                 else:
                     if event.score == 999 or event.score == -999:
@@ -4195,7 +4271,7 @@ def main() -> None:
                     )
 
             elif isinstance(event, Event.NEW_DEPTH):
-                if state.interaction_mode == Mode.BRAIN and engine.is_pondering():
+                if state.interaction_mode == Mode.BRAIN and self.engine.is_pondering():
                     logger.debug("in brain mode and pondering, ignore depth %s", event.depth)
                 else:
                     if event.depth == 999:
@@ -4229,7 +4305,7 @@ def main() -> None:
                         state.newgame_happened = False
                     stop_search_and_clock()
                     state.interaction_mode = event.mode
-                    engine_mode()
+                    self.engine_mode()
                     msg = Message.INTERACTION_MODE(
                         mode=event.mode, mode_text=event.mode_text, show_ok=event.show_ok
                     )
@@ -4345,7 +4421,7 @@ def main() -> None:
                         state.flag_picotutor = True
                     else:
                         state.flag_picotutor = False
-    
+
                 DisplayMsg.show(Message.PICOEXPLORER(picoexplorer=event.picoexplorer))
 
             elif isinstance(event, Event.RSPEED):
@@ -4359,15 +4435,15 @@ def main() -> None:
                         if my_file.is_file():
                             state.artwork_in_use = True
                             engine_file = engine_file_art
-                    old_options = engine.get_pgn_options()
+                    old_options = self.engine.get_pgn_options()
                     DisplayMsg.show(Message.ENGINE_SETUP())
-                    if engine.quit():
-                        engine = UciEngine(
+                    if self.engine.quit():
+                        self.engine = UciEngine(
                             file=engine_file,
                             uci_shell=uci_local_shell,
                             mame_par=calc_engine_mame_par(),
                         )
-                        engine.startup(old_options, state.rating)
+                        self.engine.startup(old_options, state.rating)
                         stop_search_and_clock()
 
                         if (
@@ -4391,7 +4467,7 @@ def main() -> None:
                         if game_fen != chess.STARTING_BOARD_FEN:
                             msg = Message.START_NEW_GAME(game=state.game.copy(), newgame=True)
                             DisplayMsg.show(msg)
-                        engine.newgame(state.game.copy())
+                        self.engine.newgame(state.game.copy())
                         state.done_computer_fen = None
                         state.done_move = state.pb_move = chess.Move.null()
                         state.searchmoves.reset()
@@ -4400,7 +4476,7 @@ def main() -> None:
                         state.last_legal_fens = []
                         state.legal_fens_after_cmove = []
                         is_out_of_time_already = False
-                        engine_mode()
+                        self.engine_mode()
                         DisplayMsg.show(Message.RSPEED(rspeed=event.rspeed))
                         update_elo_display(state)
                     else:
@@ -4499,6 +4575,7 @@ def main() -> None:
                         )
                         if moves_to_go < 0:
                             moves_to_go = 0
+                        logger.debug("setting tc clock times")
                         state.time_control.set_clock_times(
                             white_time=event.time_white,
                             black_time=event.time_black,
@@ -4540,13 +4617,13 @@ def main() -> None:
             elif isinstance(event, Event.SHUTDOWN):
                 stop_search()
                 state.stop_clock()
-                engine.quit()
+                self.engine.quit()
 
                 try:
-                    if uci_remote_shell:
-                        if uci_remote_shell.get():
+                    if self.uci_remote_shell:
+                        if self.uci_remote_shell.get():
                             try:
-                                uci_remote_shell.get().__exit__(
+                                self.uci_remote_shell.get().__exit__(
                                     None, None, None
                                 )  # force to call __exit__ (close shell connection)
                             except Exception:
@@ -4570,7 +4647,7 @@ def main() -> None:
             elif isinstance(event, Event.REBOOT):
                 stop_search()
                 state.stop_clock()
-                engine.quit()
+                self.engine.quit()
                 result = GameResult.ABORT
                 DisplayMsg.show(
                     Message.GAME_ENDS(
@@ -4589,7 +4666,7 @@ def main() -> None:
             elif isinstance(event, Event.EXIT):
                 stop_search()
                 state.stop_clock()
-                engine.quit()
+                self.engine.quit()
                 result = GameResult.ABORT
                 DisplayMsg.show(
                     Message.GAME_ENDS(
@@ -4649,8 +4726,14 @@ def main() -> None:
             else:  # Default
                 logger.warning("event not handled : [%s]", event)
 
-            evt_queue.task_done()
+            # evt_queue.task_done()
+
+    my_main = MainLoop(own_user, opp_user, game_time,
+                       fischer_inc, login, engine, uci_remote_shell,
+                       book_index, main_loop)
+    my_main.start()  # start main message loop
+    await asyncio.Event().wait()  # wait forever
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

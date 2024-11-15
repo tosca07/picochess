@@ -29,7 +29,7 @@ import tornado.wsgi  # type: ignore
 from tornado.ioloop import IOLoop  # type: ignore
 from tornado.websocket import WebSocketHandler  # type: ignore
 
-from utilities import Observable, DisplayMsg, hms_time, RepeatedTimer
+from utilities import Observable, DisplayMsg, hms_time, AsyncRepeatingTimer
 from web.picoweb import picoweb as pw
 
 from dgt.api import Dgt, Event, Message
@@ -37,6 +37,9 @@ from dgt.util import PlayMode, Mode, ClockSide, GameResult
 from dgt.iface import DgtIface
 from eboard.eboard import EBoard
 from pgn import ModeInfo
+import asyncio
+from constants import FLOAT_MSG_WAIT
+import queue
 
 # This needs to be reworked to be session based (probably by token)
 # Otherwise multiple clients behind a NAT can all play as the 'player'
@@ -138,12 +141,14 @@ class ChannelHandler(ServerRequestHandler):
 
 
 class EventHandler(WebSocketHandler):
+    """ Started by /event HTTP call - Clients are WebDisplay and WebVr classes """
     clients: Set[WebSocketHandler] = set()
 
     def initialize(self, shared=None):
         self.shared = shared
 
     def on_message(self, message):
+        logger.debug("WebSocket message " + message)
         pass
 
     def data_received(self, chunk):
@@ -164,6 +169,7 @@ class EventHandler(WebSocketHandler):
 
     @classmethod
     def write_to_clients(cls, msg):
+        """ This is the main event loop message producer for WebDisplay and WebVR """
         for client in cls.clients:
             client.write_message(msg)
 
@@ -211,39 +217,57 @@ class HelpHandler(ServerRequestHandler):
 
 class WebServer(threading.Thread):
     def __init__(self, port: int, dgtboard: EBoard, theme: str):
-        shared: dict = {}
-
-        WebDisplay(shared).start()
-        WebVr(shared, dgtboard).start()
         super(WebServer, self).__init__()
-        wsgi_app = tornado.wsgi.WSGIContainer(pw)
+        self.shared: dict = {}
+        self.port = port
+        self.dgtboard = dgtboard
+        self.theme = theme
+        self.io_loop = None
 
-        application = tornado.web.Application(
+
+    def make_app(self) -> tornado.web.Application:
+        """ define web pages and their handlers """
+        wsgi_app = tornado.wsgi.WSGIContainer(pw)
+        return tornado.web.Application(
             [
-                (r"/", ChessBoardHandler, dict(theme=theme)),
-                (r"/event", EventHandler, dict(shared=shared)),
-                (r"/dgt", DGTHandler, dict(shared=shared)),
-                (r"/info", InfoHandler, dict(shared=shared)),
-                (r"/help", HelpHandler, dict(theme=theme)),
-                (r"/channel", ChannelHandler, dict(shared=shared)),
+                (r"/", ChessBoardHandler, dict(theme=self.theme)),
+                (r"/event", EventHandler, dict(shared=self.shared)),
+                (r"/dgt", DGTHandler, dict(shared=self.shared)),
+                (r"/info", InfoHandler, dict(shared=self.shared)),
+                (r"/help", HelpHandler, dict(theme=self.theme)),
+                (r"/channel", ChannelHandler, dict(shared=self.shared)),
                 (r".*", tornado.web.FallbackHandler, {"fallback": wsgi_app}),
             ]
         )
-        application.listen(port)
+
+
+    async def start_server(self):
+        """ start web server from thread start run"""
+        app = self.make_app()
+        app.listen(self.port)
+        # moved starting WebDisplayt and WebVr here so that they are in same thread io_loop
+        self.io_loop = tornado.ioloop.IOLoop.current()
+        logger.info("web server starting - initializing message queues")
+        WebDisplay(self.shared, self.io_loop).start()
+        WebVr(self.shared, self.dgtboard, self.io_loop).start()
+        logger.info("message queues ready - web server ready")
+        await asyncio.Event().wait()
+
 
     def run(self):
         """Call by threading.Thread start() function."""
-        logger.info("evt_queue ready")
-        IOLoop.instance().start()
+        asyncio.run(self.start_server())
 
 
 class WebVr(DgtIface):
     """Handle the web (clock) communication."""
 
-    def __init__(self, shared, dgtboard: EBoard):
+    def __init__(self, shared, dgtboard: EBoard, io_loop: tornado.ioloop.IOLoop):
         super(WebVr, self).__init__(dgtboard)
         self.shared = shared
-        self.virtual_timer: Optional[RepeatedTimer] = None
+        # virtual_timer is a web clock updater, loop is started in parent
+        self.virtual_timer = AsyncRepeatingTimer(1, self._runclock, self.loop)
+        self.io_loop = io_loop  # this is Tornados event loop for callbacks
         self.enable_dgtpi = dgtboard.is_pi
         sub = 2 if dgtboard.is_pi else 0
         DisplayMsg.show(Message.DGT_CLOCK_VERSION(main=2, sub=sub, dev="web", text=None))
@@ -257,7 +281,10 @@ class WebVr(DgtIface):
         if "clock_text" not in self.shared:
             self.shared["clock_text"] = {}
 
-    def _runclock(self):
+    async def _runclock(self):
+        """ callback from AsyncRepeatingTimer once every second """
+        # this is probably only to show a running web clock
+        # the real clock measurement timecontrol is not here?
         if self.side_running == ClockSide.LEFT:
             time_left = self.l_time - 1
             if time_left <= 0:
@@ -272,9 +299,9 @@ class WebVr(DgtIface):
                 self.virtual_timer.stop()
                 time_right = 0
             self.r_time = time_right
-        logger.debug(
-            "(web) clock new time received l:%s r:%s", hms_time(self.l_time), hms_time(self.r_time)
-        )
+        #logger.debug(
+        #    "(web) clock new time received l:%s r:%s", hms_time(self.l_time), hms_time(self.r_time)
+        #)
         DisplayMsg.show(
             Message.DGT_CLOCK_TIME(
                 time_left=self.l_time, time_right=self.r_time, connect=True, dev="web"
@@ -369,7 +396,7 @@ class WebVr(DgtIface):
         if self.get_name() not in devs:
             logger.debug("ignored stopClock - devs: %s", devs)
             return True
-        if self.virtual_timer:
+        if self.virtual_timer.is_running():
             self.virtual_timer.stop()
         return self._resume_clock(ClockSide.NONE)
 
@@ -382,10 +409,9 @@ class WebVr(DgtIface):
         if self.get_name() not in devs:
             logger.debug("ignored startClock - devs: %s", devs)
             return True
-        if self.virtual_timer and self.virtual_timer.is_running():
+        if self.virtual_timer.is_running():
             self.virtual_timer.stop()
         if side != ClockSide.NONE:
-            self.virtual_timer = RepeatedTimer(1, self._runclock)
             self.virtual_timer.start()
         self._resume_clock(side)
         self.clock_show_time = True
@@ -428,7 +454,8 @@ class WebVr(DgtIface):
         return "web"
 
     def _create_task(self, msg):
-        IOLoop.instance().add_callback(callback=lambda: self._process_message(msg))
+        # put callback to be executed by Tornado main event loop
+        self.io_loop.add_callback(callback=lambda: self._process_message(msg))
 
 
 class WebDisplay(DisplayMsg, threading.Thread):
@@ -438,9 +465,12 @@ class WebDisplay(DisplayMsg, threading.Thread):
     result_sav = ""
     engine_name = "Picochess"
 
-    def __init__(self, shared):
+    def __init__(self, shared: dict, io_loop: tornado.ioloop.IOLoop):
         super(WebDisplay, self).__init__()
         self.shared = shared
+        self.io_loop = io_loop  # Tornado webserver loop for callbacks
+        self.loop = asyncio.new_event_loop()  # thread needs loop
+        self._task = None  # task for message consumer
         self.starttime = datetime.datetime.now().strftime("%H:%M:%S")
 
     def _create_game_info(self):
@@ -543,6 +573,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
         pgn_game.headers["Time"] = self.starttime
 
     def task(self, message):
+        """ Message task consumer for WebDisplay messages """
         def _oldstyle_fen(game: chess.Board):
             builder = []
             builder.append(game.board_fen())
@@ -825,12 +856,24 @@ class WebDisplay(DisplayMsg, threading.Thread):
             pass
 
     def _create_task(self, msg):
-        IOLoop.instance().add_callback(callback=lambda: self.task(msg))
+        # put callback to be executed by Tornado main event loop
+        self.io_loop.add_callback(callback=lambda: self.task(msg))
+
 
     def run(self):
         """Call by threading.Thread start() function."""
+        asyncio.set_event_loop(self.loop)
+        self._task = self.loop.create_task(self.message_to_task())
+        self.loop.run_forever()
+
+
+    async def message_to_task(self):
+        """ Message task consumer for WebDisplay messages """
         logger.info("msg_queue ready")
         while True:
             # Check if we have something to display
-            message = self.msg_queue.get()
-            self._create_task(message)
+            try:
+                message = self.msg_queue.get_nowait()
+                self._create_task(message)
+            except queue.Empty:
+                await asyncio.sleep(FLOAT_MSG_WAIT)

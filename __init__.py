@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ['api', 'board', 'display', 'hw', 'iface', 'menu', 'pi', 'translate', 'util']
+__all__ = ['uci', 'dgt', 'books', 'web']
 __author__ = 'Jürgen Précour'
 __email__ = 'LocutusOfPenguin@posteo.de'
 __version__ = '0.9m'

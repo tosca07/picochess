@@ -18,16 +18,19 @@
 import os
 from typing import Optional
 import logging
+import time
 import configparser
 import spur  # type: ignore
 import paramiko
+import re
+from constants import FLOAT_MAX_ENGINE_TIME, FLOAT_MIN_ENGINE_TIME
+from constants import INT_EXPECTED_GAME_LENGTH
+from constants import FLOAT_PONDERING_LIMIT, FLOAT_BRAIN_LIMIT
 
-from subprocess import DEVNULL
 from dgt.api import Event
 from utilities import Observable
-import chess.uci  # type: ignore
+import chess.engine  # type: ignore
 from chess import Board  # type: ignore
-from uci.informer import Informer
 from uci.rating import Rating, Result
 from utilities import write_picochess_ini
 
@@ -117,12 +120,14 @@ class UciEngine(object):
     def __init__(self, file: str, uci_shell: UciShell, mame_par: str):
         super(UciEngine, self).__init__()
         logger.info("mame parameters=" + mame_par)
+        self.idle = True
+        self.pondering = False
+        self.analysing = False
+        self.is_adaptive = False
+        self.is_mame = False
+        self.engine_rating = -1
+        self.uci_elo_eval_fn = None  # saved UCI_Elo eval function
         try:
-            self.is_adaptive = False
-            self.is_mame = False
-            self.engine_rating = -1
-            self.uci_elo_eval_fn = None  # saved UCI_Elo eval function
-            self.shell = uci_shell.get()
             logger.info("file " + file)
             if "/mame/" in file:
                 self.is_mame = True
@@ -131,20 +136,25 @@ class UciEngine(object):
             else:
                 mfile = [file]
                 logger.info(mfile)
-            if self.shell:
-                self.engine = chess.uci.spur_spawn_engine(self.shell, mfile)
-            else:
-                self.engine = chess.uci.popen_engine(mfile, stderr=DEVNULL)
-
             self.file = file
+
+            logger.info("opening engine")
+            self.engine = chess.engine.SimpleEngine.popen_uci(mfile, debug=True)
+
+            logger.debug("in new chess module UciShell is used differently")
+            self.shell = None  # check if uci files can be used any more
+            self.engine_name = "NN"
             if self.engine:
-                handler = Informer()
-                self.engine.info_handlers.append(handler)
-                self.engine.uci()
+                # handler = Informer()
+                # self.engine.info_handlers.append(handler)
+                if "name" in self.engine.id:
+                    self.engine_name = self.engine.id["name"]
+                    i = re.search(r"\W+", self.engine_name).start()
+                    if i is not None:
+                        self.engine_name = self.engine_name[:i]
             else:
                 logger.error("engine executable [%s] not found", file)
             self.options: dict = {}
-            self.future = None
             self.show_best = True
 
             self.res = None
@@ -156,11 +166,11 @@ class UciEngine(object):
 
     def get_name(self):
         """Get engine name."""
-        return self.engine.name
+        return self.engine_name
 
     def get_options(self):
         """Get engine options."""
-        return self.engine.options
+        return self.options
 
     def get_pgn_options(self):
         """Get options."""
@@ -172,7 +182,11 @@ class UciEngine(object):
 
     def send(self):
         """Send options to engine."""
-        self.engine.setoption(self.options)
+        logger.debug("options not tested in this new version yet")
+        try:
+            self.engine.configure(self.options)
+        except Exception as e:
+            logger.warning(e)
 
     def has_levels(self):
         """Return engine level support."""
@@ -207,9 +221,9 @@ class UciEngine(object):
         """Get File."""
         return self.file
 
-    def position(self, game: Board):
-        """Set position."""
-        self.engine.position(game)
+    #def position(self, game: Board):
+    #    """Set position."""
+    #    logger.warning("as of new chess module no need to set position")
 
     def quit(self):
         """Quit engine."""
@@ -222,121 +236,152 @@ class UciEngine(object):
                         return False
         return True
 
-    def uci(self):
-        """Send start uci command."""
-        self.engine.uci()
-
     def stop(self, show_best=False):
         """Stop engine."""
         logger.info("show_best old: %s new: %s", self.show_best, show_best)
         self.show_best = show_best
-        if self.is_waiting():
-            logger.info("engine already stopped")
-            return self.res
-        try:
-            self.engine.stop()
-        except chess.uci.EngineTerminatedException:
-            logger.error("Engine terminated")  # @todo find out, why this can happen!
-        return self.future.result()
+        if not self.is_waiting():
+            logger.debug("waiting synchronized for engine to play to be ready")
+        while not self.is_waiting():
+            # @todo temporary code - wait until engine finishes
+            # brain and ponder is only a a fraction of a second
+            # but architecture in picochess must change for them
+            # and it could be made async, but then all of picochess.py
+            # will need a lot of updating as the await will "spread"
+            time.sleep(0.05)
+        # @ todo the old code tries to stop the engine here
+        # not sure how to deal with this in the new chess module
+        # there is no infinite play() call without a limit any more
+        # so engine will stop when it is done in ponder() or brain() etc
+        if self.res is None:
+            logger.warning("stop called without pondering or brain")
+        return self.res
+
 
     def pause_pgn_audio(self):
         """Stop engine."""
-        logger.info("pause audio old")
-        try:
-            self.engine.uci()
-        except chess.uci.EngineTerminatedException:
-            logger.error("Engine terminated")  # @todo find out, why this can happen!
+        logger.warning("pause audio old - unclear what to do here - doing nothing")
 
-    def go(self, time_dict: dict):
+    
+    def get_engine_limit(self, time_dict: dict, game: Board) -> float:
+        """ a simple algorithm to get engine thinking time """
+        try:
+            if game.turn == chess.WHITE:
+                time = time_dict["wtime"]
+            else:
+                time = time_dict["btime"]
+            use_time = float(time)
+            use_time = use_time / 1000.0  # convert to seconds
+            # divide usable time over first N moves
+            max_moves_left = INT_EXPECTED_GAME_LENGTH - game.fullmove_number
+            if max_moves_left > 0:
+                use_time = use_time / max_moves_left
+            # apply upper and lower limits
+            if use_time > FLOAT_MAX_ENGINE_TIME:
+                use_time = FLOAT_MAX_ENGINE_TIME
+            elif use_time < FLOAT_MIN_ENGINE_TIME:
+                use_time = FLOAT_MIN_ENGINE_TIME
+        except Exception as e:
+            use_time = 0.2  # fallback so that play does not stop
+            logger.warning(e)
+        return use_time
+    
+    def go(self, time_dict: dict, game: Board) -> chess.engine.PlayResult:
         """Go engine."""
-        self.show_best = True
-        time_dict["async_callback"] = self.callback
         logger.debug("molli: timedict: %s", str(time_dict))
         # Observable.fire(Event.START_SEARCH())
-        self.future = self.engine.go(**time_dict)
-        return self.future
-
-    def go_emu(self):
-        """Go engine."""
-        logger.debug("molli: go_emu")
-        self.future = self.engine.go(async_callback=self.callback)
-
-    def ponder(self):
-        """Ponder engine."""
-        self.show_best = False
-
-        # Observable.fire(Event.START_SEARCH())
-        self.future = self.engine.go(ponder=True, infinite=True, async_callback=self.callback)
-        return self.future
-
-    def brain(self, time_dict: dict):
-        """Permanent brain."""
-        self.show_best = True
-        time_dict["ponder"] = True
-        time_dict["async_callback"] = self.callback3
-
-        # Observable.fire(Event.START_SEARCH())
-        self.future = self.engine.go(**time_dict)
-        return self.future
-
-    def hit(self):
-        """Send a ponder hit."""
-        logger.info("show_best: %s", self.show_best)
-        self.engine.ponderhit()
-        self.show_best = True
-
-    def callback(self, command):
-        """Callback function."""
+        self.show_best = True # this is what old code does
+        use_time = self.get_engine_limit(time_dict, game)
         try:
-            self.res = command.result()
-        except chess.uci.EngineTerminatedException:
+            # @todo: how does the user affect the ponder value in this call
+            self.idle = False  # engine is going to be busy now
+            result = self.engine.play(game, chess.engine.Limit(time=use_time), ponder=False)
+            self.idle = True  # engine idle again
+        except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
+            result = None
             self.show_best = False
-        logger.info("res: %s", self.res)
         # Observable.fire(Event.STOP_SEARCH())
-        if self.show_best and self.res:
-            Observable.fire(Event.BEST_MOVE(move=self.res.bestmove, ponder=self.res.ponder, inbook=False))
+        if result:
+            logger.info("res: %s", result)
+            # not firing BEST_MOVE here because caller picochess fires it
         else:
-            logger.info("event best_move not fired")
+            logger.info("engine terminated while trying to make a move")
+        return result
 
-    def callback3(self, command):
-        """Callback function."""
+
+    def ponder(self, game: Board) -> chess.engine.PlayResult:
+        """ Ponder engine - This is Mode ANALYSIS - Hint On """
+        self.show_best = False # this is what old code does, probably no meaning
         try:
-            self.res = command.result()
-        except chess.uci.EngineTerminatedException:
+            self.idle = False  # engine is going to be busy now
+            result = self.engine.play(game, chess.engine.Limit(time=FLOAT_PONDERING_LIMIT))
+            self.idle = True  # engine idle again
+        except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
-            self.show_best = False
-        logger.info("res: %s", self.res)
+            result = None
         # Observable.fire(Event.STOP_SEARCH())
-        if self.show_best and self.res:
-            Observable.fire(Event.BEST_MOVE(move=self.res.bestmove, ponder=self.res.ponder, inbook=False))
-        else:
-            logger.info("event best_move not fired")
+        if result:
+            logger.info("res: %s", result)
+            self.res = result # old code still needs this in stop() ?
+            # as this is brain mode ponder value is suggested engine move
+            # Observable.fire(Event.BEST_MOVE(move=result.move, ponder=result.move, inbook=False))
+        return result
+
+
+    def brain(self, game: Board) -> chess.engine.PlayResult:
+        """ Permanent brain. This is mode BRAIN - Pondering On in Menu """
+        # @todo replace this one with call to analyse
+        # Observable.fire(Event.START_SEARCH())
+        self.show_best = True # this is what old code does, probably no meaning
+        try:
+            # @todo check if we can use time_dict here
+            self.idle = False  # engine is going to be busy now
+            result = self.engine.play(game, chess.engine.Limit(time=FLOAT_BRAIN_LIMIT))
+            self.idle = True  # engine idle again
+        except chess.engine.EngineTerminatedError:
+            logger.error("Engine terminated")  # @todo find out, why this can happen!
+            result = None
+            self.show_best = False
+        # Observable.fire(Event.STOP_SEARCH())
+        if result:
+            logger.info("res: %s", result)
+            self.res = result # old code still needs this in stop() ?
+            # as this is brain mode ponder value is suggested engine move
+            # Observable.fire(Event.BEST_MOVE(move=result.move, ponder=result.move, inbook=False))
+        return result
+
 
     def is_thinking(self):
         """Engine thinking."""
-        return not self.engine.idle and not self.engine.pondering
+        # @ todo check if self.pondering should be removed
+        return not self.idle and not self.pondering
 
     def is_pondering(self):
         """Engine pondering."""
-        return not self.engine.idle and self.engine.pondering
+        # in the new chess module we are possibly idle
+        # but have to inform picochess.py that we could
+        # be pondering anyway
+        return self.pondering
 
     def is_waiting(self):
         """Engine waiting."""
-        return self.engine.idle
+        return self.idle
 
     def is_ready(self):
         """Engine waiting."""
-        return self.engine.isready()
+        return True  # should not be needed any more
 
     def newgame(self, game: Board):
         """Engine sometimes need this to setup internal values."""
-        self.engine.ucinewgame()
-        self.engine.position(game)
+        game.reset()  # set starting position
+        # self.engine.quit()  # not sure if this is needed
+        logger.debug("engine new game - do I need to reopen engine?")
 
     def mode(self, ponder: bool, analyse: bool):
         """Set engine mode."""
-        self.engine.setoption({"Ponder": ponder, "UCI_AnalyseMode": analyse})
+        self.pondering = ponder  # True in BRAIN mode = Ponder On menu
+        self.analysing = analyse  # True in ANALYSIS mode = Hint On menu
 
     def startup(self, options: dict, rating: Optional[Rating] = None):
         """Startup engine."""

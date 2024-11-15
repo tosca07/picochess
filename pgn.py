@@ -39,6 +39,8 @@ from timecontrol import TimeControl
 from utilities import DisplayMsg
 from dgt.api import Dgt, Message
 from dgt.util import PlayMode, Mode, TimeMode
+import asyncio
+from constants import FLOAT_MSG_WAIT
 
 logger = logging.getLogger(__name__)
 
@@ -188,7 +190,7 @@ class ModeInfo:
         if ModeInfo.online_own_user != "":
             pass
         else:
-            ModeInfo.online_own_user = cls.user_name
+            ModeInfo.online_own_user = cls.get_online_own_user()
         return ModeInfo.online_own_user
 
 
@@ -642,11 +644,15 @@ class PgnDisplay(DisplayMsg, threading.Thread):
 
     def run(self):
         """Call by threading.Thread start() function."""
+        asyncio.run(self.consume_messages())
+
+    async def consume_messages(self):
+        """ PGN message consumer """
         logger.info("msg_queue ready")
         while True:
             # Check if we have something to display
             try:
-                message = self.msg_queue.get()
+                message = self.msg_queue.get_nowait()
                 self._process_message(message)
             except queue.Empty:
-                pass
+                await asyncio.sleep(FLOAT_MSG_WAIT)

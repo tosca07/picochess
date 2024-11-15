@@ -25,7 +25,8 @@ from dgt.util import ClockSide
 from dgt.api import Dgt
 from eboard.eboard import EBoard
 from dgt.board import Rev2Info
-
+import asyncio
+from constants import FLOAT_MSG_WAIT
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,8 @@ class DgtIface(DisplayDgt, Thread):
         self.side_running = ClockSide.NONE
         self.enable_dgt3000 = False
         self.case_res = True
+        self.loop = asyncio.new_event_loop() # thread needs event loop
+        self._task = None  # task to run message consumer
 
     def display_text_on_clock(self, message):
         """Override this function."""
@@ -116,7 +119,8 @@ class DgtIface(DisplayDgt, Thread):
             else:
                 return text
 
-        bit_board = Board(message.fen, message.uci960)
+        # bit_board = Board(message.fen, message.uci960)
+        bit_board = Board(message.fen)
         if bit_board.is_legal(message.move):
             if message.long:
                 move_text = message.move.uci()
@@ -137,6 +141,7 @@ class DgtIface(DisplayDgt, Thread):
         return bit_board, move(move_text, message.lang, message.capital and not is_xl, not message.long)
 
     def _process_message(self, message):
+        """ Message task consumer for WebVR - can we do await anywhere? """
         if self.get_name() not in message.devs:
             return True
 
@@ -185,13 +190,21 @@ class DgtIface(DisplayDgt, Thread):
         if not res:
             logger.warning('DgtApi command %s failed result: %s', msg, res)
 
+
     def run(self):
         """Call by threading.Thread start() function."""
+        asyncio.set_event_loop(self.loop)
+        self._task = self.loop.create_task(self.message_to_task())
+        self.loop.run_forever()
+
+    async def message_to_task(self):
+        """ Message task consumer for WebVr messages """
         logger.info('[%s] dgt_queue ready', self.get_name())
         while True:
             # Check if we have something to display
             try:
-                message = self.dgt_queue.get()
+                message = self.dgt_queue.get_nowait()
                 self._create_task(message)
             except queue.Empty:
-                pass
+                await asyncio.sleep(FLOAT_MSG_WAIT)
+

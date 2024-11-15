@@ -19,10 +19,10 @@ from threading import Timer
 
 from utilities import Observable
 from dgt.api import Event
-import chess.uci  # type: ignore
+import chess.engine  # type: ignore
 
 
-class Informer(chess.uci.InfoHandler):
+class Informer():
 
     """Internal uci engine info handler."""
 

@@ -24,13 +24,15 @@ import threading
 import subprocess
 import time
 import chess  # type: ignore
-from utilities import DisplayMsg, Observable, DispatchDgt, RepeatedTimer, write_picochess_ini
+from utilities import DisplayMsg, Observable, DispatchDgt, AsyncRepeatingTimer, write_picochess_ini
 from dgt.menu import DgtMenu
 from dgt.util import ClockSide, ClockIcons, BeepLevel, Mode, GameResult, TimeMode, PlayMode
 from dgt.api import Dgt, Event, Message
 from timecontrol import TimeControl
 from dgt.board import Rev2Info
 from dgt.translate import DgtTranslate
+import asyncio
+from constants import FLOAT_MSG_WAIT
 
 
 logger = logging.getLogger(__name__)
@@ -62,7 +64,10 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self.low_time = False
         self.c_last_player = ""
         self.c_time_counter = 0
-        RepeatedTimer(1, self._process_once_per_second).start()
+        self.loop = asyncio.new_event_loop()  # thread needs loop
+        self._task = None  # task for message consumer
+        self.timer = AsyncRepeatingTimer(1, self._process_once_per_second, loop=self.loop)
+        self.timer.start()
 
     def _convert_pico_string(self, pico_string):
         # print routine for longer text output like opening name, comments
@@ -83,17 +88,17 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             op_list = pico_string.split()
             for op_part in op_list:
                 if result:
-                    help = result + " " + op_part
+                    helptext = result + " " + op_part
                 else:
-                    help = op_part
-                if len(help) == text_length:
-                    result_list.append(help)
-                    help = ""
+                    helptext = op_part
+                if len(helptext) == text_length:
+                    result_list.append(helptext)
+                    helptext = ""
                     result = ""
-                elif (text_length - len(help)) > 0:
+                elif (text_length - len(helptext)) > 0:
                     # there is a small chance that we can still add another word
-                    result = help
-                    help = ""
+                    result = helptext
+                    helptext = ""
                 else:
                     # too long: save last result and keep current part
                     if result:
@@ -104,12 +109,12 @@ class DgtDisplay(DisplayMsg, threading.Thread):
                             result = ""
                         else:
                             result = op_part
-                        help = ""
+                        helptext = ""
                     else:
                         # too long: keep remain. result for next loop
-                        result_list.append(help[:text_length])
-                        result = help[text_length:]
-                        help = ""
+                        result_list.append(helptext[:text_length])
+                        result = helptext[text_length:]
+                        helptext = ""
 
             if result:
                 # if still chars left add them to the list!!!!
@@ -301,7 +306,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
                 capital=self.dgttranslate.capital,
                 long=self.dgttranslate.notation,
             )
-            move_text = bit_board.san(text.move)
+            move_text = bit_board.san(self.hint_move)
         else:
             move_text = " - "
         short = True
@@ -1087,8 +1092,9 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         )
         self._set_clock(side=side, devs=message.devs)
 
-    def _process_once_per_second(self):
-        # logger.debug('Serial number {}'.format(message.number))  # actually used for watchdog (once a second)
+    async def _process_once_per_second(self):
+        """ called by AsyncRepeatingTimer """
+        # logger.debug("process_once_per_second running")
         # molli: rolling display
         if not self._inside_main_menu():
             if self.dgtmenu.get_mode() == Mode.PONDER:
@@ -1217,6 +1223,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         DispatchDgt.fire(text)
 
     def _process_message(self, message):
+        """ message task consumer """
         if False:  # switch-case
             pass
 
@@ -1444,7 +1451,8 @@ class DgtDisplay(DisplayMsg, threading.Thread):
 
         elif isinstance(message, Message.DGT_NO_EBOARD_ERROR):
             if self.dgtmenu.inside_updt_menu() or self.dgtmenu.inside_main_menu():
-                logger.debug("inside menu => board error not displayed")
+                pass  # avoid filling logbook with DGT search
+                # logger.debug("inside menu => board error not displayed")
             else:
                 DispatchDgt.fire(message.text)
 
@@ -1639,13 +1647,20 @@ class DgtDisplay(DisplayMsg, threading.Thread):
 
     def run(self):
         """Call by threading.Thread start() function."""
-        logger.info("msg_queue ready")
+        asyncio.set_event_loop(self.loop)
+        self._task = self.loop.create_task(self.consume_message_queue())
+        self.loop.run_forever()
+
+
+    async def consume_message_queue(self):
+        """ DgtDisplay message consumer """
+        logger.info("DgtDisplay msg_queue ready")
         while True:
             # Check if we have something to display
             try:
-                message = self.msg_queue.get()
+                message = self.msg_queue.get_nowait()
                 if not isinstance(message, Message.DGT_SERIAL_NR):
                     logger.debug("received message from msg_queue: %s", message)
                 self._process_message(message)
             except queue.Empty:
-                pass
+                await asyncio.sleep(FLOAT_MSG_WAIT)

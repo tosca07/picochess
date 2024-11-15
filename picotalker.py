@@ -33,6 +33,8 @@ import chess  # type: ignore
 from utilities import DisplayMsg
 from dgt.api import Message
 from dgt.util import GameResult, PlayMode, Voice, EBoard
+import asyncio
+from constants import FLOAT_MSG_WAIT
 
 logger = logging.getLogger(__name__)
 
@@ -561,483 +563,489 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
 
     def run(self):
         """Start listening for Messages on our queue and generate speech as appropriate."""
+        asyncio.run(self.consume_picotalk_messages())
 
-        previous_move = chess.Move.null()  # Ignore repeated broadcasts of a move
-        last_pos_dir = ""
-        logger.info("msg_queue ready")
+
+    async def consume_picotalk_messages(self):
+        """ consume Picotalker messages """
+        logger.info("picotalker msg_queue ready")
         while True:
             try:
                 # Check if we have something to say
-                message = self.msg_queue.get()
-
-                if False:  # switch-case
-                    pass
-                elif isinstance(message, Message.ENGINE_FAIL):
-                    logger.debug("announcing ENGINE_FAIL")
-                    self.talk(["error.ogg"])
-
-                elif isinstance(message, Message.START_NEW_GAME):
-                    last_pos_dir = ""
-                    if message.newgame:
-                        logger.debug("announcing START_NEW_GAME")
-                        self.talk(["new_game.ogg"], self.BEEPER)
-                        self.talk(["newgame.ogg"])
-                        self.play_game = None
-                        self.comment("newgame")
-                        self.comment("uwhite")
-                        previous_move = chess.Move.null()
-
-                elif isinstance(message, Message.COMPUTER_MOVE):
-                    logger.debug("molli: before announcing COMPUTER_MOVE [%s]", message.move)
-                    if message.move and message.game:
-                        game_copy = message.game.copy()
-                        if game_copy.board_fen() == chess.STARTING_BOARD_FEN:
-                            previous_move = chess.Move.null()
-                        if message.move != previous_move:
-                            logger.debug("announcing COMPUTER_MOVE [%s]", message.move)
-                            game_copy.push(message.move)
-                            self.talk(["computer_move.ogg"], self.BEEPER)
-                            if self.eboard_type == EBoard.NOEBOARD:
-                                self.talk(["player_move.ogg"], self.BEEPER)
-                            self.comment("beforecmove")
-                            self.talk(self.say_last_move(game_copy), self.COMPUTER)
-                            self.move_comment()
-                            self.comment("cmove")
-                            previous_move = message.move
-                            self.play_game = game_copy
-
-                elif isinstance(message, Message.COMPUTER_MOVE_DONE):
-                    self.play_game = None
-                    if self.eboard_type != EBoard.NOEBOARD:
-                        self.talk(["player_move.ogg"], self.BEEPER)
-                    self.comment("chat")
-
-                elif isinstance(message, Message.USER_MOVE_DONE):
-                    if message.move and message.game and message.move != previous_move:
-                        logger.debug("announcing USER_MOVE_DONE [%s]", message.move)
-                        self.talk(["player_move.ogg"], self.BEEPER)
-                        self.comment("beforeumove")
-                        self.talk(self.say_last_move(message.game), self.USER)
-                        previous_move = message.move
-                        self.play_game = None
-                        self.comment("umove")
-                        self.comment("poem")
-
-                elif isinstance(message, Message.REVIEW_MOVE_DONE):
-                    if message.move and message.game and message.move != previous_move:
-                        logger.debug("announcing REVIEW_MOVE_DONE [%s]", message.move)
-                        self.talk(["player_move.ogg"], self.BEEPER)
-                        self.talk(self.say_last_move(message.game), self.USER)
-                        previous_move = message.move
-                        self.play_game = None  # @todo why thats not set in dgtdisplay?
-
-                elif isinstance(message, Message.GAME_ENDS):
-                    previous_move = chess.Move.null()
-                    last_pos_dir = ""
-                    if message.result == GameResult.OUT_OF_TIME:
-                        logger.debug("announcing GAME_ENDS/TIME_CONTROL")
-                        wins = (
-                            "whitewins.ogg"
-                            if message.game.turn == chess.BLACK
-                            else "blackwins.ogg"
-                        )
-                        self.talk(["timelost.ogg", wins])
-                        if wins == "whitewins.ogg":
-                            if self.play_mode == PlayMode.USER_WHITE:
-                                self.comment("uwin")
-                            else:
-                                self.comment("uloose")
-                        else:
-                            if self.play_mode == PlayMode.USER_BLACK:
-                                self.comment("uwin")
-                            else:
-                                self.comment("uloose")
-                    elif message.result == GameResult.INSUFFICIENT_MATERIAL:
-                        logger.debug("announcing GAME_ENDS/INSUFFICIENT_MATERIAL")
-                        self.talk(["material.ogg", "draw.ogg"])
-                        self.comment("draw")
-                    elif message.result == GameResult.MATE:
-                        logger.debug("announcing GAME_ENDS/MATE")
-                        self.comment("mate")
-                        if message.game.turn == chess.BLACK:
-                            # white wins
-                            if self.play_mode == PlayMode.USER_WHITE:
-                                self.talk(["checkmate.ogg"])
-                                self.talk(["whitewins.ogg"])
-                                self.comment("uwin")
-                            else:
-                                self.comment("uloose")
-                        else:
-                            # black wins
-                            if self.play_mode == PlayMode.USER_BLACK:
-                                self.talk(["checkmate.ogg"])
-                                self.talk(["blackwins.ogg"])
-                                self.comment("uwin")
-                            else:
-                                self.comment("uloose")
-                    elif message.result == GameResult.STALEMATE:
-                        logger.debug("announcing GAME_ENDS/STALEMATE")
-                        self.talk(["stalemate.ogg"])
-                        self.comment("stalemate")
-                    elif message.result == GameResult.ABORT:
-                        logger.debug("announcing GAME_ENDS/ABORT")
-                        self.talk(["abort.ogg"])
-                    elif message.result == GameResult.DRAW:
-                        logger.debug("announcing GAME_ENDS/DRAW")
-                        self.talk(["draw.ogg"])
-                        self.comment("draw")
-                    elif message.result == GameResult.WIN_WHITE:
-                        logger.debug("announcing GAME_ENDS/WHITE_WIN")
-                        self.talk(["whitewins.ogg"])
-                        if self.play_mode == PlayMode.USER_WHITE:
-                            self.comment("uwin")
-                        else:
-                            self.comment("uloose")
-                    elif message.result == GameResult.WIN_BLACK:
-                        logger.debug("announcing GAME_ENDS/BLACK_WIN")
-                        self.talk(["blackwins.ogg"])
-                        if self.play_mode == PlayMode.USER_BLACK:
-                            self.comment("uwin")
-                        else:
-                            self.comment("uloose")
-                    elif message.result == GameResult.FIVEFOLD_REPETITION:
-                        logger.debug("announcing GAME_ENDS/FIVEFOLD_REPETITION")
-                        self.talk(["repetition.ogg", "draw.ogg"])
-                        self.comment("draw")
-
-                elif isinstance(message, Message.TAKE_BACK):
-                    logger.debug("announcing TAKE_BACK")
-                    self.talk(["takeback.ogg"])
-                    self.play_game = None
-                    previous_move = chess.Move.null()
-                    self.comment("takeback")
-
-                elif isinstance(message, Message.TIME_CONTROL):
-                    logger.debug("announcing TIME_CONTROL")
-                    self.talk(["confirm.ogg"], self.BEEPER)
-                    self.talk(["oktime.ogg"])
-
-                elif isinstance(message, Message.INTERACTION_MODE):
-                    logger.debug("announcing INTERACTION_MODE")
-                    self.talk(["okmode.ogg"])
-
-                elif isinstance(message, Message.LEVEL):
-                    if message.do_speak:
-                        logger.debug("announcing LEVEL")
-                        self.talk(["oklevel.ogg"])
-                    else:
-                        logger.debug("dont announce LEVEL cause its also an engine message")
-
-                elif isinstance(message, Message.OPENING_BOOK):
-                    logger.debug("announcing OPENING_BOOK")
-                    self.talk(["okbook.ogg"])
-
-                elif isinstance(message, Message.ENGINE_READY):
-                    logger.debug("announcing ENGINE_READY")
-                    self.talk(["confirm.ogg"], self.BEEPER)
-                    self.talk(["okengine.ogg"])
-
-                elif isinstance(message, Message.PLAY_MODE):
-                    logger.debug("announcing PLAY_MODE")
-                    self.play_mode = message.play_mode
-                    userplay = (
-                        "userblack.ogg"
-                        if message.play_mode == PlayMode.USER_BLACK
-                        else "userwhite.ogg"
-                    )
-                    self.talk([userplay])
-                    if message.play_mode == PlayMode.USER_BLACK:
-                        self.comment("ublack")
-                    else:
-                        self.comment("uwhite")
-
-                elif isinstance(message, Message.STARTUP_INFO):
-                    self.play_mode = message.info["play_mode"]
-                    logger.debug("announcing PICOCHESS")
-                    self.talk(["picoChess.ogg"], self.BEEPER)
-                    self.talk(["picoChess.ogg"])
-                    previous_move = chess.Move.null()
-                    last_pos_dir = ""
-                    self.comment("start")
-                    self.comment("name")
-
-                elif isinstance(message, Message.CLOCK_TIME):
-                    self.low_time = message.low_time
-                    if self.low_time:
-                        logger.debug(
-                            "time too low, disable voice - w: %i, b: %i",
-                            message.time_white,
-                            message.time_black,
-                        )
-
-                elif isinstance(message, Message.ALTERNATIVE_MOVE):
-                    self.play_mode = message.play_mode
-                    self.play_game = None
-                    self.talk(["alternative_move.ogg"])
-
-                elif isinstance(message, Message.SYSTEM_SHUTDOWN):
-                    logger.debug("announcing SHUTDOWN")
-                    self.talk(["goodbye.ogg"])
-                    self.comment("shutdown")
-
-                elif isinstance(message, Message.SYSTEM_REBOOT):
-                    logger.debug("announcing REBOOT")
-                    self.talk(["pleasewait.ogg"])
-                    self.comment("shutdown")
-                    time.sleep(3)
-
-                elif isinstance(message, Message.MOVE_RETRY):
-                    logger.debug("announcing MOVE_RETRY")
-                    self.talk(["retry_move.ogg"])
-
-                elif isinstance(message, Message.MOVE_WRONG):
-                    logger.debug("announcing MOVE_WRONG")
-                    self.talk(["wrong_move.ogg"])
-
-                elif isinstance(message, Message.ONLINE_LOGIN):
-                    logger.debug("announcing ONLINE_LOGIN")
-                    self.talk(["online_login.ogg"])
-
-                elif isinstance(message, Message.SEEKING):
-                    logger.debug("announcing SEEKING")
-                    self.talk(["seeking.ogg"])
-
-                elif isinstance(message, Message.ONLINE_NAMES):
-                    logger.debug("announcing ONLINE_NAMES")
-                    self.talk(["opponent_found.ogg"])
-
-                elif isinstance(message, Message.RESTORE_GAME):
-                    logger.debug("announcing RESTORE_GAME")
-                    self.talk(["last_game_restored.ogg"])
-
-                elif isinstance(message, Message.ENGINE_SETUP):
-                    logger.debug("announcing ENGINE_SETUP")
-                    self.talk(["engine_setup.ogg"])
-
-                elif isinstance(message, Message.ONLINE_FAILED):
-                    self.talk(["server_error.ogg"])
-
-                elif isinstance(message, Message.ONLINE_USER_FAILED):
-                    self.talk(["login_error.ogg"])
-
-                elif isinstance(message, Message.ONLINE_NO_OPPONENT):
-                    self.talk(["no_opponent.ogg"])
-
-                elif isinstance(message, Message.LOST_ON_TIME):
-                    self.talk(["timelost.ogg"])
-
-                elif isinstance(message, Message.POSITION_FAIL):
-                    logger.debug("molli: talker orig. fen_result = %s", message.fen_result)
-                    if last_pos_dir == message.fen_result:
-                        self.same_cnt = self.same_cnt + 1
-                    else:
-                        self.same_cnt = 0
-                    last_pos_dir = message.fen_result
-                    if self.same_cnt % 3 == 0:
-                        if "clear" in message.fen_result:
-                            fen_str = message.fen_result[-2:]
-                            self.talk(["remove.ogg"])
-                            self.talk(self.say_squarepiece(fen_str))
-                        elif "put" in message.fen_result:
-                            fen_str = message.fen_result[-4:]
-                            self.talk(["put.ogg"])
-                            self.talk(self.say_squarepiece(fen_str))
-                        else:
-                            pass
-
-                elif isinstance(message, Message.PICOTUTOR_MSG):
-                    if "??" == message.eval_str:
-                        if not self.pico_voice_active:
-                            self.talk(["picotutor.ogg"], self.BEEPER)
-                        self.talk(["picotutor_notify.ogg"])
-                        self.talk(["verybadmove.ogg"])
-                    elif "?" == message.eval_str:
-                        self.talk(["picotutor_notify.ogg"])
-                        self.talk(["badmove.ogg"])
-                    elif "!?" == message.eval_str:
-                        self.talk(["picotutor_notify.ogg"])
-                        self.talk(["interestingmove.ogg"])
-                    elif "!!" == message.eval_str:
-                        self.talk(["picotutor_notify.ogg"])
-                        self.talk(["verygoodmove.ogg"])
-                    elif "!" == message.eval_str:
-                        self.talk(["picotutor_notify.ogg"])
-                        self.talk(["goodmove.ogg"])
-                    elif "?!" == message.eval_str:
-                        self.talk(["picotutor_notify.ogg"])
-                        self.talk(["dubiousmove.ogg"])
-                    elif "ER" == message.eval_str:
-                        self.talk(["picotutor_notify.ogg"])
-                        self.talk(["error.ogg"])
-                    elif "ACTIVE" in message.eval_str:
-                        self.talk(["picotutor_notify.ogg"])
-                        self.talk(["picotutor_enabled.ogg"])
-                    elif "ANALYSIS" in message.eval_str:
-                        self.talk(["picotutor_notify.ogg"])
-                        self.talk(["picotutor_analysis.ogg"])
-                    elif "HINT" in message.eval_str:
-                        self.talk(["picotutor_hintmove.ogg"])
-                        self.talk(self.say_tutor_move(message.game))
-                    elif "THREAT" in message.eval_str:
-                        self.talk(["picotutor_threatmove.ogg"])
-                        self.talk(self.say_tutor_move(message.game))
-                    elif "POSOK" in message.eval_str:
-                        last_pos_dir = ""
-                        self.talk(["confirm.ogg"], self.BEEPER)
-                        self.talk(["ok.ogg"])
-                    elif "POS" in message.eval_str:
-                        score = message.score
-                        if abs(score) <= 1:
-                            self.talk(["picotutor_equal_position.ogg"])
-                        elif score > 3:
-                            self.talk(["picotutor_verygood_position.ogg"])
-                        elif score > 1 and score < 3:
-                            self.talk(["picotutor_good_position.ogg"])
-                        elif score < -3:
-                            self.talk(["picotutor_verybad_position.ogg"])
-                        elif score > -3 and score < -1:
-                            self.talk(["picotutor_bad_position.ogg"])
-                    elif "BEST" in message.eval_str:
-                        self.talk(["picotutor_best_move.ogg"])
-                        self.talk(self.say_tutor_move(message.game))
-                    elif "PICMATE" in message.eval_str:
-                        logger.debug("molli in picotutortalker: %s", message.eval_str)
-                        self.talk(["picotutor_pico_mate.ogg"])
-                        list_str = message.eval_str
-                        list_mate = list_str.split("_")
-                        logger.debug("molli in picotutortalker: %s", list_mate[0])
-                        logger.debug("molli in picotutortalker: %s", list_mate[1])
-
-                        talk_mate = "t_" + list_mate[1] + ".ogg"
-                        logger.debug("talk_mate = %s", talk_mate)
-                        self.talk([talk_mate])
-                    elif "USRMATE" in message.eval_str:
-                        logger.debug("molli in picotutortalker: %s", message.eval_str)
-                        self.talk(["picotutor_player_mate.ogg"])
-                        list_str = message.eval_str
-                        list_mate = list_str.split("_")
-                        logger.debug("molli in picotutortalker: %s", list_mate[0])
-                        logger.debug("molli in picotutortalker: %s", list_mate[1])
-
-                        talk_mate = "t_" + list_mate[1] + ".ogg"
-                        logger.debug("talk_mate = %s", talk_mate)
-                        self.talk([talk_mate])
-
-                elif isinstance(message, Message.PGN_GAME_END):  # for pgn replay
-                    logger.debug("announcing PGN GAME END")
-                    previous_move = chess.Move.null()
-                    self.talk(["pgn_game_end.ogg"])
-                    if "1-0" in message.result:
-                        self.talk(["whitewins.ogg"])
-                    elif "0-1" in message.result:
-                        self.talk(["blackwins.ogg"])
-                    elif "0.5-0.5" in message.result or "1/2-1/2" in message.result:
-                        self.talk(["draw.ogg"])
-                    elif "*" in message.result:
-                        self.talk(["game_result_unknown.ogg"])
-                    else:
-                        # default
-                        self.talk(["game_result_unknown.ogg"])
-
-                elif isinstance(message, Message.TIMECONTROL_CHECK):
-                    logger.debug("timecontrol check")
-                    self.talk(["picotutor_notify.ogg"])
-                    if message.player:
-                        self.talk(["timecontrol_check_player.ogg"])
-                    else:
-                        self.talk(["timecontrol_check_opp.ogg"])
-
-                elif isinstance(message, Message.SHOW_ENGINENAME):
-                    if message.show_enginename:
-                        self.talk(["show_enginename_on.ogg"])
-                    else:
-                        self.talk(["show_enginename_off.ogg"])
-
-                elif isinstance(message, Message.SHOW_TEXT):
-                    if message.text_string == "NEW_POSITION_SCAN":
-                        self.talk(["position_setup.ogg"])
-                    elif message.text_string == "NEW_POSITION":
-                        self.talk(["set_pieces_sound.ogg"], self.BEEPER)
-                        if not self.sample_beeper or self.sample_beeper_level == 0:
-                            self.talk(["set_pieces_sound.ogg"])
-
-                elif isinstance(message, Message.PICOWATCHER):
-                    if message.picowatcher:
-                        self.talk(["picowatcher_enabled.ogg"])
-                    else:
-                        self.talk(["picowatcher_disabled.ogg"])
-                    self.talk(["picotutor_ok.ogg"])
-
-                elif isinstance(message, Message.PICOCOACH):
-                    if message.picocoach:
-                        self.talk(["picocoach_enabled.ogg"])
-                    else:
-                        self.talk(["picocoach_disabled.ogg"])
-                    self.talk(["picotutor_ok.ogg"])
-
-                elif isinstance(message, Message.PICOEXPLORER):
-                    if message.picoexplorer:
-                        self.talk(["picoexplorer_enabled.ogg"])
-                    else:
-                        self.talk(["picoexplorer_disabled.ogg"])
-                    self.talk(["picotutor_ok.ogg"])
-
-                elif isinstance(message, Message.PICOCOMMENT):
-                    self.talk(["ok.ogg"])
-
-                elif isinstance(message, Message.SAVE_GAME):
-                    self.talk(["save_game.ogg"])
-
-                elif isinstance(message, Message.READ_GAME):
-                    self.talk(["read_game.ogg"])
-
-                elif isinstance(message, Message.CONTLAST):
-                    if message.contlast:
-                        self.talk(["contlast_game_on.ogg"])
-                    else:
-                        self.talk(["contlast_game_off.ogg"])
-
-                elif isinstance(message, Message.ALTMOVES):
-                    if message.altmoves:
-                        self.talk(["altmoves_on.ogg"])
-                    else:
-                        self.talk(["altmoves_off.ogg"])
-
-                elif isinstance(message, Message.SET_VOICE):
-                    self.speed_factor = (90 + (message.speed % 10) * 5) / 100
-                    localisation_id_voice = message.lang + ":" + message.speaker
-                    if message.type == Voice.USER:
-                        self.set_user(PicoTalker(localisation_id_voice, self.speed_factor))
-                    if message.type == Voice.COMP:
-                        self.set_computer(PicoTalker(localisation_id_voice, self.speed_factor))
-                    if message.type == Voice.SPEED:
-                        self.set_factor(self.speed_factor)
-                    if message.type == Voice.BEEPER:
-                        self.set_beeper(PicoTalker(localisation_id_voice, self.speed_factor))
-                        if message.speaker == "mute":
-                            self.sample_beeper = False
-                        else:
-                            self.sample_beeper = True
-                    self.talk(["confirm.ogg"], self.BEEPER)
-                    self.talk(["ok.ogg"])
-
-                elif isinstance(message, Message.WRONG_FEN):
-                    self.talk(["set_pieces_sound.ogg"], self.BEEPER)
-                    if self.setpieces_voice:
-                        self.talk(["setpieces.ogg"])
-                    else:
-                        if not self.sample_beeper or self.sample_beeper_level == 0:
-                            self.talk(["set_pieces_sound.ogg"])
-                    if self.play_game:
-                        self.talk(self.say_last_move(self.play_game), self.COMPUTER)
-
-                elif isinstance(message, Message.DGT_BUTTON):
-                    if self.sample_beeper and self.sample_beeper_level > 1:
-                        self.talk(["button_click.ogg"], self.BEEPER)
-                else:  # Default
-                    pass
+                message = self.msg_queue.get_nowait()
+                self.process_picotalker_messages(message)
             except queue.Empty:
-                pass
+                await asyncio.sleep(FLOAT_MSG_WAIT)
+
+
+    def process_picotalker_messages(self, message):
+        """ process Picotalker messages """
+        previous_move = chess.Move.null()  # Ignore repeated broadcasts of a move
+        last_pos_dir = ""
+        if isinstance(message, Message.ENGINE_FAIL):
+            logger.debug("announcing ENGINE_FAIL")
+            self.talk(["error.ogg"])
+
+        elif isinstance(message, Message.START_NEW_GAME):
+            last_pos_dir = ""
+            if message.newgame:
+                logger.debug("announcing START_NEW_GAME")
+                self.talk(["new_game.ogg"], self.BEEPER)
+                self.talk(["newgame.ogg"])
+                self.play_game = None
+                self.comment("newgame")
+                self.comment("uwhite")
+                previous_move = chess.Move.null()
+
+        elif isinstance(message, Message.COMPUTER_MOVE):
+            logger.debug("molli: before announcing COMPUTER_MOVE [%s]", message.move)
+            if message.move and message.game:
+                game_copy = message.game.copy()
+                if game_copy.board_fen() == chess.STARTING_BOARD_FEN:
+                    previous_move = chess.Move.null()
+                if message.move != previous_move:
+                    logger.debug("announcing COMPUTER_MOVE [%s]", message.move)
+                    game_copy.push(message.move)
+                    self.talk(["computer_move.ogg"], self.BEEPER)
+                    if self.eboard_type == EBoard.NOEBOARD:
+                        self.talk(["player_move.ogg"], self.BEEPER)
+                    self.comment("beforecmove")
+                    self.talk(self.say_last_move(game_copy), self.COMPUTER)
+                    self.move_comment()
+                    self.comment("cmove")
+                    previous_move = message.move
+                    self.play_game = game_copy
+
+        elif isinstance(message, Message.COMPUTER_MOVE_DONE):
+            self.play_game = None
+            if self.eboard_type != EBoard.NOEBOARD:
+                self.talk(["player_move.ogg"], self.BEEPER)
+            self.comment("chat")
+
+        elif isinstance(message, Message.USER_MOVE_DONE):
+            if message.move and message.game and message.move != previous_move:
+                logger.debug("announcing USER_MOVE_DONE [%s]", message.move)
+                self.talk(["player_move.ogg"], self.BEEPER)
+                self.comment("beforeumove")
+                self.talk(self.say_last_move(message.game), self.USER)
+                previous_move = message.move
+                self.play_game = None
+                self.comment("umove")
+                self.comment("poem")
+
+        elif isinstance(message, Message.REVIEW_MOVE_DONE):
+            if message.move and message.game and message.move != previous_move:
+                logger.debug("announcing REVIEW_MOVE_DONE [%s]", message.move)
+                self.talk(["player_move.ogg"], self.BEEPER)
+                self.talk(self.say_last_move(message.game), self.USER)
+                previous_move = message.move
+                self.play_game = None  # @todo why thats not set in dgtdisplay?
+
+        elif isinstance(message, Message.GAME_ENDS):
+            previous_move = chess.Move.null()
+            last_pos_dir = ""
+            if message.result == GameResult.OUT_OF_TIME:
+                logger.debug("announcing GAME_ENDS/TIME_CONTROL")
+                wins = (
+                    "whitewins.ogg"
+                    if message.game.turn == chess.BLACK
+                    else "blackwins.ogg"
+                )
+                self.talk(["timelost.ogg", wins])
+                if wins == "whitewins.ogg":
+                    if self.play_mode == PlayMode.USER_WHITE:
+                        self.comment("uwin")
+                    else:
+                        self.comment("uloose")
+                else:
+                    if self.play_mode == PlayMode.USER_BLACK:
+                        self.comment("uwin")
+                    else:
+                        self.comment("uloose")
+            elif message.result == GameResult.INSUFFICIENT_MATERIAL:
+                logger.debug("announcing GAME_ENDS/INSUFFICIENT_MATERIAL")
+                self.talk(["material.ogg", "draw.ogg"])
+                self.comment("draw")
+            elif message.result == GameResult.MATE:
+                logger.debug("announcing GAME_ENDS/MATE")
+                self.comment("mate")
+                if message.game.turn == chess.BLACK:
+                    # white wins
+                    if self.play_mode == PlayMode.USER_WHITE:
+                        self.talk(["checkmate.ogg"])
+                        self.talk(["whitewins.ogg"])
+                        self.comment("uwin")
+                    else:
+                        self.comment("uloose")
+                else:
+                    # black wins
+                    if self.play_mode == PlayMode.USER_BLACK:
+                        self.talk(["checkmate.ogg"])
+                        self.talk(["blackwins.ogg"])
+                        self.comment("uwin")
+                    else:
+                        self.comment("uloose")
+            elif message.result == GameResult.STALEMATE:
+                logger.debug("announcing GAME_ENDS/STALEMATE")
+                self.talk(["stalemate.ogg"])
+                self.comment("stalemate")
+            elif message.result == GameResult.ABORT:
+                logger.debug("announcing GAME_ENDS/ABORT")
+                self.talk(["abort.ogg"])
+            elif message.result == GameResult.DRAW:
+                logger.debug("announcing GAME_ENDS/DRAW")
+                self.talk(["draw.ogg"])
+                self.comment("draw")
+            elif message.result == GameResult.WIN_WHITE:
+                logger.debug("announcing GAME_ENDS/WHITE_WIN")
+                self.talk(["whitewins.ogg"])
+                if self.play_mode == PlayMode.USER_WHITE:
+                    self.comment("uwin")
+                else:
+                    self.comment("uloose")
+            elif message.result == GameResult.WIN_BLACK:
+                logger.debug("announcing GAME_ENDS/BLACK_WIN")
+                self.talk(["blackwins.ogg"])
+                if self.play_mode == PlayMode.USER_BLACK:
+                    self.comment("uwin")
+                else:
+                    self.comment("uloose")
+            elif message.result == GameResult.FIVEFOLD_REPETITION:
+                logger.debug("announcing GAME_ENDS/FIVEFOLD_REPETITION")
+                self.talk(["repetition.ogg", "draw.ogg"])
+                self.comment("draw")
+
+        elif isinstance(message, Message.TAKE_BACK):
+            logger.debug("announcing TAKE_BACK")
+            self.talk(["takeback.ogg"])
+            self.play_game = None
+            previous_move = chess.Move.null()
+            self.comment("takeback")
+
+        elif isinstance(message, Message.TIME_CONTROL):
+            logger.debug("announcing TIME_CONTROL")
+            self.talk(["confirm.ogg"], self.BEEPER)
+            self.talk(["oktime.ogg"])
+
+        elif isinstance(message, Message.INTERACTION_MODE):
+            logger.debug("announcing INTERACTION_MODE")
+            self.talk(["okmode.ogg"])
+
+        elif isinstance(message, Message.LEVEL):
+            if message.do_speak:
+                logger.debug("announcing LEVEL")
+                self.talk(["oklevel.ogg"])
+            else:
+                logger.debug("dont announce LEVEL cause its also an engine message")
+
+        elif isinstance(message, Message.OPENING_BOOK):
+            logger.debug("announcing OPENING_BOOK")
+            self.talk(["okbook.ogg"])
+
+        elif isinstance(message, Message.ENGINE_READY):
+            logger.debug("announcing ENGINE_READY")
+            self.talk(["confirm.ogg"], self.BEEPER)
+            self.talk(["okengine.ogg"])
+
+        elif isinstance(message, Message.PLAY_MODE):
+            logger.debug("announcing PLAY_MODE")
+            self.play_mode = message.play_mode
+            userplay = (
+                "userblack.ogg"
+                if message.play_mode == PlayMode.USER_BLACK
+                else "userwhite.ogg"
+            )
+            self.talk([userplay])
+            if message.play_mode == PlayMode.USER_BLACK:
+                self.comment("ublack")
+            else:
+                self.comment("uwhite")
+
+        elif isinstance(message, Message.STARTUP_INFO):
+            self.play_mode = message.info["play_mode"]
+            logger.debug("announcing PICOCHESS")
+            self.talk(["picoChess.ogg"], self.BEEPER)
+            self.talk(["picoChess.ogg"])
+            previous_move = chess.Move.null()
+            last_pos_dir = ""
+            self.comment("start")
+            self.comment("name")
+
+        elif isinstance(message, Message.CLOCK_TIME):
+            self.low_time = message.low_time
+            if self.low_time:
+                logger.debug(
+                    "time too low, disable voice - w: %i, b: %i",
+                    message.time_white,
+                    message.time_black,
+                )
+
+        elif isinstance(message, Message.ALTERNATIVE_MOVE):
+            self.play_mode = message.play_mode
+            self.play_game = None
+            self.talk(["alternative_move.ogg"])
+
+        elif isinstance(message, Message.SYSTEM_SHUTDOWN):
+            logger.debug("announcing SHUTDOWN")
+            self.talk(["goodbye.ogg"])
+            self.comment("shutdown")
+
+        elif isinstance(message, Message.SYSTEM_REBOOT):
+            logger.debug("announcing REBOOT")
+            self.talk(["pleasewait.ogg"])
+            self.comment("shutdown")
+            time.sleep(3)
+
+        elif isinstance(message, Message.MOVE_RETRY):
+            logger.debug("announcing MOVE_RETRY")
+            self.talk(["retry_move.ogg"])
+
+        elif isinstance(message, Message.MOVE_WRONG):
+            logger.debug("announcing MOVE_WRONG")
+            self.talk(["wrong_move.ogg"])
+
+        elif isinstance(message, Message.ONLINE_LOGIN):
+            logger.debug("announcing ONLINE_LOGIN")
+            self.talk(["online_login.ogg"])
+
+        elif isinstance(message, Message.SEEKING):
+            logger.debug("announcing SEEKING")
+            self.talk(["seeking.ogg"])
+
+        elif isinstance(message, Message.ONLINE_NAMES):
+            logger.debug("announcing ONLINE_NAMES")
+            self.talk(["opponent_found.ogg"])
+
+        elif isinstance(message, Message.RESTORE_GAME):
+            logger.debug("announcing RESTORE_GAME")
+            self.talk(["last_game_restored.ogg"])
+
+        elif isinstance(message, Message.ENGINE_SETUP):
+            logger.debug("announcing ENGINE_SETUP")
+            self.talk(["engine_setup.ogg"])
+
+        elif isinstance(message, Message.ONLINE_FAILED):
+            self.talk(["server_error.ogg"])
+
+        elif isinstance(message, Message.ONLINE_USER_FAILED):
+            self.talk(["login_error.ogg"])
+
+        elif isinstance(message, Message.ONLINE_NO_OPPONENT):
+            self.talk(["no_opponent.ogg"])
+
+        elif isinstance(message, Message.LOST_ON_TIME):
+            self.talk(["timelost.ogg"])
+
+        elif isinstance(message, Message.POSITION_FAIL):
+            logger.debug("molli: talker orig. fen_result = %s", message.fen_result)
+            if last_pos_dir == message.fen_result:
+                self.same_cnt = self.same_cnt + 1
+            else:
+                self.same_cnt = 0
+            last_pos_dir = message.fen_result
+            if self.same_cnt % 3 == 0:
+                if "clear" in message.fen_result:
+                    fen_str = message.fen_result[-2:]
+                    self.talk(["remove.ogg"])
+                    self.talk(self.say_squarepiece(fen_str))
+                elif "put" in message.fen_result:
+                    fen_str = message.fen_result[-4:]
+                    self.talk(["put.ogg"])
+                    self.talk(self.say_squarepiece(fen_str))
+                else:
+                    pass
+
+        elif isinstance(message, Message.PICOTUTOR_MSG):
+            if "??" == message.eval_str:
+                if not self.pico_voice_active:
+                    self.talk(["picotutor.ogg"], self.BEEPER)
+                self.talk(["picotutor_notify.ogg"])
+                self.talk(["verybadmove.ogg"])
+            elif "?" == message.eval_str:
+                self.talk(["picotutor_notify.ogg"])
+                self.talk(["badmove.ogg"])
+            elif "!?" == message.eval_str:
+                self.talk(["picotutor_notify.ogg"])
+                self.talk(["interestingmove.ogg"])
+            elif "!!" == message.eval_str:
+                self.talk(["picotutor_notify.ogg"])
+                self.talk(["verygoodmove.ogg"])
+            elif "!" == message.eval_str:
+                self.talk(["picotutor_notify.ogg"])
+                self.talk(["goodmove.ogg"])
+            elif "?!" == message.eval_str:
+                self.talk(["picotutor_notify.ogg"])
+                self.talk(["dubiousmove.ogg"])
+            elif "ER" == message.eval_str:
+                self.talk(["picotutor_notify.ogg"])
+                self.talk(["error.ogg"])
+            elif "ACTIVE" in message.eval_str:
+                self.talk(["picotutor_notify.ogg"])
+                self.talk(["picotutor_enabled.ogg"])
+            elif "ANALYSIS" in message.eval_str:
+                self.talk(["picotutor_notify.ogg"])
+                self.talk(["picotutor_analysis.ogg"])
+            elif "HINT" in message.eval_str:
+                self.talk(["picotutor_hintmove.ogg"])
+                self.talk(self.say_tutor_move(message.game))
+            elif "THREAT" in message.eval_str:
+                self.talk(["picotutor_threatmove.ogg"])
+                self.talk(self.say_tutor_move(message.game))
+            elif "POSOK" in message.eval_str:
+                last_pos_dir = ""
+                self.talk(["confirm.ogg"], self.BEEPER)
+                self.talk(["ok.ogg"])
+            elif "POS" in message.eval_str:
+                score = message.score
+                if abs(score) <= 1:
+                    self.talk(["picotutor_equal_position.ogg"])
+                elif score > 3:
+                    self.talk(["picotutor_verygood_position.ogg"])
+                elif score > 1 and score < 3:
+                    self.talk(["picotutor_good_position.ogg"])
+                elif score < -3:
+                    self.talk(["picotutor_verybad_position.ogg"])
+                elif score > -3 and score < -1:
+                    self.talk(["picotutor_bad_position.ogg"])
+            elif "BEST" in message.eval_str:
+                self.talk(["picotutor_best_move.ogg"])
+                self.talk(self.say_tutor_move(message.game))
+            elif "PICMATE" in message.eval_str:
+                logger.debug("molli in picotutortalker: %s", message.eval_str)
+                self.talk(["picotutor_pico_mate.ogg"])
+                list_str = message.eval_str
+                list_mate = list_str.split("_")
+                logger.debug("molli in picotutortalker: %s", list_mate[0])
+                logger.debug("molli in picotutortalker: %s", list_mate[1])
+
+                talk_mate = "t_" + list_mate[1] + ".ogg"
+                logger.debug("talk_mate = %s", talk_mate)
+                self.talk([talk_mate])
+            elif "USRMATE" in message.eval_str:
+                logger.debug("molli in picotutortalker: %s", message.eval_str)
+                self.talk(["picotutor_player_mate.ogg"])
+                list_str = message.eval_str
+                list_mate = list_str.split("_")
+                logger.debug("molli in picotutortalker: %s", list_mate[0])
+                logger.debug("molli in picotutortalker: %s", list_mate[1])
+
+                talk_mate = "t_" + list_mate[1] + ".ogg"
+                logger.debug("talk_mate = %s", talk_mate)
+                self.talk([talk_mate])
+
+        elif isinstance(message, Message.PGN_GAME_END):  # for pgn replay
+            logger.debug("announcing PGN GAME END")
+            previous_move = chess.Move.null()
+            self.talk(["pgn_game_end.ogg"])
+            if "1-0" in message.result:
+                self.talk(["whitewins.ogg"])
+            elif "0-1" in message.result:
+                self.talk(["blackwins.ogg"])
+            elif "0.5-0.5" in message.result or "1/2-1/2" in message.result:
+                self.talk(["draw.ogg"])
+            elif "*" in message.result:
+                self.talk(["game_result_unknown.ogg"])
+            else:
+                # default
+                self.talk(["game_result_unknown.ogg"])
+
+        elif isinstance(message, Message.TIMECONTROL_CHECK):
+            logger.debug("timecontrol check")
+            self.talk(["picotutor_notify.ogg"])
+            if message.player:
+                self.talk(["timecontrol_check_player.ogg"])
+            else:
+                self.talk(["timecontrol_check_opp.ogg"])
+
+        elif isinstance(message, Message.SHOW_ENGINENAME):
+            if message.show_enginename:
+                self.talk(["show_enginename_on.ogg"])
+            else:
+                self.talk(["show_enginename_off.ogg"])
+
+        elif isinstance(message, Message.SHOW_TEXT):
+            if message.text_string == "NEW_POSITION_SCAN":
+                self.talk(["position_setup.ogg"])
+            elif message.text_string == "NEW_POSITION":
+                self.talk(["set_pieces_sound.ogg"], self.BEEPER)
+                if not self.sample_beeper or self.sample_beeper_level == 0:
+                    self.talk(["set_pieces_sound.ogg"])
+
+        elif isinstance(message, Message.PICOWATCHER):
+            if message.picowatcher:
+                self.talk(["picowatcher_enabled.ogg"])
+            else:
+                self.talk(["picowatcher_disabled.ogg"])
+            self.talk(["picotutor_ok.ogg"])
+
+        elif isinstance(message, Message.PICOCOACH):
+            if message.picocoach:
+                self.talk(["picocoach_enabled.ogg"])
+            else:
+                self.talk(["picocoach_disabled.ogg"])
+            self.talk(["picotutor_ok.ogg"])
+
+        elif isinstance(message, Message.PICOEXPLORER):
+            if message.picoexplorer:
+                self.talk(["picoexplorer_enabled.ogg"])
+            else:
+                self.talk(["picoexplorer_disabled.ogg"])
+            self.talk(["picotutor_ok.ogg"])
+
+        elif isinstance(message, Message.PICOCOMMENT):
+            self.talk(["ok.ogg"])
+
+        elif isinstance(message, Message.SAVE_GAME):
+            self.talk(["save_game.ogg"])
+
+        elif isinstance(message, Message.READ_GAME):
+            self.talk(["read_game.ogg"])
+
+        elif isinstance(message, Message.CONTLAST):
+            if message.contlast:
+                self.talk(["contlast_game_on.ogg"])
+            else:
+                self.talk(["contlast_game_off.ogg"])
+
+        elif isinstance(message, Message.ALTMOVES):
+            if message.altmoves:
+                self.talk(["altmoves_on.ogg"])
+            else:
+                self.talk(["altmoves_off.ogg"])
+
+        elif isinstance(message, Message.SET_VOICE):
+            self.speed_factor = (90 + (message.speed % 10) * 5) / 100
+            localisation_id_voice = message.lang + ":" + message.speaker
+            if message.type == Voice.USER:
+                self.set_user(PicoTalker(localisation_id_voice, self.speed_factor))
+            if message.type == Voice.COMP:
+                self.set_computer(PicoTalker(localisation_id_voice, self.speed_factor))
+            if message.type == Voice.SPEED:
+                self.set_factor(self.speed_factor)
+            if message.type == Voice.BEEPER:
+                self.set_beeper(PicoTalker(localisation_id_voice, self.speed_factor))
+                if message.speaker == "mute":
+                    self.sample_beeper = False
+                else:
+                    self.sample_beeper = True
+            self.talk(["confirm.ogg"], self.BEEPER)
+            self.talk(["ok.ogg"])
+
+        elif isinstance(message, Message.WRONG_FEN):
+            self.talk(["set_pieces_sound.ogg"], self.BEEPER)
+            if self.setpieces_voice:
+                self.talk(["setpieces.ogg"])
+            else:
+                if not self.sample_beeper or self.sample_beeper_level == 0:
+                    self.talk(["set_pieces_sound.ogg"])
+            if self.play_game:
+                self.talk(self.say_last_move(self.play_game), self.COMPUTER)
+
+        elif isinstance(message, Message.DGT_BUTTON):
+            if self.sample_beeper and self.sample_beeper_level > 1:
+                self.talk(["button_click.ogg"], self.BEEPER)
+        else:  # Default
+            pass
 
     @staticmethod
     def say_last_move(game: chess.Board):

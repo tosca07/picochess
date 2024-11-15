@@ -20,7 +20,6 @@
 
 import csv
 import chess  # type: ignore
-import chess.uci  # type: ignore
 import chess.engine  # type: ignore
 from random import randint
 from dgt.util import PicoComment, PicoCoach
@@ -275,8 +274,8 @@ class PicoTutor:
         self.stop()
 
         if self.watcher_on or self.coach_on:
-            self.engine = chess.uci.popen_engine(self.engine_path)
-            self.engine2 = chess.uci.popen_engine(self.engine_path)
+            self.engine = chess.engine.SimpleEngine.popen_uci(self.engine_path)
+            self.engine2 = chess.engine.SimpleEngine.popen_uci(self.engine_path)
             self.engine.uci()
             self.engine2.uci()
             self.engine.setoption({"MultiPV": self.max_valid_moves})
@@ -287,8 +286,8 @@ class PicoTutor:
             self.engine2.setoption({"Threads": c.NUM_THREADS})
             self.engine.isready()
             self.engine2.isready()
-            self.info_handler = chess.uci.InfoHandler()
-            self.info_handler2 = chess.uci.InfoHandler()
+            self.info_handler = chess.engine.InfoHandler()
+            self.info_handler2 = chess.engine.InfoHandler()
             self.engine.info_handlers.append(self.info_handler)
             self.engine2.info_handlers.append(self.info_handler2)
             self.engine.position(self.board)
@@ -316,8 +315,8 @@ class PicoTutor:
 
         self.stop()
 
-        self.engine = chess.uci.popen_engine(self.engine_path)
-        self.engine2 = chess.uci.popen_engine(self.engine_path)
+        self.engine = chess.engine.SimpleEngine.popen_uci(self.engine_path)
+        self.engine2 = chess.engine.SimpleEngine.popen_uci(self.engine_path)
         self.engine.uci()
         self.engine2.uci()
         self.engine.setoption({"MultiPV": self.max_valid_moves})
@@ -328,8 +327,8 @@ class PicoTutor:
         self.engine2.setoption({"Threads": c.NUM_THREADS})
         self.engine.isready()
         self.engine2.isready()
-        self.info_handler = chess.uci.InfoHandler()
-        self.info_handler2 = chess.uci.InfoHandler()
+        self.info_handler = chess.engine.InfoHandler()
+        self.info_handler2 = chess.engine.InfoHandler()
         self.engine.info_handlers.append(self.info_handler)
         self.engine2.info_handlers.append(self.info_handler2)
         self.engine.position(self.board)

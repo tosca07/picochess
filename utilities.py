@@ -26,6 +26,7 @@ import time
 import copy
 import configparser
 import subprocess
+import asyncio
 
 from threading import Timer
 from subprocess import Popen, PIPE
@@ -141,6 +142,49 @@ class RepeatedTimer(object):
         if self.timer_running:
             self._timer.cancel()
             self.timer_running = False
+        else:
+            logging.info('repeated timer already stopped - strange!')
+
+
+class AsyncRepeatingTimer:
+
+    """ Call function on a given interval - Async version to replace RepeatedTimer"""
+
+    def __init__(self, interval, callback, loop: asyncio.AbstractEventLoop):
+        self.interval = interval      # Interval between each execution
+        self.callback = callback      # Function to be repeatedly called
+        self._task = None             # Reference to the asynchronous task
+        self._running = False         # Keeps track of whether the timer is running
+        self.loop = loop              # run callback in callers eventloop
+
+
+    def is_running(self):
+        """Return the running status."""
+        return self._running
+
+    async def _run(self):
+        while self._running:          # Continue running until the timer is stopped
+            await asyncio.sleep(self.interval)
+            if asyncio.iscoroutinefunction(self.callback):
+                await self.callback()
+            else:
+                self.callback()  # direct call for sync callbacks
+
+    def start(self):
+        """Start the RepeatingTimer."""
+        if not self._running:
+            self._running = True
+            self._task = self.loop.create_task(self._run())
+        else:
+            logging.info('repeated timer already running - strange!')
+    
+    def stop(self):
+        """Stop the RepeatingTimer."""
+        if self._running:
+            self._running = False
+            if self._task is not None:
+                self._task.cancel()
+                self._task = None
         else:
             logging.info('repeated timer already stopped - strange!')
 
