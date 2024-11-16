@@ -71,3 +71,6 @@ picochess.uci
 # Generated files
 .bluetoothctl_history
 games/
+
+# Visual Code files
+.vscode/

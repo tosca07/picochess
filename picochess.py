@@ -1165,7 +1165,10 @@ async def main() -> None:
                 engine_res = engine.go(uci_dict, game)
             except Exception:
                 logger.error("fatal error no move received from engine")
-            # dont push game move onto board here - Event.BEST_MOVE does it
+            # dont push game move onto board here yet
+            # webplay: Event.BEST_MOVE pushes the move on display
+            # dgt board: BEST_MOVE 1) informs the user who 2) makes the move
+            # and 3) dgt event --> process_fen() which pushes move
             logger.debug("engine moved %s", engine_res.move.uci)
             Observable.fire(
                 Event.BEST_MOVE(move=engine_res.move, ponder=engine_res.ponder, inbook=False)
@@ -1202,21 +1205,11 @@ async def main() -> None:
         assert not state.done_computer_fen, (
             "brain() called with displayed move - fen: %s" % state.done_computer_fen
         )
-        if state.pb_move:
-            game_copy = copy.deepcopy(game)
-            game_copy.push(state.pb_move)
-            logger.info(
-                "start permanent brain with pondering move [%s] fen: %s",
-                state.pb_move,
-                game_copy.fen(),
-            )
-            engine_res = engine.brain(game_copy)
-        else:
-            # first time we do not have any hint move
-            # this code is almost duplicate of above but kept separate for now
-            game_copy = copy.deepcopy(game)
-            engine_res = engine.brain(game_copy)
-            state.pb_move = engine_res.move  # hint move is best move engine would make
+        # @ todo - with the new chess module BRAIN mode becomes very
+        # similar to NORMAL play mode - we just have to figure out
+        # how to update the hint/ponder move info to user every 2sec or so
+        logger.debug("brain call can be deleted?")
+        # brain call can also be removed from engine.py if never needed
 
     def stop_search_and_clock(ponder_hit=False):
         """Depending on the interaction mode stop search and clock."""
@@ -1299,6 +1292,7 @@ async def main() -> None:
             state.done_move = chess.Move.null()
             fen = state.game.fen()
             turn = state.game.turn
+            logger.info("user did a move for user")
             state.game.push(move)  # this is where user move is made
             eval_str = ""
 
@@ -1422,25 +1416,8 @@ async def main() -> None:
                                 think(state.game, state.time_control, msg, state)
                     else:
                         assert(state.interaction_mode == Mode.BRAIN)
-                        logger.info("new temporary implementation of ponderhit")
-                        DisplayMsg.show(msg)
-                        state.start_clock()
-                        # send move to engine to update hint
-                        game_copy = copy.deepcopy(state.game)  # not necessary
-                        engine_res = engine.brain(game_copy)
-                        logger.debug("engine ponder result %s", engine_res.move.uci)
-                        state.pb_move = engine_res.move  # engine made move is hint
-                        # @todo what message should be used to display hint?
-                        # using computer move now
-                        DisplayMsg.show(Message.EXIT_MENU())
-                        msg = Message.COMPUTER_MOVE(
-                                move=engine_res.move,
-                                ponder=False,
-                                game=game_copy,
-                                wait=False
-                        )
-                        DisplayMsg.show(msg)
-                        
+                        logger.info("new temporary implementation of ponderhit - starting think")
+                        think(state.game, state.time_control, msg, state)
 
 
                 state.last_move = move
@@ -4037,6 +4014,7 @@ async def main() -> None:
 
                             time.sleep(0.5)
                         else:
+                            # normal computer move
                             if event.inbook:
                                 DisplayMsg.show(Message.BOOK_MOVE())
                             state.searchmoves.exclude(event.move)
@@ -4117,7 +4095,7 @@ async def main() -> None:
                                 DisplayMsg.show(Message.COMPUTER_MOVE_DONE())
 
                                 state.best_move_posted = False
-                                state.game.push(state.done_move)
+                                state.game.push(state.done_move)  # computer move without human assistance
                                 state.done_computer_fen = None
                                 state.done_move = chess.Move.null()
 

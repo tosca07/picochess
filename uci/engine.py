@@ -238,6 +238,9 @@ class UciEngine(object):
 
     def stop(self, show_best=False):
         """Stop engine."""
+        # @ todo stop could cancel a new 2sec timer replacing the old
+        # picochess engine callbacks in analysis and brain modes
+        # and the timer could be started in brain() and/or ponder()
         logger.info("show_best old: %s new: %s", self.show_best, show_best)
         self.show_best = show_best
         if not self.is_waiting():
@@ -295,7 +298,7 @@ class UciEngine(object):
         try:
             # @todo: how does the user affect the ponder value in this call
             self.idle = False  # engine is going to be busy now
-            result = self.engine.play(game, chess.engine.Limit(time=use_time), ponder=False)
+            result = self.engine.play(game, chess.engine.Limit(time=use_time), ponder=self.pondering)
             self.idle = True  # engine idle again
         except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
@@ -315,7 +318,11 @@ class UciEngine(object):
         self.show_best = False # this is what old code does, probably no meaning
         try:
             self.idle = False  # engine is going to be busy now
-            result = self.engine.play(game, chess.engine.Limit(time=FLOAT_PONDERING_LIMIT))
+            # here we could let self.analysis decide ponder=True value
+            # but ponder should only be used to ponder
+            # the only difference to go() function is that this needs
+            # a shorter limit so that the user does not have to wait
+            result = self.engine.play(game, chess.engine.Limit(time=FLOAT_PONDERING_LIMIT), ponder=True)
             self.idle = True  # engine idle again
         except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
@@ -331,7 +338,9 @@ class UciEngine(object):
 
     def brain(self, game: Board) -> chess.engine.PlayResult:
         """ Permanent brain. This is mode BRAIN - Pondering On in Menu """
-        # @todo replace this one with call to analyse
+        # @todo make this same as go() above?
+        # update: almost done - picochess no longer calls this function
+        # so soon this can be deleted - remember to remove FLOAT_BRAIN_LIMIT also
         # Observable.fire(Event.START_SEARCH())
         self.show_best = True # this is what old code does, probably no meaning
         try:
@@ -347,8 +356,7 @@ class UciEngine(object):
         if result:
             logger.info("res: %s", result)
             self.res = result # old code still needs this in stop() ?
-            # as this is brain mode ponder value is suggested engine move
-            # Observable.fire(Event.BEST_MOVE(move=result.move, ponder=result.move, inbook=False))
+            # Observable.fire(Event.BEST_MOVE(move=result.move, ponder=result.ponder, inbook=False))
         return result
 
 
