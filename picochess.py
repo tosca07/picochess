@@ -1450,16 +1450,12 @@ async def main() -> None:
                 else:
                     engine_res = analyse(state.game, msg)
                     state.pb_move = engine_res.move  # engines move
-                    # @todo what message should be used to display hint?
-                    # using computer move now
-                    DisplayMsg.show(Message.EXIT_MENU())
-                    msg = Message.COMPUTER_MOVE(
-                            move=engine_res.move,
-                            ponder=False,
-                            game=state.game,
-                            wait=False
+                    Observable.fire(
+                        Event.NEW_PV(pv=[engine_res.move])
                     )
-                    DisplayMsg.show(msg)
+                    # @todo how to get repeated updates when user is thinking long
+                    # need to start a new timer to call a callback that calls
+                    # engine.analyze
 
             if (
                 picotutor_mode(state)
