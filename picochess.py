@@ -85,7 +85,7 @@ from dgt.menu import DgtMenu
 from picotutor import PicoTutor
 from pathlib import Path
 import asyncio
-from constants import FLOAT_MSG_WAIT
+from constants import FLOAT_MSG_WAIT, FLOAT_MIN_BACKGROUND_TIME
 
 ONLINE_PREFIX = "Online"
 
@@ -988,7 +988,7 @@ async def main() -> None:
                             Message.START_NEW_GAME(game=state.game.copy(), newgame=False), state
                         )
                         stop_search_and_clock()
-                        engine.ponder(copy.deepcopy(state.game))
+                        analyse(copy.deepcopy(state.game))
                     else:
                         # ask python-chess to correct the castling string
                         bit_board = chess.Board(fen2)
@@ -1010,7 +1010,7 @@ async def main() -> None:
                                 state,
                             )
                             stop_search_and_clock()
-                            engine.ponder(copy.deepcopy(state.game))
+                            analyse(copy.deepcopy(state.game))
                         else:
                             logger.info("wrong fen %s for 4 secs", state.error_fen)
                             DisplayMsg.show(Message.WRONG_FEN())
@@ -1187,18 +1187,39 @@ async def main() -> None:
             logger.warning("engine is still not waiting")
         # engine.position(copy.deepcopy(game))
 
-    def analyse(game: chess.Board, msg: Message) -> chess.engine.PlayResult:
-        """Start a new ponder search on the current game."""
-        DisplayMsg.show(msg)
-        engine_res = engine.ponder(game)
-        logger.debug("engine ponder result %s", engine_res.move.uci)
-        return engine_res
+    def analyse(game: chess.Board) -> chess.engine.InfoDict | None:
+        """ intended for BRAIN mode to get update when engine is pondering """
+        # it will work to get a short hint move also when not pondering
+        info = engine.ponder_analyse(game)
+        # @ todo maybe move these message firing into the UciEngine engine
+        if info:
+            if "pv" in info:
+                move = info.get("pv")[0]  # get first move
+                if move:
+                    state.pb_move = move  # backward compatibility
+                    Observable.fire(
+                        Event.NEW_PV(pv=[move])
+                    )
+            if "score" in info:
+                s = info["score"]
+                p = s.pov(s.turn).score()
+                if p:
+                    Observable.fire(
+                        Event.NEW_SCORE(score=p, mate=s.is_mate())
+                    )
+            if "depth" in info:
+                d = info.get("depth")
+                if d:
+                    Observable.fire(
+                        Event.NEW_DEPTH(depth=d)
+                    )
+        return info
 
-    def observe(game: chess.Board, msg: Message) -> chess.engine.PlayResult:
+    def observe(game: chess.Board) -> chess.engine.InfoDict | None:
         """Start a new ponder search on the current game."""
-        engine_res = analyse(game, msg)        
+        info = analyse(game)
         state.start_clock()
-        return engine_res
+        return info
 
     def brain(game: chess.Board, timec: TimeControl, state: PicochessState):
         """Start a new permanent brain search on the game with pondering move made."""
@@ -1424,11 +1445,11 @@ async def main() -> None:
             elif state.interaction_mode == Mode.REMOTE:
                 msg = Message.USER_MOVE_DONE(move=move, fen=fen, turn=turn, game=state.game.copy())
                 game_end = state.check_game_state()
+                DisplayMsg.show(msg)
                 if game_end:
-                    DisplayMsg.show(msg)
                     DisplayMsg.show(game_end)
                 else:
-                    observe(state.game, msg)
+                    observe(state.game)
             elif state.interaction_mode == Mode.OBSERVE:
                 msg = Message.REVIEW_MOVE_DONE(
                     move=move, fen=fen, turn=turn, game=state.game.copy()
@@ -1438,7 +1459,8 @@ async def main() -> None:
                     DisplayMsg.show(msg)
                     DisplayMsg.show(game_end)
                 else:
-                    observe(state.game, msg)
+                    DisplayMsg.show(msg)
+                    observe(state.game)
             else:  # state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.PONDER):
                 msg = Message.REVIEW_MOVE_DONE(
                     move=move, fen=fen, turn=turn, game=state.game.copy()
@@ -1448,14 +1470,8 @@ async def main() -> None:
                     DisplayMsg.show(msg)
                     DisplayMsg.show(game_end)
                 else:
-                    engine_res = analyse(state.game, msg)
-                    state.pb_move = engine_res.move  # engines move
-                    Observable.fire(
-                        Event.NEW_PV(pv=[engine_res.move])
-                    )
-                    # @todo how to get repeated updates when user is thinking long
-                    # need to start a new timer to call a callback that calls
-                    # engine.analyze
+                    DisplayMsg.show(msg)
+                    analyse(state.game)
 
             if (
                 picotutor_mode(state)
@@ -2101,10 +2117,12 @@ async def main() -> None:
             if state.interaction_mode == Mode.BRAIN and not state.done_computer_fen:
                 brain(state.game, state.time_control, state)
             if state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.PONDER, Mode.TRAINING):
-                analyse(state.game, msg)
+                DisplayMsg.show(msg)
+                analyse(state.game)
                 return
             if state.interaction_mode in (Mode.OBSERVE, Mode.REMOTE):
-                analyse(state.game, msg)
+                DisplayMsg.show(msg)
+                analyse(state.game)
                 return
         if not state.reset_auto:
             if state.automatic_takeback:
@@ -2661,6 +2679,7 @@ async def main() -> None:
             self.engine = engine
             self.uci_remote_shell = uci_remote_shell
             self.book_index = book_index
+            self.last_analysis_call = None
 
 
         def engine_mode(self):
@@ -2684,6 +2703,27 @@ async def main() -> None:
             self._task = self.loop.create_task(self.event_consumer())
 
 
+        def no_msg_background_task(self):
+            # ive got nothing to do so I update PV analysis on user time
+            user_to_move = (
+                (state.game.turn == chess.WHITE and state.play_mode == PlayMode.USER_WHITE) or
+                (state.game.turn == chess.BLACK and state.play_mode == PlayMode.USER_BLACK)
+            )
+            if state.game.fullmove_number > 1:
+                # @todo find a way to skip background analysis
+                # while we are doing inbook
+                if user_to_move and state.interaction_mode == Mode.BRAIN:
+                    current_time = time.time()
+                    if self.last_analysis_call is None:
+                        self.last_analysis_call = current_time
+                        pass  # skip first time called
+                    else:
+                        diff = current_time - self.last_analysis_call
+                        if diff > FLOAT_MIN_BACKGROUND_TIME:
+                            self.last_analysis_call = current_time
+                            analyse(state.game)
+
+
         async def event_consumer(self):
             """ Event consumer for main """
             logger.info("evt_queue ready")
@@ -2692,6 +2732,7 @@ async def main() -> None:
                     event = evt_queue.get_nowait()
                     self.process_main_events(event)
                 except queue.Empty:
+                    self.no_msg_background_task()
                     await asyncio.sleep(FLOAT_MSG_WAIT)
 
 
@@ -3560,8 +3601,7 @@ async def main() -> None:
                         state.legal_fens = compute_legal_fens(state.game.copy())
                         state.legal_fens_after_cmove = []
                         state.last_legal_fens = []
-                        engine_res = self.engine.ponder(copy.deepcopy(state.game))
-                        logger.debug("engine ponder result %s", engine_res.move.uci)
+                        analyse(copy.deepcopy(state.game))
                         state.play_mode = (
                             PlayMode.USER_WHITE
                             if state.game.turn == chess.WHITE
@@ -4054,10 +4094,9 @@ async def main() -> None:
                             state.done_computer_fen = game_copy.board_fen()
                             state.done_move = event.move
 
-                            brain_book = state.interaction_mode == Mode.BRAIN and event.inbook
                             state.pb_move = (
                                 event.ponder
-                                if event.ponder and not brain_book
+                                if event.ponder and not event.inbook
                                 else chess.Move.null()
                             )
                             state.legal_fens_after_cmove = compute_legal_fens(game_copy)
@@ -4204,11 +4243,10 @@ async def main() -> None:
                     )
 
             elif isinstance(event, Event.NEW_PV):
-                if state.interaction_mode == Mode.BRAIN and self.engine.is_pondering():
-                    logger.debug("in brain mode and pondering ignore pv %s", event.pv[:3])
-                else:
+                if event.pv[0]:
                     # illegal moves can occur if a pv from the engine arrives at the same time as an user move
                     if state.game.is_legal(event.pv[0]):
+                        # only pv received from event
                         DisplayMsg.show(
                             Message.NEW_PV(
                                 pv=event.pv, mode=state.interaction_mode, game=state.game.copy()
@@ -4225,9 +4263,7 @@ async def main() -> None:
                         )
 
             elif isinstance(event, Event.NEW_SCORE):
-                if state.interaction_mode == Mode.BRAIN and self.engine.is_pondering():
-                    logger.debug("in brain mode and pondering, ignore score %s", event.score)
-                else:
+                if event.score:
                     if event.score == 999 or event.score == -999:
                         state.flag_pgn_game_over = (
                             True  # molli pgn mode: signal that pgn is at end
@@ -4235,19 +4271,18 @@ async def main() -> None:
                     else:
                         state.flag_pgn_game_over = False
 
+                    # only score and mate received from event
                     DisplayMsg.show(
                         Message.NEW_SCORE(
                             score=event.score,
                             mate=event.mate,
                             mode=state.interaction_mode,
-                            turn=state.game.turn,
+                            turn=state.game.turn
                         )
                     )
 
             elif isinstance(event, Event.NEW_DEPTH):
-                if state.interaction_mode == Mode.BRAIN and self.engine.is_pondering():
-                    logger.debug("in brain mode and pondering, ignore depth %s", event.depth)
-                else:
+                if event.depth:
                     if event.depth == 999:
                         state.flag_pgn_game_over = True
                     else:

@@ -955,16 +955,12 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self._set_clock()
 
     def _process_new_score(self, message):
-        if message.mate is None:
+        if not message.mate:
             score = int(message.score)
-            if message.turn == chess.BLACK:
-                score *= -1
             text = self.dgttranslate.text("N10_score", score)
+            self.score = text
         else:
-            if message.turn == chess.BLACK:
-                message.mate *= -1
             text = self.dgttranslate.text("N10_mate", str(message.mate))
-        self.score = text
         if message.mode in (Mode.KIBITZ, Mode.TRAINING) and not self._inside_main_menu():
             text = self._combine_depth_and_score()
             text.wait = True

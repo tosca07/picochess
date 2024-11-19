@@ -25,7 +25,7 @@ import paramiko
 import re
 from constants import FLOAT_MAX_ENGINE_TIME, FLOAT_MIN_ENGINE_TIME
 from constants import INT_EXPECTED_GAME_LENGTH
-from constants import FLOAT_PONDERING_LIMIT, FLOAT_BRAIN_LIMIT
+from constants import FLOAT_ANALYSE_HINT_LIMIT, FLOAT_ANALYSE_PONDER_LIMIT
 
 from dgt.api import Event
 from utilities import Observable
@@ -256,8 +256,8 @@ class UciEngine(object):
         # not sure how to deal with this in the new chess module
         # there is no infinite play() call without a limit any more
         # so engine will stop when it is done in ponder() or brain() etc
-        if self.res is None:
-            logger.warning("stop called without pondering or brain")
+        if not self.pondering and not self.analysing:
+            logger.debug("stop called when not in BRAIN or ANALYSIS mode")
         return self.res
 
 
@@ -312,53 +312,31 @@ class UciEngine(object):
             logger.info("engine terminated while trying to make a move")
         return result
 
-
-    def ponder(self, game: Board) -> chess.engine.PlayResult:
-        """ Ponder engine - This is Mode ANALYSIS - Hint On """
-        self.show_best = False # this is what old code does, probably no meaning
+    def ponder_analyse(self, game: Board) -> chess.engine.InfoDict | None:
+        """ Get analysis update from pondering engine - BRAIN mode """
+        # @ todo ANALYSIS could use an AsyncAnalysisTimer to run
+        # forever in the background
+        # short term: ANALYSIS calls this also after each user move
+        if self.idle is False:
+            # protect engine against calls if its not idle
+            logger.warning("analysis should only be called when engine is idle")
+            return None
         try:
             self.idle = False  # engine is going to be busy now
-            # here we could let self.analysis decide ponder=True value
-            # but ponder should only be used to ponder
-            # the only difference to go() function is that this needs
-            # a shorter limit so that the user does not have to wait
-            result = self.engine.play(game, chess.engine.Limit(time=FLOAT_PONDERING_LIMIT), ponder=True)
+            if self.pondering:
+                limit = FLOAT_ANALYSE_PONDER_LIMIT  # shorter
+            else:
+                limit = FLOAT_ANALYSE_HINT_LIMIT  # longer
+            info = self.engine.analyse(game, chess.engine.Limit(time=limit))
             self.idle = True  # engine idle again
         except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
-            result = None
-        # Observable.fire(Event.STOP_SEARCH())
-        if result:
-            logger.info("res: %s", result)
-            self.res = result # old code still needs this in stop() ?
-            # as this is brain mode ponder value is suggested engine move
-            # Observable.fire(Event.BEST_MOVE(move=result.move, ponder=result.move, inbook=False))
-        return result
-
-
-    def brain(self, game: Board) -> chess.engine.PlayResult:
-        """ Permanent brain. This is mode BRAIN - Pondering On in Menu """
-        # @todo make this same as go() above?
-        # update: almost done - picochess no longer calls this function
-        # so soon this can be deleted - remember to remove FLOAT_BRAIN_LIMIT also
-        # Observable.fire(Event.START_SEARCH())
-        self.show_best = True # this is what old code does, probably no meaning
-        try:
-            # @todo check if we can use time_dict here
-            self.idle = False  # engine is going to be busy now
-            result = self.engine.play(game, chess.engine.Limit(time=FLOAT_BRAIN_LIMIT))
-            self.idle = True  # engine idle again
-        except chess.engine.EngineTerminatedError:
-            logger.error("Engine terminated")  # @todo find out, why this can happen!
-            result = None
-            self.show_best = False
-        # Observable.fire(Event.STOP_SEARCH())
-        if result:
-            logger.info("res: %s", result)
-            self.res = result # old code still needs this in stop() ?
-            # Observable.fire(Event.BEST_MOVE(move=result.move, ponder=result.ponder, inbook=False))
-        return result
-
+            info = None
+        if not self.pondering:
+            logger.debug("not ponder analysing - just getting a hint move")
+        if info:
+            logger.info("engine score: %s depth: %s pv: %s", info["score"], info["depth"], info["pv"])
+        return info
 
     def is_thinking(self):
         """Engine thinking."""
