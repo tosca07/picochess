@@ -944,7 +944,7 @@ class DgtMenu(object):
         if self.menu_system_eboard_type != dgt.util.EBoard.DGT:
             ModeInfo.set_flipped_board(flip_board)
         else:
-            if (not flip_board) and (play_mode == PlayMode.USER_BLACK):
+            if (not self.flip_board) and (play_mode == PlayMode.USER_BLACK):
                 ModeInfo.set_flipped_board(flip_board)
         self.res_position_reverse = self.flip_board = flip_board
 
