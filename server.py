@@ -1,6 +1,7 @@
 # Copyright (C) 2013-2018 Jean-Francois Romang (jromang@posteo.de)
 #                         Shivkumar Shivaji ()
 #                         Jürgen Précour (LocutusOfPenguin@posteo.de)
+#                         Johan Sjöblom (messier109@gmail.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,14 +20,14 @@ import datetime
 import threading
 import logging
 from collections import OrderedDict
-from typing import Optional, Set
+from typing import Set
+import asyncio
 
 import chess  # type: ignore
 import chess.pgn as pgn  # type: ignore
 
 import tornado.web  # type: ignore
 import tornado.wsgi  # type: ignore
-from tornado.ioloop import IOLoop  # type: ignore
 from tornado.websocket import WebSocketHandler  # type: ignore
 
 from utilities import Observable, DisplayMsg, hms_time, AsyncRepeatingTimer
@@ -37,7 +38,6 @@ from dgt.util import PlayMode, Mode, ClockSide, GameResult
 from dgt.iface import DgtIface
 from eboard.eboard import EBoard
 from pgn import ModeInfo
-import asyncio
 from constants import FLOAT_MSG_WAIT
 import queue
 

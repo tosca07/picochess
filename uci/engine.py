@@ -1,6 +1,7 @@
 # Copyright (C) 2013-2018 Jean-Francois Romang (jromang@posteo.de)
 #                         Shivkumar Shivaji ()
 #                         Jürgen Précour (LocutusOfPenguin@posteo.de)
+#                         Johan Sjöblom (messier109@gmail.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,19 +21,18 @@ from typing import Optional
 import logging
 import time
 import configparser
+import re
 import spur  # type: ignore
 import paramiko
-import re
-from constants import FLOAT_MAX_ENGINE_TIME, FLOAT_MIN_ENGINE_TIME
-from constants import INT_EXPECTED_GAME_LENGTH
-from constants import FLOAT_ANALYSE_HINT_LIMIT, FLOAT_ANALYSE_PONDER_LIMIT
 
-from dgt.api import Event
-from utilities import Observable
 import chess.engine  # type: ignore
 from chess import Board  # type: ignore
 from uci.rating import Rating, Result
 from utilities import write_picochess_ini
+
+from constants import FLOAT_MAX_ENGINE_TIME, FLOAT_MIN_ENGINE_TIME
+from constants import INT_EXPECTED_GAME_LENGTH
+from constants import FLOAT_ANALYSE_HINT_LIMIT, FLOAT_ANALYSE_PONDER_LIMIT
 
 UCI_ELO = "UCI_Elo"
 UCI_ELO_NON_STANDARD = "UCI Elo"
@@ -265,7 +265,7 @@ class UciEngine(object):
         """Stop engine."""
         logger.warning("pause audio old - unclear what to do here - doing nothing")
 
-    
+
     def get_engine_limit(self, time_dict: dict, game: Board) -> float:
         """ a simple algorithm to get engine thinking time """
         try:
@@ -288,7 +288,7 @@ class UciEngine(object):
             use_time = 0.2  # fallback so that play does not stop
             logger.warning(e)
         return use_time
-    
+
     def go(self, time_dict: dict, game: Board) -> chess.engine.PlayResult:
         """Go engine."""
         logger.debug("molli: timedict: %s", str(time_dict))
@@ -362,7 +362,6 @@ class UciEngine(object):
         """Engine sometimes need this to setup internal values."""
         game.reset()  # set starting position
         # self.engine.quit()  # not sure if this is needed
-        logger.debug("engine new game - do I need to reopen engine?")
 
     def mode(self, ponder: bool, analyse: bool):
         """Set engine mode."""

@@ -1,6 +1,7 @@
 # Copyright (C) 2013-2018 Jean-Francois Romang (jromang@posteo.de)
 #                         Shivkumar Shivaji ()
 #                         Jürgen Précour (LocutusOfPenguin@posteo.de)
+#                         Johan Sjöblom (messier109@gmail.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,6 +24,7 @@ import queue
 import threading
 import subprocess
 import time
+import asyncio
 import chess  # type: ignore
 from utilities import DisplayMsg, Observable, DispatchDgt, AsyncRepeatingTimer, write_picochess_ini
 from dgt.menu import DgtMenu
@@ -31,7 +33,6 @@ from dgt.api import Dgt, Event, Message
 from timecontrol import TimeControl
 from dgt.board import Rev2Info
 from dgt.translate import DgtTranslate
-import asyncio
 from constants import FLOAT_MSG_WAIT
 
 
@@ -1130,7 +1131,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             ):
                 # molli: allow rolling information display (time/score/hint_move) in BRAIN mode according to
                 #      ponder interval
-                if self.play_move == chess.Move.null() and self.c_last_player == "U":
+                if self.play_move == chess.Move.null():
                     if self.c_time_counter > 2 * self.dgtmenu.get_ponderinterval():
                         text = self._combine_depth_and_score()
                         text.wait = True

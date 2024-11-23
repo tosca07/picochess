@@ -28,12 +28,12 @@ from shutil import which
 from random import randint
 import os
 import time
+import asyncio
 
 import chess  # type: ignore
 from utilities import DisplayMsg
 from dgt.api import Message
 from dgt.util import GameResult, PlayMode, Voice, EBoard
-import asyncio
 from constants import FLOAT_MSG_WAIT
 
 logger = logging.getLogger(__name__)
