@@ -70,7 +70,6 @@ from dgt.util import (
     Power,
     PowerLoop,
     GameResult,
-    PlayMode,
 )
 
 from dgt.api import Dgt, Event
@@ -939,12 +938,12 @@ class DgtMenu(object):
         """Get the flag."""
         return self.res_time_node
 
-    def set_position_reverse_flipboard(self, flip_board, play_mode):
+    def set_position_reverse_flipboard(self, flip_board):
         """Set the flag."""
         if self.menu_system_eboard_type != dgt.util.EBoard.DGT:
             ModeInfo.set_flipped_board(flip_board)
         else:
-            if (not flip_board) and (play_mode == PlayMode.USER_BLACK):
+            if not flip_board:
                 ModeInfo.set_flipped_board(flip_board)
         self.res_position_reverse = self.flip_board = flip_board
 
@@ -3895,10 +3894,7 @@ class DgtMenu(object):
         elif self.state == MenuState.GAME_GAMEREAD_GAMELAST:
             self.state = MenuState.GAME_GAMEREAD_GAME1
             self.menu_game_read = GameReadLoop.next(self.menu_game_read)
-            self.menu_engine_retrosettings = EngineRetroSettingsLoop.next(
-                self.menu_engine_retrosettings
-            )
-            text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
+            text = self.dgttranslate.text(self.menu_game_read.value)
 
         elif self.state == MenuState.GAME_GAMEREAD_GAME1:
             self.state = MenuState.GAME_GAMEREAD_GAME2
