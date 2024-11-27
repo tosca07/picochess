@@ -1,0 +1,25 @@
+13. Renaming of the play modes! Now we have:
+
+# New mode name                                         Old mode name
+# a5 NORMAL (rolling info display off by default)       NORMAL
+# b5 PONDER ON (rolling info display on by default)     BRAIN
+# c5 MOVE HINT                                          ANALYSIS
+# d5 EVAL.SCORE                                         KIBITZ
+# e5 OBSERVE                                            OBSERVE
+# f5 ANALYSIS (flexible option on by default)           PONDER
+# g5 TRAINING (this is new in 2.00)                     -
+# h5 REMOTE (working again from 1.00 on)                REMOTE
+
+
+Original (these are the old ones, new naming see above) description:
+Playing/Training Modes
+When using these modes, please be patient and don’t rush moves. Allow a few seconds for the scores and moves to appear. If you see any bug when rushing moves, let us know on the mailing list.
+
+Normal mode (enabled by white queen on A5). This is the default mode. You can play against the computer. The clock displays the remaining thinking time for both sides.
+Brain mode (enabled by white queen on B5). This is same as Game mode but the computer is using the permanent brain to think ahead on your thinking time.
+Analysis mode (enabled by white queen on C5): the computer is watching the game, it does not play itself. The clock continually displays the best move for the side to play.
+Kibitz mode (enabled by white queen on D5): the computer is watching the game, it does not play itself. The clock continually displays the position score (right aligned) with the search depth (left aligned).
+Observe mode (enabled by white queen on E5): the computer is watching the game, it does not play itself. The clock displays the remaining thinking time for both sides. The computer is thinking silently ahead. You can see the results by pressing the clock buttons (see below)
+Ponder mode (enabled by white queen on F5): the computer is watching the game, it does not play itself. The clock displays the best move for the side to play in a 2 secs rotation with the position score together with the depth. So, this mode is a combination of “Analysis” & “Kibitz”
+Remote mode (enabled by white queen on H5): this mode will allow you to play against someone over internet. The remote player using the webserver whereas the other player using the pieces as normal to enter moves. A detailed documentation will be provided lateron.
+Game mode is the regular mode. If you used one of the other modes, you can return back to game mode by putting the extra white queen on A5. You can also press the fourth button to enter the menu (afterwards choose the Mode submenu) to toggle over the modes (Qa5-Qf5,Qh5 only working in the starting position) see below.
