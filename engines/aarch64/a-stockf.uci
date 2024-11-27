@@ -4,13 +4,12 @@
 # Syzygy50MoveRule, SyzygyProbeLimit, EvalFile, EvalFileSmall
 
 [DEFAULT]
-MultiPV = 1
 Ponder = True
 Move Overhead = 2000
 Skill Level = 20
 Hash = 192 
 Threads = 3
-EvalFile = "nn-82215d0fd0df.nnue"
+# EvalFile = "nn-82215d0fd0df.nnue"
 Debug Log File ="a-stockf.log"
 
 [Auto]

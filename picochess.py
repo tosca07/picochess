@@ -20,6 +20,37 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+# Play Modes, Renaming of the play modes!
+# Q-square / New mode name                              Old mode name
+# a5 NORMAL (rolling info display off by default)       NORMAL
+# b5 PONDER ON (rolling info display on by default)     BRAIN
+# c5 MOVE HINT                                      	ANALYSIS
+# d5 EVAL.SCORE                                         KIBITZ
+# e5 OBSERVE                                            OBSERVE
+# f5 ANALYSIS (flexible option on by default)           PONDER
+# g5 TRAINING (this is new in 2.00)                     -
+# h5 REMOTE (working again from 1.00 on)                REMOTE
+
+# chess engine plays in NORMAL, BRAIN, and TRAINING:    EngineMode.PLAYING
+# in the other modes the engine is observing:           EngineMode.WATCHING
+
+# Playing/Training Modes - Original old (2016?) description
+# When using these modes, please be patient and don’t rush moves. Allow a few seconds for the scores and moves to appear. If you see any bug when rushing moves, let us know on the mailing list.
+# Normal mode (enabled by white queen on A5).
+# This is the default mode. You can play against the computer. The clock displays the remaining thinking time for both sides.
+# Brain mode (enabled by white queen on B5).
+# This is same as Game mode but the computer is using the permanent brain to think ahead on your thinking time.
+# Analysis mode (enabled by white queen on C5):
+# the computer is watching the game, it does not play itself. The clock continually displays the best move for the side to play.
+# Kibitz mode (enabled by white queen on D5):
+# the computer is watching the game, it does not play itself. The clock continually displays the position score (right aligned) with the search depth (left aligned).
+# Observe mode (enabled by white queen on E5):
+# the computer is watching the game, it does not play itself. The clock displays the remaining thinking time for both sides. The computer is thinking silently ahead. You can see the results by pressing the clock buttons (see below)
+# Ponder mode (enabled by white queen on F5):
+# the computer is watching the game, it does not play itself. The clock displays the best move for the side to play in a 2 secs rotation with the position score together with the depth. So, this mode is a combination of “Analysis” & “Kibitz”
+# Remote mode (enabled by white queen on H5):
+# this mode will allow you to play against someone over internet. The remote player using the webserver whereas the other player using the pieces as normal to enter moves. A detailed documentation will be provided lateron.
+# Game mode is the regular mode. If you used one of the other modes, you can return back to game mode by putting the extra white queen on A5. You can also press the fourth button to enter the menu (afterwards choose the Mode submenu) to toggle over the modes (Qa5-Qf5,Qh5 only working in the starting position) see below.
 
 import sys
 import os
@@ -33,6 +64,8 @@ import time
 import queue
 import math
 from typing import Any, List, Optional, Set, Tuple
+import asyncio
+
 import paramiko
 import chess.pgn  # type: ignore
 import chess.polyglot  # type: ignore
@@ -85,8 +118,8 @@ from dgt.menu import DgtMenu
 
 from picotutor import PicoTutor
 from pathlib import Path
-import asyncio
 from constants import FLOAT_MSG_WAIT, FLOAT_MIN_BACKGROUND_TIME
+from uci.engine import EngineMode
 
 ONLINE_PREFIX = "Online"
 
@@ -1189,10 +1222,15 @@ async def main() -> None:
         # engine.position(copy.deepcopy(game))
 
     def analyse(game: chess.Board) -> chess.engine.InfoDict | None:
-        """ intended for BRAIN mode to get update when engine is pondering """
+        """ analyse, observe etc depening on mode - create analysis info """
         # it will work to get a short hint move also when not pondering
-        info = engine.ponder_analyse(game)
-        # @ todo maybe move these message firing into the UciEngine engine
+        info = None
+        if state.interaction_mode in (Mode.NORMAL, Mode.BRAIN):
+            info = engine.playmode_analyse(game)
+        elif state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
+            engine.start_analysis(game)
+            info = engine.get_analysis(game)  # can be None
+        # send info to displays
         if info:
             if "pv" in info:
                 move = info.get("pv")[0]  # get first move
@@ -1222,23 +1260,12 @@ async def main() -> None:
         state.start_clock()
         return info
 
-    def brain(game: chess.Board, timec: TimeControl, state: PicochessState):
-        """Start a new permanent brain search on the game with pondering move made."""
-        assert not state.done_computer_fen, (
-            "brain() called with displayed move - fen: %s" % state.done_computer_fen
-        )
-        # @ todo - with the new chess module BRAIN mode becomes very
-        # similar to NORMAL play mode - we just have to figure out
-        # how to update the hint/ponder move info to user every 2sec or so
-        logger.debug("brain call can be deleted?")
-        # brain call can also be removed from engine.py if never needed
-
     def stop_search_and_clock(ponder_hit=False):
         """Depending on the interaction mode stop search and clock."""
         if state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
             state.stop_clock()
             if engine.is_waiting():
-                logger.info("engine already waiting")
+                logger.debug("engine already waiting")
             else:
                 if ponder_hit:
                     pass  # we send the engine.hit() lateron!
@@ -1256,7 +1283,7 @@ async def main() -> None:
         if not emulation_mode():
             while not engine.is_waiting():
                 time.sleep(0.05)
-                logger.warning("engine is still not waiting")
+                logger.debug("engine is still not waiting")
 
     def user_move(move: chess.Move, sliding: bool, state: PicochessState):
         """Handle an user move."""
@@ -1314,7 +1341,7 @@ async def main() -> None:
             state.done_move = chess.Move.null()
             fen = state.game.fen()
             turn = state.game.turn
-            logger.info("user did a move for user")
+            logger.debug("user did a move for user")
             state.game.push(move)  # this is where user move is made
             eval_str = ""
 
@@ -1434,11 +1461,11 @@ async def main() -> None:
                                     )
                             else:
                                 # send move to engine
-                                logger.info("starting think()")
+                                logger.debug("starting think()")
                                 think(state.game, state.time_control, msg, state)
                     else:
                         assert(state.interaction_mode == Mode.BRAIN)
-                        logger.info("new temporary implementation of ponderhit - starting think")
+                        logger.debug("new implementation of ponderhit - starting think")
                         think(state.game, state.time_control, msg, state)
 
 
@@ -1669,7 +1696,7 @@ async def main() -> None:
                         )
                     )
                     time.sleep(2)
-            logger.info("user move did a move for pico")
+            logger.debug("user move did a move for pico")
 
             user_move(move, sliding=False, state=state)
             state.last_legal_fens = state.legal_fens
@@ -1680,7 +1707,7 @@ async def main() -> None:
 
         # standard legal move
         elif fen in state.legal_fens:
-            logger.info("standard move detected")
+            logger.debug("standard move detected")
             state.newgame_happened = False
             legal_moves = list(state.game.legal_moves)
             move = legal_moves[state.legal_fens.index(fen)]
@@ -1771,9 +1798,6 @@ async def main() -> None:
 
                 state.start_clock()
 
-                if state.interaction_mode == Mode.BRAIN:
-                    brain(state.game, state.time_control, state)
-
             state.legal_fens = compute_legal_fens(
                 state.game.copy()
             )  # calc. new legal moves based on alt. move
@@ -1844,9 +1868,6 @@ async def main() -> None:
                     DisplayMsg.show(Message.EXIT_MENU())  # show clock
                     end_time_cmove_done = 0
 
-                if state.interaction_mode == Mode.BRAIN:
-                    brain(state.game, state.time_control, state)
-
                 state.legal_fens = compute_legal_fens(state.game.copy())
 
                 if pgn_mode():
@@ -1908,9 +1929,6 @@ async def main() -> None:
                     time2=state.time_control.game_time2,
                 )
                 DisplayMsg.show(msg)
-
-            if state.interaction_mode == Mode.BRAIN:
-                brain(state.game, state.time_control, state)
 
             state.last_legal_fens = []
             state.legal_fens_after_cmove = []
@@ -2111,17 +2129,11 @@ async def main() -> None:
                         )
                     )
         if start_search:
-            assert engine.is_waiting(), (
-                "engine not waiting! thinking status: %s" % engine.is_thinking()
-            )
-            # Go back to analysing or observing
-            if state.interaction_mode == Mode.BRAIN and not state.done_computer_fen:
-                brain(state.game, state.time_control, state)
-            if state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.PONDER, Mode.TRAINING):
-                DisplayMsg.show(msg)
-                analyse(state.game)
-                return
-            if state.interaction_mode in (Mode.OBSERVE, Mode.REMOTE):
+            if engine.is_waiting() == False:
+                logger.warning("engine not waiting")
+            # Go back to analysing or observing - all modes except REMOTE?
+            if state.interaction_mode in (Mode.BRAIN, Mode.ANALYSIS, Mode.KIBITZ, Mode.PONDER,
+                                          Mode.TRAINING, Mode.OBSERVE, Mode.REMOTE):
                 DisplayMsg.show(msg)
                 analyse(state.game)
                 return
@@ -2684,12 +2696,11 @@ async def main() -> None:
 
 
         def engine_mode(self):
-            ponder_mode = analyse_mode = False
-            if state.interaction_mode == Mode.BRAIN:
-                ponder_mode = True
+            if state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
+                ponder_mode = True  # better analysis result in PLAYING mode
+                self.engine.set_mode(mode=EngineMode.PLAYING, ponder=ponder_mode)
             elif state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
-                analyse_mode = True
-            self.engine.mode(ponder=ponder_mode, analyse=analyse_mode)
+                self.engine.set_mode(mode=EngineMode.WATCHING)
 
 
         def remote_engine_mode(self):
@@ -2713,7 +2724,7 @@ async def main() -> None:
             if state.game.fullmove_number > 1:
                 # @todo find a way to skip background analysis
                 # while we are doing inbook
-                if user_to_move and state.interaction_mode == Mode.BRAIN:
+                if user_to_move or state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
                     current_time = time.time()
                     if self.last_analysis_call is None:
                         self.last_analysis_call = current_time
@@ -4186,9 +4197,6 @@ async def main() -> None:
                                     else:
                                         DisplayMsg.show(Message.EXIT_MENU())  # show clock
                                         end_time_cmove_done = 0
-
-                                    if state.interaction_mode == Mode.BRAIN:
-                                        brain(state.game, state.time_control, state)
 
                                     state.legal_fens = compute_legal_fens(state.game.copy())
 

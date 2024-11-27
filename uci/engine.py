@@ -22,6 +22,9 @@ import logging
 import time
 import configparser
 import re
+import threading
+from enum import Enum
+
 import spur  # type: ignore
 import paramiko
 
@@ -30,15 +33,31 @@ from chess import Board  # type: ignore
 from uci.rating import Rating, Result
 from utilities import write_picochess_ini
 
-from constants import FLOAT_MAX_ENGINE_TIME, FLOAT_MIN_ENGINE_TIME
-from constants import INT_EXPECTED_GAME_LENGTH
-from constants import FLOAT_ANALYSE_HINT_LIMIT, FLOAT_ANALYSE_PONDER_LIMIT
+# settings are for engine thinking limits
+FLOAT_MAX_ENGINE_TIME = 2.0  # engine max thinking time
+FLOAT_MIN_ENGINE_TIME = 0.1  # engine min thinking time
+INT_EXPECTED_GAME_LENGTH = 100  # divide thinking time over expected game length
+
+# how long the chess engine should analyse
+# WATCHING
+FLOAT_ANALYSIS_WAIT = 0.5  # save CPU by waiting between calls to analysis()
+FLOAT_ANALYSIS_LIMIT = 1.0  # asking for analysis() limit
+FLOAT_ANALYSIS_FIRST = 0.2  # first time analysis() limit
+# PLAYING
+FLOAT_ANALYSE_LIMIT = 0.1  # asking for hint while not pondering
+FLOAT_ANALYSE_PONDER_LIMIT = 0.05 # asking for a hint when pondering
 
 UCI_ELO = "UCI_Elo"
 UCI_ELO_NON_STANDARD = "UCI Elo"
 UCI_ELO_NON_STANDARD2 = "UCI_Limit"
 
 logger = logging.getLogger(__name__)
+
+class EngineMode(Enum):
+    """ represent modes of using chess engine """
+    PLAYING = 1  # user plays engine
+    WATCHING = 2  # observing/analysing, user plays both sides
+
 
 
 class WindowsShellType:
@@ -112,17 +131,162 @@ class UciShell(object):
     def get(self):
         return self if self._shell is not None else None
 
+class AnalysisResult:
+    def __init__(self, hint: chess.engine.InfoDict, game: chess.Board):
+        """ hint from analysis containing the board used to analyse the hint """
+        self.hint = hint
+        self.fen = game.fen()
+    
+    def get_info(self) -> chess.engine.InfoDict:
+        """ the analysis result """
+        return self.hint
+
+    def get_fen(self) -> str:
+        """ the position used for analysis result """
+        return self.fen
+
+class ContinuousAnalysis:
+    def __init__(self, delay: float):
+        """
+        A continuous analysis generator that runs in a background thread.
+
+        :param delay: Time interval between each analysis iteration (in seconds).
+        """
+        self.engine = None
+        self.game = None
+        self.delay = delay
+        self.running = False
+        self.thread = None
+        self._analysis_data = None
+        self.lock = threading.Lock()  # Protects both self.game and self._analysis_data
+
+    def _analyze_position(self):
+        """Internal function for continuous analysis in the background thread."""
+        while self.running:
+            try:
+                # Lock to safely read the game position
+                with self.lock:
+                    current_game = self.game.copy() if self.game else None  # Copy the board for analysis
+
+                if current_game is None:
+                    logger.warning("no game to analyse")
+                    time.sleep(self.delay * 3)
+                    continue
+                elif current_game.is_game_over():
+                    logger.warning("nothing to analyse since game is over")
+                    time.sleep(self.delay * 3)
+                    continue
+                # @ todo if current_game is starting position continue
+                # then perhaps newgame() dont need to stop this thread?
+
+                use_time = FLOAT_ANALYSIS_FIRST # faster first analysis
+
+                # Perform analysis with a time limit
+                with self.engine.analysis(current_game, chess.engine.Limit(time=use_time)) as analysis:
+                    use_time = FLOAT_ANALYSIS_LIMIT  # longer
+                    for info in analysis:
+                        if "pv" in info:
+                            # Save analysis results safely
+                            with self.lock:
+                                self._analysis_data = AnalysisResult(info, current_game)
+                        else:
+                            # skip if no pv in analysis
+                            logger.debug(f"analysis no pv: {info}")
+
+                        time.sleep(self.delay)  # Short pause
+                        if not self.running or current_game != self.game:
+                            # stop called or position changed
+                            break
+            except Exception as e:
+                print(f"Error during analysis: {e}")
+                break
+
+    def start(self, engine: chess.engine.SimpleEngine, game: chess.Board):
+        """
+        Starts the analysis in a separate thread.
+
+        :param engine: An instance of SimpleEngine managed externally.
+        :param game: The current chess board (game) to analyze.
+        """
+        if not self.running:
+            self.engine = engine
+            self.game = game.copy()  # remember this game position
+            self.running = True
+            self.thread = threading.Thread(target=self._analyze_position, daemon=True)
+            self.thread.start()
+
+    def stop(self):
+        """Stops the continuous analysis."""
+        self.running = False
+        if self.thread:
+            self.thread.join()
+
+    def get_analysis(self) -> AnalysisResult | None:
+        """
+        Returns the latest analysis result in a thread-safe way.
+
+        :return: The latest analysis data as an InfoDict, or None if no data is available.
+        """
+        with self.lock:
+            return self._analysis_data if self._analysis_data else None
+
+    def update_game(self, new_game: chess.Board):
+        """
+        Updates the game for analysis in a thread-safe manner.
+
+        :param new_game: The new chess board to analyze.
+        """
+        with self.lock:
+            self.game = new_game.copy()  # remember this game position
+
+    def is_running(self) -> bool:
+        """
+        Checks if the analysis is running.
+
+        :return: True if analysis is running, otherwise False.
+        """
+        return self.running
+
+    def get_current_game(self) -> Optional[chess.Board]:
+        """
+        Retrieves the current board being analyzed.
+
+        :return: A copy of the current chess board or None if no board is set.
+        """
+        with self.lock:
+            return self.game.copy() if self.game else None
+
+    def get_fen(self) -> Optional[str]:
+        """
+        Retrieves the current position being analyzed.
+
+        :return: A copy of the current chess position or None if no board is set.
+        """
+        with self.lock:
+            return self.game.fen() if self.game else None
 
 class UciEngine(object):
 
     """Handle the uci engine communication."""
 
+    # The rewrite for the new python chess module:
+    # This UciEngine class can be in two modes:
+    # WATCHING = user plays both sides
+    # - an analysis generator to ask latest info is running
+    # PLAYING = user plays against computer
+    # - self.idle is False only when engine is playing it's best move
+    # - self.res will remember latest play result (maybe never needed)
+    # - self.pondering indicates if engine is to ponder
+    #   without pondering analysis will be "static" one-timer
+
     def __init__(self, file: str, uci_shell: UciShell, mame_par: str):
         super(UciEngine, self).__init__()
         logger.info("mame parameters=" + mame_par)
+        self.mode = EngineMode.PLAYING  # picochess starts in NORMAL mode
         self.idle = True
-        self.pondering = False
-        self.analysing = False
+        self.pondering = True  # best to always allow pondering
+        self.analyser = ContinuousAnalysis(delay=FLOAT_ANALYSIS_WAIT)
+        # previous existing attributes:
         self.is_adaptive = False
         self.is_mame = False
         self.engine_rating = -1
@@ -155,7 +319,6 @@ class UciEngine(object):
             else:
                 logger.error("engine executable [%s] not found", file)
             self.options: dict = {}
-            self.show_best = True
 
             self.res = None
             self.level_support = False
@@ -221,12 +384,10 @@ class UciEngine(object):
         """Get File."""
         return self.file
 
-    #def position(self, game: Board):
-    #    """Set position."""
-    #    logger.warning("as of new chess module no need to set position")
-
     def quit(self):
         """Quit engine."""
+        if self.analyser.is_running():
+            self.analyser.stop()
         if self.engine.quit():  # Ask nicely
             if self.engine.terminate():  # If you won't go nicely....
                 if self.is_mame:
@@ -236,29 +397,21 @@ class UciEngine(object):
                         return False
         return True
 
-    def stop(self, show_best=False):
-        """Stop engine."""
-        # @ todo stop could cancel a new 2sec timer replacing the old
-        # picochess engine callbacks in analysis and brain modes
-        # and the timer could be started in brain() and/or ponder()
-        logger.info("show_best old: %s new: %s", self.show_best, show_best)
-        self.show_best = show_best
-        if not self.is_waiting():
-            logger.debug("waiting synchronized for engine to play to be ready")
-        while not self.is_waiting():
-            # @todo temporary code - wait until engine finishes
-            # brain and ponder is only a a fraction of a second
-            # but architecture in picochess must change for them
-            # and it could be made async, but then all of picochess.py
-            # will need a lot of updating as the await will "spread"
-            time.sleep(0.05)
-        # @ todo the old code tries to stop the engine here
-        # not sure how to deal with this in the new chess module
-        # there is no infinite play() call without a limit any more
-        # so engine will stop when it is done in ponder() or brain() etc
-        if not self.pondering and not self.analysing:
-            logger.debug("stop called when not in BRAIN or ANALYSIS mode")
-        return self.res
+    def stop(self):
+        """ In PLAYMODE wait for engine to stop thinking """
+        if self.mode == EngineMode.WATCHING:
+            if self.analyser.is_running() is not None:
+                logger.debug("leaving engine background analysis running")
+            else:
+                logger.warning("no analyser running in stop")
+        elif self.mode == EngineMode.PLAYING:
+            if not self.idle:
+                logger.debug("waiting synchronized for engine to play to be ready")
+            while not self.idle:
+                time.sleep(FLOAT_MIN_ENGINE_TIME/2)  # wait until engine finishes play
+            if self.analyser.is_running():
+                logger.warning("analyser thread running in PLAYING mode - stopping it")
+                self.analyser.stop()
 
 
     def pause_pgn_audio(self):
@@ -270,10 +423,10 @@ class UciEngine(object):
         """ a simple algorithm to get engine thinking time """
         try:
             if game.turn == chess.WHITE:
-                time = time_dict["wtime"]
+                t = time_dict["wtime"]
             else:
-                time = time_dict["btime"]
-            use_time = float(time)
+                t = time_dict["btime"]
+            use_time = float(t)
             use_time = use_time / 1000.0  # convert to seconds
             # divide usable time over first N moves
             max_moves_left = INT_EXPECTED_GAME_LENGTH - game.fullmove_number
@@ -292,31 +445,64 @@ class UciEngine(object):
     def go(self, time_dict: dict, game: Board) -> chess.engine.PlayResult:
         """Go engine."""
         logger.debug("molli: timedict: %s", str(time_dict))
+        if self.analyser.is_running():
+            logger.warning("analyser should not be running when PLAYING")
+            self.analyser.stop()
         # Observable.fire(Event.START_SEARCH())
-        self.show_best = True # this is what old code does
         use_time = self.get_engine_limit(time_dict, game)
         try:
             # @todo: how does the user affect the ponder value in this call
             self.idle = False  # engine is going to be busy now
-            result = self.engine.play(game, chess.engine.Limit(time=use_time), ponder=self.pondering)
+            self.res = self.engine.play(game, chess.engine.Limit(time=use_time), ponder=self.pondering)
             self.idle = True  # engine idle again
         except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
-            result = None
-            self.show_best = False
+            self.res = None
         # Observable.fire(Event.STOP_SEARCH())
-        if result:
-            logger.info("res: %s", result)
+        if self.res:
+            logger.info("res: %s", self.res)
             # not firing BEST_MOVE here because caller picochess fires it
         else:
-            logger.info("engine terminated while trying to make a move")
+            logger.error("engine terminated while trying to make a move")
+        return self.res
+
+    def start_analysis(self, game: chess.Board) -> bool:
+        """ start analyser - returns True if already running """
+        result = False
+        if self.analyser.is_running():
+            result = True
+            if game.fen() != self.analyser.get_fen():
+                self.analyser.update_game(game)  # new position
+        else:
+            if self.engine:
+                self.analyser.start(self.engine, game)
+            else:
+                logger.warning("start analysis requested but no engine loaded")
         return result
 
-    def ponder_analyse(self, game: Board) -> chess.engine.InfoDict | None:
+    def get_analysis(self, game: chess.Board) -> chess.engine.InfoDict | None:
+        """ always call start_analysis first """
+        info = None
+        if self.analyser.is_running():
+            analysis = self.analyser.get_analysis()
+            if analysis:
+                if analysis.get_fen() == game.fen():
+                    info = analysis.get_info()
+                    if "pv" in info:
+                        logger.debug("engine score: %s depth: %s pv: %s", info["score"], info["depth"], info["pv"])
+                    else:
+                        logger.debug("analysis no pv: {info}")
+                        info = None  # skip if no pv in analysis
+                else:
+                    logger.debug("skipping analysis for old position %s", analysis.get_fen())
+        else:
+            logger.warning("no analyser running in get_analysis - missing call to start_analysis")
+            if self.engine:
+                self.analyser.start(self.engine, game)  # protective code, not nice but safe
+        return info
+
+    def playmode_analyse(self, game: Board) -> chess.engine.InfoDict | None:
         """ Get analysis update from pondering engine - BRAIN mode """
-        # @ todo ANALYSIS could use an AsyncAnalysisTimer to run
-        # forever in the background
-        # short term: ANALYSIS calls this also after each user move
         if self.idle is False:
             # protect engine against calls if its not idle
             logger.warning("analysis should only be called when engine is idle")
@@ -326,7 +512,7 @@ class UciEngine(object):
             if self.pondering:
                 limit = FLOAT_ANALYSE_PONDER_LIMIT  # shorter
             else:
-                limit = FLOAT_ANALYSE_HINT_LIMIT  # longer
+                limit = FLOAT_ANALYSE_LIMIT  # longer
             info = self.engine.analyse(game, chess.engine.Limit(time=limit))
             self.idle = True  # engine idle again
         except chess.engine.EngineTerminatedError:
@@ -335,7 +521,8 @@ class UciEngine(object):
         if not self.pondering:
             logger.debug("not ponder analysing - just getting a hint move")
         if info:
-            logger.info("engine score: %s depth: %s pv: %s", info["score"], info["depth"], info["pv"])
+            if "pv" in info:
+                logger.debug("engine score: %s depth: %s pv: %s", info["score"], info["depth"], info["pv"])
         return info
 
     def is_thinking(self):
@@ -360,13 +547,24 @@ class UciEngine(object):
 
     def newgame(self, game: Board):
         """Engine sometimes need this to setup internal values."""
-        game.reset()  # set starting position
-        # self.engine.quit()  # not sure if this is needed
+        if self.analyser.is_running():
+            # @todo we could send new board to analyser?
+            # to avoid unnecessary stop and start?
+            self.analyser.stop()
 
-    def mode(self, ponder: bool, analyse: bool):
+    def set_mode(self, mode: int, ponder: bool = True):
         """Set engine mode."""
-        self.pondering = ponder  # True in BRAIN mode = Ponder On menu
-        self.analysing = analyse  # True in ANALYSIS mode = Hint On menu
+        self.mode = mode
+        if self.mode == EngineMode.PLAYING:
+            # Modes: NORMAL, BRAIN
+            if self.analyser.is_running() is not None:
+                self.analyser.stop()  # stop analysing - let ponder do it
+            self.pondering = ponder  # True in BRAIN mode = Ponder On menu
+        elif self.mode == EngineMode.WATCHING:
+            # Modes: ANALYSIS = Hint On, OBSERVING, etc...
+            # self.analyser will be started in start_analysis
+            # pondering has no meaning in ANALYSIS - leave unchanged
+            pass
 
     def startup(self, options: dict, rating: Optional[Rating] = None):
         """Startup engine."""
