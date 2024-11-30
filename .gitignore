@@ -21,7 +21,7 @@ var/
 .installed.cfg
 *.egg
 include/
-engines/
+engines/aarch64/old/
 
 # Installer logs
 pip-log.txt

@@ -460,7 +460,7 @@ class UciEngine(object):
             self.res = None
         # Observable.fire(Event.STOP_SEARCH())
         if self.res:
-            logger.info("res: %s", self.res)
+            logger.debug("res: %s", self.res)
             # not firing BEST_MOVE here because caller picochess fires it
         else:
             logger.error("engine terminated while trying to make a move")

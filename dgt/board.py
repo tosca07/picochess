@@ -548,7 +548,7 @@ class DgtBoard(EBoard):
         logger.debug("running watchdog")
         if self.clock_lock and not self.is_pi:
             if time.time() - self.clock_lock > 2:
-                logger.warning('(ser) clock is locked over 2secs')
+                logger.debug('(ser) clock is locked over 2secs')
                 logger.debug('resending locked (ser) clock message [%s]', self.last_clock_command)
                 self.clock_lock = 0.0
                 self.write_command(self.last_clock_command)

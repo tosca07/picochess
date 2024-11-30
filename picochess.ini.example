@@ -59,7 +59,6 @@ beep-some-level = 2
 ### will not be harmed, but you will need to leave it commented out to use PicoChess.
 ## If you are using a DGTPi or Raspberry Pi wired to a DGT 3000 clock uncomment the next line.
 #dgtpi = True
-dgtpi = True
 
 ### You can reduce the DGT board piece recognition by a factor from 0 to 9. Please only use this if you suffer from
 ### sliding problems (like multi voices during you slide your pieces for example moving Bf1-b5 hear Be2,d3,c4 then b5).
@@ -71,15 +70,13 @@ dgtpi = True
 
 ### Options for the UCI chess engine
 ## Sets the UCI engine used at startup
-## handle with care. If you setup this section wrong, picochess won't start.
-## Path to the engine relative to the 'picochess' folder (local engine - standard case)
-#engine = /opt/picochess/engines/aarch64/a-stockf
-engine = /opt/picochess/engines/aarch64/NNUE/StockfishNN
+## handle with care. If you setup this section wrong, picochess won't start
+## Path to the engine
+engine = /opt/picochess/engines/aarch64/a-stockf
 
 ## What level the engine should have at startup?
 ## For a (correct) value please take a look at 'engines/<your_platform>/<engine_name>.uci'
 #engine-level= Elo@1500
-engine-level = Elo@1506
 
 ### =========================
 ### = Remote engine options =
@@ -161,8 +158,8 @@ book = books/h-varied.bin
 
 ## log-file points to a file that is used to write the log information.
 ## This file is created in the 'log' folder. Altogether there are 6 log files kept (rotating logs)
-#log-file = picochess.log
 log-file = picochess.log
+
 ## What log level should be used 
 ## Log level options are [debug, info, warning (default), error, critical]
 #log-level = error
@@ -206,8 +203,8 @@ pgn-elo = 1500
 ##enable-update-reboot = True
 
 ## The port of the built-in web server
-#web-server = 8080
-web-server = 80
+#web-server = 80
+web-server = 8080
 
 ## When in ponder mode decides how long each info is displayed. Default is 3 secs.
 ## Must be between 1 to 8 secs.
@@ -242,7 +239,7 @@ language = en
 
 ## Rolling information display in "ponder on" mode (time/score/depth/hintmove) is switched off by default
 ## If you don't want this please uncomment next line
-#rolling-display-ponder = True
+rolling-display-ponder = True
 
 # Flexible analysis option in Analysis (old Ponder) mode (no valid move checks, etc.) is switched on by default
 ## If don't you want this please uncomment next line
@@ -351,13 +348,13 @@ tutor-watcher = False
 tutor-coach = off
 
 ## Engine used for PicoTutor analysis. Default is /opt/picochess/engines/aarch64/a-stockf.
-#tutor-engine = /opt/picochess/engines/aarch64/a-stockf
 tutor-engine = /opt/picochess/engines/aarch64/a-stockf
 
 ## Type of e-Board. Supported values: 'certabo', 'chesslink', 'chessnut', 'dgt' (default), 'ichessone', 'noeboard' (play against
 ## engine using web server interface).
 #board-type = chesslink
-board-type = dgt
+# board-type = dgt
+board-type = noeboard
 
 ## Clock side for DGT3000/DGTPI, default is 'left'. Switches the displayed White and Black clock times.
 #clockside = right

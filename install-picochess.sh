@@ -3,38 +3,45 @@
 # Installation script for picochess
 #
 
-apt update
-apt full-upgrade -y
-apt install git sox unzip wget python3-pip libtcl8.6 telnet libglib2.0-dev -y
+echo "starting by updating system..."
+apt-get update
 
-pip3 install --upgrade pip
+echo "installing needed programs"
+apt install git sox unzip wget libtcl8.6 telnet libglib2.0-dev
+apt install avahi-daemon avahi-discover libnss-mdns
+apt install vorbis-tools
+apt install python python3-pip
+apt install python3-dev libffi-dev libssl-dev
 
-cd /opt
+if [ -d "/opt/picochess" ]; then
+    echo "picochess already exists, proceeding.."
+    cd /opt/picochess
+    git fetch
+else
+    echo "fetching picochess..."
+    cd /opt
+    git clone https://github.com/JohanSjoblom/picochess
+    cd picochess
+    python -m venv venv
+    cp picochess.ini.example picochess.ini
+    chown pi picochess.ini
+    chown -R pi /opt/picochess/logs
+    ln -sf /opt/picochess/etc/dgtpicom_$(uname -m) /opt/picochess/etc/dgtpicom
+    ln -sf /opt/picochess/etc/dgtpicom.$(uname -m).so /opt/picochess/etc/dgtpicom.so
+    cp etc/dgtpi.service /etc/systemd/system/
+    cp etc/picochess.service /etc/systemd/system/
+    cp etc/obooksrv.service /etc/systemd/system/
+    cp etc/gamesdb.service /etc/systemd/system/
+    systemctl daemon-reload
+    systemctl enable dgtpi.service
+    systemctl enable picochess.service
+    systemctl enable obooksrv.service
+    systemctl enable gamesdb.service
+fi
 
-git clone https://github.com/ghislainbourgeois/picochess
-
-python3 -m venv /opt/picochess_venv
-source /opt/picochess_venv/bin/activate
-
-cd picochess
-
-ln -sf /opt/picochess/etc/dgtpicom_$(uname -m) /opt/picochess/etc/dgtpicom
-ln -sf /opt/picochess/etc/dgtpicom.$(uname -m).so /opt/picochess/etc/dgtpicom.so
-
-pip3 install --upgrade -r requirements.txt
-
-cp etc/dgtpi.service /etc/systemd/system/
-cp etc/picochess.service /etc/systemd/system/
-cp etc/obooksrv.service /etc/systemd/system/
-cp etc/gamesdb.service /etc/systemd/system/
-
-systemctl daemon-reload
-systemctl enable dgtpi.service
-systemctl enable picochess.service
-systemctl enable obooksrv.service
-systemctl enable gamesdb.service
-
-cd tablebases
-./download-syzygy345.sh
+echo "checking required python modules..."
+cd /opt/picochess
+/opt/picochess/venv/bin/pip3 install --upgrade -r requirements.txt
 
 echo "Picochess installation complete. Please reboot"
+echo "To run picochess run /opt/picochess/picochess.sh"
