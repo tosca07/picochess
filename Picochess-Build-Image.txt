@@ -1,0 +1,175 @@
+These instructions were tested using a Pi5 connected to an HDMI monitor. The web server interface was accessed using another PC on the network.
+
+1. Download Raspberry Pi OS with desktop image and flash using Raspberry Pi Imager with the following settings enabled:
+
+  GENERAL tab
+    Set hostname: picochess (.local)
+    Set username and password
+      Username: pi
+      Password: picochess
+    Configure wireless LAN (as needed, or use Ethernet cable)
+      SSID: <your wifi netword name>
+      Password: <your wifi network password>
+      (Show password/Hidden SSID as required)
+      Wireless LAN country: <choose from drop-down>
+    Set locale settings
+      Time zone: <choose from drop-down>
+      Keyboard layout: <choose from drop-down>
+  SERVICES tab
+    Enable SSH <select>
+      Use password authentication <select>
+  OPTIONS tab
+    Eject media when finished <enabled>
+
+2. Insert SD card in Pi and boot. It will reboot twice during the initial boot.
+3. Using a PC on the network connect to the Pi via SSH using Username/Password from Step 1.
+4. Update the Pi:
+     sudo apt update
+     sudo apt full-upgrade
+5. Enable/confirm X11 display manager backend and PulseAudio:
+     sudo raspi-config
+   Advanced Options/A6 Wayland
+     Select w1 X11   Openbox window manager with X11 backend
+     Press <ENTER>. You should see a message stating 'Openbox on X11 is active'. If not, repeat the process.
+     Press <ENTER>
+   Advanced Options/A7 Audio Config
+     Select 1 PulseAudio
+     Press <ENTER>. You should see a message stating 'PulseAudio is active.
+     Press <ENTER>
+   Select <Finish> and reboot.
+6. Connect via SSH. Enter the following commands:
+     sudo apt install git sox unzip wget python3-pip libtcl8.6 telnet libglib2.0-dev -y
+     cd /opt
+     sudo git clone https://github.com/JohanSjoblom/picochess.git
+     sudo chown -R pi:pi picochess
+     cd ~
+     python3 -m venv ./picochess_venv
+     source ~/picochess_venv/bin/activate
+     pip3 install --upgrade pip
+     cd /opt/picochess
+     pip3 install --upgrade -r requirements.txt
+7. Edit picochess.service:
+     nano /opt/picochess/etc/picochess.service
+   so it looks like this:
+
+[Unit]
+Description=PicoChess Chess Program
+After=multi-user.target
+Wants=obooksrv.service gamesdb.service
+
+[Service]
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=/home/pi/.Xauthority"
+Environment="XDG_RUNTIME_DIR=/run/user/1000"
+User=pi
+Group=pi
+Type=simple
+ExecStart=/home/pi/picochess_venv/bin/python3 /opt/picochess/picochess.py
+ExecStop=sudo /usr/bin/pkill -f picochess.py
+ExecStop=sudo /usr/bin/pkill -9 -f mess
+WorkingDirectory=/opt/picochess/
+
+[Install]
+WantedBy=multi-user.target
+
+8. Edit obooksrv.service:
+     nano /opt/picochess/etc/obooksrv.service
+   so it looks like this:
+
+[Unit]
+Description=Opening Book Server
+After=multi-user.target
+BindsTo=picochess.service
+
+[Service]
+Type=simple
+ExecStart=/opt/picochess/obooksrv/obooksrv
+ExecStop=/usr/bin/pkill -f obooksrv
+WorkingDirectory=/opt/picochess/obooksrv/
+
+[Install]
+WantedBy=multi-user.target
+
+9. Edit obooksrv.service:
+     nano /opt/picochess/etc/gamesdb.service
+   so it looks like this:
+
+[Unit]
+Description=Games server
+After=multi-user.target
+BindsTo=picochess.service
+
+[Service]
+Type=simple
+ExecStart=/opt/picochess/gamesdb/tcscid get_games.tcl --server 7778
+ExecStop=/usr/bin/pkill -f tcscid
+WorkingDirectory=/opt/picochess/gamesdb
+
+[Install]
+WantedBy=multi-user.target
+
+10. Copy services to system:
+
+      sudo cp /opt/picochess/etc/picochess.service /etc/systemd/system/
+      sudo cp /opt/picochess/etc/obooksrv.service /etc/systemd/system/
+      sudo cp /opt/picochess/etc/gamesdb.service /etc/systemd/system/
+
+11. Enable services:
+
+      sudo systemctl daemon-reload
+      sudo systemctl enable picochess.service
+      sudo systemctl enable obooksrv.service
+      sudo systemctl enable gamesdb.service
+
+12. Create picochess.ini:
+
+      cp /opt/picochess/picochess.ini.example /opt/picochess/picochess.ini
+
+13. Edit picochess.ini and set preferences:
+
+      nano /opt/picochess/picochess.ini
+
+set the following as needed:
+
+dgtpi = False
+engine = /opt/picochess/engines/aarch64/a-stockf
+engine-level = Level@03
+web-server = 8080
+board-type = <your board type>
+
+14. (Optional) Download syzygy 3-4-5 piece tablebases and place all .rtbw and .rtbz files in /opt/picochess/tablebases/syzygy. One source is here:
+
+https://chess.massimilianogoi.com/download/tablebases/
+
+15. Enable user access to BLE boards:
+
+     sudo setcap 'cap_net_raw,cap_net_admin+eip' /home/pi/picochess_venv/lib/python3.11/site-packages/bluepy/bluepy-helper
+
+16. (Optional) If you want to use the opening book and games database servers in the web browser interface, replace /opt/picochess/obooksrv/obooksrv and /opt/picochess/gamesdb/tcscid with a 64-bit aarch64 versions or add support for 32-bit armhf programs by running the following commands:
+
+     sudo dpkg --add-architecture armhf
+     sudo apt update
+     sudo apt full-upgrade
+     sudo apt install libstdc++6:armhf libtcl8.6:armhf
+
+  Switch to 4k page aligned kernel:
+     sudo nano /boot/firmware/config.txt
+   insert kernel=kernel8.img at the top of the file.
+
+  To use the games database server (games tab on the web server), place a scid database named 'games' with its three files (games.sg4, games.si4, games.sn4) in the /opt/picochess/gamesdb/ folder.
+
+  Reboot.
+
+17. NOTE: to use the web interface, point your browser to the ip address of your Pi, using http and port 8080:
+
+     http://<ip address of pi>:8080
+
+18. (Optional) If you want to use the default port 80 for the web server, edit picochess.ini (see above) and change the web-server port to 80. The execute the command:
+
+     sudo setcap CAP_NET_BIND_SERVICE+eip /usr/bin/python3.11
+
+  Then access the web interface omitting the port reference:
+
+     http://<ip address of pi>
+
+
