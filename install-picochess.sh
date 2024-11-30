@@ -29,21 +29,22 @@ else
     chown -R pi /opt/picochess/logs
     ln -sf /opt/picochess/etc/dgtpicom_$(uname -m) /opt/picochess/etc/dgtpicom
     ln -sf /opt/picochess/etc/dgtpicom.$(uname -m).so /opt/picochess/etc/dgtpicom.so
-    cp etc/dgtpi.service /etc/systemd/system/
-    cp etc/picochess.service /etc/systemd/system/
-    cp etc/obooksrv.service /etc/systemd/system/
-    cp etc/gamesdb.service /etc/systemd/system/
-    systemctl daemon-reload
-    systemctl enable dgtpi.service
-    systemctl enable picochess.service
-    systemctl enable obooksrv.service
-    systemctl enable gamesdb.service
 fi
 
 echo "checking required python modules..."
 cd /opt/picochess
 /opt/picochess/venv/bin/pip3 install --upgrade pip
 /opt/picochess/venv/bin/pip3 install --upgrade -r requirements.txt
+
+cp etc/dgtpi.service /etc/systemd/system/
+cp etc/picochess.service /etc/systemd/system/
+cp etc/obooksrv.service /etc/systemd/system/
+cp etc/gamesdb.service /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable dgtpi.service
+systemctl enable picochess.service
+systemctl enable obooksrv.service
+systemctl enable gamesdb.service
 
 echo "Picochess installation complete. Please reboot"
 echo "To run picochess run /opt/picochess/picochess.sh"
