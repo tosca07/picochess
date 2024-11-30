@@ -1,0 +1,392 @@
+### ===================================
+### =   picochess.ini.example v3.2    =
+### ===================================
+
+### Example and description how to configure PicoChess
+### To use this file, simply copy this file to picochess.ini and edit the appropriate settings
+### When you want to activate a flag/line, please remove the "#" in front of it, e.g. "#book = ..." becomes "book = ..."
+### It's important you keep this file valid (like here, no leading spaces), otherwise picochess won't work correctly.
+
+### From v0.71 on some picochess.ini values are overridden when you change their values using the menu system
+### Perhaps its a good idea to keep a copy of "picochess.ini" before you are going live with your picochess ;-)
+### The section "DGT", "remote-engine", "Mail", and some "Picochess" flags are examples which can only be changed here
+
+### Lines that start with 3x# are general comments
+### Lines that start with 2x# explain the option of the next line that starts with one # 
+### Lines that start with 1x# are option lines, delete the # to use the option
+
+### =======================
+### = DGT related options =
+### =======================
+
+## To turn OFF the LEDs on the Revelation II board uncomment the next line
+#disable-revelation-leds = True
+
+## beep-config enables or disables the internal DGTPi beeper sounds or allows sound samples to be used instead. The options
+## are "Never", "Sometimes", "Always" or "Sample". "Never" disables all beeps. "Always" enables all beeps. "Sometimes" enables
+## beeps depending on the level set by the beep-some-level setting below. "Sample" is used to select audio samples for specific
+## actions and requires correctly named sound samples (in ogg format) to be installed in the talker/voices/en/beeper folder.
+## These samples can be used with or without a DGTPi/DGT3000 but only support two settings of beep-some-level.
+#beep-config = ('none', 'some', 'all', or 'sample')
+beep-config = none
+
+## When beep-config is set to 'some', beep-some-level changes the frequency of occurrence of beeps. Minimum value is 0 (no beeps),
+## maximum is 15 (all beeps). Please keep in mind: values 0 and 15 make no sense (but are allowed) since they are the same as 
+## "Never" and "Always" inside the clock menu or via the beep-config option above ('none' or 'all' setting). 
+## The value you give here, is when using the "Sometimes" menu selection (in System/Sound). Beeps are determined by a
+## special number which you get by adding the following events together to get the beep-some-level value:
+##
+## CONFIG = 1 Takeback, GameEnd, NewGame, ComputerMove and SetPieces
+## BUTTON = 2 All Events coming from button press
+## MAP = 4    All Events coming from Queen placement from start position (rows 3-6) when used to select options
+## OKAY = 8   All Events from "ok" (confirm) messages
+## For example to beep on "ok messages" and "button press" events beep-some-level is: 8 (okay) + 2 (button) = 10
+##
+## When beep-config is set to 'sample' only values 0 (samples off), 1 (move confirmation), and 2 (move + button confirmation)
+## will be considered.
+#beep-some-level = 10
+beep-some-level = 2
+
+## Specify the serial port your DGT board is connected to.
+## If you don't give a parameter picochess tries to find the board automatically (preferred usage).
+#dgt-port = /dev/ttyACM0
+## Instead of connecting to a DGT board, you can also start picochess with a command line.
+## If so, please uncomment the next line
+#enable-console = True
+
+### Handle the next option with care! Only activate it if using a DGTPi or Raspberry Pi wired to a DGT 3000 clock. If you activate it
+### but have non-DGT hardware connected to the GPIO pins of your Raspberry Pi, you might harm your hardware. A stock Raspberry Pi
+### will not be harmed, but you will need to leave it commented out to use PicoChess.
+## If you are using a DGTPi or Raspberry Pi wired to a DGT 3000 clock uncomment the next line.
+#dgtpi = True
+
+### You can reduce the DGT board piece recognition by a factor from 0 to 9. Please only use this if you suffer from
+### sliding problems (like multi voices during you slide your pieces for example moving Bf1-b5 hear Be2,d3,c4 then b5).
+#slow-slide = 5
+
+### ========================
+### = Chess engine options =
+### ========================
+
+### Options for the UCI chess engine
+## Sets the UCI engine used at startup
+## handle with care. If you setup this section wrong, picochess won't start
+## Path to the engine
+engine = /opt/picochess/engines/aarch64/a-stockf
+
+## What level the engine should have at startup?
+## For a (correct) value please take a look at 'engines/<your_platform>/<engine_name>.uci'
+#engine-level= Elo@1500
+
+### =========================
+### = Remote engine options =
+### =========================
+
+### Parameters for a remote engine (server)
+
+## Path to the remote engine, if applicable.
+## Please make sure that you also set 'engine-remote-home' accordingly
+## IP address of server hosting the remote engine
+#engine-remote-server = 192.168.178.81
+## The home path (where the engines live) for the remote-engine-server
+#engine-remote-home = C:\chess\remote_engines
+
+## What remote user account to use to connect to the remote-engine server
+#engine-remote-user = <username>
+## What password for the remote-engine-server
+#engine-remote-pass = <password>
+## Your private key for the remote SSH server if using SSH key-based
+## authentication. Server must already have your public key.
+#engine-remote-key = your_private_key
+
+### ==========================
+### = Opening book selection =
+### ==========================
+
+### Sets the opening book used at startup
+## Path of an opening book relative to the 'picochess' folder
+## Defaults to book 'h', normally 'h-varied.bin', if not set or not available
+#book = books/h-varied.bin
+book = books/h-varied.bin
+
+### ================
+### = Mail Service =
+### ================
+
+### Options for sending the finished game via email service
+### PicoChess currently implements two different ways to send a finished game via email:
+### standard SMTP email or Mailgun Web service
+### Mail general
+### If email is not set, PicoChess won't attempt to send the game at all
+## email tells PicoChess to which email address the game should be send to, it should be your email address :-)
+#email = your.mailbox@your-domain.com 
+
+### =======================================
+### = Section for email delivery via SMTP =
+### =======================================
+
+### If smtp_server is not set, PicoChess won't attempt to send the game via SMTP
+## smtp-server must contain the address of your smtp server (e.g. smtp.gmail.com)
+#smtp-server = smtp.your-mailserver.com
+
+## smtp-user is necessary if your smtp server requires authentication, sets your username
+#smtp-user = your_username
+
+## smtp-pass is necessary if your smtp server requires authentication, sets your password
+## Note: some email services require a pre-generated app password rather than your email password.
+#smtp-pass = your_secret_password
+
+## Should PicoChess SSL-encrypt the communication with your smtp server (Port 465)?
+## Otherwise PicoChess will use the default and unencrypted SMTP Port 21.
+## Some SMTP Server require an SSL encryption (e.g. GMail). If so, uncomment the next line.
+#smtp-encryption = True
+
+## In case the SMTP Server thinks you are spamming, you must enter a valid from email here
+#smtp-from = no-reply@picochess.org
+
+### ==========================================
+### = Section for email delivery via Mailgun =
+### ==========================================
+
+### if mailgun-key is not set, PicoChess won't attempt to send the game via Mailgun
+## mailgun-key stores your Mailgun access key for Mailgun Web service
+#mailgun-key = your Mailgun API access key
+
+### =============================
+### = PicoChess related options =
+### =============================
+
+## log-file points to a file that is used to write the log information.
+## This file is created in the 'log' folder. Altogether there are 6 log files kept (rotating logs)
+log-file = picochess.log
+
+## What log level should be used 
+## Log level options are [debug, info, warning (default), error, critical]
+#log-level = error
+log-level = warning
+
+## PicoChess can use human voices for announcement
+## Valid voice names are formed from 'talker/voices' folder structure. Please take a look there.
+## If you want voice output, please uncomment these settings
+## user-voice used for user moves announcement
+#user-voice = en:al
+## computer-voice for computer moves announcement
+#computer-voice = en:christina
+computer-voice = en:christina
+## Increase, decrease the voice volume. Must be between 0 to 20. Default is 14 (70%)
+## Each step is 5% starting from 0 towards 100%. Sets factor for both voices (user/computer)
+#volume-voice = 14
+volume-voice = 14
+## Increase, decrease the voice speed factor. Must be between 0 to 9. Default is 2 (100%)
+## Each step is 5% starting from 90% towards 135%. Sets factor for both voices (user/computer)
+#speed-voice = 2
+speed-voice = 2
+## Speak last computer move again when 'set pieces' displayed
+#enable-setpieces-voice = True
+enable-setpieces-voice = True
+
+## PicoChess writes PGN files at end of game. This file is created in the 'games' folder
+# pgn-file = games.pgn
+## If you want to have your own name in the PGN file uncomment the next line and change accordingly
+#pgn-user = Player
+pgn-user = Player
+## If you want your own Elo ranking in the PGN file or if you want to play automatically adjusted engine levels,
+## comment out the next line and change it accordingly.
+#pgn-elo = 1500
+pgn-elo = 1500
+
+## Picochess will check for a new version at startup.
+## This is by currently not available. In the future, once available, if you want this feature, please
+## uncomment the next line
+##enable-update = True
+## After an update should the machine reboot automatically? If so, please uncomment the next line
+##enable-update-reboot = True
+
+## The port of the built-in web server
+#web-server = 80
+web-server = 8080
+
+## When in ponder mode decides how long each info is displayed. Default is 3 secs.
+## Must be between 1 to 8 secs.
+#ponder-interval = 3
+ponder-interval = 3
+
+## Displays messages with only capital letters. Doesn't work on DGTXL/Revelation II due to hardware limits.
+## If so, please uncomment the next line.
+#enable-capital-letters = True
+
+## Should a confirmation message be displayed? If not, please active the next line
+#disable-confirm-message = True
+disable-confirm-message = True
+## PicoChess messages can be displayed in English, German, Dutch, French, Spanish or Italian.
+## You can set the language with the "language" option. Default is English.
+## en = English; de = German; nl = Dutch; fr = French; es = Spanish; it = Italian
+#language = en
+language = en
+
+## Should moves be displayed in short notation (only valid for non-XL clocks)? If not, please active the next line
+#disable-short-notation = True
+
+### ==========================
+### = Enhancements from v2.0 =
+### ==========================
+
+## For rolling information display ponder-interval should at least set to 4 or 5 seconds!
+
+## Rolling information display in "normal" mode (time/score/depth/hintmove) is switched off by default
+## If you want this please uncomment next line
+## rolling-display-normal = True
+
+## Rolling information display in "ponder on" mode (time/score/depth/hintmove) is switched off by default
+## If you don't want this please uncomment next line
+rolling-display-ponder = True
+
+# Flexible analysis option in Analysis (old Ponder) mode (no valid move checks, etc.) is switched on by default
+## If don't you want this please uncomment next line
+#flexible-analysis = False
+
+## Pre-move detection is switched on by default
+## If don't you want this please uncomment next line
+#premove = False
+
+## Automatically continue last game after picochess (re-)start is switched off by default.
+## If you want this feature please uncomment next line
+#continue-game = True
+continue-game = False
+
+### ==========================
+### = Enhancements from v3.0 =
+### ==========================
+
+## Show engine after startup and new game event. Default is on. If you don't want this feature uncomment next line 
+#show-engine = False
+
+## Allow direct play of an alternative move for pico in normal and ponder on mode (default is off). If you want this
+## feature, uncomment the next line
+#alt-move = True
+
+## Override PGN location from picochess.ini in case the parameter 'location' is set to something different than default
+## value 'auto' (you can use this if you always get wrong auto location)
+#location = auto
+#location = Hamburg
+location = auto
+
+### ==================
+### = Time selection =
+### ==================
+
+## Sets the startup game time. If you give something like "5 0" that means 5 mins blitz with no increment
+## (default value). Fischer time can be set by changing this "0" (increment value in secs) to a positive number
+## like "3 2". Fixed time/move can be set by just giving one number like "10" meaning 10 secs/move. You can also give
+## non-standard values (like "4 6"), but then you cannot change them inside the (time) menu.
+## e.g., time = m or time = g i
+## Examples:
+##    time = 7   (time per move, e.g. m = 7 seconds)
+##    time = 5 0 (game time, e.g. Blitz g = 5 min. and 0 sec. increment)
+##    time = 5 3 (game time g = 5 min. plus i = 3 sec. increment)
+##
+## New for v3: Tournament time control settings!
+## Tournament time control settings: n moves in g1 minutes (plus i sec. increment) and rest of the game in g2 minutes.
+## e.g., time = n g i or time = n g1 i g2
+## Examples:
+##    time = 40 5 0 (n = 40 moves in g = 5 minutes with 0 sec. increment)
+##    time = 40 5 3 (n = 40 moves in g = 5 minutes with i = 3 sec. Fischer inc.)
+##    time = 40 60 0 30 (n = 40 moves in g1 = 90 minutes, i = 0 sec. increment and rest of the game in g2 = 30 minutes)
+#time = 15 10
+time = 5 3
+
+## default time control setting when leaving a MAME emulated engine or the PGN engine and choosing a non MAME and
+## non PGN engine
+#def-timectrl = 15 10
+def-timectrl = 15 10
+
+## depth = max. number of search plies per move for the engine (if you want to restrict the engine move search to a max. number of plies
+## in the search tree, set a depth > 0). In this case time control settings are ignored and move time is set to 999.
+## default is depth = 0 (OFF). Range is 0 - 99.
+#depth = 0
+depth = 0
+
+## node = max. number of search nodes per move for the engine (if you want to restrict the engine move search to a max number of nodes
+## in the search tree, set a node > 0). In this case time control settings are ignored and move time is set to 999.
+## default is node = 0 (OFF). Range is 0 - 99.
+#node = 0
+node = 0
+
+## Online decrement: In order to better "sync" picochess times with online server times you can subtract X seconds after
+## each own move from your remaining game time, default is 2s (try between 2 and 5s if out of sync with server times)
+#online-decrement = 2 
+
+### =====================
+### = PicoTutor Options =
+### =====================
+
+## Pico Comments: show game comments based on specific engines (= single) or in general (= all). Default is off (= off).
+#tutor-comment = single
+tutor-comment = off
+
+## Probability of spoken & written comments during the game is set to 100% by default. You can be set from 0 -100%.
+## Comments are only spoken if you have a specific pico voice set up with additional audio files.
+## So if you don't have any voice set up with audio commentary files or you use a standard pico voice, there
+## is no need to change this parameter at all.
+#comment-factor = 50
+comment-factor = 50
+
+## Pico Opening Explorer: shows the name(s) of the opening (based on chess-eco_pos.txt file). Default is off (= False).
+#tutor-explorer = True
+tutor-explorer = True
+
+## Pico Watcher: automatic move evaluation, blunder warning & move suggestion. Default is off (= False).
+#tutor-watcher = True
+tutor-watcher = False
+
+## Pico Coach: move and position evaluation, move suggestion, etc. on demand. You can set it to 'on', 'off' or 'lift'.
+## Default is 'off'. When set to 'on', you must trigger the evaluation via the PicoTutor menu. When set to 'lift‘, you can
+## trigger the evaluation by lifting a king when it is your turn, waiting for the 'set pieces' prompt, and replacing the king on its
+## original square. Additionally, you can trigger the coach via the PicoTutor menu. This is done by selecting the Pico Coach option
+## to 'on' or 'lift' again.
+#tutor-coach = lift
+tutor-coach = off
+
+## Engine used for PicoTutor analysis. Default is /opt/picochess/engines/aarch64/a-stockf.
+tutor-engine = /opt/picochess/engines/aarch64/a-stockf
+
+## Type of e-Board. Supported values: 'certabo', 'chesslink', 'chessnut', 'dgt' (default), 'ichessone', 'noeboard' (play against
+## engine using web server interface).
+#board-type = chesslink
+# board-type = dgt
+board-type = noeboard
+
+## Clock side for DGT3000/DGTPI, default is 'left'. Switches the displayed White and Black clock times.
+#clockside = right
+clockside = left
+
+## Web theme: 'light', 'dark‘, ‘time’, 'auto' or blank. Default is 'dark'. Leave blank for another light theme, 'time‘ for a fixed
+## time-dependent theme or 'auto‘ for a sunrise/sunset dependent theme.
+#theme = dark
+theme = auto
+
+## Retro-Artwork setting for MAME engines: default artwork display is off. If you want to enable it, set rdisplay = True.
+## Only use with a Raspberry Pi 4B hardware or better. NOTE: PicoChess will crash if no desktop GUI is installed and this setting
+## is enabled. If it does, this file will need to be manually edited to reset rdisplay to False below.
+#rdisplay = False
+rdisplay = False
+
+## Retro-Window setting for MAME in case Retro-Artwork display is enabled: default window mode is on. If you want to switch to fullscreen,
+## set rwindow = False
+#rwindow = False
+rwindow = True
+
+## Retro-Speed setting for MAME engines: rspeed defines the speed-up factor. Valid options are numbers of type float 0 to 10.0
+## (1.0 = default original machine speed, 0.5 half of the original speed, 2.0 = double the speed, 0 for unthrottled/full speed).
+## Only use with a Raspberry Pi 4B hardware or better. Leave it blank for the original speed.
+#rspeed = 1.0
+rspeed = 1.0
+
+## Retro-Sound setting for MAME engines: default sound is off. If you want to switch it on, set rsound = True by uncommenting the next line.
+#rsound = True
+rsound = True
+
+# Player rating deviation for automatic adjustment of Elo, starting value: 350
+#rating-deviation = 350
+rating-deviation = 350
+
