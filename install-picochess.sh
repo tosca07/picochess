@@ -24,7 +24,7 @@ else
     git clone https://github.com/JohanSjoblom/picochess
     cd picochess
     python -m venv venv
-    cp picochess.ini.example picochess.ini
+    cp picochess.ini.example-webpi4 picochess.ini
     chown pi picochess.ini
     chown -R pi /opt/picochess/logs
     ln -sf /opt/picochess/etc/dgtpicom_$(uname -m) /opt/picochess/etc/dgtpicom
@@ -47,4 +47,7 @@ systemctl enable obooksrv.service
 systemctl enable gamesdb.service
 
 echo "Picochess installation complete. Please reboot"
-echo "To run picochess run /opt/picochess/picochess.sh"
+echo "After reboot open a browser to localhost:8080"
+echo "Depending on your DGT hardware or only Web chose a picochess.ini-example* file"
+echo "Default installation is picochess.ini-example-webpi copied to picochess.ini"
+echo "In case of problems have a look in the log /opt/picochess/logs/picochess.log"
