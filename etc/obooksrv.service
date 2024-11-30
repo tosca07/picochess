@@ -1,6 +1,7 @@
 [Unit]
 Description=Opening Book Server
 After=multi-user.target
+BindsTo=picochess.service
 
 [Service]
 Type=simple

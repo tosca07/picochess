@@ -1,12 +1,16 @@
 [Unit]
 Description=PicoChess Chess Program
 After=multi-user.target
+Wants=obooksrv.service gamesdb.service
 
 [Service]
 Environment="DISPLAY=:0"
 Environment="XAUTHORITY=/home/pi/.Xauthority"
+Environment="XDG_RUNTIME_DIR=/run/user/1000"
+User=pi
+Group=pi
 Type=simple
-ExecStart=/opt/picochess_venv/bin/python3 /opt/picochess/picochess.py
+ExecStart=/opt/picochess/venv/bin/python3 /opt/picochess/picochess.py
 ExecStop=/usr/bin/pkill -f picochess.py
 ExecStop=/usr/bin/pkill -9 -f mess
 WorkingDirectory=/opt/picochess/

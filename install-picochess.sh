@@ -4,7 +4,8 @@
 #
 
 echo "starting by updating system..."
-apt-get update
+apt update
+apt full-upgrade
 
 echo "installing needed programs"
 apt install git sox unzip wget libtcl8.6 telnet libglib2.0-dev
@@ -41,6 +42,7 @@ fi
 
 echo "checking required python modules..."
 cd /opt/picochess
+/opt/picochess/venv/bin/pip3 install --upgrade pip
 /opt/picochess/venv/bin/pip3 install --upgrade -r requirements.txt
 
 echo "Picochess installation complete. Please reboot"
