@@ -15,7 +15,7 @@ apt install python python3-pip
 apt install python3-dev libffi-dev libssl-dev
 
 if [ -d "/opt/picochess" ]; then
-    echo "picochess already exists, proceeding.."
+    echo "picochess already exists, updating code..."
     cd /opt/picochess
     git fetch
 else
@@ -24,11 +24,17 @@ else
     git clone https://github.com/JohanSjoblom/picochess
     cd picochess
     python -m venv venv
-    cp picochess.ini.example-webpi4 picochess.ini
-    chown pi picochess.ini
     chown -R pi /opt/picochess/logs
     ln -sf /opt/picochess/etc/dgtpicom_$(uname -m) /opt/picochess/etc/dgtpicom
     ln -sf /opt/picochess/etc/dgtpicom.$(uname -m).so /opt/picochess/etc/dgtpicom.so
+fi
+
+if [ -f "/opt/picochess/picochess.ini" ]; then
+    echo "picochess.ini already existed - no changes done"
+else
+    cd /opt/picochess
+    cp picochess.ini.example-webpi4 picochess.ini
+    chown pi picochess.ini
 fi
 
 echo "checking required python modules..."
