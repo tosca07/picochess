@@ -17,7 +17,7 @@ apt install python3-dev libffi-dev libssl-dev
 if [ -d "/opt/picochess" ]; then
     echo "picochess already exists, updating code..."
     cd /opt/picochess
-    git fetch
+    git pull
 else
     echo "fetching picochess..."
     cd /opt
