@@ -52,6 +52,9 @@ systemctl enable picochess.service
 systemctl enable obooksrv.service
 systemctl enable gamesdb.service
 
+echo "giving bluetooth rights"
+setcap 'cap_net_raw,cap_net_admin+eip' /opt/picochess/venv/lib/python3.11/site-packages/bluepy/bluepy-helper
+
 echo "Picochess installation complete. Please reboot"
 echo "After reboot open a browser to localhost:8080"
 echo "Depending on your DGT hardware or only Web chose a picochess.ini-example* file"
