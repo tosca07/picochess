@@ -15,7 +15,8 @@ Requirements
 
 Installation
 ------------
-Note: Everything is really early and experimental and installation script has only been testad with PI 4 64bit. I have not testad DGT hardware yet.
+Note: Everything is really early and experimental and installation script has only been testad with PI 4 64bit. D
+I have done some initial basic testing with a browser and a DGT bluetooth board. The install script has not been tested with a DGT board yet. I have only tested PI 4 64bit so far.
 
 1. You need a Raspberry PI 4 (or 3) and a 32G SD card.
 2. Use Raspberry Pi Imager to crete a PI operating system on your SD card as follows:
