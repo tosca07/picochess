@@ -11,8 +11,10 @@ echo "installing needed programs"
 apt install git sox unzip wget libtcl8.6 telnet libglib2.0-dev
 apt install avahi-daemon avahi-discover libnss-mdns
 apt install vorbis-tools
-apt install python python3-pip
-apt install python3-dev libffi-dev libssl-dev
+apt install python3 python3-pip
+apt install python3-dev
+apt install python3-venv
+apt install libffi-dev libssl-dev
 
 if [ -d "/opt/picochess" ]; then
     echo "picochess already exists, updating code..."
@@ -23,10 +25,16 @@ else
     cd /opt
     git clone https://github.com/JohanSjoblom/picochess
     cd picochess
-    python -m venv venv
     chown -R pi /opt/picochess/logs
     ln -sf /opt/picochess/etc/dgtpicom_$(uname -m) /opt/picochess/etc/dgtpicom
     ln -sf /opt/picochess/etc/dgtpicom.$(uname -m).so /opt/picochess/etc/dgtpicom.so
+fi
+
+if [ -d "/opt/picochess/venv" ]; then
+    echo "venv already exists"
+else
+    echo "creating virtual Python env named venv"
+    sudo -u pi python3 -m venv venv    
 fi
 
 if [ -f "/opt/picochess/picochess.ini" ]; then
@@ -39,8 +47,8 @@ fi
 
 echo "checking required python modules..."
 cd /opt/picochess
-/opt/picochess/venv/bin/pip3 install --upgrade pip
-/opt/picochess/venv/bin/pip3 install --upgrade -r requirements.txt
+sudo -u pi /opt/picochess/venv/bin/pip3 install --upgrade pip
+sudo -u pi /opt/picochess/venv/bin/pip3 install --upgrade -r requirements.txt
 
 cp etc/dgtpi.service /etc/systemd/system/
 cp etc/picochess.service /etc/systemd/system/
