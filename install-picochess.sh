@@ -24,6 +24,7 @@ else
     echo "fetching picochess..."
     cd /opt
     git clone https://github.com/JohanSjoblom/picochess
+    chown pi /opt/picochess
     cd picochess
     chown -R pi /opt/picochess/logs
     ln -sf /opt/picochess/etc/dgtpicom_$(uname -m) /opt/picochess/etc/dgtpicom
