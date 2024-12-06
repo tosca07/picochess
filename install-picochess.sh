@@ -26,9 +26,16 @@ else
     git clone https://github.com/JohanSjoblom/picochess
     chown pi /opt/picochess
     cd picochess
-    chown -R pi /opt/picochess/logs
     ln -sf /opt/picochess/etc/dgtpicom_$(uname -m) /opt/picochess/etc/dgtpicom
     ln -sf /opt/picochess/etc/dgtpicom.$(uname -m).so /opt/picochess/etc/dgtpicom.so
+fi
+
+if [ -d "/opt/picochess/logs" ]; then
+    echo "logs dir already exists - making sure pi is owner"
+    chown -R pi /opt/picochess/logs
+else
+    echo "creating logs dir for pi user"
+    sudo -u pi mkdir /opt/picochess/logs
 fi
 
 if [ -d "/opt/picochess/venv" ]; then
