@@ -63,7 +63,7 @@ function talk(text) {
         if (myvoice != "") {
             msg.voice = myvoice;
         }
-        window.speechSynthesis.speak(msg);
+        // window.speechSynthesis.speak(msg);
     }
 }
 
