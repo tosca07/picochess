@@ -1,17 +1,15 @@
 PicoChess
 =========
 
-Stand alone chess computer based on Raspberry PI. Supports DGT electronic clocks and many electronic chess boards. You dont need DGT hardware, you can use a web browser (default ini file setup) You can play Stockfish 17 or LC0. LC0 has a really small neural net, but you can download larger.
+Stand alone chess computer based on Raspberry PI. Supports DGT electronic clocks and many electronic chess boards. You dont need DGT hardware, you can use a web browser (default installation) You can play Stockfish 17 or LC0. LC0 has a really small neural net, but you can download larger. Debian x86_64 is also supported, at least the webplay works. At the moment Debian only has Stockfish 17, I have not yet compiled LC0 for Debian.
 
-This is a long term update to fix the technical debt of the picochess, the existing Picochess was using very old python chess and web modules. This first baseline has the latest chess and web python modules now. The target is to update all python modules. The program is not yet fully async but the target is to convert everything to async. Maybe all the threads wont be needed any more then.
-This version will run on PI Bookworm with python 3.11 or later.
+This is a long term update to fix the technical debt of the picochess, the existing Picochess was using very old python chess and web modules. This first baseline has the latest chess and web python modules now. The target is to update all python modules. The program is not yet fully async but the target is to convert most things to async. Maybe all the threads wont be needed any more then.
 
 Requirements
 ------------
 
-- Raspberry Pi 3 or newer recommended
-- Development is done on a Pi 4 64bit so Stockfish 17 and LC0 and ini file is for PI 4 aarch64
-- RaspiOS Bookworm (latest) recommended
+- Raspberry Pi 3, or Pi 4 (aarch64) or Debian (x86_64)
+- RaspiOS Bookworm (latest) 64bit recommended
 
 Installation
 ------------
