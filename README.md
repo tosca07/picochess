@@ -13,7 +13,7 @@ Requirements
 
 Installation
 ------------
-Note: Everything is really early and experimental and installation script has only been testad with PI 4 64bit. D
+Note: Everything is really early and experimental and installation script (install-picochess.sh) has been testad with PI 4 and Debian.
 I have done some initial basic testing with a browser and a DGT bluetooth board. The install script has not been tested with a DGT board yet. I have only tested PI 4 64bit so far.
 
 1. You need a Raspberry PI 4 (or 3) and a 32G SD card.
@@ -25,10 +25,10 @@ I have done some initial basic testing with a browser and a DGT bluetooth board.
 7. Write the image to the SD.
 8. Boot your PI with the SD card inserted. A standard image will boot after first start, and the second time it starts you should be able to login as user pi.
 9. Using sudo raspi-config make changes to advanced options: select PulseAudio and X11. Without PulseAudio the picochess spoken voice can lag.
-10. Get this repo. First cd /opt then do sudo git clone. This should create your /opt/picochess folder.
+10. Get this repo. First cd /opt then do sudo git clone. This should create your /opt/picochess folder. Alternative: Download the install-picochess.sh script and run it using sudo.
 11. In the picochess folder run the sudo install-picochess.sh script. This install script will do git clone if you dont have the repo, and git pull if you already have it to get updates.
-12. install script will update the PI system before starting.
-13. Reboot when install is done.
+12. Install script will update the PI system before starting.
+13. Reboot when install is done. When you login again the voice should say "picochess", "engine startup", "ok".
 14. Open your web browser on localhost:8080 or from another computer using the IP address of your PI. You can change the web port in pocochess.ini
 15. Start playing !
 
