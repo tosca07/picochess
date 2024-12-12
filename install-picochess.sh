@@ -7,7 +7,7 @@ echo "starting by updating system..."
 apt update
 apt full-upgrade
 
-echo "installing needed programs"
+echo "installing needed libraries"
 apt install git sox unzip wget libtcl8.6 telnet libglib2.0-dev
 apt install avahi-daemon avahi-discover libnss-mdns
 apt install vorbis-tools
@@ -15,6 +15,7 @@ apt install python3 python3-pip
 apt install python3-dev
 apt install python3-venv
 apt install libffi-dev libssl-dev
+apt install tk tcl libtcl8.6
 
 if [ -d "/opt/picochess" ]; then
     echo "picochess already exists, updating code..."
@@ -61,7 +62,7 @@ sudo -u pi /opt/picochess/venv/bin/pip3 install --upgrade -r requirements.txt
 cp etc/dgtpi.service /etc/systemd/system/
 cp etc/picochess.service /etc/systemd/system/
 cp etc/obooksrv/$(uname -m)/obooksrv.service /etc/systemd/system/
-cp etc/gamesdb.service /etc/systemd/system/
+cp etc/gamesdb/$(uname -m)/gamesdb.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable dgtpi.service
 systemctl enable picochess.service

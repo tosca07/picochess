@@ -75,3 +75,9 @@ games/
 
 # Visual Code files
 .vscode/
+
+# Game database files
+gamesdb/games.si4
+gamesdb/games.sn4
+gamesdb/games.sg4
+
