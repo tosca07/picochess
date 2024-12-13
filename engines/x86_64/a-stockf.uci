@@ -81,6 +81,7 @@ Hash = 192
 
 [Level@20]
 Threads = 3
+Hash = 192
 Skill Level = 20
 UCI_LimitStrength = false
 SyzygyPath = /opt/picochess/tablebases/syzygy
