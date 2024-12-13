@@ -454,10 +454,11 @@ class UciEngine(object):
             # @todo: how does the user affect the ponder value in this call
             self.idle = False  # engine is going to be busy now
             self.res = self.engine.play(game, chess.engine.Limit(time=use_time), ponder=self.pondering)
-            self.idle = True  # engine idle again
         except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
             self.res = None
+        finally:
+            self.idle = True  # engine idle again
         # Observable.fire(Event.STOP_SEARCH())
         if self.res:
             logger.debug("res: %s", self.res)
@@ -514,10 +515,11 @@ class UciEngine(object):
             else:
                 limit = FLOAT_ANALYSE_LIMIT  # longer
             info = self.engine.analyse(game, chess.engine.Limit(time=limit))
-            self.idle = True  # engine idle again
         except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
             info = None
+        finally:
+            self.idle = True  # engine idle again
         if not self.pondering:
             logger.debug("not ponder analysing - just getting a hint move")
         if info:
