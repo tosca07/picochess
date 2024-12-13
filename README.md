@@ -1,21 +1,19 @@
 PicoChess
 =========
 
-Stand alone chess computer based on Raspberry PI. Supports DGT electronic clocks and many electronic chess boards. You dont need DGT hardware, you can use a web browser (default ini file setup) You can play Stockfish 17 or LC0. LC0 has a really small neural net, but you can download larger.
+Stand alone chess computer based on Raspberry PI. Supports DGT electronic clocks and many electronic chess boards. You dont need DGT hardware, you can use a web browser (default installation) You can play Stockfish 17 or LC0. LC0 has a really small neural net, but you can download larger. Debian x86_64 is also supported, at least the webplay works. At the moment Debian only has Stockfish 17, I have not yet compiled LC0 for Debian.
 
-This is a long term update to fix the technical debt of the picochess, the existing Picochess was using very old python chess and web modules. This first baseline has the latest chess and web python modules now. The target is to update all python modules. The program is not yet fully async but the target is to convert everything to async. Maybe all the threads wont be needed any more then.
-This version will run on PI Bookworm with python 3.11 or later.
+This is a long term update to fix the technical debt of the picochess, the existing Picochess was using very old python chess and web modules. This first baseline has the latest chess and web python modules now. The target is to update all python modules. The program is not yet fully async but the target is to convert most things to async. Maybe all the threads wont be needed any more then.
 
 Requirements
 ------------
 
-- Raspberry Pi 3 or newer recommended
-- Development is done on a Pi 4 64bit so Stockfish 17 and LC0 and ini file is for PI 4 aarch64
-- RaspiOS Bookworm (latest) recommended
+- Raspberry Pi 3, or Pi 4 (aarch64) or Debian (x86_64)
+- RaspiOS Bookworm (latest) 64bit recommended
 
 Installation
 ------------
-Note: Everything is really early and experimental and installation script has only been testad with PI 4 64bit. D
+Note: Everything is really early and experimental and installation script (install-picochess.sh) has been testad with PI 4 and Debian.
 I have done some initial basic testing with a browser and a DGT bluetooth board. The install script has not been tested with a DGT board yet. I have only tested PI 4 64bit so far.
 
 1. You need a Raspberry PI 4 (or 3) and a 32G SD card.
@@ -27,10 +25,10 @@ I have done some initial basic testing with a browser and a DGT bluetooth board.
 7. Write the image to the SD.
 8. Boot your PI with the SD card inserted. A standard image will boot after first start, and the second time it starts you should be able to login as user pi.
 9. Using sudo raspi-config make changes to advanced options: select PulseAudio and X11. Without PulseAudio the picochess spoken voice can lag.
-10. Get this repo. First cd /opt then do sudo git clone. This should create your /opt/picochess folder.
+10. Get this repo. First cd /opt then do sudo git clone. This should create your /opt/picochess folder. Alternative: Download the install-picochess.sh script and run it using sudo.
 11. In the picochess folder run the sudo install-picochess.sh script. This install script will do git clone if you dont have the repo, and git pull if you already have it to get updates.
-12. install script will update the PI system before starting.
-13. Reboot when install is done.
+12. Install script will update the PI system before starting.
+13. Reboot when install is done. When you login again the voice should say "picochess", "engine startup", "ok".
 14. Open your web browser on localhost:8080 or from another computer using the IP address of your PI. You can change the web port in pocochess.ini
 15. Start playing !
 
