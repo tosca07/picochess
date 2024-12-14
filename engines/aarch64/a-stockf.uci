@@ -10,7 +10,7 @@ Skill Level = 20
 Hash = 192 
 Threads = 3
 # EvalFile = "nn-82215d0fd0df.nnue"
-Debug Log File ="a-stockf.log"
+Debug Log File = logs/a-stockf.log
 
 [Auto]
 UCI_Elo = max(1350, int(auto / 50 + 1) * 50)
