@@ -21,11 +21,12 @@ if [ -d "/opt/picochess" ]; then
     echo "picochess already exists, updating code..."
     cd /opt/picochess
     git pull
+    chown -R pi /opt/picochess/engines
 else
     echo "fetching picochess..."
     cd /opt
     git clone https://github.com/JohanSjoblom/picochess
-    chown pi /opt/picochess
+    chown -R pi /opt/picochess/engines
     cd picochess
     ln -sf /opt/picochess/etc/dgtpicom_$(uname -m) /opt/picochess/etc/dgtpicom
     ln -sf /opt/picochess/etc/dgtpicom.$(uname -m).so /opt/picochess/etc/dgtpicom.so
@@ -74,6 +75,6 @@ setcap 'cap_net_raw,cap_net_admin+eip' /opt/picochess/venv/lib/python3.11/site-p
 
 echo "Picochess installation complete. Please reboot"
 echo "After reboot open a browser to localhost:8080"
-echo "Depending on your DGT hardware or only Web chose a picochess.ini-example* file"
+echo "Depending on your DGT hardware or only Web choose a picochess.ini-example* file"
 echo "Default installation is picochess.ini-example-webpi copied to picochess.ini"
 echo "In case of problems have a look in the log /opt/picochess/logs/picochess.log"

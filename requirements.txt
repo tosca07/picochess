@@ -13,8 +13,8 @@ configobj==5.0.8
 geopy==2.3.0
 astral==3.2
 pygame==2.5.2
-lczero_bindings==0.1.0
 # potentially needed
+#lczero_bindings==0.1.0
 #bcrypt==4.2.0
 #blinker==1.9.0
 #certifi==2024.8.30
