@@ -8,7 +8,7 @@ Move Overhead = 2000
 Skill Level = 20
 Hash = 192 
 Threads = 2
-Debug Log File = a-stockf.log
+# Debug Log File = logs/a-stockf.log
 
 [Auto]
 UCI_Elo = max(1350, int(auto / 50 + 1) * 50)

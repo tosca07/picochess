@@ -19,7 +19,7 @@
 
 [DEFAULT]
 Threads = 2
-LogFile = logs/b-lc0.log
+# LogFile = logs/b-lc0.log
 
 [Auto]
 
