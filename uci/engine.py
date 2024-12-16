@@ -345,7 +345,6 @@ class UciEngine(object):
 
     def send(self):
         """Send options to engine."""
-        logger.debug("options not tested in this new version yet")
         try:
             self.engine.configure(self.options)
         except Exception as e:
@@ -506,7 +505,6 @@ class UciEngine(object):
         """ Get analysis update from pondering engine - BRAIN mode """
         if self.idle is False:
             # protect engine against calls if its not idle
-            logger.warning("analysis should only be called when engine is idle")
             return None
         try:
             self.idle = False  # engine is going to be busy now
@@ -520,8 +518,6 @@ class UciEngine(object):
             info = None
         finally:
             self.idle = True  # engine idle again
-        if not self.pondering:
-            logger.debug("not ponder analysing - just getting a hint move")
         if info:
             if "pv" in info:
                 logger.debug("engine score: %s depth: %s pv: %s", info["score"], info["depth"], info["pv"])
