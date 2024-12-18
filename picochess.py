@@ -161,7 +161,7 @@ class AlternativeMover:
     def check_book(self, bookreader, game_copy: chess.Board) -> bool:
         """Checks if a BookMove exists in current game position."""
         try:
-            choice = self.bookreader.weighted_choice(game_copy)
+            choice = bookreader.weighted_choice(game_copy)
         except IndexError:
             return False
 
@@ -1227,7 +1227,7 @@ async def main() -> None:
             return {}, None
 
 
-        def set_fen_from_pgn(self, pgn_fen, state: PicochessState):
+        def set_fen_from_pgn(self, pgn_fen):
             bit_board = chess.Board(pgn_fen)
             bit_board.set_fen(bit_board.fen())
             logger.debug("molli PGN Fen: %s", bit_board.fen())
@@ -2099,7 +2099,7 @@ async def main() -> None:
                         if self.online_mode():
                             logger.info("starting think()")
                             self.think(self.state.game, self.state.time_control, msg, self.state)
-                        elif self.self.emulation_mode():
+                        elif self.emulation_mode():
                             logger.info("molli: starting mame_endgame()")
                             self.mame_endgame(self.state.game, self.state.time_control, msg)
                             DisplayMsg.show(msg)
@@ -2614,7 +2614,7 @@ async def main() -> None:
 
         def set_emulation_tctrl(self):
             logger.debug("molli: set_emulation_tctrl")
-            if self.self.emulation_mode():
+            if self.emulation_mode():
                 pico_depth = 0
                 pico_node = 0
                 pico_tctrl_str = ""
@@ -2655,7 +2655,7 @@ async def main() -> None:
                     )
                     self.state.stop_fen_timer()
 
-        def det_pgn_guess_tctrl(self, state: PicochessState):
+        def det_pgn_guess_tctrl(self):
             self.state.max_guess_white = 0
             self.state.max_guess_black = 0
 
@@ -3555,7 +3555,7 @@ async def main() -> None:
                 else:
                     if self.engine.is_thinking():
                         self.state.stop_clock()
-                        self.engine.stop(show_best=True)
+                        self.engine.stop()
                     elif not self.state.done_computer_fen:
                         if self.state.time_control.internal_running():
                             self.state.stop_clock()

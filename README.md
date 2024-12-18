@@ -1,7 +1,7 @@
 PicoChess
 =========
 
-Stand alone chess computer based on Raspberry PI. Supports DGT electronic clocks and many electronic chess boards. You dont need DGT hardware, you can use a web browser (default installation) You can play Stockfish 17 or LC0. LC0 has a really small neural net, but you can download larger. Debian x86_64 is also supported, at least the webplay works. At the moment Debian only has Stockfish 17, I have not yet compiled LC0 for Debian.
+Stand alone chess computer based on Raspberry PI or on a Debian computer. You can use different chess engines to play or analyse. You can play Stockfish 17 or LC0 as compiled versions of them are included in the repo. LC0 has a really small neural net. You can download larger and different ones from online sources. Picochess supports DGT electronic clocks and many different chess boards.  You do not need DGT hardware to play or analyse, you can use a web browser (default installation).
 
 This is a long term update to fix the technical debt of the picochess, the existing Picochess was using very old python chess and web modules. This first baseline has the latest chess and web python modules now. The target is to update all python modules. The program is not yet fully async but the target is to convert most things to async. Maybe all the threads wont be needed any more then.
 
@@ -14,7 +14,7 @@ Requirements
 Installation
 ------------
 Note: Everything is really early and experimental and installation script (install-picochess.sh) has been testad with PI 4 and Debian.
-I have done some initial basic testing with a browser and a DGT bluetooth board. The install script has not been tested with a DGT board yet. I have only tested PI 4 64bit so far.
+I have done some initial basic testing with a browser and a DGT bluetooth board. So far the DGT board has only been tested with PI 4.
 
 1. You need a Raspberry PI 4 (or 3) and a 32G SD card.
 2. Use Raspberry Pi Imager to crete a PI operating system on your SD card as follows:
