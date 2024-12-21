@@ -1542,7 +1542,7 @@ class DgtMenu(object):
         self.state = MenuState.SYS_POWER_RESTART
         text = self.dgttranslate.text(self.menu_system_power.value)
         return text
-        
+
     def enter_sys_power_exit_menu(self):
         """Set the menu state."""
         self.state = MenuState.SYS_POWER_EXIT
@@ -2869,7 +2869,7 @@ class DgtMenu(object):
         elif self.state == MenuState.SYS_POWER_RESTART:
             text = self.dgttranslate.text("B10_power_restart_menu")
             self._fire_event(Event.REBOOT(dev="menu"))
-            
+
         elif self.state == MenuState.SYS_POWER_EXIT:
             text = self.dgttranslate.text("B10_power_exit_menu")
             self._fire_event(Event.EXIT(dev="menu"))
@@ -3610,7 +3610,7 @@ class DgtMenu(object):
             self.state = MenuState.SYS_POWER_EXIT
             self.menu_system_power = PowerLoop.prev(self.menu_system_power)
             text = self.dgttranslate.text(self.menu_system_power.value)
-            
+
         elif self.state == MenuState.SYS_POWER_EXIT:
             self.state = MenuState.SYS_POWER_SHUT_DOWN
             self.menu_system_power = PowerLoop.prev(self.menu_system_power)
@@ -4273,7 +4273,7 @@ class DgtMenu(object):
             self.state = MenuState.SYS_POWER_SHUT_DOWN
             self.menu_system_power = PowerLoop.next(self.menu_system_power)
             text = self.dgttranslate.text(self.menu_system_power.value)
-            
+
         elif self.state == MenuState.SYS_POWER_EXIT:
             self.state = MenuState.SYS_POWER_RESTART
             self.menu_system_power = PowerLoop.next(self.menu_system_power)

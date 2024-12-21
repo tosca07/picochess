@@ -248,11 +248,12 @@ def shutdown(dgtpi: bool, dev: str):
         time.sleep(5)
     else:
         os.system('sudo shutdown -h now')
-        
+
+
 def exit(dgtpi: bool, dev: str):
     """exit picochess."""
     logging.debug('exit picochess requested by (%s)', dev)
-      
+
     time.sleep(5)  # give some time to send out the pgn file or speak the event
     if platform.system() == 'Windows':
         os.system('sudo pkill -f chromium')
@@ -272,7 +273,7 @@ def exit(dgtpi: bool, dev: str):
 def reboot(dgtpi: bool, dev: str):
     """Reboot picochess."""
     logging.debug('rebooting system requested by (%s)', dev)
-    
+
     time.sleep(5)  # give some time to send out the pgn file or speak the event
     if platform.system() == 'Windows':
         os.system('shutdown /r')

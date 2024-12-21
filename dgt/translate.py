@@ -17,14 +17,14 @@
 #
 #
 # Change Log
-#-----------
+# ----------
 # August 20, 2024: Updated translations for Italian language (Andrea Gatti)
 #
 #
 
 import logging
-from dgt.util import Beep, BeepLevel # type: ignore
-from dgt.api import Dgt # type: ignore
+from dgt.util import Beep, BeepLevel  # type: ignore
+from dgt.api import Dgt  # type: ignore
 
 
 logger = logging.getLogger(__name__)
@@ -76,7 +76,7 @@ class DgtTranslate(object):
         """Set capital letters."""
         self.capital = capital
 
-    def capital_text(self, text: Dgt.DISPLAY_TEXT) -> Dgt.DISPLAY_TEXT: # type: ignore
+    def capital_text(self, text: Dgt.DISPLAY_TEXT) -> Dgt.DISPLAY_TEXT:  # type: ignore
         """Transfer text to capital text or not."""
         if self.capital:
             text.web_text = text.web_text.upper()
@@ -582,11 +582,11 @@ class DgtTranslate(object):
                 text_it_w = "Rimuovi il pezzo da " + msg[-2:]
                 text_it = "Svuota " + msg[-2:]
                 ittxt = Dgt.DISPLAY_TEXT(
-                     web_text=text_it_w,
-                     large_text=text_it,
-                     medium_text=text_it,
-                     small_text=text_it,
-                 )
+                    web_text=text_it_w,
+                    large_text=text_it,
+                    medium_text=text_it,
+                    small_text=text_it,
+                )
                 frtxt = entxt
                 estxt = entxt
             elif "put" in msg:
@@ -3134,7 +3134,7 @@ class DgtTranslate(object):
                 large_text="RetroLayout",
                 medium_text="RetLayout",
                 small_text="rlay",
-                )
+            )
             detxt = entxt
             frtxt = entxt
             estxt = entxt
@@ -7628,13 +7628,13 @@ class DgtTranslate(object):
                 web_text="Tournament " + msg,
                 large_text=msg[:11],
                 medium_text=msg[:8],
-                small_text=msg[:6],  
+                small_text=msg[:6],
             )
             nltxt = Dgt.DISPLAY_TEXT(
                 web_text="Toernooi: " + msg,
                 large_text=msg[:11],
                 medium_text=msg[:8],
-                small_text=msg[:6],  
+                small_text=msg[:6],
             )
             ittxt = Dgt.DISPLAY_TEXT(
                 web_text="Tempo da torneo:  " + msg,
@@ -7814,7 +7814,7 @@ class DgtTranslate(object):
                 small_text="bat" + msg,
             )
             ittxt = Dgt.DISPLAY_TEXT(
-                web_text="Stato della batteria: "+ msg,
+                web_text="Stato della batteria: " + msg,
                 large_text="batteria" + msg,
                 medium_text="battr" + msg,
                 small_text="bat" + msg,

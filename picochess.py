@@ -4291,7 +4291,7 @@ def main() -> None:
                     state.flag_picotutor = True
                 else:
                     state.flag_picotutor = False
-                    
+
                 DisplayMsg.show(Message.PICOWATCHER(picowatcher=event.picowatcher))
 
             elif isinstance(event, Event.PICOCOACH):
@@ -4345,7 +4345,7 @@ def main() -> None:
                         state.flag_picotutor = True
                     else:
                         state.flag_picotutor = False
-    
+
                 DisplayMsg.show(Message.PICOEXPLORER(picoexplorer=event.picoexplorer))
 
             elif isinstance(event, Event.RSPEED):
@@ -4585,7 +4585,7 @@ def main() -> None:
                 reboot(
                     args.dgtpi and uci_local_shell.get() is None, dev=event.dev
                 )  # @todo make independant of remote eng
-                
+
             elif isinstance(event, Event.EXIT):
                 stop_search()
                 state.stop_clock()
@@ -4599,7 +4599,7 @@ def main() -> None:
                         game=state.game.copy(),
                     )
                 )
-                ##DisplayMsg.show(Message.SYSTEM_EXIT())
+                # DisplayMsg.show(Message.SYSTEM_EXIT())
                 time.sleep(5)  # molli allow more time for commentary chat
                 exit(
                     args.dgtpi, dev=event.dev
