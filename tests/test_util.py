@@ -30,14 +30,14 @@ class TestEBoardLoop(unittest.TestCase):
     def test_next(self):
         loop = EBoardLoop()
         self.assertEqual(EBoard.DGT, loop.next(EBoard.CHESSNUT))
-        self.assertEqual(EBoard.NOEBOARD, loop.next(EBoard.DGT))
+        self.assertEqual(EBoard.ICHESSONE, loop.next(EBoard.DGT))
         self.assertEqual(EBoard.CERTABO, loop.next(EBoard.NOEBOARD))
         self.assertEqual('errEboardNext', loop.next('invalid item'))
 
     def test_prev(self):
         loop = EBoardLoop()
         self.assertEqual(EBoard.CHESSNUT, loop.prev(EBoard.DGT))
-        self.assertEqual(EBoard.DGT, loop.prev(EBoard.NOEBOARD))
+        self.assertEqual(EBoard.ICHESSONE, loop.prev(EBoard.NOEBOARD))
         self.assertEqual(EBoard.NOEBOARD, loop.prev(EBoard.CERTABO))
         self.assertEqual('errEboardPrev', loop.prev('invalid item'))
 

@@ -18,7 +18,7 @@ import typing
 import unittest
 from unittest.mock import call, patch
 
-from certabo.parser import BoardTranslator, CalibrationCallback, CertaboBoardMessageParser, CertaboCalibrator, \
+from eboard.certabo.parser import BoardTranslator, CalibrationCallback, CertaboBoardMessageParser, CertaboCalibrator, \
     CertaboPiece, Parser
 
 
@@ -61,7 +61,7 @@ class SimpleTestCalibrationCallback(CalibrationCallback):
         pass
 
 
-@patch('certabo.parser.BoardTranslator')
+@patch('eboard.certabo.parser.BoardTranslator')
 class TestParser(unittest.TestCase):
 
     def test_parse_position(self, MockedParserCallback):
@@ -214,7 +214,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expected, callback.occupied)
 
 
-@patch('certabo.parser.CalibrationCallback')
+@patch('eboard.certabo.parser.CalibrationCallback')
 class TestCalibrator(unittest.TestCase):
 
     def test_calibration_complete(self, MockedCalibratorCallback):
@@ -362,7 +362,7 @@ class TestCalibrator(unittest.TestCase):
         MockedCalibratorCallback.calibration_complete.assert_not_called()
 
 
-@patch('certabo.parser.ParserCallback')
+@patch('eboard.certabo.parser.ParserCallback')
 class TestCertaboBoardMessageParser(unittest.TestCase):
 
     def test_low_gain_use_most_common(self, MockedParserCallback):

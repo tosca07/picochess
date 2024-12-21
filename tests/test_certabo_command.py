@@ -16,7 +16,7 @@
 import binascii
 import unittest
 
-import certabo.command as cmd
+import eboard.certabo.command as cmd
 
 
 class TestCommand(unittest.TestCase):
