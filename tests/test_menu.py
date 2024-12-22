@@ -299,7 +299,7 @@ class TestDgtMenu(unittest.TestCase):
         self.assertEqual("Engine", menu.main_down().medium_text.strip())
         self.assertEqual("Retro", menu.main_down().medium_text.strip())
         self.assertEqual("Ret-Sett", menu.main_right().medium_text.strip())
-        self.assertEqual("Favorite", menu.main_right().medium_text.strip())
+        self.assertEqual("Special", menu.main_right().medium_text.strip())
         self.assertEqual("Mephisto Milano", menu.main_down().large_text)
 
     @patch("platform.machine")
@@ -309,7 +309,7 @@ class TestDgtMenu(unittest.TestCase):
         self.assertEqual(MenuState.ENG_FAV_NAME, menu.state)
         menu.enter_top_menu()
         self.assertEqual("Engine", menu.main_down().medium_text.strip())
-        self.assertEqual("Favorite", menu.main_down().medium_text.strip())
+        self.assertEqual("Special", menu.main_down().medium_text.strip())
         self.assertEqual("someEngine", menu.main_down().large_text)
         self.assertEqual("Stockfish 15", menu.main_right().large_text)
 
@@ -340,7 +340,7 @@ class TestDgtMenu(unittest.TestCase):
         self.assertEqual("Information", menu.main_left().large_text.strip())
         self.assertEqual("Power", menu.main_left().large_text.strip())
         self.assertEqual("Shut down", menu.main_down().large_text.strip())
-        self.assertEqual("Restart", menu.main_right().large_text.strip())
+        self.assertEqual("Exit Pico", menu.main_right().large_text.strip())
         self.assertEqual("Shut down", menu.main_left().large_text.strip())
 
     @patch("platform.machine")
