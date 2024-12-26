@@ -27,6 +27,7 @@ class SimpleTestTranslator(BoardTranslator):
     def __init__(self):
         super().__init__()
         self.piece_recognition = False
+        self.has_rgb_leds = 'not set'
         self.board = []
         self.occupied = []
 
@@ -38,6 +39,9 @@ class SimpleTestTranslator(BoardTranslator):
 
     def has_piece_recognition(self, value: bool):
         self.piece_recognition = value
+
+    def leds_detected(self, value: bool):
+        self.has_rgb_leds = value
 
     def calibration_complete_square(self, square: int):
         pass
@@ -187,6 +191,7 @@ class TestParser(unittest.TestCase):
         parser.parse(data2)
         # check last piece
         self.assertEqual(CertaboPiece(piece_id=bytearray(b'\x03\x00\x54\xfc\xaa')), callback.board[-1])
+        self.assertFalse(callback.has_rgb_leds)
 
     def test_parse_position_tabutronic_sentio(self, MockedParserCallback):
         data = bytearray(':255 255 0 0 0 0 255 255 \r\n', encoding='UTF-8')
@@ -212,6 +217,30 @@ class TestParser(unittest.TestCase):
                     1, 1, 1, 1, 1, 1, 1, 1,
                     1, 1, 1, 1, 1, 1, 1, 0]
         self.assertEqual(expected, callback.occupied)
+
+    def test_detect_rgb_leds(self, _):
+        data1 = bytearray(':3 0 84 252 153 3 0 85 0 104 3 0 84 240 106 3 0 83 177 224 3 0 8\n'
+                          '4 107 52 3 0 84 2 3 3 0 85 0 107 3 0 84 255 174 3 0 84 44 81 3 0\n'
+                          ' 84 121 210 3 0 84 242 13 3 0 84 78 193 3 0 84 107 56 3 0 84 240\n'
+                          ' 84 3 0 84 240 65 3 0 84 68 134 252 64 88 0 32 0 0 0 0 0 0 0 0 0\n'
+                          ' 0 0 0 0 0 0 239 108 5 136 0 243 32 12 0 240 0 0 0 0 0 251 13 24\n'
+                          '1 4 192 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 221 12\n'
+                          ' 87 1 12 255 194 176 204 0 0 0 0 0 0 226 2 224 8 96 143 182 230 \n'
+                          '16 5 120 132 14 0 16 0 0 0 0 0 204 146 3 24 0 231 0 20 3 3 0 0 0\n'
+                          ' 0 0 121 129 0 5 0 0 0 0 0 0 0 0 0 0 0 112 177 230 48 0 0 0 0 0 \n'
+                          '0 0 0 0 0 0 0 0 0 0 0 239 134 225 66 240 0 0 0 0 0 3 0 84 44 165\n'
+                          ' 3 0 84 68 112 3 0 85 1 184 3 0 84 78 209 3 0 84 242 11 3 0 84 7\n'
+                          '8 216 3 0 84 237 98 3 0 84 252 15 3 0 85 0 16 3 0 83 229 13 3 0 \n'
+                          '85 0 67 3 0 84 121 142 3 0 84 105 128 3 0 84 106 231 3 0 84 247 \n'
+                          '87 3 0 84 252 17', encoding='UTF-8')
+        data2 = bytearray("0\nD\r\n", encoding='UTF-8')
+        callback = SimpleTestTranslator()
+        parser = Parser(callback)
+        parser.parse(data1)
+        parser.parse(data2)
+        # check last piece
+        self.assertEqual(CertaboPiece(piece_id=bytearray(b'\x03\x00\x54\xfc\xaa')), callback.board[-1])
+        self.assertTrue(callback.has_rgb_leds)
 
 
 @patch('certabo.parser.CalibrationCallback')
