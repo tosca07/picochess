@@ -451,8 +451,11 @@ def log_pgn(state: PicochessState):
 
 
 def read_pgn_info():
+    return read_pgn_info_from_file("/opt/picochess/engines/aarch64/extra/pgn_game_info.txt")
+
+
+def read_pgn_info_from_file(pgn_info_path):
     info = {}
-    pgn_info_path = "/opt/picochess/engines/aarch64/extra/pgn_game_info.txt"
     try:
         with open(pgn_info_path) as info_file:
             for line in info_file:
