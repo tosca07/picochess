@@ -70,9 +70,10 @@ import paramiko
 import chess.pgn  # type: ignore
 import chess.polyglot  # type: ignore
 import chess.engine  # type: ignore
+from chess.engine import InfoDict
 
 from configuration import Configuration
-from uci.engine import UciShell, UciEngine
+from uci.engine import UciShell, UciEngine, EngineMode
 from uci.engine_provider import EngineProvider
 from uci.rating import Rating, determine_result
 
@@ -119,7 +120,6 @@ from dgt.menu import DgtMenu
 from picotutor import PicoTutor
 from pathlib import Path
 from constants import FLOAT_MSG_WAIT, FLOAT_MIN_BACKGROUND_TIME
-from uci.engine import EngineMode
 
 ONLINE_PREFIX = "Online"
 
@@ -212,7 +212,7 @@ class PicochessState:
         self.flag_pgn_game_over = False
         self.flag_premove = False
         self.flag_startup = False
-        self.game = None  # is this going to hold the chess.Board
+        self.game = None or chess.Board()
         self.game_declared = False  # User declared resignation or draw
         self.interaction_mode = Mode.NORMAL
         self.last_legal_fens: List[Any] = []
@@ -245,16 +245,6 @@ class PicochessState:
         self.last_error_fen = ""
         self.artwork_in_use = False
         self.delay_fen_error = 4
-
-    @property
-    def picotutor(self) -> PicoTutor:
-        if not self._picotutor:
-            self._picotutor = PicoTutor()
-        return self._picotutor
-
-    @picotutor.setter
-    def picotutor(self, value: PicoTutor) -> None:
-        self._picotutor = value
 
     def start_clock(self) -> None:
         """Start the clock."""
@@ -308,8 +298,24 @@ class PicochessState:
             self.fen_timer.join()
             self.fen_timer_running = False
 
+
+    def get_user_color(self):
+        if self.play_mode == PlayMode.USER_BLACK:
+            return chess.BLACK
+        else:
+            return chess.WHITE
+
+
+    def is_user_turn(self) -> bool:
+        """ Return True if is users turn to move """
+        return (
+            (self.game.turn == chess.WHITE and self.play_mode == PlayMode.USER_WHITE) or
+            (self.game.turn == chess.BLACK and self.play_mode == PlayMode.USER_BLACK)
+        )
+
+
     def is_not_user_turn(self) -> bool:
-        """Return if it is users turn (only valid in normal, brain or remote mode)."""
+        """Return True if it is NOT users turn (only valid in normal, brain or remote mode)."""
         assert self.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING), (
             "wrong mode: %s" % self.interaction_mode
         )
@@ -1022,8 +1028,15 @@ async def main() -> None:
 
             self.state.comment_file = self.get_comment_file()
             tutor_engine = self.args.tutor_engine
+            if self.remote_engine_mode() and self.uci_remote_shell:
+                uci_shell = self.uci_remote_shell
+            else:
+                uci_shell = self.uci_local_shell
             self.state.picotutor = PicoTutor(
-                i_engine_path=tutor_engine, i_comment_file=self.state.comment_file, i_lang=self.args.language
+                i_ucishell=uci_shell,
+                i_engine_path=tutor_engine,
+                i_comment_file=self.state.comment_file,
+                i_lang=self.args.language
             )
             self.state.picotutor.set_status(
                 self.state.dgtmenu.get_picowatcher(),
@@ -1302,12 +1315,8 @@ async def main() -> None:
                     if old_mode != self.state.play_mode:
                         logger.debug("new play mode: %s", self.state.play_mode)
                         text = self.state.play_mode.value  # type: str
-                        if self.state.play_mode == PlayMode.USER_BLACK:
-                            user_color = chess.BLACK
-                        else:
-                            user_color = chess.WHITE
                         if self.picotutor_mode():
-                            self.state.picotutor.set_user_color(user_color)
+                            self.state.picotutor.set_user_color(self.state.get_user_color())
                         DisplayMsg.show(
                             Message.PLAY_MODE(
                                 play_mode=self.state.play_mode, play_mode_text=self.state.dgttranslate.text(text)
@@ -2017,7 +2026,7 @@ async def main() -> None:
                     # get evalutaion result and give user feedback
                     if self.state.dgtmenu.get_picowatcher():
                         if valid:
-                            eval_str, l_mate, l_hint = self.state.picotutor.get_user_move_eval()
+                            eval_str, l_mate = self.state.picotutor.get_user_move_eval()
                         else:
                             # invalid move from tutor side!? Something went wrong
                             eval_str = "ER"
@@ -2055,13 +2064,12 @@ async def main() -> None:
                             t_hint_move = chess.Move.null()
                             threat_move = chess.Move.null()
                             (
-                                t_mate,
                                 t_hint_move,
-                                t_pv_best_move,
                                 t_pv_user_move,
                             ) = self.state.picotutor.get_user_move_info()
 
                             try:
+                                # move 0 was bad because of threat 1 response
                                 threat_move = t_pv_user_move[1]
                             except IndexError:
                                 threat_move = chess.Move.null()
@@ -2070,14 +2078,14 @@ async def main() -> None:
                                 game_tutor = game_before.copy()
                                 game_tutor.push(move)
                                 san_move = game_tutor.san(threat_move)
-                                game_tutor.push(t_pv_user_move[1])
+                                game_tutor.push(t_pv_user_move[1])  # 1st counter move
 
                                 tutor_str = "THREAT" + san_move
                                 msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=game_tutor.copy())
                                 DisplayMsg.show(msg)
                                 time.sleep(5)
 
-                            if t_hint_move.uci() != chess.Move.null():
+                            if t_hint_move != chess.Move.null():
                                 game_tutor = game_before.copy()
                                 san_move = game_tutor.san(t_hint_move)
                                 game_tutor.push(t_hint_move)
@@ -2249,38 +2257,56 @@ async def main() -> None:
                 logger.warning("engine is still not waiting")
             # self.engine.position(copy.deepcopy(game))
 
+        
+        def is_engine_playing_moves(self) -> bool:
+            """ return true if engine is playing moves based on self.state.Mode
+                otherwise engine is watching and user plays both sides """
+            return bool(self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN))
+
+
         def analyse(self, game: chess.Board) -> chess.engine.InfoDict | None:
             """ analyse, observe etc depening on mode - create analysis info """
             # it will work to get a short hint move also when not pondering
             info = None
-            if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN):
-                info = self.engine.playmode_analyse(game)
-            elif self.state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
-                self.engine.start_analysis(game)
-                info = self.engine.get_analysis(game)  # can be None
-            # send info to displays
+            engine_playing_moves = self.is_engine_playing_moves()
+            if engine_playing_moves:
+                info: InfoDict  = self.engine.playmode_analyse(game)
+            else:
+                self.engine.start_analysis(game)  # might be new position
+                result = self.engine.get_analysis(game)
+                info_list: list[InfoDict] = result.get("best")
+                if info_list:
+                    info: InfoDict = info_list[0] # pv first
             if info:
-                if "pv" in info:
-                    move = info.get("pv")[0]  # get first move
-                    if move:
-                        self.state.pb_move = move  # backward compatibility
-                        Observable.fire(
-                            Event.NEW_PV(pv=[move])
-                        )
-                if "score" in info:
-                    s = info["score"]
-                    p = s.pov(s.turn).score()
-                    if p:
-                        Observable.fire(
-                            Event.NEW_SCORE(score=p, mate=s.is_mate())
-                        )
-                if "depth" in info:
-                    d = info.get("depth")
-                    if d:
-                        Observable.fire(
-                            Event.NEW_DEPTH(depth=d)
-                        )
+                self.send_analyse(info, engine_playing_moves)
             return info
+
+
+        def send_analyse(self, info: chess.engine.InfoDict, engine_playing_moves: bool):
+            """ send info - if engine_playing_moves use user color
+                otherwise its in analysing state and score is for turn """
+            # info is first multipv root move; send to displays
+            if "pv" in info:
+                # @todo check if we really have a move list here
+                logger.debug("engine pv: %s", info["pv"])
+                move = info.get("pv")[0]  # first move
+                if move:
+                    self.state.pb_move = move  # backward compatibility
+                    Observable.fire(Event.NEW_PV(pv=[move]))
+            if "score" in info:
+                logger.debug("engine score: %s", info["score"])
+                s = info["score"]
+                if engine_playing_moves:
+                    p = s.pov(self.state.get_user_color()).score()
+                else:
+                    p = s.pov(self.state.game.turn).score()
+                if p:
+                    Observable.fire(Event.NEW_SCORE(score=p, mate=s.is_mate()))
+            if "depth" in info:
+                logger.debug("engine depth: %s", info["depth"])
+                d = info.get("depth")
+                if d:
+                    Observable.fire(Event.NEW_DEPTH(depth=d))
 
         def expired_fen_timer(self, state: PicochessState):
             """Handle times up for an unhandled fen string send from board."""
@@ -2730,10 +2756,7 @@ async def main() -> None:
 
         def no_msg_background_task(self):
             # ive got nothing to do so I update PV analysis on user time
-            user_to_move = (
-                (self.state.game.turn == chess.WHITE and self.state.play_mode == PlayMode.USER_WHITE) or
-                (self.state.game.turn == chess.BLACK and self.state.play_mode == PlayMode.USER_BLACK)
-            )
+            user_to_move = self.state.is_user_turn()
             if self.state.game.fullmove_number > 1:
                 # @todo find a way to skip background analysis
                 # while we are doing inbook
@@ -4691,7 +4714,7 @@ async def main() -> None:
                 reboot(
                     self.args.dgtpi and self.uci_local_shell.get() is None, dev=event.dev
                 )  # @todo make independant of remote eng
-                
+
             elif isinstance(event, Event.EXIT):
                 self.stop_search()
                 self.state.stop_clock()
@@ -4757,7 +4780,7 @@ async def main() -> None:
 
             # evt_queue.task_done()
 
-    
+
     my_main = MainLoop(own_user, opp_user, game_time,
                        fischer_inc, login, state,
                        time_text,
