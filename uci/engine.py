@@ -147,6 +147,7 @@ class ContinuousAnalysis:
         self.delay = delay
         self.first_limit = Limit or None  # set in start
         self.multipv = int or None # set in start
+        self.first_multipv = int or None # set in start
         self.running = False
         self.thread = None
         self._analysis_data = None  # "best" InfoDict list
@@ -164,7 +165,7 @@ class ContinuousAnalysis:
                 continue
             first = True  # first analysis iteration
             limit = self.first_limit if self.first_limit else Limit(time=FLOAT_ANALYSIS_FIRST)
-            multipv = self.multipv
+            multipv = self.first_multipv if self.first_multipv is not None else self.multipv
             while self.running and current_game.fen() == self.game.fen():
                 try:  # inner loop runs while position stays same
                     with self.engine.analysis(current_game, limit=limit, multipv=multipv) as analysis:
@@ -174,8 +175,9 @@ class ContinuousAnalysis:
                                 break  # old position, break inner loop
                             self._update_analysis_data(first, analysis)
                         time.sleep(self.delay)  # Short pause
-                        first = False  # no longer first analysis
-                        limit = Limit(time=FLOAT_ANALYSE_LIMIT)  # after first
+                        first = False  # after first settings
+                        limit = Limit(time=FLOAT_ANALYSE_LIMIT)
+                        multipv = self.multipv
                 except chess.engine.AnalysisComplete:
                     time.sleep(self.delay)  # maybe it helps to wait some extra?
                     logger.debug("ContinousAnalyser ran out of information")
@@ -213,7 +215,8 @@ class ContinuousAnalysis:
     def start(self, engine: chess.engine.SimpleEngine,
               game: chess.Board,
               first_limit: Limit | None = None,
-              multipv: int | None = None):
+              multipv: int | None = None,
+              first_multipv: int | None = None):
         """
         Starts the analysis in a separate thread.
 
@@ -225,8 +228,9 @@ class ContinuousAnalysis:
         if not self.running:
             self.engine = engine
             self.game = game.copy()  # remember this game position
-            self.first_limit = first_limit  # if True add low obvious moves
+            self.first_limit = first_limit  # use this limit for first low
             self.multipv = multipv
+            self.first_multipv = first_multipv
             self.running = True
             self.thread = threading.Thread(target=self._analyze_position, daemon=True)
             self.thread.start()
@@ -303,7 +307,8 @@ class UciEngine(object):
     #   without pondering analysis will be "static" one-timer
 
     def __init__(self, file: str, uci_shell: UciShell, mame_par: str,
-                 first_limit: Limit | None = None, multipv: int | None = None):
+                 first_limit: Limit | None = None, multipv: int | None = None,
+                 first_multipv: int | None = None):
         """  first_limit restricts first low analysis 
              multipv sets number of root moves in analysis """
         super(UciEngine, self).__init__()
@@ -319,6 +324,7 @@ class UciEngine(object):
         self.uci_elo_eval_fn = None  # saved UCI_Elo eval function
         self.first_limit = first_limit  # if True add obvious moves to analysis
         self.multipv = multipv  # used by Analysis()
+        self.first_multipv = first_multipv  # used for first low obvious moves
         try:
             logger.info("file " + file)
             if "/mame/" in file:
@@ -514,7 +520,8 @@ class UciEngine(object):
             if self.engine:
                 self.analyser.start(self.engine, game,
                                     first_limit=self.first_limit,
-                                    multipv=self.multipv)
+                                    multipv=self.multipv,
+                                    first_multipv=self.first_multipv)
             else:
                 logger.warning("start analysis requested but no engine loaded")
         return result

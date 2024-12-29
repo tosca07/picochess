@@ -45,6 +45,7 @@ class PicoTutor:
     ):
         self.user_color = i_player_color
         self.max_valid_moves = c.VALID_ROOT_MOVES
+        self.low_valid_moves = c.LOW_ROOT_MOVES
         self.engine_path = i_engine_path
 
         self.engine = None # or UciEngine
@@ -290,7 +291,8 @@ class PicoTutor:
                 self.ucishell,
                 self.mame_par,
                 first_limit=low_limit,
-                multipv=self.max_valid_moves
+                multipv=self.max_valid_moves,
+                first_multipv=self.low_valid_moves
             )
             if self.engine.loaded_ok() is True:
                 options = {
@@ -473,15 +475,15 @@ class PicoTutor:
             logger.debug("PicoTutor White to move...")
         else:
             logger.debug("PicoTutor Black to move...")
-        logger.debug("best:")
         if self.best_info:
+            logger.debug("%d best:", len(self.best_info))
             for info in self.best_info:
                 if "pv" in info:
                     logger.debug(info["pv"])
                 if "score" in info:
                     logger.debug(info["score"])
-        logger.debug("obvious:")
         if self.obvious_info:
+            logger.debug("%d obvious:", len(self.obvious_info))
             for info in self.obvious_info:
                 if "pv" in info:
                     logger.debug(info["pv"])

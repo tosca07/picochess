@@ -2764,7 +2764,6 @@ async def main() -> None:
                     current_time = time.time()
                     if self.last_analysis_call is None:
                         self.last_analysis_call = current_time
-                        pass  # skip first time called
                     else:
                         diff = current_time - self.last_analysis_call
                         if diff > FLOAT_MIN_BACKGROUND_TIME:
