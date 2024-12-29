@@ -478,17 +478,15 @@ class PicoTutor:
         if self.best_info:
             logger.debug("%d best:", len(self.best_info))
             for info in self.best_info:
-                if "pv" in info:
-                    logger.debug(info["pv"])
-                if "score" in info:
-                    logger.debug(info["score"])
+                if "pv" in info and "score" in info:
+                    move, score, mate = PicoTutor._get_score(self.user_color, info)
+                    logger.debug("%s score %d mate in %d", move.uci(), score, mate)
         if self.obvious_info:
             logger.debug("%d obvious:", len(self.obvious_info))
             for info in self.obvious_info:
-                if "pv" in info:
-                    logger.debug(info["pv"])
-                if "score" in info:
-                    logger.debug(info["score"])
+                if "pv" in info and "score" in info:
+                    move, score, mate = PicoTutor._get_score(self.user_color, info)
+                    logger.debug("%s score %d mate in %d", move.uci(), score, mate)
 
 
     def eval_user_move(self, user_move:chess.Move):
@@ -506,8 +504,11 @@ class PicoTutor:
             self.pv_user_move = self.best_info[pv_key]["pv"]
         else:
             logger.debug("did not find user move %s in best moves", user_move.uci())
-            pv_key = -1  # so that we know its not found
+            pv_key = None  # so that we know its not found
             score = mate = 0
+            if self.best_moves:
+                # user move is <= lowest score seen: use min score
+                pv_extra_key, extra_move, score, mate = self.best_moves[-1]
             self.best_history.append((pv_key, user_move, score, mate))
             self.pv_best_move = []
             self.pv_user_move = []
@@ -519,7 +520,7 @@ class PicoTutor:
         else:
             logger.debug("did not find user move %s in obvious moves", user_move.uci())
             # @todo should we put pv_key -1 here instead?
-            pv_key = -1  # so that we know its not found
+            pv_key = None  # so that we know its not found
             score = mate = 0
             self.obvious_history.append((pv_key, user_move, score, mate))
     
@@ -547,6 +548,23 @@ class PicoTutor:
         return tupel[2]
 
 
+    @staticmethod
+    def _get_score(user_color: chess.Color, info: chess.engine.InfoDict) -> tuple:
+        """ return tuple (move, score, mate) extracted from info """
+        move = info["pv"][0] if "pv" in info else chess.Move.null()
+        score = mate = 0
+        if "score" in info:
+            score_val = info["score"]
+            m = score_val.pov(user_color).mate()
+            mate = 0 if m is None else m
+            if score_val.is_mate():
+                score = score_val.pov(user_color).score(mate_score=999)
+            else:
+                score = score_val.pov(user_color).score()
+            return (move, score, mate)
+        return (move, score, mate)
+
+
     # @todo re-design this method?
     @staticmethod
     def _eval_pv_list(user_color: chess.Color, info_list: list[InfoDict], best_moves) -> int | None:
@@ -557,21 +575,10 @@ class PicoTutor:
         pv_key = 0  # index in InfoDict list
         while pv_key < len(info_list):
             info: InfoDict = info_list[pv_key]
-            if "score" in info and "pv" in info:
-                move = info["pv"][0] # one move only
-                score_val = info["score"]
-                # @todo make both score and mate
-                mate = score_val.pov(user_color).mate()
-                if mate is None:
-                    mate = 0
-                if score_val.is_mate():
-                    # @todo does mate score have to be checked for colour?
-                    score = score_val.pov(user_color).score(mate_score=999)
-                else:
-                    score = score_val.pov(user_color).score()
-                # put an score: int here for sorting best moves
-                best_moves.append((pv_key, move, score, mate))
-                best_score = max(best_score, score)
+            move, score, mate = PicoTutor._get_score(user_color, info)
+            # put an score: int here for sorting best moves
+            best_moves.append((pv_key, move, score, mate))
+            best_score = max(best_score, score)
             pv_key = pv_key + 1
         return best_score
 
@@ -617,8 +624,7 @@ class PicoTutor:
             try:
                 # last evaluation = for current user move
                 current_pv, current_move, current_score, current_mate = self.best_history[-1]
-                if current_pv < 0:
-                    raise IndexError
+                # current_pv can be None if no best_move had been found
             except IndexError:
                 current_score = 0.0
                 current_mate = ""
@@ -627,8 +633,7 @@ class PicoTutor:
 
             try:
                 before_pv, before_move, before_score, before_mate = self.best_history[-2]
-                if before_pv < 0:
-                    raise IndexError
+                # before_pv can be None if no obvious move had been found
             except IndexError:
                 before_score = 0.0
                 eval_string = ""

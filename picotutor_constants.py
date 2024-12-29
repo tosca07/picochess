@@ -5,8 +5,10 @@ LOW_MULTIPV = 5  # how many obvious moves should there be?
 LOW_TIME = 0.2  # time limit for 'obvious moves' and first analysis
 DEEP_DEPTH = 17  # for best move calculation - not used in 4.x.x
 NUM_THREADS = 1  # number of parallel threads (should not be higher)
-VALID_ROOT_MOVES = 50  # number of multipv best moves to look for
-LOW_ROOT_MOVES = 5  # number of obvious multipv root moves
+# VALID_ROOT_MOVES must be high enough to find also bad moves
+VALID_ROOT_MOVES = 20  # number of multipv best moves to look for
+# why would we ever want a long list of obvious moves
+LOW_ROOT_MOVES = 3  # number of obvious multipv root moves
 
 VERY_BAD_MOVE_TH = 150  # difference user to best move ??
 BAD_MOVE_TH = 50  # difference user to best move ?
