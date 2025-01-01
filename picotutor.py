@@ -49,21 +49,24 @@ class PicoTutor:
         self.engine_path = i_engine_path
 
         self.engine = None # or UciEngine
-        self.best_info : list[InfoDict] = []  # deep
-        self.obvious_info : list[InfoDict] = []  # shallow
+        self.best_info : list[InfoDict] = []  # best = deep
+        self.obvious_info : list[InfoDict] = []  # obvious = low = shallow
 
+        # history contain user made moves from above best or obvious
+        # stored in list of tuple(index, move, score, mate)
+        # index = None indicates not found in InfoDict results
         self.best_history = []
         self.best_history.append((0, chess.Move.null(), 0.00, 0))
         self.obvious_history = []
         self.obvious_history.append((0, chess.Move.null(), 0.00, 0))
+
         self.pv_user_move = []
         self.pv_best_move = []
-
         self.hint_move = chess.Move.null()
         self.mate = 0
         self.best_moves = []
         self.obvious_moves = []
-        self.op = [] # list of played uci moves?
+        self.op = [] # list of played uci moves not needed?
         self.last_inside_book_moveno = 0
         self.alt_best_moves = []
         self.comments = []
@@ -472,21 +475,21 @@ class PicoTutor:
     def log_pv_lists(self):
         """ logging help for picotutor developers """
         if self.board.turn:
-            logger.debug("PicoTutor White to move...")
+            logger.debug("PicoTutor White to move %d", self.board.fullmove_number)
         else:
-            logger.debug("PicoTutor Black to move...")
+            logger.debug("PicoTutor Black to move %d", self.board.fullmove_number)
         if self.best_info:
             logger.debug("%d best:", len(self.best_info))
             for info in self.best_info:
-                if "pv" in info and "score" in info:
+                if "pv" in info and "score" in info and "depth" in info:
                     move, score, mate = PicoTutor._get_score(self.user_color, info)
-                    logger.debug("%s score %d mate in %d", move.uci(), score, mate)
+                    logger.debug("%s score %d mate in %d depth %d", move.uci(), score, mate, info["depth"])
         if self.obvious_info:
             logger.debug("%d obvious:", len(self.obvious_info))
             for info in self.obvious_info:
-                if "pv" in info and "score" in info:
+                if "pv" in info and "score" in info and "depth" in info:
                     move, score, mate = PicoTutor._get_score(self.user_color, info)
-                    logger.debug("%s score %d mate in %d", move.uci(), score, mate)
+                    logger.debug("%s score %d mate in %d depth %d", move.uci(), score, mate, info["depth"])
 
 
     def eval_user_move(self, user_move:chess.Move):
@@ -507,7 +510,7 @@ class PicoTutor:
             pv_key = None  # so that we know its not found
             score = mate = 0
             if self.best_moves:
-                # user move is <= lowest score seen: use min score
+                # user move is <= lowest score seen, last on list
                 pv_extra_key, extra_move, score, mate = self.best_moves[-1]
             self.best_history.append((pv_key, user_move, score, mate))
             self.pv_best_move = []
@@ -522,6 +525,9 @@ class PicoTutor:
             # @todo should we put pv_key -1 here instead?
             pv_key = None  # so that we know its not found
             score = mate = 0
+            if self.obvious_moves:
+                # user move is <= lowest score seen, last on list
+                pv_extra_key, extra_move, score, mate = self.obvious_moves[-1]
             self.obvious_history.append((pv_key, user_move, score, mate))
     
 
@@ -619,63 +625,64 @@ class PicoTutor:
         best_score = 0
         best_move = chess.Move.null()
 
-        # user move score and previoues score
-        if len(self.best_history) > 1:
-            try:
-                # last evaluation = for current user move
-                current_pv, current_move, current_score, current_mate = self.best_history[-1]
-                # current_pv can be None if no best_move had been found
-            except IndexError:
-                current_score = 0.0
-                current_mate = ""
-                eval_string = ""
-                return eval_string, self.mate
-
-            try:
-                before_pv, before_move, before_score, before_mate = self.best_history[-2]
-                # before_pv can be None if no obvious move had been found
-            except IndexError:
-                before_score = 0.0
-                eval_string = ""
-                return eval_string, self.mate
-
-        else:
-            current_score = 0.0
-            current_mate = ""
-            before_score = 0.0
+        # check precondition for calculations
+        if (
+            len(self.best_history) < 2 or
+            len(self.obvious_history) < 1 or
+            len(self.best_moves) < 2 or
+            len(self.obvious_moves) < 2
+            ):
             eval_string = ""
             return eval_string, self.mate
+
+        # user move score and previoues score
+        # last evaluation = for current user move
+        current_pv, current_move, current_score, current_mate = self.best_history[-1]
+        # current_pv can be None if no best_move had been found
+
+        before_pv, before_move, before_score, before_mate = self.best_history[-2]
+        # before_pv can be None if no obvious move had been found
 
         # best deep engine score/move
-        if self.best_moves:
-            best_pv, best_move, best_score, best_mate = self.best_moves[
-                0
-            ]  # tupel (pv,move,score,mate)
+        best_pv, best_move, best_score, best_mate = self.best_moves[0]
+        # tupel (pv,move,score,mate)
 
         # calculate diffs based on low depth search for obvious moves
-        if len(self.obvious_history) > 0:
-            try:
-                low_pv, low_move, low_score, low_mate = self.obvious_history[
-                    -1
-                ]  # last evaluation = for current user move
-            except IndexError:
-                low_score = 0.0
-                eval_string = ""
-                return eval_string, self.mate
-        else:
-            low_score = 0.0
-            eval_string = ""
-            return eval_string, self.mate
+        low_pv, low_move, low_score, low_mate = self.obvious_history[-1]
+        # last evaluation = for current user move
+        # low_pv can be None if no if user move found in obvious_moves
 
         best_deep_diff = best_score - current_score
-        logger.debug("picotutor difference %d for move %s", best_deep_diff, current_move.uci())
+        logger.debug("lost centipawns %d for move %s", best_deep_diff, current_move.uci())
+        # optimisations end of 2024 - no 200 wide multipv searches
+        # not_in_obvious is compensating when low_pv is not reliable
+        # user move might be missing in obvious history - can happen!
+        #  --> low_score is lowest seen score, low_pv is None
+        # obvious list is shorter --> low_score is not fully reliable
+        # user move might also be missing in best history - not so likely
+        #  --> current_score is lowest seen score, current_pv is None
+        # best list is longer --> current_score and before_score reliable enough
+        # not_in_best can be used to determine dubious or bad move
         deep_low_diff = current_score - low_score
-        score_hist_diff = current_score - before_score
+        logger.debug("evaluation deep_low_diff = %d", deep_low_diff)
+        not_in_obvious = low_pv is None and len(self.obvious_moves) > 3
+        if not_in_obvious:
+            logger.debug("user did not chose obvious move")
+        # not_in_obvious is designed to be added to "> tests" with "or"
+        score_hist_diff = current_score - before_score  # reliable enough
+        not_in_best = current_pv is None  # user missed all top best moves
+        if not_in_best:
+            logger.debug("user missed all best moves")
 
         # count legal moves in current position (for this we have to undo the user move)
         board_copy = self.board.copy()
         board_copy.pop()
         legal_no = board_copy.legal_moves.count()
+        logger.debug("number of legal moves %d", legal_no)
+        if legal_no < 2:
+            # there is no point evaluating the only legal move?
+            eval_string = ""
+            return eval_string, self.mate
 
         ###############################################################
         # 1. bad moves
@@ -691,10 +698,11 @@ class PicoTutor:
             eval_string = "?"
 
         # Dubious
-        elif (
+        elif ((
             best_deep_diff > c.DUBIOUS_TH
-            and abs(deep_low_diff) > c.UNCLEAR_DIFF
-            and score_hist_diff > c.POS_INCREASE
+            and (abs(deep_low_diff) > c.UNCLEAR_DIFF or not_in_obvious)
+            and (score_hist_diff > c.POS_INCREASE))
+            or (not_in_best and len(self.best_moves) > 4)
         ):
             eval_string = "?!"
 
@@ -704,7 +712,7 @@ class PicoTutor:
         eval_string2 = ""
 
         # very good moves
-        if best_deep_diff <= c.VERY_GOOD_MOVE_TH and deep_low_diff > c.VERY_GOOD_IMPROVE_TH:
+        if best_deep_diff <= c.VERY_GOOD_MOVE_TH and (deep_low_diff > c.VERY_GOOD_IMPROVE_TH or not_in_obvious):
             if (best_score == 999 and (best_mate == current_mate)) and legal_no <= 2:
                 pass
             else:
@@ -712,15 +720,15 @@ class PicoTutor:
 
         # good move
         elif (
-            best_deep_diff <= c.GOOD_MOVE_TH and deep_low_diff > c.GOOD_IMPROVE_TH and legal_no > 1
+            best_deep_diff <= c.GOOD_MOVE_TH and (deep_low_diff > c.GOOD_IMPROVE_TH or not_in_obvious) and legal_no > 1
         ):
             eval_string2 = "!"
 
         # interesting move
         elif (
             best_deep_diff < c.INTERESTING_TH
-            and abs(deep_low_diff) > c.UNCLEAR_DIFF
-            and score_hist_diff < c.POS_DECREASE
+            and (abs(deep_low_diff) > c.UNCLEAR_DIFF or not_in_obvious)
+            and (score_hist_diff < c.POS_DECREASE)
         ):
             eval_string2 = "!?"
 
@@ -734,6 +742,7 @@ class PicoTutor:
         self.mate = current_mate
         self.hint_move = best_move
 
+        logger.debug("evaluation %s", eval_string)
         return eval_string, self.mate
 
 
