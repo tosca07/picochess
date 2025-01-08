@@ -893,7 +893,9 @@ async def main() -> None:
                     self.state.engine_file = engine_file_art
 
             self.engine = UciEngine(
-                file=self.state.engine_file, uci_shell=self.uci_local_shell, mame_par=self.calc_engine_mame_par()
+                file=self.state.engine_file,
+                uci_shell=self.uci_local_shell,
+                mame_par=self.calc_engine_mame_par()
             )
 
             try:
@@ -2877,13 +2879,13 @@ async def main() -> None:
                         self.engine = UciEngine(
                             file=remote_file,
                             uci_shell=self.uci_remote_shell,
-                            mame_par=self.calc_engine_mame_par(),
+                            mame_par=self.calc_engine_mame_par()
                         )
                     else:
                         self.engine = UciEngine(
                             file=self.state.engine_file,
                             uci_shell=self.uci_local_shell,
-                            mame_par=self.calc_engine_mame_par(),
+                            mame_par=self.calc_engine_mame_par()
                         )
                     try:
                         t = self.engine.get_name()
@@ -2900,7 +2902,7 @@ async def main() -> None:
                             self.engine = UciEngine(
                                 file=remote_file,
                                 uci_shell=self.uci_remote_shell,
-                                mame_par=self.calc_engine_mame_par(),
+                                mame_par=self.calc_engine_mame_par()
                             )
                         else:
                             # restart old mame engine?
@@ -2915,7 +2917,7 @@ async def main() -> None:
                             self.engine = UciEngine(
                                 file=old_file,
                                 uci_shell=self.uci_local_shell,
-                                mame_par=self.calc_engine_mame_par(),
+                                mame_par=self.calc_engine_mame_par()
                             )
                         try:
                             t = self.engine.get_name()
@@ -2938,13 +2940,13 @@ async def main() -> None:
                                 self.engine = UciEngine(
                                     file=remote_file,
                                     uci_shell=self.uci_remote_shell,
-                                    mame_par=self.calc_engine_mame_par(),
+                                    mame_par=self.calc_engine_mame_par()
                                 )
                             else:
                                 self.engine = UciEngine(
                                     file=old_file,
                                     uci_shell=self.uci_local_shell,
-                                    mame_par=self.calc_engine_mame_par(),
+                                    mame_par=self.calc_engine_mame_par()
                                 )
                             self.engine.startup(old_options, self.state.rating)
                             self.engine.newgame(self.state.game.copy())
@@ -3005,13 +3007,13 @@ async def main() -> None:
                                 self.engine = UciEngine(
                                     file=remote_file,
                                     uci_shell=self.uci_remote_shell,
-                                    mame_par=self.calc_engine_mame_par(),
+                                    mame_par=self.calc_engine_mame_par()
                                 )
                             else:
                                 self.engine = UciEngine(
                                     file=old_file,
                                     uci_shell=self.uci_local_shell,
-                                    mame_par=self.calc_engine_mame_par(),
+                                    mame_par=self.calc_engine_mame_par()
                                 )
                             try:
                                 t = self.engine.get_name()
@@ -4492,7 +4494,7 @@ async def main() -> None:
                         self.engine = UciEngine(
                             file=self.state.engine_file,
                             uci_shell=self.uci_local_shell,
-                            mame_par=self.calc_engine_mame_par(),
+                            mame_par=self.calc_engine_mame_par()
                         )
                         self.engine.startup(old_options, self.state.rating)
                         self.stop_search_and_clock()

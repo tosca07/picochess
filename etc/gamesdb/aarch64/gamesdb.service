@@ -7,7 +7,7 @@ BindsTo=picochess.service
 Type=simple
 ExecStart=/opt/picochess/gamesdb/aarch64/tcscid /opt/picochess/gamesdb/get_games.tcl --server 7778
 ExecStop=/usr/bin/pkill -f tcscid
-WorkingDirectory=/opt/picochess/gamesdb
+WorkingDirectory=/opt/picochess/gamesdb/
 
 [Install]
 WantedBy=multi-user.target

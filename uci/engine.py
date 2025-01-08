@@ -33,6 +33,7 @@ from chess.engine import Limit
 from chess import Board  # type: ignore
 from uci.rating import Rating, Result
 from utilities import write_picochess_ini
+from picotutor_constants import DEEP_DEPTH
 
 # settings are for engine thinking limits
 FLOAT_MAX_ENGINE_TIME = 2.0  # engine max thinking time
@@ -41,10 +42,7 @@ INT_EXPECTED_GAME_LENGTH = 100  # divide thinking time over expected game length
 
 # how long the chess engine should analyse
 # WATCHING
-FLOAT_ANALYSIS_WAIT = 0.5  # save CPU by waiting between calls to analysis()
-FLOAT_ANALYSIS_LIMIT = 1.0  # asking for analysis() limit
-FLOAT_ANALYSIS_FIRST = 0.2  # first time analysis() limit
-LOW_MULTIPV_LIMIT = 5  # max value for first obvious root moves
+FLOAT_ANALYSIS_WAIT = 0.2  # save CPU by waiting between update calls to analysis()
 # PLAYING
 FLOAT_ANALYSE_LIMIT = 0.1  # asking for hint while not pondering
 FLOAT_ANALYSE_PONDER_LIMIT = 0.05 # asking for a hint when pondering
@@ -164,19 +162,19 @@ class ContinuousAnalysis:
                 time.sleep(self.delay)
                 continue
             first = True  # first analysis iteration
-            limit = self.first_limit if self.first_limit else Limit(time=FLOAT_ANALYSIS_FIRST)
-            multipv = self.first_multipv if self.first_multipv is not None else self.multipv
+            limit = self.first_limit if self.first_limit else Limit(depth=DEEP_DEPTH)
+            multipv = self.first_multipv if self.first_multipv else self.multipv
             while self.running and current_game.fen() == self.game.fen():
                 try:  # inner loop runs while position stays same
                     with self.engine.analysis(current_game, limit=limit, multipv=multipv) as analysis:
                         with self.lock:
                             if current_game.fen() != self.game.fen():
-                                self._analysis_data = self._first_data = None 
+                                self._analysis_data = self._first_data = None
                                 break  # old position, break inner loop
                             self._update_analysis_data(first, analysis)
                         time.sleep(self.delay)  # Short pause
                         first = False  # after first settings
-                        limit = Limit(time=FLOAT_ANALYSE_LIMIT)
+                        limit = Limit(depth=DEEP_DEPTH)  # more depth after first quick
                         multipv = self.multipv
                 except chess.engine.AnalysisComplete:
                     time.sleep(self.delay)  # maybe it helps to wait some extra?
@@ -228,7 +226,7 @@ class ContinuousAnalysis:
         if not self.running:
             self.engine = engine
             self.game = game.copy()  # remember this game position
-            self.first_limit = first_limit  # use this limit for first low
+            self.first_limit = first_limit  # use this limit for first analysis call
             self.multipv = multipv
             self.first_multipv = first_multipv
             self.running = True
@@ -307,7 +305,8 @@ class UciEngine(object):
     #   without pondering analysis will be "static" one-timer
 
     def __init__(self, file: str, uci_shell: UciShell, mame_par: str,
-                 first_limit: Limit | None = None, multipv: int | None = None,
+                 first_limit: Limit | None = None,
+                 multipv: int | None = None,
                  first_multipv: int | None = None):
         """  first_limit restricts first low analysis 
              multipv sets number of root moves in analysis """
@@ -322,7 +321,7 @@ class UciEngine(object):
         self.is_mame = False
         self.engine_rating = -1
         self.uci_elo_eval_fn = None  # saved UCI_Elo eval function
-        self.first_limit = first_limit  # if True add obvious moves to analysis
+        self.first_limit = first_limit  # if !None this is for first analysis
         self.multipv = multipv  # used by Analysis()
         self.first_multipv = first_multipv  # used for first low obvious moves
         try:

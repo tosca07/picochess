@@ -5,6 +5,7 @@
 #                         Jürgen Précour (LocutusOfPenguin@posteo.de)
 #                         Molli (and thanks to Martin  for his opening
 #                         identification code)
+#                         Johan Sjöblom
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or

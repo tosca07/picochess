@@ -1,12 +1,12 @@
 # PicoTutor Constants
 
 LOW_DEPTH = 5  # for 'obvious moves' calculation
-LOW_MULTIPV = 5  # how many obvious moves should there be?
 LOW_TIME = 0.2  # time limit for 'obvious moves' and first analysis
-DEEP_DEPTH = 17  # for best move calculation - not used in 4.x.x
+DEEP_DEPTH = 17  # for best move calculation - deep limit for all analysis
 NUM_THREADS = 1  # number of parallel threads (should not be higher)
-# VALID_ROOT_MOVES must be high enough to find also bad moves
-VALID_ROOT_MOVES = 20  # min:5 number of multipv best moves to look for
+# VALID_ROOT_MOVES must be high enough to find also some bad moves
+# but not so high that depth on PI 4 is as low as 5 or LOW_DEPTH
+VALID_ROOT_MOVES = 10  # number of multipv best moves
 # why would we ever want a long list of obvious moves
 LOW_ROOT_MOVES = 10  # number of obvious multipv root moves
 
@@ -23,7 +23,7 @@ POS_DECREASE = -20  # for history diffs and !?
 
 VERY_GOOD_IMPROVE_TH = 150  # for low_deep_diff
 GOOD_IMPROVE_TH = 50  # for low_deep_diff
-UNCLEAR_DIFF = 20  # for low_deep_diff unclear position & move
+UNCLEAR_DIFF = 100  # for low_deep_diff unclear position & move
 
 """
 http://www2.eng.cam.ac.uk/~tpl/chess/annotation.html

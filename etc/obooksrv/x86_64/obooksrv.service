@@ -7,7 +7,7 @@ BindsTo=picochess.service
 Type=simple
 ExecStart=/opt/picochess/obooksrv/x86_64/obooksrv
 ExecStop=/usr/bin/pkill -f obooksrv
-WorkingDirectory=/opt/picochess/obooksrv
+WorkingDirectory=/opt/picochess/obooksrv/
 
 [Install]
 WantedBy=multi-user.target
