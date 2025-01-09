@@ -83,7 +83,6 @@ class PicoTutor:
         self.comments_on = False
         self.mame_par = "" # @todo create this info?
         self.board = chess.Board()
-        self.analysed_fen = ""
         self.ucishell = i_ucishell
 
         try:
@@ -286,7 +285,6 @@ class PicoTutor:
         self.best_moves = []
         self.obvious_moves = []
         self.op = []
-        self.analysed_fen = ""
         self.user_color = chess.WHITE
 
         if not self.engine and (self.watcher_on or self.coach_on):
@@ -338,7 +336,6 @@ class PicoTutor:
         self.best_history.append((0, chess.Move.null(), 0.00, 0))
         self.obvious_history.append((0, chess.Move.null(), 0.00, 0))
         self.best_moves = []
-        self.analysed_fen = ""
         self.obvious_moves = []
         self.hint_move = chess.Move.null()
         self.mate = 0
@@ -439,7 +436,6 @@ class PicoTutor:
         poped_move = chess.Move.null()
         self.best_moves = []
         self.obvious_moves = []
-        self.analysed_fen = ""
 
         if self.board.move_stack:
             poped_move = self.board.pop()
@@ -599,7 +595,6 @@ class PicoTutor:
         if not (self.coach_on or self.watcher_on):
             return
         self.best_moves = []
-        self.analysed_fen = ""
         self.obvious_moves = []
         self.alt_best_moves = []
         # eval_pv_list below will build new lists
@@ -607,7 +602,6 @@ class PicoTutor:
         self.obvious_info: list[chess.engine.InfoDict] = result.get("low")
         self.best_info: list[chess.engine.InfoDict]  = result.get("best")
         if self.best_info:
-            self.analysed_fen = result.get("fen")  # for validation in picochess
             best_score = PicoTutor._eval_pv_list(self.user_color, self.best_info, self.best_moves)
             if self.best_moves:
                 self.best_moves.sort(key=self.sort_score, reverse=True)
@@ -623,14 +617,14 @@ class PicoTutor:
         self.log_pv_lists()
 
 
-    def get_best_info(self) -> InfoDict | None:
-        """ get best move info if exists """
-        return self.best_moves[0] if self.best_info else None
-
-
-    def get_fen(self) -> str:
-        """ get the fen the best_info is based on """
-        return self.analysed_fen
+    def get_analysis(self) -> dict:
+        """ get best move info if exists - during user thinking """
+        # failed answer is empty lists
+        result = {"low": [], "best": [], "fen": ""}
+        if self.engine:
+            if self.engine.is_analyser_running():
+                result = self.engine.get_analysis(self.board)
+        return result
 
 
     def get_user_move_eval(self) -> tuple:

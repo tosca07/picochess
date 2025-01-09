@@ -2269,10 +2269,21 @@ async def main() -> None:
         def analyse(self, game: chess.Board) -> chess.engine.InfoDict | None:
             """ analyse, observe etc depening on mode - create analysis info """
             # it will work to get a short hint move also when not pondering
-            info = None
+            info: InfoDict | None = None
             engine_playing_moves = self.is_engine_playing_moves()
-            if engine_playing_moves:
-                info: InfoDict  = self.engine.playmode_analyse(game)
+            if False:  # if self.picotutor_mode():
+                # we could ask picotutor for best move info
+                result = self.state.picotutor.get_analysis()
+                if result.get("fen") == game.fen():
+                    # analysis was for our current board position
+                    info_list: list[chess.engine.InfoDict]  = result.get("best")
+                    if info_list:
+                        info: InfoDict = info_list[0] # pv first
+                        logger.debug("we got picotutor best move!")
+            if not info:
+                # get info from playing engine
+                if engine_playing_moves:
+                    info: InfoDict = self.engine.playmode_analyse(game)
                 else:
                     self.engine.start_analysis(game)  # might be new position
                     result = self.engine.get_analysis(game)
