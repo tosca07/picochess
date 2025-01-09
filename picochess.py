@@ -2273,12 +2273,12 @@ async def main() -> None:
             engine_playing_moves = self.is_engine_playing_moves()
             if engine_playing_moves:
                 info: InfoDict  = self.engine.playmode_analyse(game)
-            else:
-                self.engine.start_analysis(game)  # might be new position
-                result = self.engine.get_analysis(game)
-                info_list: list[InfoDict] = result.get("best")
-                if info_list:
-                    info: InfoDict = info_list[0] # pv first
+                else:
+                    self.engine.start_analysis(game)  # might be new position
+                    result = self.engine.get_analysis(game)
+                    info_list: list[InfoDict] = result.get("best")
+                    if info_list:
+                        info: InfoDict = info_list[0] # pv first
             if info:
                 self.send_analyse(info, engine_playing_moves)
             return info
