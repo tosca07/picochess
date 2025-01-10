@@ -19,14 +19,17 @@ apt install tk tcl libtcl8.6
 
 if [ -d "/opt/picochess" ]; then
     echo "picochess already exists, updating code..."
+    cd /opt
+    chown -R pi /opt/picochess
     cd /opt/picochess
-    git pull
-    chown -R pi /opt/picochess/engines
+    sudo -u pi git pull
 else
     echo "fetching picochess..."
     cd /opt
-    git clone https://github.com/JohanSjoblom/picochess
-    chown -R pi /opt/picochess/engines
+    mkdir picochess
+    chown pi /opt/picochess
+    sudo -u pi git clone https://github.com/JohanSjoblom/picochess
+    chown -R pi /opt/picochess
     cd picochess
     ln -sf /opt/picochess/etc/dgtpicom_$(uname -m) /opt/picochess/etc/dgtpicom
     ln -sf /opt/picochess/etc/dgtpicom.$(uname -m).so /opt/picochess/etc/dgtpicom.so
@@ -42,6 +45,8 @@ fi
 
 if [ -d "/opt/picochess/venv" ]; then
     echo "venv already exists"
+    chown -R pi /opt/picochess/venv
+    chgrp -R pi /opt/picochess/venv
 else
     echo "creating virtual Python env named venv"
     sudo -u pi python3 -m venv venv    
