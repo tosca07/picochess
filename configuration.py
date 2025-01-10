@@ -320,6 +320,12 @@ class Configuration:
             help="Pico Coach: move and position evaluation, move suggestion etc. on demand, default is off, when selecting lift you can trigger the coach by lifting and putting back a piece",
         )
         self.parser.add_argument(
+            "-coan",
+            "--coach-analyser",
+            action="store_true",
+            help="Pico Watcher: use tutor-coach as an analyser instead of the engine you are playing against",
+        )
+        self.parser.add_argument(
             "-open",
             "--tutor-explorer",
             action="store_true",

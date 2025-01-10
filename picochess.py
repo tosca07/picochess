@@ -1038,7 +1038,8 @@ async def main() -> None:
                 i_ucishell=uci_shell,
                 i_engine_path=tutor_engine,
                 i_comment_file=self.state.comment_file,
-                i_lang=self.args.language
+                i_lang=self.args.language,
+                i_coach_analyser=bool(self.args.coach_analyser)
             )
             self.state.picotutor.set_status(
                 self.state.dgtmenu.get_picowatcher(),
@@ -2271,8 +2272,8 @@ async def main() -> None:
             # it will work to get a short hint move also when not pondering
             info: InfoDict | None = None
             engine_playing_moves = self.is_engine_playing_moves()
-            if False:  # if self.picotutor_mode():
-                # we could ask picotutor for best move info
+            if engine_playing_moves and self.state.picotutor.is_coach_analyser():
+                # we ask picotutor engine for best move info
                 result = self.state.picotutor.get_analysis()
                 if result.get("fen") == game.fen():
                     # analysis was for our current board position

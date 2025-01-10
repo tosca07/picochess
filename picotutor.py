@@ -42,7 +42,8 @@ class PicoTutor:
         i_player_color=chess.WHITE,
         i_fen="",
         i_comment_file="",
-        i_lang="en"
+        i_lang="en",
+        i_coach_analyser=False
     ):
         self.user_color = i_player_color
         self.max_valid_moves = c.VALID_ROOT_MOVES
@@ -84,6 +85,7 @@ class PicoTutor:
         self.mame_par = "" # @todo create this info?
         self.board = chess.Board()
         self.ucishell = i_ucishell
+        self.coach_analyser = i_coach_analyser
 
         try:
             with open("chess-eco_pos.txt") as fp:
@@ -104,6 +106,11 @@ class PicoTutor:
         self._setup_comments(i_lang, i_comment_file)
 
         self._setup_board(i_fen)
+
+    
+    def is_coach_analyser(self) -> bool:
+        return self.coach_analyser
+
 
     def _setup_comments(self, i_lang, i_comment_file):
         if i_comment_file:
@@ -128,6 +135,7 @@ class PicoTutor:
         if self.comments_all:
             self.comment_all_no = len(self.comments_all)
 
+
     def _setup_board(self, i_fen):
         if i_fen:
             self.board = chess.Board(i_fen)
@@ -144,6 +152,7 @@ class PicoTutor:
         self.coach_on = b_coach
         self.explorer_on = explorer
         self.comments_on = comments
+        
         
         self.stop()
                     
