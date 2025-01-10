@@ -911,7 +911,7 @@ async def main() -> None:
             self.state.game = chess.Board()  # Create the current game
             fen = self.state.game.fen()
             self.state.legal_fens = compute_legal_fens(self.state.game.copy())  # Compute the legal FENs
-            is_out_of_time_already = False  # molli: out of time message only once
+            self.is_out_of_time_already = False  # molli: out of time message only once
             self.state.flag_startup = True
 
             all_books = get_opening_books()
@@ -3053,7 +3053,7 @@ async def main() -> None:
                         self.state.legal_fens = compute_legal_fens(self.state.game.copy())
                         self.state.last_legal_fens = []
                         self.state.legal_fens_after_cmove = []
-                        is_out_of_time_already = False
+                        self.is_out_of_time_already = False
                         real_new_game = game_fen != chess.STARTING_BOARD_FEN
                         msg = Message.START_NEW_GAME(game=self.state.game.copy(), newgame=real_new_game)
                         DisplayMsg.show(msg)
@@ -3242,7 +3242,7 @@ async def main() -> None:
                 self.state.done_computer_fen = None
                 self.state.done_move = self.state.pb_move = chess.Move.null()
                 self.state.legal_fens_after_cmove = []
-                is_out_of_time_already = False
+                self.is_out_of_time_already = False
                 self.state.time_control.reset()
                 self.state.searchmoves.reset()
                 self.state.game_declared = False
@@ -3395,7 +3395,7 @@ async def main() -> None:
                     self.state.legal_fens = compute_legal_fens(self.state.game.copy())
                     self.state.last_legal_fens = []
                     self.state.legal_fens_after_cmove = []
-                    is_out_of_time_already = False
+                    self.is_out_of_time_already = False
                     if self.pgn_mode():
                         if self.state.max_guess > 0:
                             self.state.max_guess_white = self.state.max_guess
@@ -3489,7 +3489,7 @@ async def main() -> None:
                         self.state.legal_fens = compute_legal_fens(self.state.game.copy())
                         self.state.last_legal_fens = []
                         self.state.legal_fens_after_cmove = []
-                        is_out_of_time_already = False
+                        self.is_out_of_time_already = False
                         self.state.game_declared = False
                         self.set_wait_state(
                             Message.START_NEW_GAME(game=self.state.game.copy(), newgame=newgame), self.state
@@ -4540,7 +4540,7 @@ async def main() -> None:
                         self.state.legal_fens = compute_legal_fens(self.state.game.copy())
                         self.state.last_legal_fens = []
                         self.state.legal_fens_after_cmove = []
-                        is_out_of_time_already = False
+                        self.is_out_of_time_already = False
                         self.engine_mode()
                         DisplayMsg.show(Message.RSPEED(rspeed=event.rspeed))
                         self.update_elo_display()
@@ -4664,7 +4664,7 @@ async def main() -> None:
             elif isinstance(event, Event.OUT_OF_TIME):
                 # molli: allow further playing even when run out of time
                 if (
-                    not is_out_of_time_already and not self.online_mode()
+                    not self.is_out_of_time_already and not self.online_mode()
                 ):  # molli in online mode the server decides
                     self.state.stop_clock()
                     result = GameResult.OUT_OF_TIME
@@ -4676,7 +4676,7 @@ async def main() -> None:
                             game=self.state.game.copy(),
                         )
                     )
-                    is_out_of_time_already = True
+                    self.is_out_of_time_already = True
                     self.update_elo(result)
 
             elif isinstance(event, Event.SHUTDOWN):
