@@ -465,8 +465,7 @@ class PicoTutor:
                 self.engine.start_analysis(self.board)
             else:
                 logger.error("engine has terminated in picotutor?")
-        else:
-            logger.error("engine was never started in picotutor")
+
 
     def pause(self):
         # during thinking time of opponent tutor should be paused
