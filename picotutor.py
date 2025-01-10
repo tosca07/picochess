@@ -109,7 +109,11 @@ class PicoTutor:
 
     
     def is_coach_analyser(self) -> bool:
-        return self.coach_analyser
+        return (
+            self.coach_analyser and
+            self.coach_on and
+            self.watcher_on
+        )
 
 
     def _setup_comments(self, i_lang, i_comment_file):
