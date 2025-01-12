@@ -4,18 +4,24 @@
 #
 
 echo "starting by updating system..."
-apt update
-apt full-upgrade
+apt -y update
+if [ -d "/opt/picochess" ]; then
+    echo "... and upgrading system"
+    apt -y upgrade
+else
+    echo "... and doing full upgrade before installing picochess"
+    apt -y full-upgrade
+fi
 
 echo "installing needed libraries"
-apt install git sox unzip wget libtcl8.6 telnet libglib2.0-dev
-apt install avahi-daemon avahi-discover libnss-mdns
-apt install vorbis-tools
-apt install python3 python3-pip
-apt install python3-dev
-apt install python3-venv
-apt install libffi-dev libssl-dev
-apt install tk tcl libtcl8.6
+apt -y install git sox unzip wget libtcl8.6 telnet libglib2.0-dev
+apt -y install avahi-daemon avahi-discover libnss-mdns
+apt -y install vorbis-tools
+apt -y install python3 python3-pip
+apt -y install python3-dev
+apt -y install python3-venv
+apt -y install libffi-dev libssl-dev
+apt -y install tk tcl libtcl8.6
 
 if [ -d "/opt/picochess" ]; then
     echo "picochess already exists, updating code..."
