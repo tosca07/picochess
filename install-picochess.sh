@@ -65,12 +65,13 @@ sudo -u pi /opt/picochess/venv/bin/pip3 install --upgrade -r requirements.txt
 
 # uncomment following line only for dgtpi clock or pi 3000 mod with wired connection
 # you also need to set dgtpi = True in ini file - use with care, know what you are doing
+# AND: you need to uncomment the enable dgtpi.service a few rows below as well
 # cp etc/dgtpi.service /etc/systemd/system/
 cp etc/picochess.service /etc/systemd/system/
 cp etc/obooksrv/$(uname -m)/obooksrv.service /etc/systemd/system/
 cp etc/gamesdb/$(uname -m)/gamesdb.service /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable dgtpi.service
+# systemctl enable dgtpi.service
 systemctl enable picochess.service
 systemctl enable obooksrv.service
 systemctl enable gamesdb.service
