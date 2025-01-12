@@ -31,8 +31,6 @@ else
     sudo -u pi git clone https://github.com/JohanSjoblom/picochess
     chown -R pi /opt/picochess
     cd picochess
-    ln -sf /opt/picochess/etc/dgtpicom_$(uname -m) /opt/picochess/etc/dgtpicom
-    ln -sf /opt/picochess/etc/dgtpicom.$(uname -m).so /opt/picochess/etc/dgtpicom.so
 fi
 
 if [ -d "/opt/picochess/logs" ]; then
@@ -44,7 +42,7 @@ else
 fi
 
 if [ -d "/opt/picochess/venv" ]; then
-    echo "venv already exists"
+    echo "venv already exists - making sure pi is owner and group"
     chown -R pi /opt/picochess/venv
     chgrp -R pi /opt/picochess/venv
 else
@@ -65,7 +63,9 @@ cd /opt/picochess
 sudo -u pi /opt/picochess/venv/bin/pip3 install --upgrade pip
 sudo -u pi /opt/picochess/venv/bin/pip3 install --upgrade -r requirements.txt
 
-cp etc/dgtpi.service /etc/systemd/system/
+# uncomment following line only for dgtpi clock or pi 3000 mod with wired connection
+# you also need to set dgtpi = True in ini file - use with care, know what you are doing
+# cp etc/dgtpi.service /etc/systemd/system/
 cp etc/picochess.service /etc/systemd/system/
 cp etc/obooksrv/$(uname -m)/obooksrv.service /etc/systemd/system/
 cp etc/gamesdb/$(uname -m)/gamesdb.service /etc/systemd/system/
