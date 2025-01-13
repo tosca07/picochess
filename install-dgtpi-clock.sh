@@ -13,7 +13,7 @@ systemctl daemon-reload
 systemctl enable dgtpi.service
 
 echo "giving communication rights so that hardwired clock can be used"
-setcap 'cap_net_raw,cap_net_admin+eip' /usr/bin/python3
+setcap 'cap_net_bind_service,cap_sys_rawio,cap_dac_override+eip' /usr/bin/python3.11
 
 echo "DGTPi clock installation complete. Please reboot"
 echo "You need to copy picochess.ini-example-dgtpi3-clock to picochess.ini"
