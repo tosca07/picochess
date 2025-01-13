@@ -5,7 +5,7 @@ BindsTo=picochess.service
 
 [Service]
 Type=simple
-ExecStart=/opt/picochess/gamesdb/aarch64/tcscid /opt/picochess/gamesdb/get_games.tcl --server 7778
+ExecStart=/opt/picochess/gamesdb/tcscid get_games.tcl --server 7778
 ExecStop=/usr/bin/pkill -f tcscid
 WorkingDirectory=/opt/picochess/gamesdb/
 
