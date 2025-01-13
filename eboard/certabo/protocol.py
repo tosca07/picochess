@@ -209,6 +209,9 @@ class Protocol(ParserCallback, CalibrationCallback):
         if piece_recognition:
             self.calibrate()
 
+    def leds_detected(self, rgb_leds: bool):
+        self.led_control.leds_detected(rgb_leds)
+
     def occupied_squares(self, board: List[int]):
         if self.sentio is not None:
             self.sentio.occupied_squares(board)

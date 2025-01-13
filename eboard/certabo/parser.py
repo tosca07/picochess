@@ -48,6 +48,9 @@ class BoardTranslator:
     def has_piece_recognition(self, value: bool):
         pass
 
+    def leds_detected(self, value: bool):
+        pass
+
 
 class CalibrationCallback:
 
@@ -70,6 +73,9 @@ class ParserCallback(object):
         pass
 
     def has_piece_recognition(self, piece_recognition: bool):
+        pass
+
+    def leds_detected(self, rgb_leds: bool):
         pass
 
     def occupied_squares(self, board: List[int]):
@@ -124,7 +130,11 @@ class Parser(object):
         self.buffer += arr
 
     def _parse(self, part: str):
-        split_input = re.sub('[\r\nL*]', '', part).split()
+        if 'L' in part:
+            self.callback.leds_detected(False)
+        if 'D' in part:
+            self.callback.leds_detected(True)
+        split_input = re.sub('[\r\nLD*]', '', part).split()
         if not self.piece_recognition and len(split_input) > 8:
             self.piece_recognition = True
             self.callback.has_piece_recognition(True)
@@ -226,6 +236,9 @@ class CertaboBoardMessageParser(BoardTranslator):
     def has_piece_recognition(self, value: bool):
         self.callback.has_piece_recognition(value)
 
+    def leds_detected(self, value: bool):
+        self.callback.leds_detected(value)
+
 
 class CalibrationSquare(object):
 
@@ -322,3 +335,12 @@ class CertaboCalibrator(BoardTranslator):
                 if not square.is_calibrated():
                     all_calibrated = False
         return all_calibrated
+
+    def translate_occupied_squares(self, board: List[int]):
+        pass
+
+    def has_piece_recognition(self, value: bool):
+        pass
+
+    def leds_detected(self, value: bool):
+        pass

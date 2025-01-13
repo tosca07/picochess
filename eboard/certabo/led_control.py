@@ -17,6 +17,7 @@ import threading
 import time
 import traceback
 
+from eboard.certabo.rgb_led_command_translator import RgbLedCommandTranslator
 
 logger = logging.getLogger(__name__)
 
@@ -30,19 +31,22 @@ class CertaboLedControl(object):
         self.stopped = False
         self.last_time = time.time()
         self.last_cmd = None
-        threading.Thread(target=self.main_loop).start()
+        self.leds_initially_detected = False
+        self.has_rgb_leds = False
+        self.translator = RgbLedCommandTranslator()
+        threading.Thread(target=self._main_loop).start()
 
-    def main_loop(self):
+    def _main_loop(self):
         while not self.stopped:
             time.sleep(0.1)
             try:
-                self.process_commands()
+                self._process_commands()
             except Exception:
                 traceback.print_exc()
                 logger.exception("Problem while processing LED commands")
                 return
 
-    def process_commands(self):
+    def _process_commands(self):
         lock = threading.Lock()
         with lock:
             while len(self.pending) > 2:
@@ -53,7 +57,16 @@ class CertaboLedControl(object):
             if (self.last_time + 0.6) <= current_time and len(self.pending) > 0:
                 cmd = self.pending.popleft()
                 if cmd != self.last_cmd:
-                    self.transport.write_mt(cmd)
+                    if self.leds_initially_detected:
+                        if self.has_rgb_leds:
+                            self.transport.write_mt(self.translator.translate(cmd))
+                        else:
+                            self.transport.write_mt(cmd)
+                    else:
+                        self.transport.write_mt(cmd)
+                        time.sleep(0.4)
+                        if (not self.leds_initially_detected and not self.has_rgb_leds) or self.has_rgb_leds:
+                            self.transport.write_mt(self.translator.translate(cmd))
                     self.last_cmd = cmd
                     self.last_time = current_time
 
@@ -65,3 +78,7 @@ class CertaboLedControl(object):
 
     def stop(self):
         self.stopped = True
+
+    def leds_detected(self, rgb_leds: bool):
+        self.leds_initially_detected = True
+        self.has_rgb_leds = rgb_leds
