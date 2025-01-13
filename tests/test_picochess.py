@@ -2,7 +2,7 @@ import chess  # type: ignore
 import mock
 import unittest
 
-from picochess import AlternativeMover, read_pgn_info, read_online_result, read_online_user_info
+from picochess import AlternativeMover, read_pgn_info_from_file, read_online_result, read_online_user_info
 
 
 class TestAlternativeMover(unittest.TestCase):
@@ -107,7 +107,7 @@ class TestAlternativeMover(unittest.TestCase):
 
 class TestReadPGNInfo(unittest.TestCase):
     def test_read_pgn_info(self):
-        game_name, problem, fen, result, white, black = read_pgn_info()
+        game_name, problem, fen, result, white, black = read_pgn_info_from_file("pgn_game_info.txt")
         self.assertEqual('Kasparov 25 board Simul', game_name.strip())
         self.assertEqual('', problem.strip())
         self.assertEqual('', fen.strip())

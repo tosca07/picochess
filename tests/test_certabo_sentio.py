@@ -20,12 +20,12 @@ from unittest.mock import call, patch
 
 import chess  # type: ignore
 
-from certabo.sentio import Sentio
-from certabo.parser import to_square
+from eboard.certabo.sentio import Sentio
+from eboard.certabo.parser import to_square
 
 
-@patch('certabo.parser.ParserCallback')
-@patch('certabo.led_control.CertaboLedControl')
+@patch('eboard.certabo.parser.ParserCallback')
+@patch('eboard.certabo.led_control.CertaboLedControl')
 class TestSentio(unittest.TestCase):
 
     def test_leds_missing_all_pieces(self, MockedParserCallback, MockedLedControl):

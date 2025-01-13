@@ -65,7 +65,7 @@ class EventApi():
     SET_TIME_CONTROL = 'EVT_SET_TIME_CONTROL'  # User sets time control
     SHUTDOWN = 'EVT_SHUTDOWN'  # User wants to shutdown the machine
     REBOOT = 'EVT_REBOOT'  # User wants to reboot the machine
-    EXIT = 'EVT_EXIT' # User wants to exit picochess
+    EXIT = 'EVT_EXIT'  # User wants to exit picochess
     ALTERNATIVE_MOVE = 'EVT_ALTERNATIVE_MOVE'  # User wants engine to recalculate the position
     EMAIL_LOG = 'EVT_EMAIL_LOG'  # User want to send the log file by eMail
     SET_VOICE = 'EVT_SET_VOICE'  # User sets a new voice

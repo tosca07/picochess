@@ -16,11 +16,11 @@
 import unittest
 from unittest.mock import patch
 
-from move_debouncer import MoveDebouncer
+from eboard.move_debouncer import MoveDebouncer
 
 
-@patch('move_debouncer.Timer.cancel')
-@patch('move_debouncer.Timer.start')
+@patch('eboard.move_debouncer.Timer.cancel')
+@patch('eboard.move_debouncer.Timer.start')
 class TestMoveDebouncer(unittest.TestCase):
 
     def test_timer_is_started_for_extendable_move(self, MockedTimer_start, MockedTimer_cancel):

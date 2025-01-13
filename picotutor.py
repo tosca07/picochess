@@ -135,12 +135,12 @@ class PicoTutor:
         self.coach_on = b_coach
         self.explorer_on = explorer
         self.comments_on = comments
-        
+
         self.stop()
-                    
+
         if watcher or b_coach:
             self._reset_int()
-            
+
     def get_game_comment(self, pico_comment=PicoComment.COM_OFF, com_factor=0):
         max_range = 0
         max_range_all = 0
@@ -304,7 +304,7 @@ class PicoTutor:
         self.pv_user_move = []
         self.hint_move = chess.Move.null()
         self.mate = 0
-        self.expl_start_position = True#
+        self.expl_start_position = True
 
     def _reset_int(self):
         self.pos = False

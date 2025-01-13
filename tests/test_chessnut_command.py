@@ -16,7 +16,7 @@
 import binascii
 import unittest
 
-import chessnut.command as cmd
+import eboard.chessnut.command as cmd
 
 
 class TestCommand(unittest.TestCase):
