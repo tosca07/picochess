@@ -82,3 +82,5 @@ games/
 # linked files with ln -sf
 gamesdb/tcscid
 obooksrv/obooksrv
+etc/dgtpicom
+etc/dgtpicom.so

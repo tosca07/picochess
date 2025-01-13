@@ -72,8 +72,7 @@ dgtpi = True
 ## Sets the UCI engine used at startup
 ## handle with care. If you setup this section wrong, picochess won't start
 ## Path to the engine
-#/opt/picochess/engines/aarch64/a-stockf
-engine = /opt/picochess/engines/armv7l/a-stockf
+/opt/picochess/engines/aarch64/a-stockf
 
 ## What level the engine should have at startup?
 ## For a (correct) value please take a look at 'engines/<your_platform>/<engine_name>.uci'
@@ -349,8 +348,7 @@ tutor-watcher = False
 tutor-coach = off
 
 ## Engine used for PicoTutor analysis. Default is /opt/picochess/engines/aarch64/a-stockf.
-#tutor-engine = /opt/picochess/engines/aarch64/a-stockf
-tutor-engine = /opt/picochess/engines/armv7l/a-stockf
+tutor-engine = /opt/picochess/engines/aarch64/a-stockf
 
 ## Type of e-Board. Supported values: 'certabo', 'chesslink', 'chessnut', 'dgt' (default), 'ichessone', 'noeboard' (play against
 ## engine using web server interface).

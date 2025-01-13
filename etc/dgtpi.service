@@ -5,7 +5,7 @@ DefaultDependencies=false
 [Service]
 Type=oneshot
 ExecStart=/opt/picochess/etc/dgtpicom "  DGT  P|  " 1
-WorkingDirectory=/opt/picochess/etc/
+WorkingDirectory=/opt/picochess/etc
 
 [Install]
 WantedBy=basic.target

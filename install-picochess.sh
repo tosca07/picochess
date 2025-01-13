@@ -69,26 +69,24 @@ cd /opt/picochess
 sudo -u pi /opt/picochess/venv/bin/pip3 install --upgrade pip
 sudo -u pi /opt/picochess/venv/bin/pip3 install --upgrade -r requirements.txt
 
-# uncomment following line only for dgtpi clock or pi 3000 mod with wired connection
-# you also need to set dgtpi = True in ini file - use with care, know what you are doing
-# AND: you need to uncomment the enable dgtpi.service a few rows below as well
-# cp etc/dgtpi.service /etc/systemd/system/
+echo "setting up picochess, obooksrv and gamesdb services"
 cp etc/picochess.service /etc/systemd/system/
 ln -sf /opt/picochess/obooksrv/$(uname -m)/obooksrv /opt/picochess/obooksrv/obooksrv
 cp etc/obooksrv.service /etc/systemd/system/
 ln -sf /opt/picochess/gamesdb/$(uname -m)/tcscid /opt/picochess/gamesdb/tcscid
 cp etc/gamesdb.service /etc/systemd/system/
 systemctl daemon-reload
-# systemctl enable dgtpi.service
 systemctl enable picochess.service
 systemctl enable obooksrv.service
 systemctl enable gamesdb.service
 
-echo "giving bluetooth rights"
+echo "giving bluetooth rights so that communication works to DGT board etc"
 setcap 'cap_net_raw,cap_net_admin+eip' /opt/picochess/venv/lib/python3.11/site-packages/bluepy/bluepy-helper
 
 echo "Picochess installation complete. Please reboot"
+echo "NOTE: If you are on DGpi clock hardware you also need to run install-dgtpi-clock.sh"
 echo "After reboot open a browser to localhost:8080"
-echo "Depending on your DGT hardware or only Web choose a picochess.ini-example* file"
-echo "Default installation is picochess.ini-example-webpi copied to picochess.ini"
+echo "Depending if you have DGT chess board or only Web choose a picochess.ini-example* file"
+echo "Default picochess.ini-example-webpi has been copied to picochess.ini"
 echo "In case of problems have a look in the log /opt/picochess/logs/picochess.log"
+echo "You can rerun this installation whenever you want to update your system"
