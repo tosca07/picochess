@@ -74,8 +74,10 @@ sudo -u pi /opt/picochess/venv/bin/pip3 install --upgrade -r requirements.txt
 # AND: you need to uncomment the enable dgtpi.service a few rows below as well
 # cp etc/dgtpi.service /etc/systemd/system/
 cp etc/picochess.service /etc/systemd/system/
-cp etc/obooksrv/$(uname -m)/obooksrv.service /etc/systemd/system/
-cp etc/gamesdb/$(uname -m)/gamesdb.service /etc/systemd/system/
+ln -sf /opt/picochess/obooksrv/$(uname -m)/obooksrv /opt/picochess/obooksrv/obooksrv
+cp etc/obooksrv.service /etc/systemd/system/
+ln -sf /opt/picochess/gamesdb/$(uname -m)/tcscid /opt/picochess/gamesdb/tcscid
+cp etc/gamesdb.service /etc/systemd/system/
 systemctl daemon-reload
 # systemctl enable dgtpi.service
 systemctl enable picochess.service

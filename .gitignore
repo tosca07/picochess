@@ -77,5 +77,8 @@ games/
 .vscode/
 
 # Game database files
+# some small twic 2024 files included
 
-
+# linked files with ln -sf
+gamesdb/tcscid
+obooksrv/obooksrv
