@@ -22,6 +22,7 @@ var/
 *.egg
 include/
 engines/aarch64/old/
+engines/x86_64/old/
 
 # Installer logs
 pip-log.txt
