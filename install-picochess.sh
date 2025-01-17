@@ -3,15 +3,10 @@
 # Installation script for picochess
 #
 
-echo "starting by updating system..."
+echo "starting by updating library information"
 apt -y update
-if [ -d "/opt/picochess" ]; then
-    echo "... and upgrading system"
-    apt -y upgrade
-else
-    echo "... and doing full upgrade before installing picochess"
-    apt -y full-upgrade
-fi
+echo "and upgrading system before installing picochess"
+apt -y full-upgrade
 
 echo "installing needed libraries"
 apt -y install git sox unzip wget libtcl8.6 telnet libglib2.0-dev
@@ -60,7 +55,7 @@ if [ -f "/opt/picochess/picochess.ini" ]; then
     echo "picochess.ini already existed - no changes done"
 else
     cd /opt/picochess
-    cp picochess.ini.example-webpi4 picochess.ini
+    cp picochess.ini.example-web-$(uname -m) picochess.ini
     chown pi picochess.ini
 fi
 
@@ -83,10 +78,14 @@ systemctl enable gamesdb.service
 echo "giving bluetooth rights so that communication works to DGT board etc"
 setcap 'cap_net_raw,cap_net_admin+eip' /opt/picochess/venv/lib/python3.11/site-packages/bluepy/bluepy-helper
 
+echo " ------- "
 echo "Picochess installation complete. Please reboot"
-echo "NOTE: If you are on DGpi clock hardware you also need to run install-dgtpi-clock.sh"
+echo "NOTE: If you are on DGTPi clock hardware you need to run install-dgtpi-clock.sh"
 echo "After reboot open a browser to localhost:8080"
-echo "Depending if you have DGT chess board or only Web choose a picochess.ini-example* file"
-echo "Default picochess.ini-example-webpi has been copied to picochess.ini"
+echo "Default picochess.ini-example-web has been copied to picochess.ini"
+echo "If you have a DGT board you need to change the board type"
+echo "in the picochess.ini like this: board-type = dgt"
+echo "Other board types are also supported - see the picochess.ini file"
+echo " ------- "
 echo "In case of problems have a look in the log /opt/picochess/logs/picochess.log"
 echo "You can rerun this installation whenever you want to update your system"

@@ -15,8 +15,9 @@ systemctl enable dgtpi.service
 echo "giving communication rights so that hardwired clock can be used"
 setcap 'cap_net_bind_service,cap_sys_rawio,cap_dac_override+eip' /usr/bin/python3.11
 
+echo " ------- "
 echo "DGTPi clock installation complete. Please reboot"
-echo "You need to copy picochess.ini-example-dgtpi3-clock to picochess.ini"
-echo "... or write your own ini file with setting dgtpi = True"
+echo "You need to copy picochess.ini-example-dgtpi-clock to picochess.ini"
+echo "... or change picochess.ini file with dgt clock setting dgtpi = True"
 echo "NOTE: dgtpi = True setting should be used with care, only for DGTPi clocks"
 echo "In case of problems have a look in the log /opt/picochess/logs/picochess.log"
