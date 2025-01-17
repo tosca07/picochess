@@ -2264,6 +2264,7 @@ async def main() -> None:
         def is_engine_playing_moves(self) -> bool:
             """ return true if engine is playing moves based on self.state.Mode
                 otherwise engine is watching and user plays both sides """
+            # should Mode.TRAINING be included?
             return bool(self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN))
 
 
@@ -2284,13 +2285,16 @@ async def main() -> None:
             if not info:
                 # get info from playing engine
                 if engine_playing_moves:
-                    info: InfoDict = self.engine.playmode_analyse(game)
+                    # optimisation to ask for info only in BRAIN mode
+                    if self.state.interaction_mode == Mode.BRAIN:
+                        info: InfoDict = self.engine.playmode_analyse(game)
                 else:
-                    self.engine.start_analysis(game)  # might be new position
-                    result = self.engine.get_analysis(game)
-                    info_list: list[InfoDict] = result.get("best")
-                    if info_list:
-                        info: InfoDict = info_list[0] # pv first
+                    # optimisation, ask for result only if analysis was running
+                    if self.engine.start_analysis(game):
+                        result = self.engine.get_analysis(game)
+                        info_list: list[InfoDict] = result.get("best")
+                        if info_list:
+                            info: InfoDict = info_list[0] # pv first
             if info:
                 self.send_analyse(info, engine_playing_moves)
             return info
@@ -2302,25 +2306,26 @@ async def main() -> None:
             # info is first multipv root move; send to displays
             if "pv" in info:
                 # @todo check if we really have a move list here
-                logger.debug("engine pv: %s", info["pv"])
                 move = info.get("pv")[0]  # first move
                 if move:
+                    logger.debug("engine pv best move: %s", move.uci())
                     self.state.pb_move = move  # backward compatibility
                     Observable.fire(Event.NEW_PV(pv=[move]))
+            # send depth before score as score is assembling depth in receiver end
+            if "depth" in info:
+                d = info.get("depth")
+                if d:
+                    logger.debug("engine depth: %s", d)
+                    Observable.fire(Event.NEW_DEPTH(depth=d))
             if "score" in info:
-                logger.debug("engine score: %s", info["score"])
                 s = info["score"]
                 if engine_playing_moves:
                     p = s.pov(self.state.get_user_color()).score()
                 else:
                     p = s.pov(self.state.game.turn).score()
                 if p:
+                    logger.debug("engine score: %s", str(p))
                     Observable.fire(Event.NEW_SCORE(score=p, mate=s.is_mate()))
-            if "depth" in info:
-                logger.debug("engine depth: %s", info["depth"])
-                d = info.get("depth")
-                if d:
-                    Observable.fire(Event.NEW_DEPTH(depth=d))
 
         def expired_fen_timer(self, state: PicochessState):
             """Handle times up for an unhandled fen string send from board."""
@@ -2749,11 +2754,29 @@ async def main() -> None:
             DisplayMsg.show(Message.EXIT_MENU())
 
         def engine_mode(self):
+            """ call when engine mode is changed """
             if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
-                ponder_mode = True  # better analysis result in PLAYING mode
+                # optimisation, dont ask for ponder unless needed
+                ponder_mode = True if self.state.interaction_mode == Mode.BRAIN else False
                 self.engine.set_mode(mode=EngineMode.PLAYING, ponder=ponder_mode)
+                # mode might have changed back to playing, activate tutor
+                self.state.picotutor.set_status(
+                    self.state.dgtmenu.get_picowatcher(),
+                    self.state.dgtmenu.get_picocoach(),
+                    self.state.dgtmenu.get_picoexplorer(),
+                    self.state.dgtmenu.get_picocomment(),
+                )
+                self.state.picotutor.reset()
             elif self.state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
                 self.engine.set_mode(mode=EngineMode.WATCHING)
+                # tutor cannot run if playing engine is only watching?
+                self.state.picotutor.set_status(
+                watcher=False,
+                coach=PicoCoach.COACH_OFF,
+                explorer=self.state.dgtmenu.get_picoexplorer(),
+                comments=False,
+                )
+
 
 
         def remote_engine_mode(self):
@@ -2778,12 +2801,16 @@ async def main() -> None:
                     current_time = time.time()
                     if self.last_analysis_call is None:
                         self.last_analysis_call = current_time
+                        # analysis might have been started earlier, but make sure
+                        self.engine.start_analysis(self.state.game)
                     else:
                         diff = current_time - self.last_analysis_call
                         if diff > FLOAT_MIN_BACKGROUND_TIME:
                             self.last_analysis_call = current_time
                             self.analyse(self.state.game)
-
+                else:
+                    # restert time when engine turn and engine is playing
+                    self.last_analysis_call = None
 
         async def event_consumer(self):
             """ Event consumer for main """

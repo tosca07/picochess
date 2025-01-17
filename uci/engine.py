@@ -314,7 +314,7 @@ class UciEngine(object):
         logger.info("mame parameters=" + mame_par)
         self.mode = EngineMode.PLAYING  # picochess starts in NORMAL mode
         self.idle = True
-        self.pondering = True  # best to always allow pondering
+        self.pondering = False  # normal mode no pondering
         self.analyser = ContinuousAnalysis(delay=FLOAT_ANALYSIS_WAIT)
         # previous existing attributes:
         self.is_adaptive = False
@@ -509,12 +509,14 @@ class UciEngine(object):
 
 
     def start_analysis(self, game: chess.Board) -> bool:
-        """ start analyser - returns True if already running """
+        """ start analyser - returns True if already running 
+            in current game position - means result can be expected """
         result = False
         if self.analyser.is_running():
-            result = True
             if game.fen() != self.analyser.get_fen():
                 self.analyser.update_game(game)  # new position
+            else:
+                result = True  # was running - results to be expected
         else:
             if self.engine:
                 self.analyser.start(self.engine, game,
@@ -566,9 +568,6 @@ class UciEngine(object):
             info = None
         finally:
             self.idle = True  # engine idle again
-        if info:
-            if "pv" in info:
-                logger.debug("engine score: %s depth: %s pv: %s", info["score"], info["depth"], info["pv"])
         return info
 
     def is_thinking(self):
