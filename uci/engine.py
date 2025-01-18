@@ -443,14 +443,14 @@ class UciEngine(object):
                 logger.debug("stop analyser")
                 self.analyser.stop()
             else:
-                logger.warning("no analyser running in stop")
+                logger.debug("no analyser running in stop")
         elif self.mode == EngineMode.PLAYING:
             if not self.idle:
                 logger.debug("waiting synchronized for engine to play to be ready")
             while not self.idle:
                 time.sleep(FLOAT_MIN_ENGINE_TIME/2)  # wait until engine finishes play
             if self.analyser.is_running():
-                logger.warning("analyser thread running in PLAYING mode - stopping it")
+                logger.debug("analyser thread running in PLAYING mode - stopping it")
                 self.analyser.stop()
 
 
@@ -486,7 +486,7 @@ class UciEngine(object):
         """Go engine."""
         logger.debug("molli: timedict: %s", str(time_dict))
         if self.analyser.is_running():
-            logger.warning("analyser should not be running when PLAYING")
+            logger.debug("analyser should not be running when PLAYING")
             self.analyser.stop()
         # Observable.fire(Event.START_SEARCH())
         use_time = self.get_engine_limit(time_dict, game)
