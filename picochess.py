@@ -97,6 +97,7 @@ from utilities import (
     hms_time,
     get_engine_mame_par,
 )
+from utilities import AsyncRepeatingTimer
 from pgn import Emailer, PgnDisplay, ModeInfo
 from server import WebServer
 from picotalker import PicoTalkerDisplay
@@ -861,7 +862,6 @@ async def main() -> None:
             self.login = login
             self.state = state
             self.engine = None  # placeholder for UciEngine
-            self.last_analysis_call = None
             self.state.fen_timer = threading.Timer(4, self.expired_fen_timer, args=[state])
             self.state.fen_timer_running = False
             self.args = args
@@ -869,6 +869,11 @@ async def main() -> None:
             self.dgtdispatcher = dgtdispatcher
             self.dgtboard = dgtboard
             self.board_type = board_type
+            self.background_analyse_timer = AsyncRepeatingTimer(
+                FLOAT_MIN_BACKGROUND_TIME,
+                self._pv_score_depth_analyser,
+                loop=self.loop
+                )
             ###########################################
 
             # try the given engine first and if that fails the first from "engines.ini" then exit
@@ -2268,6 +2273,13 @@ async def main() -> None:
             return bool(self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN))
 
 
+        def debug_pv_info(self, info: chess.engine.InfoDict):
+            logger.debug(
+                "engine pv move: %s - depth %d - score %s",
+                info.get("pv")[0].uci(), info.get("depth"), str(info["score"])
+                )
+
+
         def analyse(self, game: chess.Board) -> chess.engine.InfoDict | None:
             """ analyse, observe etc depening on mode - create analysis info """
             # it will work to get a short hint move also when not pondering
@@ -2282,18 +2294,22 @@ async def main() -> None:
                     if info_list:
                         info: InfoDict = info_list[0] # pv first
                         logger.debug("we got picotutor best move!")
+                        self.debug_pv_info(info)
             if not info:
                 # get info from playing engine
                 if engine_playing_moves:
                     # optimisation to ask for info only in BRAIN mode
                     if self.state.interaction_mode == Mode.BRAIN:
                         info: InfoDict = self.engine.playmode_analyse(game)
+                        self.debug_pv_info(info)
                 else:
                     # optimisation, ask for result only if analysis was running
                     if self.engine.start_analysis(game):
                         result = self.engine.get_analysis(game)
                         info_list: list[InfoDict] = result.get("best")
                         if info_list:
+                            for info in info_list:
+                                self.debug_pv_info(info)
                             info: InfoDict = info_list[0] # pv first
             if info:
                 self.send_analyse(info, engine_playing_moves)
@@ -2308,14 +2324,12 @@ async def main() -> None:
                 # @todo check if we really have a move list here
                 move = info.get("pv")[0]  # first move
                 if move:
-                    logger.debug("engine pv best move: %s", move.uci())
                     self.state.pb_move = move  # backward compatibility
                     Observable.fire(Event.NEW_PV(pv=[move]))
             # send depth before score as score is assembling depth in receiver end
             if "depth" in info:
                 d = info.get("depth")
                 if d:
-                    logger.debug("engine depth: %s", d)
                     Observable.fire(Event.NEW_DEPTH(depth=d))
             if "score" in info:
                 s = info["score"]
@@ -2324,7 +2338,6 @@ async def main() -> None:
                 else:
                     p = s.pov(self.state.game.turn).score()
                 if p:
-                    logger.debug("engine score: %s", str(p))
                     Observable.fire(Event.NEW_SCORE(score=p, mate=s.is_mate()))
 
         def expired_fen_timer(self, state: PicochessState):
@@ -2759,6 +2772,10 @@ async def main() -> None:
                 # optimisation, dont ask for ponder unless needed
                 ponder_mode = True if self.state.interaction_mode == Mode.BRAIN else False
                 self.engine.set_mode(mode=EngineMode.PLAYING, ponder=ponder_mode)
+                if self.state.interaction_mode in (Mode.BRAIN, Mode.TRAINING):
+                    self.background_analyse_timer.start()
+                else:
+                    self.background_analyse_timer.stop()  # Normal mode no analysis
                 # mode might have changed back to playing, activate tutor
                 self.state.picotutor.set_status(
                     self.state.dgtmenu.get_picowatcher(),
@@ -2769,12 +2786,13 @@ async def main() -> None:
                 self.state.picotutor.reset()
             elif self.state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
                 self.engine.set_mode(mode=EngineMode.WATCHING)
+                self.background_analyse_timer.start()  # permanent brain in analysis mode
                 # tutor cannot run if playing engine is only watching?
                 self.state.picotutor.set_status(
-                watcher=False,
-                coach=PicoCoach.COACH_OFF,
-                explorer=self.state.dgtmenu.get_picoexplorer(),
-                comments=False,
+                    watcher=False,
+                    coach=PicoCoach.COACH_OFF,
+                    explorer=self.state.dgtmenu.get_picoexplorer(),
+                    comments=False,
                 )
 
 
@@ -2791,26 +2809,14 @@ async def main() -> None:
             self._task = self.loop.create_task(self.event_consumer())
 
 
-        def no_msg_background_task(self):
-            # ive got nothing to do so I update PV analysis on user time
-            user_to_move = self.state.is_user_turn()
+        def _pv_score_depth_analyser(self):
+            """ Analyse PV score depth """
             if self.state.game.fullmove_number > 1:
                 # @todo find a way to skip background analysis
                 # while we are doing inbook
+                user_to_move = self.state.is_user_turn()
                 if user_to_move or self.state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
-                    current_time = time.time()
-                    if self.last_analysis_call is None:
-                        self.last_analysis_call = current_time
-                        # analysis might have been started earlier, but make sure
-                        self.engine.start_analysis(self.state.game)
-                    else:
-                        diff = current_time - self.last_analysis_call
-                        if diff > FLOAT_MIN_BACKGROUND_TIME:
-                            self.last_analysis_call = current_time
-                            self.analyse(self.state.game)
-                else:
-                    # restert time when engine turn and engine is playing
-                    self.last_analysis_call = None
+                    self.analyse(self.state.game)
 
         async def event_consumer(self):
             """ Event consumer for main """
@@ -2820,7 +2826,6 @@ async def main() -> None:
                     event = evt_queue.get_nowait()
                     self.process_main_events(event)
                 except queue.Empty:
-                    self.no_msg_background_task()
                     await asyncio.sleep(FLOAT_MSG_WAIT)
 
 
