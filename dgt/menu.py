@@ -1847,7 +1847,7 @@ class DgtMenu(object):
         )
         return await self._fire_event(event)
 
-    async def exit_menu(self):
+    def exit_menu(self):
         """Exit the menu."""
         if self.inside_main_menu():
             self.enter_top_menu()

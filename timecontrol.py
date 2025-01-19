@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import asyncio
 import time
 import logging
 import copy
@@ -261,7 +262,8 @@ class TimeControl(object):
 
             # Only start thread if not already started for same color, and the player has not already lost on time
             if self.internal_time[color] > 0 and self.active_color is not None and self.run_color != self.active_color:
-                self.timer = AsyncRepeatingTimer(copy.copy(self.internal_time[color]), self._out_of_time, self.loop)
+                loop = asyncio.get_event_loop()
+                self.timer = AsyncRepeatingTimer(copy.copy(self.internal_time[color]), self._out_of_time, loop)
                 self.timer.start()
                 logger.debug('internal timer started - color: %s run: %s active: %s',
                              color, self.run_color, self.active_color)

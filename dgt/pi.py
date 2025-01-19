@@ -17,7 +17,7 @@
 
 import logging
 import time
-from threading import Lock, Timer
+from threading import Lock, Timer, Thread
 from ctypes import cdll, c_byte, create_string_buffer, pointer
 
 from utilities import DisplayMsg, hms_time
@@ -32,7 +32,7 @@ from pgn import ModeInfo
 logger = logging.getLogger(__name__)
 
 
-class DgtPi(DgtIface):
+class DgtPi(DgtIface, Thread):
 
     """Handle the DgtPi communication."""
 
@@ -51,6 +51,11 @@ class DgtPi(DgtIface):
         self._startup_i2c_clock()
         incoming_clock_thread = Timer(0, self._process_incoming_clock_forever)
         incoming_clock_thread.start()
+
+    def run(self):
+        """Call by threading.Thread start() function."""
+        # @todo probably need to do something here
+        pass
 
     def _startup_i2c_clock(self):
         while self.lib.dgtpicom_init() < 0:

@@ -67,8 +67,11 @@ from typing import Any, List, Optional, Set, Tuple
 import asyncio
 
 import paramiko
-import chess.pgn  # type: ignore
-import chess.polyglot  # type: ignore
+import chess.pgn
+import chess.polyglot
+import chess.engine
+import dgt.util
+from tornado.platform.asyncio import AsyncIOMainLoop
 import chess.engine  # type: ignore
 from chess.engine import InfoDict
 
@@ -99,7 +102,7 @@ from utilities import (
 )
 from utilities import AsyncRepeatingTimer
 from pgn import Emailer, PgnDisplay, ModeInfo
-from server import WebServer
+from server import WebDisplay, WebServer, WebVr
 from picotalker import PicoTalkerDisplay
 from dispatcher import Dispatcher
 
@@ -247,7 +250,7 @@ class PicochessState:
         self.artwork_in_use = False
         self.delay_fen_error = 4
 
-    async def start_clock(self) -> None:
+    def start_clock(self) -> None:
         """Start the clock."""
         if self.interaction_mode in (
             Mode.NORMAL,
@@ -266,7 +269,7 @@ class PicochessState:
                         turn=self.game.turn, tc_init=tc_init, devs={"ser", "i2c", "web"}
                     )
                 )
-                await asyncio.sleep(
+                time.sleep(
                     0.5
                 )  # @todo give some time to clock to really do it. Find a better solution!
         else:
@@ -634,7 +637,9 @@ async def compute_legal_fens(game_copy: chess.Board):
 
 async def main() -> None:
     """Main function."""
-    main_loop = asyncio.get_running_loop()
+    # Use asyncio's event loop as the Tornado IOLoop
+    AsyncIOMainLoop().install()
+    main_loop = asyncio.get_event_loop()
     state = PicochessState()
     own_user = ""
     opp_user = ""
@@ -798,9 +803,19 @@ async def main() -> None:
 
     # Launch web server
     if args.web_server_port:
-        WebServer(
-            args.web_server_port, dgtboard, calc_theme(args.theme, state.set_location)
-        ).start()
+        my_web_server = WebServer()
+        shared: dict = {}
+        theme: str = calc_theme(args.theme, state.set_location)
+        web_app = my_web_server.make_app(theme, shared)
+        web_app.listen(args.web_server_port)
+        # moved starting WebDisplayt and WebVr here so that they are in same main loop
+        logger.info("web server starting - initializing message queues")
+        my_web_display = WebDisplay(shared, main_loop)
+        my_web_task = asyncio.create_task(my_web_display.message_to_task())
+        my_web_vr = WebVr(shared, dgtboard, main_loop)
+        my_vr_task = asyncio.create_task(my_web_vr.message_to_task())
+        logger.info("message queues ready - web server ready")
+
         dgtdispatcher.register("web")
 
     if board_type == dgt.util.EBoard.NOEBOARD:
@@ -1080,7 +1095,7 @@ async def main() -> None:
             """
             DisplayMsg.show(msg)
             if not self.online_mode() or game.fullmove_number > 1:
-                self.state.start_clock()
+                await self.state.start_clock()
             book_res = self.state.searchmoves.book(self.bookreader, game.copy())
             if (book_res and not self.emulation_mode() and not self.online_mode() and not self.pgn_mode()) or (
                 book_res and (self.pgn_mode() and self.state.pgn_book_test)
@@ -1122,7 +1137,7 @@ async def main() -> None:
         async def stop_search_and_clock(self, ponder_hit=False):
             """Depending on the interaction mode stop search and clock."""
             if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
-                self.state.stop_clock()
+                await self.state.stop_clock()
                 if self.engine.is_waiting():
                     logger.debug("engine already waiting")
                 else:
@@ -2809,8 +2824,8 @@ async def main() -> None:
 
         def start(self):
             """ start the main loop with its message consumer """
-            #self._task = self.loop.create_task(self.event_consumer())
-            self._task = asyncio.create_task(self.event_consumer())
+            self._task = self.loop.create_task(self.event_consumer())
+            #self._task = asyncio.create_task(self.event_consumer())
 
 
         def _pv_score_depth_analyser(self):

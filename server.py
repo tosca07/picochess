@@ -117,7 +117,7 @@ class ChannelHandler(ServerRequestHandler):
                 "pgn": pgn_str,
                 "fen": fen,
             }
-            await EventHandler.write_to_clients(result)
+            EventHandler.write_to_clients(result)
         elif action == "move":
             move = chess.Move.from_uci(
                 self.get_argument("source")
@@ -169,13 +169,14 @@ class EventHandler(WebSocketHandler):
         client_ips.remove(self.real_ip())
 
     @classmethod
-    async def write_to_clients(cls, msg):
+    def write_to_clients(cls, msg):
         """ This is the main event loop message producer for WebDisplay and WebVR """
         for client in cls.clients:
             client.write_message(msg)
 
 
 class DGTHandler(ServerRequestHandler):
+
     async def get(self, *args, **kwargs):
         action = self.get_argument("action")
         if action == "get_last_move":
@@ -216,59 +217,35 @@ class HelpHandler(ServerRequestHandler):
         self.render("web/picoweb/templates/help.html", theme=self.theme)
 
 
-class WebServer(threading.Thread):
-    def __init__(self, port: int, dgtboard: EBoard, theme: str):
+class WebServer():
+    def __init__(self):
         super(WebServer, self).__init__()
-        self.shared: dict = {}
-        self.port = port
-        self.dgtboard = dgtboard
-        self.theme = theme
-        self.io_loop = None
 
-
-    def make_app(self) -> tornado.web.Application:
+    def make_app(self, theme: str, shared: dict) -> tornado.web.Application:
         """ define web pages and their handlers """
         wsgi_app = tornado.wsgi.WSGIContainer(pw)
         return tornado.web.Application(
             [
-                (r"/", ChessBoardHandler, dict(theme=self.theme)),
-                (r"/event", EventHandler, dict(shared=self.shared)),
-                (r"/dgt", DGTHandler, dict(shared=self.shared)),
-                (r"/info", InfoHandler, dict(shared=self.shared)),
-                (r"/help", HelpHandler, dict(theme=self.theme)),
-                (r"/channel", ChannelHandler, dict(shared=self.shared)),
+                (r"/", ChessBoardHandler, dict(theme=theme)),
+                (r"/event", EventHandler, dict(shared=shared)),
+                (r"/dgt", DGTHandler, dict(shared=shared)),
+                (r"/info", InfoHandler, dict(shared=shared)),
+                (r"/help", HelpHandler, dict(theme=theme)),
+                (r"/channel", ChannelHandler, dict(shared=shared)),
                 (r".*", tornado.web.FallbackHandler, {"fallback": wsgi_app}),
             ]
         )
 
 
-    async def start_server(self):
-        """ start web server from thread start run"""
-        app = self.make_app()
-        app.listen(self.port)
-        # moved starting WebDisplayt and WebVr here so that they are in same thread io_loop
-        self.io_loop = tornado.ioloop.IOLoop.current()
-        logger.info("web server starting - initializing message queues")
-        WebDisplay(self.shared, self.io_loop).start()
-        WebVr(self.shared, self.dgtboard, self.io_loop).start()
-        logger.info("message queues ready - web server ready")
-        await asyncio.Event().wait()
-
-
-    def run(self):
-        """Call by threading.Thread start() function."""
-        asyncio.run(self.start_server())
-
-
 class WebVr(DgtIface):
     """Handle the web (clock) communication."""
 
-    def __init__(self, shared, dgtboard: EBoard, io_loop: tornado.ioloop.IOLoop):
+    def __init__(self, shared, dgtboard: EBoard, loop: asyncio.AbstractEventLoop):
         super(WebVr, self).__init__(dgtboard)
         self.shared = shared
+        self.loop: asyncio.AbstractEventLoop = loop  # this is the main loop
         # virtual_timer is a web clock updater, loop is started in parent
         self.virtual_timer = AsyncRepeatingTimer(1, self._runclock, self.loop)
-        self.io_loop = io_loop  # this is Tornados event loop for callbacks
         self.enable_dgtpi = dgtboard.is_pi
         sub = 2 if dgtboard.is_pi else 0
         DisplayMsg.show(Message.DGT_CLOCK_VERSION(main=2, sub=sub, dev="web", text=None))
@@ -310,7 +287,7 @@ class WebVr(DgtIface):
         )
         self._display_time(self.l_time, self.r_time)
 
-    async def _display_time(self, time_left: int, time_right: int):
+    def _display_time(self, time_left: int, time_right: int):
         if time_left >= 3600 * 10 or time_right >= 3600 * 10:
             logger.debug("time values not set - abort function")
         elif self.clock_show_time:
@@ -334,9 +311,9 @@ class WebVr(DgtIface):
             self._create_clock_text()
             self.shared["clock_text"] = text
             result = {"event": "Clock", "msg": text}
-            await EventHandler.write_to_clients(result)
+            EventHandler.write_to_clients(result)
 
-    async def display_move_on_clock(self, message):
+    def display_move_on_clock(self, message):
         """Display a move on the web clock."""
         is_new_rev2 = self.dgtboard.is_revelation and self.dgtboard.enable_revelation_pi
         if self.enable_dgt3000 or is_new_rev2 or self.enable_dgtpi:
@@ -360,10 +337,10 @@ class WebVr(DgtIface):
         logger.debug("[%s]", text)
         self.shared["clock_text"] = text
         result = {"event": "Clock", "msg": text}
-        await EventHandler.write_to_clients(result)
+        EventHandler.write_to_clients(result)
         return True
 
-    async def display_text_on_clock(self, message: Dgt.DISPLAY_TEXT):
+    def display_text_on_clock(self, message: Dgt.DISPLAY_TEXT):
         """Display a text on the web clock."""
         if message.web_text != "":
             text = message.web_text
@@ -377,22 +354,22 @@ class WebVr(DgtIface):
         logger.debug("[%s]", text)
         self.shared["clock_text"] = text
         result = {"event": "Clock", "msg": text}
-        await EventHandler.write_to_clients(result)
+        EventHandler.write_to_clients(result)
         return True
 
-    async def display_time_on_clock(self, message):
+    def display_time_on_clock(self, message):
         """Display the time on the web clock."""
         if self.get_name() not in message.devs:
             logger.debug("ignored endText - devs: %s", message.devs)
             return True
         if self.side_running != ClockSide.NONE or message.force:
             self.clock_show_time = True
-            await self._display_time(self.l_time, self.r_time)
+            self._display_time(self.l_time, self.r_time)
         else:
             logger.debug("(web) clock isnt running - no need for endText")
         return True
 
-    async def stop_clock(self, devs: set):
+    def stop_clock(self, devs: set):
         """Stop the time on the web clock."""
         if self.get_name() not in devs:
             logger.debug("ignored stopClock - devs: %s", devs)
@@ -401,11 +378,11 @@ class WebVr(DgtIface):
             self.virtual_timer.stop()
         return self._resume_clock(ClockSide.NONE)
 
-    async def _resume_clock(self, side: ClockSide):
+    def _resume_clock(self, side: ClockSide):
         self.side_running = side
         return True
 
-    async def start_clock(self, side: ClockSide, devs: set):
+    def start_clock(self, side: ClockSide, devs: set):
         """Start the time on the web clock."""
         if self.get_name() not in devs:
             logger.debug("ignored startClock - devs: %s", devs)
@@ -414,12 +391,12 @@ class WebVr(DgtIface):
             self.virtual_timer.stop()
         if side != ClockSide.NONE:
             self.virtual_timer.start()
-        await self._resume_clock(side)
+        self._resume_clock(side)
         self.clock_show_time = True
-        await self._display_time(self.l_time, self.r_time)
+        self._display_time(self.l_time, self.r_time)
         return True
 
-    async def set_clock(self, time_left: int, time_right: int, devs: set):
+    def set_clock(self, time_left: int, time_right: int, devs: set):
         """Start the time on the web clock."""
         if self.get_name() not in devs:
             logger.debug("ignored setClock - devs: %s", devs)
@@ -428,23 +405,23 @@ class WebVr(DgtIface):
         self.r_time = time_right
         return True
 
-    async def light_squares_on_revelation(self, uci_move):
+    def light_squares_on_revelation(self, uci_move):
         """Light the rev2 squares."""
         result = {"event": "Light", "move": uci_move}
-        await EventHandler.write_to_clients(result)
+        EventHandler.write_to_clients(result)
         return True
 
-    async def light_square_on_revelation(self, square):
+    def light_square_on_revelation(self, square):
         """Light the rev2 square."""
         uci_move = square + square
         result = {"event": "Light", "move": uci_move}
-        await EventHandler.write_to_clients(result)
+        EventHandler.write_to_clients(result)
         return True
 
-    async def clear_light_on_revelation(self):
+    def clear_light_on_revelation(self):
         """Clear all leds from rev2."""
         result = {"event": "Clear"}
-        await EventHandler.write_to_clients(result)
+        EventHandler.write_to_clients(result)
         return True
 
     def promotion_done(self, move):
@@ -456,21 +433,20 @@ class WebVr(DgtIface):
 
     def _create_task(self, msg):
         # put callback to be executed by Tornado main event loop
-        self.io_loop.add_callback(callback=lambda: self._process_message(msg))
+        self.loop.create_task(self._process_message(msg))
 
 
-class WebDisplay(DisplayMsg, threading.Thread):
+class WebDisplay(DisplayMsg):
     level_text_sav = ""
     level_name_sav = ""
     engine_elo_sav = ""
     result_sav = ""
     engine_name = "Picochess"
 
-    def __init__(self, shared: dict, io_loop: tornado.ioloop.IOLoop):
+    def __init__(self, shared: dict, loop: asyncio.AbstractEventLoop):
         super(WebDisplay, self).__init__()
         self.shared = shared
-        self.io_loop = io_loop  # Tornado webserver loop for callbacks
-        self.loop = asyncio.new_event_loop()  # thread needs loop
+        self.loop: asyncio.AbstractEventLoop = loop  # main loop
         self._task = None  # task for message consumer
         self.starttime = datetime.datetime.now().strftime("%H:%M:%S")
 
@@ -591,14 +567,14 @@ class WebDisplay(DisplayMsg, threading.Thread):
             self._build_game_header(pgn_game)
             self.shared["headers"].update(pgn_game.headers)
 
-        async def _send_headers():
-            await EventHandler.write_to_clients(
+        def _send_headers():
+            EventHandler.write_to_clients(
                 {"event": "Header", "headers": dict(self.shared["headers"])}
             )
 
-        async def _send_title():
+        def _send_title():
             if "ip_info" in self.shared:
-                await EventHandler.write_to_clients(
+                EventHandler.write_to_clients(
                     {"event": "Title", "ip_info": self.shared["ip_info"]}
                 )
 
@@ -617,6 +593,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
             except IndexError:
                 return chess.Move.null().uci()
 
+        await asyncio.sleep(0.05) # fake wait to make this a coroutine
         if False:  # switch-case
             pass
         elif isinstance(message, Message.START_NEW_GAME):
@@ -632,16 +609,16 @@ class WebDisplay(DisplayMsg, threading.Thread):
                 "play": "newgame",
             }
             self.shared["last_dgt_move_msg"] = result
-            await EventHandler.write_to_clients(result)
+            EventHandler.write_to_clients(result)
             _build_headers()
-            await _send_headers()
-            await _send_title()
+            _send_headers()
+            _send_title()
 
         elif isinstance(message, Message.IP_INFO):
             self.shared["ip_info"] = message.info
             _build_headers()
-            await _send_headers()
-            await _send_title()
+            _send_headers()
+            _send_title()
 
         elif isinstance(message, Message.SYSTEM_INFO):
             self._create_system_info()
@@ -658,7 +635,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
                     "user_name"
                 ]
             _build_headers()
-            await _send_headers()
+            _send_headers()
 
         elif isinstance(message, Message.ENGINE_STARTUP):
             for index in range(0, len(message.installed_engines)):
@@ -667,7 +644,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
                     self.shared["system_info"]["engine_elo"] = eng["elo"]
                     break
             _build_headers()
-            await _send_headers()
+            _send_headers()
 
         elif isinstance(message, Message.ENGINE_READY):
             self._create_system_info()
@@ -682,7 +659,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
                 if "level_name" in self.shared["game_info"]:
                     del self.shared["game_info"]["level_name"]
             _build_headers()
-            await _send_headers()
+            _send_headers()
 
         elif isinstance(message, Message.STARTUP_INFO):
             self.shared["game_info"] = message.info.copy()
@@ -743,14 +720,14 @@ class WebDisplay(DisplayMsg, threading.Thread):
                     self.shared["game_info"]["level_name"] = WebDisplay.level_name_sav
 
             _build_headers()
-            await _send_headers()
+            _send_headers()
 
         elif isinstance(message, Message.PLAY_MODE):
             if "PGN Replay" not in WebDisplay.engine_name:
                 self._create_game_info()
                 self.shared["game_info"]["play_mode"] = message.play_mode
                 _build_headers()
-                await _send_headers()
+                _send_headers()
 
         elif isinstance(message, Message.TIME_CONTROL):
             self._create_game_info()
@@ -762,7 +739,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
             self.shared["game_info"]["level_text"] = message.level_text
             self.shared["game_info"]["level_name"] = message.level_name
             _build_headers()
-            await _send_headers()
+            _send_headers()
 
         elif isinstance(message, Message.DGT_NO_CLOCK_ERROR):
             # result = {'event': 'Status', 'msg': 'Error clock'}
@@ -777,7 +754,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
             else:
                 attached = "server"
             result = {"event": "Status", "msg": "Ok clock " + attached}
-            await EventHandler.write_to_clients(result)
+            EventHandler.write_to_clients(result)
 
         elif isinstance(message, Message.COMPUTER_MOVE):
             game_copy = message.game.copy()
@@ -791,7 +768,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
         elif isinstance(message, Message.COMPUTER_MOVE_DONE):
             WebDisplay.result_sav = ""
             result = self.shared["last_dgt_move_msg"]
-            await EventHandler.write_to_clients(result)
+            EventHandler.write_to_clients(result)
 
         elif isinstance(message, Message.USER_MOVE_DONE):
             WebDisplay.result_sav = ""
@@ -800,7 +777,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
             mov = message.move.uci()
             result = {"pgn": pgn_str, "fen": fen, "event": "Fen", "move": mov, "play": "user"}
             self.shared["last_dgt_move_msg"] = result
-            await EventHandler.write_to_clients(result)
+            EventHandler.write_to_clients(result)
 
         elif isinstance(message, Message.REVIEW_MOVE_DONE):
             pgn_str = _transfer(message.game)
@@ -808,7 +785,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
             mov = message.move.uci()
             result = {"pgn": pgn_str, "fen": fen, "event": "Fen", "move": mov, "play": "review"}
             self.shared["last_dgt_move_msg"] = result
-            await EventHandler.write_to_clients(result)
+            EventHandler.write_to_clients(result)
 
         elif isinstance(message, Message.ALTERNATIVE_MOVE):
             pgn_str = _transfer(message.game)
@@ -816,7 +793,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
             mov = peek_uci(message.game)
             result = {"pgn": pgn_str, "fen": fen, "event": "Fen", "move": mov, "play": "reload"}
             self.shared["last_dgt_move_msg"] = result
-            await EventHandler.write_to_clients(result)
+            EventHandler.write_to_clients(result)
 
         elif isinstance(message, Message.SWITCH_SIDES):
             pgn_str = _transfer(message.game)
@@ -824,7 +801,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
             mov = message.move.uci()
             result = {"pgn": pgn_str, "fen": fen, "event": "Fen", "move": mov, "play": "reload"}
             self.shared["last_dgt_move_msg"] = result
-            await EventHandler.write_to_clients(result)
+            EventHandler.write_to_clients(result)
 
         elif isinstance(message, Message.TAKE_BACK):
             pgn_str = _transfer(message.game)
@@ -832,11 +809,11 @@ class WebDisplay(DisplayMsg, threading.Thread):
             mov = peek_uci(message.game)
             result = {"pgn": pgn_str, "fen": fen, "event": "Fen", "move": mov, "play": "reload"}
             self.shared["last_dgt_move_msg"] = result
-            await EventHandler.write_to_clients(result)
+            EventHandler.write_to_clients(result)
 
         elif isinstance(message, Message.PROMOTION_DIALOG):
             result = {"event": "PromotionDlg", "move": message.move}
-            await EventHandler.write_to_clients(result)
+            EventHandler.write_to_clients(result)
 
         elif isinstance(message, Message.GAME_ENDS):
             if message.result == GameResult.DRAW:
@@ -852,20 +829,13 @@ class WebDisplay(DisplayMsg, threading.Thread):
                 WebDisplay.result_sav = ""
             if WebDisplay.result_sav != "":
                 _build_headers()
-                await _send_headers()
+                _send_headers()
         else:  # Default
             pass
 
     def _create_task(self, msg):
-        # put callback to be executed by Tornado main event loop
-        self.io_loop.add_callback(callback=lambda: self.task(msg))
-
-
-    def run(self):
-        """Call by threading.Thread start() function."""
-        asyncio.set_event_loop(self.loop)
-        self._task = self.loop.create_task(self.message_to_task())
-        self.loop.run_forever()
+        # put callback to be executed by main event loop
+        self.loop.create_task(self.task(msg))
 
 
     async def message_to_task(self):

@@ -31,7 +31,7 @@ from constants import FLOAT_MSG_WAIT
 logger = logging.getLogger(__name__)
 
 
-class DgtIface(DisplayDgt, Thread):
+class DgtIface(DisplayDgt):
 
     """An Interface class for DgtHw, DgtPi, DgtVr."""
 
@@ -43,7 +43,6 @@ class DgtIface(DisplayDgt, Thread):
         self.side_running = ClockSide.NONE
         self.enable_dgt3000 = False
         self.case_res = True
-        self.loop = asyncio.new_event_loop() # thread needs event loop
         self._task = None  # task to run message consumer
 
     def display_text_on_clock(self, message):
@@ -140,11 +139,12 @@ class DgtIface(DisplayDgt, Thread):
 
         return bit_board, move(move_text, message.lang, message.capital and not is_xl, not message.long)
 
-    def _process_message(self, message):
+    async def _process_message(self, message):
         """ Message task consumer for WebVR - can we do await anywhere? """
         if self.get_name() not in message.devs:
             return True
 
+        await asyncio.sleep(0.05)  # fake wait to make this a coroutine
         logger.debug('(%s) handle DgtApi: %s started', ','.join(message.devs), message)
         self.case_res = True
 
@@ -190,13 +190,6 @@ class DgtIface(DisplayDgt, Thread):
         if not res:
             logger.warning('DgtApi command %s failed result: %s', msg, res)
 
-
-    def run(self):
-        """Call by threading.Thread start() function."""
-        asyncio.set_event_loop(self.loop)
-        self._task = self.loop.create_task(self.message_to_task())
-        self.loop.run_forever()
-
     async def message_to_task(self):
         """ Message task consumer for WebVr messages """
         logger.info('[%s] dgt_queue ready', self.get_name())
@@ -207,4 +200,3 @@ class DgtIface(DisplayDgt, Thread):
                 self._create_task(message)
             except queue.Empty:
                 await asyncio.sleep(FLOAT_MSG_WAIT)
-

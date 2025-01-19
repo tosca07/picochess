@@ -16,7 +16,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-from threading import Lock
+from threading import Lock, Thread
 from utilities import hms_time
 from dgt.iface import DgtIface
 from dgt.util import ClockIcons, ClockSide
@@ -28,7 +28,7 @@ from pgn import ModeInfo
 logger = logging.getLogger(__name__)
 
 
-class DgtHw(DgtIface):
+class DgtHw(DgtIface, Thread):
 
     """Handle the DgtXL/3000 communication."""
 
@@ -36,6 +36,11 @@ class DgtHw(DgtIface):
         super(DgtHw, self).__init__(dgtboard)
 
         self.lib_lock = Lock()
+
+    def run(self):
+        """Call by threading.Thread start() function."""
+        # @todo probably need to do something here
+        pass
 
     def _display_on_dgt_xl(
         self, text: str, beep=False, left_icons=ClockIcons.NONE, right_icons=ClockIcons.NONE
