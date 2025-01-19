@@ -17,6 +17,7 @@
 
 import asyncio
 import time
+import threading
 import logging
 import copy
 from math import ceil
@@ -262,8 +263,8 @@ class TimeControl(object):
 
             # Only start thread if not already started for same color, and the player has not already lost on time
             if self.internal_time[color] > 0 and self.active_color is not None and self.run_color != self.active_color:
-                loop = asyncio.get_event_loop()
-                self.timer = AsyncRepeatingTimer(copy.copy(self.internal_time[color]), self._out_of_time, loop)
+                self.timer = threading.Timer(copy.copy(self.internal_time[color]), self._out_of_time,
+                                             [copy.copy(self.internal_time[color])])
                 self.timer.start()
                 logger.debug('internal timer started - color: %s run: %s active: %s',
                              color, self.run_color, self.active_color)
@@ -277,7 +278,8 @@ class TimeControl(object):
                 logger.debug('old internal time w:%s b:%s', w_hms, b_hms)
 
             if self.timer:
-                self.timer.stop()
+                self.timer.cancel()
+                self.timer.join()
             else:
                 logger.warning('time=%s', self.internal_time)
             used_time = ceil((time.time() - self.start_time) * 10) / 10

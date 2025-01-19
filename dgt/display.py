@@ -463,7 +463,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             self.play_turn = None
             await Observable.fire(Event.SWITCH_SIDES())
 
-    def _process_button(self, message):
+    async def _process_button(self, message):
         button = int(message.button)
         if not self.dgtmenu.get_engine_restart():
             if button == 0:
@@ -471,11 +471,11 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             elif button == 1:
                 self._process_button1(message.dev)
             elif button == 2:
-                self._process_button2(message.dev)
+                await self._process_button2(message.dev)
             elif button == 3:
                 self._process_button3(message.dev)
             elif button == 4:
-                self._process_button4(message.dev)
+                await self._process_button4(message.dev)
             elif button == 0x11:
                 self._reboot(message.dev)
             elif button == 0x20:
@@ -818,7 +818,6 @@ class DgtDisplay(DisplayMsg, threading.Thread):
                     "C10_ucigame" if self.uci960 else "C10_newgame", str(pos960)
                 )
             )
-            await Observable.fire(Event.NEW_GAME(pos960=pos960))
         else:
             self.last_pos_start = True
         if self.dgtmenu.get_mode() in (
@@ -870,7 +869,6 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self.leds_are_on = True
         self.c_time_counter = 0
         self.c_last_player = "C"
-        await Observable.fire(Event.COMPUTER_MOVE_DONE())
 
     def _set_clock(self, side=ClockSide.NONE, devs=None):
         if devs is None:  # prevent W0102 error
@@ -939,7 +937,6 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             DispatchDgt.fire(text)
         else:
             self._display_confirm("K05_okuser")
-        await Observable.fire(Event.USER_MOVE_DONE())
 
     async def _process_review_move_done(self, message):
         self.force_leds_off(log=True)  # can happen in case of a sliding move
@@ -950,7 +947,6 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self._display_confirm("K05_okmove")
         self.c_last_player = ""
         self.c_time_counter = 0
-        await Observable.fire(Event.REVIEW_MOVE_DONE())
 
     async def _process_time_control(self, message):
         wait = not self.dgtmenu.get_confirm() or not message.show_ok
@@ -958,7 +954,6 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             DispatchDgt.fire(message.time_text)
         self.time_control = TimeControl(**message.tc_init)
         self._set_clock()
-        await Observable.fire(Event.SET_TIME_CONTROL(tc_init=message.tc_init, time_text=message.time_text, show_ok=False))
 
     async def _process_new_score(self, message):
         if not message.mate:
@@ -971,7 +966,6 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             text = self._combine_depth_and_score()
             text.wait = True
             DispatchDgt.fire(text)
-        await Observable.fire(Event.NEW_SCORE(score=message.score, mate=message.mate))
 
     async def _process_new_pv(self, message):
         self.hint_move = message.pv[0]
@@ -994,7 +988,6 @@ class DgtDisplay(DisplayMsg, threading.Thread):
                 long=self.dgttranslate.notation,
             )
             DispatchDgt.fire(disp)
-        await Observable.fire(Event.NEW_PV(pv=message.pv))
 
     async def _process_startup_info(self, message):
         self.play_mode = message.info["play_mode"]
@@ -1095,7 +1088,6 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             else ClockSide.RIGHT
         )
         self._set_clock(side=side, devs=message.devs)
-        await Observable.fire(Event.CLOCK_START(turn=message.turn, tc_init=message.tc_init, devs=message.devs))
 
     async def _process_once_per_second(self):
         """ called by AsyncRepeatingTimer """
@@ -1395,7 +1387,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             DispatchDgt.fire(Dgt.CLOCK_STOP(devs=message.devs, wait=True))
 
         elif isinstance(message, Message.DGT_BUTTON):
-            self._process_button(message)
+            await self._process_button(message)
 
         elif isinstance(message, Message.DGT_FEN):
             if self.dgtmenu.inside_updt_menu():
@@ -1481,7 +1473,6 @@ class DgtDisplay(DisplayMsg, threading.Thread):
             self.hint_turn = None
             self.force_leds_off()
             logger.debug("user ignored move %s", message.move)
-            await Observable.fire(Event.SWITCH_SIDES())
 
         elif isinstance(message, Message.EXIT_MENU):
             self._exit_display()

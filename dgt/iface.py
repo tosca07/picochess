@@ -144,7 +144,6 @@ class DgtIface(DisplayDgt):
         if self.get_name() not in message.devs:
             return True
 
-        await asyncio.sleep(0.05)  # fake wait to make this a coroutine
         logger.debug('(%s) handle DgtApi: %s started', ','.join(message.devs), message)
         self.case_res = True
 
@@ -181,7 +180,7 @@ class DgtIface(DisplayDgt):
         elif isinstance(message, Dgt.PROMOTION_DONE):
             self.promotion_done(message.uci_move)
         else:  # switch-default
-            pass
+            await asyncio.sleep(0.05)  # fake wait to make this a coroutine
         logger.debug('(%s) handle DgtApi: %s ended', ','.join(message.devs), message)
         return self.case_res
 

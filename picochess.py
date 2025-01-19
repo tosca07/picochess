@@ -275,7 +275,7 @@ class PicochessState:
         else:
             logger.warning("wrong function call [start]! mode: %s", self.interaction_mode)
 
-    async def stop_clock(self) -> None:
+    def stop_clock(self) -> None:
         """Stop the clock."""
         if self.interaction_mode in (
             Mode.NORMAL,
@@ -289,7 +289,7 @@ class PicochessState:
                 pass
             else:
                 DisplayMsg.show(Message.CLOCK_STOP(devs={"ser", "i2c", "web"}))
-                await asyncio.sleep(
+                time.sleep(
                     0.7
                 )  # @todo give some time to clock to really do it. Find a better solution!
         else:
@@ -1095,7 +1095,7 @@ async def main() -> None:
             """
             DisplayMsg.show(msg)
             if not self.online_mode() or game.fullmove_number > 1:
-                await self.state.start_clock()
+                self.state.start_clock()
             book_res = self.state.searchmoves.book(self.bookreader, game.copy())
             if (book_res and not self.emulation_mode() and not self.online_mode() and not self.pgn_mode()) or (
                 book_res and (self.pgn_mode() and self.state.pgn_book_test)
@@ -1137,7 +1137,7 @@ async def main() -> None:
         async def stop_search_and_clock(self, ponder_hit=False):
             """Depending on the interaction mode stop search and clock."""
             if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
-                await self.state.stop_clock()
+                self.state.stop_clock()
                 if self.engine.is_waiting():
                     logger.debug("engine already waiting")
                 else:

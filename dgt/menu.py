@@ -3566,6 +3566,13 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
 
         elif self.state == MenuState.RETROSETTINGS_RETROINFO:
+            self.state = MenuState.RETROSETTINGS_RETRODISPLAY
+            self.menu_engine_retrosettings = EngineRetroSettingsLoop.prev(
+                self.menu_engine_retrosettings
+            )
+            text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
+
+        elif self.state == MenuState.RETROSETTINGS_RETROSOUND:
             self.state = MenuState.RETROSETTINGS_RETROSPEED
             self.menu_engine_retrosettings = EngineRetroSettingsLoop.prev(
                 self.menu_engine_retrosettings
