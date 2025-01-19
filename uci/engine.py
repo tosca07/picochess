@@ -488,7 +488,6 @@ class UciEngine(object):
         if self.analyser.is_running():
             logger.debug("analyser should not be running when PLAYING")
             self.analyser.stop()
-        # Observable.fire(Event.START_SEARCH())
         use_time = self.get_engine_limit(time_dict, game)
         try:
             # @todo: how does the user affect the ponder value in this call
@@ -499,7 +498,6 @@ class UciEngine(object):
             self.res = None
         finally:
             self.idle = True  # engine idle again
-        # Observable.fire(Event.STOP_SEARCH())
         if self.res:
             logger.debug("res: %s", self.res)
             # not firing BEST_MOVE here because caller picochess fires it

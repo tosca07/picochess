@@ -16,13 +16,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import time
-import threading
 import logging
 import copy
 from math import ceil
 from dgt.board import Rev2Info
 
-from utilities import Observable, hms_time
+from utilities import Observable, hms_time, AsyncRepeatingTimer
 import chess  # type: ignore
 from dgt.api import Event
 from dgt.util import TimeMode
@@ -35,7 +34,11 @@ class TimeControl(object):
 
     """Control the picochess internal clock."""
 
-    def __init__(self, mode=TimeMode.FIXED, fixed=0, blitz=0, fischer=0, moves_to_go=0, blitz2=0, depth=0, node=0, internal_time=None):
+    def __init__(
+            self, mode=TimeMode.FIXED, fixed=0, blitz=0, fischer=0,
+            moves_to_go=0, blitz2=0, depth=0, node=0, internal_time=None,
+            loop = None
+            ):
         super(TimeControl, self).__init__()
         self.mode = mode
         self.move_time = fixed
@@ -47,6 +50,7 @@ class TimeControl(object):
         self.depth = depth
         self.node = node
         self.internal_time = internal_time
+        self.loop = loop  # asyncio loop from main
 
         if depth > 0:
             self.mode = TimeMode.FIXED
@@ -155,7 +159,7 @@ class TimeControl(object):
         """Set the start time to the current time."""
         self.start_time = time.time()
 
-    def _out_of_time(self, time_start):
+    async def _out_of_time(self):
         """Fire an OUT_OF_TIME event."""
         self.run_color = None
         if self.mode == TimeMode.FIXED:
@@ -165,8 +169,8 @@ class TimeControl(object):
         elif self.active_color is not None:
             display_color = 'WHITE' if self.active_color == chess.WHITE else 'BLACK'
             txt = 'current clock time (before subtracting) is %f and color is %s, out of time event started from %f'
-            logger.debug(txt, self.internal_time[self.active_color], display_color, time_start)
-            Observable.fire(Event.OUT_OF_TIME(color=self.active_color))
+            logger.debug(txt, self.internal_time[self.active_color], display_color)
+            await Observable.fire(Event.OUT_OF_TIME(color=self.active_color))
 
     def add_time(self, color):
         """Add the increment value to the color given."""
@@ -257,8 +261,7 @@ class TimeControl(object):
 
             # Only start thread if not already started for same color, and the player has not already lost on time
             if self.internal_time[color] > 0 and self.active_color is not None and self.run_color != self.active_color:
-                self.timer = threading.Timer(copy.copy(self.internal_time[color]), self._out_of_time,
-                                             [copy.copy(self.internal_time[color])])
+                self.timer = AsyncRepeatingTimer(copy.copy(self.internal_time[color]), self._out_of_time, self.loop)
                 self.timer.start()
                 logger.debug('internal timer started - color: %s run: %s active: %s',
                              color, self.run_color, self.active_color)
@@ -272,8 +275,7 @@ class TimeControl(object):
                 logger.debug('old internal time w:%s b:%s', w_hms, b_hms)
 
             if self.timer:
-                self.timer.cancel()
-                self.timer.join()
+                self.timer.stop()
             else:
                 logger.warning('time=%s', self.internal_time)
             used_time = ceil((time.time() - self.start_time) * 10) / 10

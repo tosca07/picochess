@@ -42,7 +42,9 @@ from typing import Optional
 # picochess version
 version = '4.0.3'
 
-evt_queue: queue.Queue = queue.Queue()
+logger = logging.getLogger(__name__)
+
+evt_queue: asyncio.Queue = asyncio.Queue()
 dispatch_queue: queue.Queue = queue.Queue()
 
 msgdisplay_devices = []
@@ -57,9 +59,10 @@ class Observable(object):
         super(Observable, self).__init__()
 
     @staticmethod
-    def fire(event):
+    async def fire(event):
         """Put an event on the Queue."""
-        evt_queue.put(copy.deepcopy(event))
+        await evt_queue.put(copy.deepcopy(event))
+        logger.debug("put in evt_queue done")
 
 
 class DispatchDgt(object):
@@ -105,45 +108,6 @@ class DisplayDgt(object):
         """Send a message on each display device."""
         for display in dgtdisplay_devices:
             display.dgt_queue.put(copy.deepcopy(message))
-
-
-class RepeatedTimer(object):
-
-    """Call function on a given interval."""
-
-    def __init__(self, interval, function, *args, **kwargs):
-        self._timer = None
-        self.interval = interval
-        self.function = function
-        self.args = args
-        self.kwargs = kwargs
-        self.timer_running = False
-
-    def _run(self):
-        self.timer_running = False
-        self.start()
-        self.function(*self.args, **self.kwargs)
-
-    def is_running(self):
-        """Return the running status."""
-        return self.timer_running
-
-    def start(self):
-        """Start the RepeatedTimer."""
-        if not self.timer_running:
-            self._timer = Timer(self.interval, self._run)
-            self._timer.start()
-            self.timer_running = True
-        else:
-            logging.info('repeated timer already running - strange!')
-
-    def stop(self):
-        """Stop the RepeatedTimer."""
-        if self.timer_running:
-            self._timer.cancel()
-            self.timer_running = False
-        else:
-            logging.info('repeated timer already stopped - strange!')
 
 
 class AsyncRepeatingTimer:
