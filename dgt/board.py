@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import platform
 import struct
 import logging
 import subprocess
@@ -562,9 +563,10 @@ class DgtBoard(EBoard):
 
                 # get rid of old rfcomm
                 if path.exists('/dev/rfcomm123'):
-                    logger.debug('BT releasing /dev/rfcomm123')
-                    subprocess.call(['sudo', 'rfcomm', 'release', '123'])
-                    subprocess.call(['cat', '/dev/rfcomm123'])  # Lucas
+                    if platform.machine() != "x86_64":
+                        logger.debug('BT releasing /dev/rfcomm123')
+                        subprocess.call(['sudo', 'rfcomm', 'release', '123'])
+                        subprocess.call(['cat', '/dev/rfcomm123'])  # Lucas
                 self.bt_current_device = -1
                 self.bt_mac_list = []
                 self.bt_name_list = []

@@ -27,7 +27,7 @@ scan on
 EOF
 
 echo "---------- waiting for scan results - cannot be seen on screen - just wait!"
-sleep 10
+sleep 5
 
 #echo "trying pair"
 #bluetoothctl <<EOF
