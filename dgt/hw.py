@@ -33,15 +33,13 @@ class DgtHw(DgtIface, Thread):
 
     """Handle the DgtXL/3000 communication."""
 
-    def __init__(self, dgtboard: EBoard):
-        super(DgtHw, self).__init__(dgtboard)
+    def __init__(self, dgtboard: EBoard, loop: asyncio.AbstractEventLoop):
+        super(DgtHw, self).__init__(dgtboard, loop)
 
         self.lib_lock = Lock()
-        self.loop = None
 
     def run(self):
         """Call by threading.Thread start() function."""
-        self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
         self.loop.run_forever()
 

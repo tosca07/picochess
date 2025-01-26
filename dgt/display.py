@@ -20,8 +20,6 @@ from math import floor
 from pgn import ModeInfo
 import logging
 import copy
-import queue
-import threading
 import subprocess
 import time
 import asyncio
@@ -33,8 +31,6 @@ from dgt.api import Dgt, Event, Message
 from timecontrol import TimeControl
 from dgt.board import Rev2Info
 from dgt.translate import DgtTranslate
-from constants import FLOAT_MSG_WAIT
-
 
 logger = logging.getLogger(__name__)
 

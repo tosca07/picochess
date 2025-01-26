@@ -37,8 +37,8 @@ class DgtPi(DgtIface, Thread):
 
     """Handle the DgtPi communication."""
 
-    def __init__(self, dgtboard: EBoard):
-        super(DgtPi, self).__init__(dgtboard)
+    def __init__(self, dgtboard: EBoard, loop: asyncio.AbstractEventLoop):
+        super(DgtPi, self).__init__(dgtboard, loop)
 
         self.lib_lock = Lock()
         self.lib = cdll.LoadLibrary("etc/dgtpicom.so")
@@ -52,11 +52,9 @@ class DgtPi(DgtIface, Thread):
         self._startup_i2c_clock()
         incoming_clock_thread = Timer(0, self._process_incoming_clock_forever)
         incoming_clock_thread.start()
-        self.loop = None
 
     def run(self):
         """Call by threading.Thread start() function."""
-        self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
         self.loop.run_forever()
 

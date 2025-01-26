@@ -61,7 +61,6 @@ import gc
 import logging
 from logging.handlers import RotatingFileHandler
 import time
-import queue
 import math
 from typing import Any, List, Optional, Set, Tuple
 import asyncio
@@ -123,7 +122,7 @@ from dgt.menu import DgtMenu
 
 from picotutor import PicoTutor
 from pathlib import Path
-from constants import FLOAT_MSG_WAIT, FLOAT_MIN_BACKGROUND_TIME
+FLOAT_MIN_BACKGROUND_TIME = 1.5  # dont update analysis more often than this
 
 ONLINE_PREFIX = "Online"
 
@@ -820,7 +819,7 @@ async def main() -> None:
         my_web_display = WebDisplay(shared, main_loop)
         my_web_display_task = asyncio.create_task(my_web_display.message_consumer())
         my_web_vr = WebVr(shared, dgtboard, main_loop)
-        my_web_vr_task = asyncio.create_task(my_web_vr.message_to_task())
+        my_web_vr_task = asyncio.create_task(my_web_vr.dgt_consumer())
         logger.info("message queues ready - web server ready")
 
         dgtdispatcher.register("web")
@@ -831,12 +830,12 @@ async def main() -> None:
         # Connect to DGT board
         logger.debug("starting PicoChess in board mode")
         if args.dgtpi:
-            DgtPi(dgtboard).start()
+            DgtPi(dgtboard, main_loop).start()
             dgtdispatcher.register("i2c")
         else:
             logger.debug("(ser) starting the board connection")
             dgtboard.run()  # a clock can only be online together with the board, so we must start it infront
-        DgtHw(dgtboard).start()
+        DgtHw(dgtboard, main_loop).start()
         dgtdispatcher.register("ser")
 
     # The class Dispatcher sends DgtApi messages at the correct (delayed) time out
@@ -3471,7 +3470,7 @@ async def main() -> None:
                         Message.START_NEW_GAME(game=self.state.game.copy(), newgame=newgame), self.state
                     )
                     if "no_player" not in self.opp_user and "no_user" not in self.own_user:
-                        self.switch_online()
+                        await self.switch_online()
                     if self.picotutor_mode():
                         self.state.picotutor.reset()
                         if not self.state.flag_startup:
@@ -3551,7 +3550,7 @@ async def main() -> None:
                             Message.START_NEW_GAME(game=self.state.game.copy(), newgame=newgame), self.state
                         )
                         if "no_player" not in self.opp_user and "no_user" not in self.own_user:
-                            self.switch_online()
+                            await self.switch_online()
                     else:
                         logger.debug("no need to start a new game")
                         if self.pgn_mode():

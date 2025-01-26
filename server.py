@@ -17,7 +17,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import threading
 import logging
 from collections import OrderedDict
 from typing import Set
@@ -38,8 +37,6 @@ from dgt.util import PlayMode, Mode, ClockSide, GameResult
 from dgt.iface import DgtIface
 from eboard.eboard import EBoard
 from pgn import ModeInfo
-from constants import FLOAT_MSG_WAIT
-import queue
 
 # This needs to be reworked to be session based (probably by token)
 # Otherwise multiple clients behind a NAT can all play as the 'player'
@@ -241,9 +238,8 @@ class WebVr(DgtIface):
     """Handle the web (clock) communication."""
 
     def __init__(self, shared, dgtboard: EBoard, loop: asyncio.AbstractEventLoop):
-        super(WebVr, self).__init__(dgtboard)
+        super(WebVr, self).__init__(dgtboard, loop)
         self.shared = shared
-        self.loop: asyncio.AbstractEventLoop = loop  # this is the main loop
         # virtual_timer is a web clock updater, loop is started in parent
         self.virtual_timer = AsyncRepeatingTimer(1, self._runclock, self.loop)
         self.enable_dgtpi = dgtboard.is_pi

@@ -16,16 +16,13 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import queue
-from threading import Timer, Thread, Lock
+from threading import Timer, Lock
 from copy import deepcopy
 from typing import Dict, Set
 
 from utilities import DisplayDgt, DispatchDgt, dispatch_queue
 from dgt.api import Dgt, DgtApi
 from dgt.menu import DgtMenu
-import asyncio
-from constants import FLOAT_MSG_WAIT
 
 
 logger = logging.getLogger(__name__)

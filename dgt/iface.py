@@ -16,8 +16,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import queue
-from threading import Thread
 
 from chess import Board  # type: ignore
 from utilities import DisplayDgt
@@ -26,7 +24,6 @@ from dgt.api import Dgt
 from eboard.eboard import EBoard
 from dgt.board import Rev2Info
 import asyncio
-from constants import FLOAT_MSG_WAIT
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +32,8 @@ class DgtIface(DisplayDgt):
 
     """An Interface class for DgtHw, DgtPi, DgtVr."""
 
-    def __init__(self, dgtboard: EBoard):
-        super(DgtIface, self).__init__()
+    def __init__(self, dgtboard: EBoard, loop: asyncio.AbstractEventLoop):
+        super(DgtIface, self).__init__(loop)
 
         self.dgtboard = dgtboard
 
@@ -184,18 +181,12 @@ class DgtIface(DisplayDgt):
         logger.debug('(%s) handle DgtApi: %s ended', ','.join(message.devs), message)
         return self.case_res
 
-    def _create_task(self, msg):
-        res = self._process_message(msg)
-        if not res:
-            logger.warning('DgtApi command %s failed result: %s', msg, res)
 
-    async def message_to_task(self):
+    async def dgt_consumer(self):
         """ Message task consumer for WebVr messages """
         logger.info('[%s] dgt_queue ready', self.get_name())
         while True:
-            # Check if we have something to display
-            try:
-                message = self.dgt_queue.get_nowait()
-                self._create_task(message)
-            except queue.Empty:
-                await asyncio.sleep(FLOAT_MSG_WAIT)
+            message = await self.dgt_queue.get()
+            res = await self._process_message(message)
+            if not res:
+                logger.warning('DgtApi command %s failed result: %s', message, res)

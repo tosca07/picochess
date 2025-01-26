@@ -15,12 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import threading
 import base64
 import datetime
 import logging
 import os
-import queue
 import dgt.util
 import mimetypes
 import requests
@@ -40,7 +38,6 @@ from utilities import DisplayMsg
 from dgt.api import Dgt, Message
 from dgt.util import PlayMode, Mode, TimeMode
 import asyncio
-from constants import FLOAT_MSG_WAIT
 
 logger = logging.getLogger(__name__)
 

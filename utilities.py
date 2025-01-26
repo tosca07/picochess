@@ -16,7 +16,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import queue
 import os
 import platform
 import urllib.request
@@ -28,7 +27,6 @@ import configparser
 import subprocess
 import asyncio
 
-from threading import Timer
 from subprocess import Popen, PIPE
 
 from dgt.translate import DgtTranslate
@@ -115,8 +113,8 @@ class DisplayMsg(object):
     def __init__(self, loop: asyncio.AbstractEventLoop):
         super(DisplayMsg, self).__init__()
         self.msg_queue = asyncio.Queue()
+        self.loop = loop  # everyone to use main loop
         msgdisplay_devices.append(self)
-        self.loop: asyncio.AbstractEventLoop = loop  # everyone to use main loop
 
     async def _add_to_queue(self, message):
         """Put an event on the Queue."""
@@ -126,7 +124,7 @@ class DisplayMsg(object):
 
     def add_to_queue_sync(self, message):
         """Put an event on the Queue."""
-        asyncio.run_coroutine_threadsafe(self._add_to_queue(copy.deepcopy(message)), self.loop)
+        asyncio.run_coroutine_threadsafe(self._add_to_queue(message), self.loop)
 
     @staticmethod
     def show(message):
@@ -139,16 +137,27 @@ class DisplayDgt(object):
 
     """Display devices (DGT XL clock, Piface LCD, pgn file...)."""
 
-    def __init__(self):
+    def __init__(self, loop: asyncio.AbstractEventLoop):
         super(DisplayDgt, self).__init__()
-        self.dgt_queue = queue.Queue()
+        self.dgt_queue = asyncio.Queue()
+        self.loop = loop  # everyone to use main loop
         dgtdisplay_devices.append(self)
+
+    async def _add_to_queue(self, message):
+        """Put an event on the Queue."""
+        await self.dgt_queue.put(message)
+
+    # @todo: code below is temporary until also this show can be async
+
+    def add_to_queue_sync(self, message):
+        """Put an event on the Queue."""
+        asyncio.run_coroutine_threadsafe(self._add_to_queue(message), self.loop)
 
     @staticmethod
     def show(message):
         """Send a message on each display device."""
         for display in dgtdisplay_devices:
-            display.dgt_queue.put(copy.deepcopy(message))
+            display.add_to_queue_sync(copy.deepcopy(message))
 
 
 class AsyncRepeatingTimer:

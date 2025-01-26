@@ -19,10 +19,8 @@
 # To install sox use:
 # sudo apt install sox
 
-import threading
 import logging
 import subprocess
-import queue
 from pathlib import Path
 from shutil import which
 from random import randint
@@ -34,7 +32,6 @@ import chess  # type: ignore
 from utilities import DisplayMsg
 from dgt.api import Message
 from dgt.util import GameResult, PlayMode, Voice, EBoard
-from constants import FLOAT_MSG_WAIT
 
 logger = logging.getLogger(__name__)
 
