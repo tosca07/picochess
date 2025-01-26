@@ -90,7 +90,7 @@ class PicoTalker(object):
         return result
 
 
-class PicoTalkerDisplay(DisplayMsg, threading.Thread):
+class PicoTalkerDisplay(DisplayMsg):
 
     """Listen on messages for talking."""
 
@@ -123,6 +123,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         sample_beeper: bool,
         sample_beeper_level: int,
         eboard_type: EBoard,
+        loop: asyncio.AbstractEventLoop,
     ):
         """
         Initialize a PicoTalkerDisplay with voices for the user and/or computer players.
@@ -130,7 +131,7 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         :param user_voice: The voice to use for the user (eg. en:al).
         :param computer_voice: The voice to use for the computer (eg. en:christina).
         """
-        super(PicoTalkerDisplay, self).__init__()
+        super(PicoTalkerDisplay, self).__init__(loop)
         self.user_picotalker = None
         self.computer_picotalker = None
         self.beeper_picotalker = None
@@ -561,21 +562,14 @@ class PicoTalkerDisplay(DisplayMsg, threading.Thread):
         logger.debug("molli: talker voice_parts = %s", voice_parts)
         return voice_parts
 
-    def run(self):
-        """Start listening for Messages on our queue and generate speech as appropriate."""
-        asyncio.run(self.consume_picotalk_messages())
 
-
-    async def consume_picotalk_messages(self):
+    async def message_consumer(self):
         """ consume Picotalker messages """
         logger.info("picotalker msg_queue ready")
         while True:
-            try:
-                # Check if we have something to say
-                message = self.msg_queue.get_nowait()
-                self.process_picotalker_messages(message)
-            except queue.Empty:
-                await asyncio.sleep(FLOAT_MSG_WAIT)
+            # Check if we have something to say
+            message = await self.msg_queue.get()
+            self.process_picotalker_messages(message)
 
 
     def process_picotalker_messages(self, message):

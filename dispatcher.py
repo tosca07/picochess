@@ -154,17 +154,14 @@ class Dispatcher(DispatchDgt):
             self.dgtmenu.disable_picochess_displayed(dev)
 
 
-    async def process_dispatch_queue(self):
+    async def dispatch_consumer(self):
         """ Consume the dispatch event queue """
         logger.info('dispatch_queue ready')
         while True:
             # Check if we have something to display
             msg = await dispatch_queue.get()
-            try:
-                logger.debug('received command from dispatch_queue: %s devs: %s', msg, ','.join(msg.devs))
-                self.process_dispatch_message(msg)
-            except AttributeError:
-                logger.debug('incorrect message to DispatchDgt.fire(): %s', msg)
+            logger.debug('received command from dispatch_queue: %s devs: %s', msg, ','.join(msg.devs))
+            self.process_dispatch_message(msg)
 
 
     def process_dispatch_message(self, message):

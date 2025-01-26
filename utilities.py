@@ -76,6 +76,8 @@ class Observable(object):
         await evt_queue.put(event)
 
     # @todo a sync fire method needed by menu.py at least for now
+    # Observable fire is by default async, DispatchDgt and others are still sync
+
     @staticmethod
     def fire_sync(event):
         """Put an event on the Queue."""
@@ -110,16 +112,27 @@ class DisplayMsg(object):
 
     """Display devices (DGT XL clock, Piface LCD, pgn file...)."""
 
-    def __init__(self):
+    def __init__(self, loop: asyncio.AbstractEventLoop):
         super(DisplayMsg, self).__init__()
-        self.msg_queue = queue.Queue()
+        self.msg_queue = asyncio.Queue()
         msgdisplay_devices.append(self)
+        self.loop: asyncio.AbstractEventLoop = loop  # everyone to use main loop
+
+    async def _add_to_queue(self, message):
+        """Put an event on the Queue."""
+        await self.msg_queue.put(message)
+
+    # @todo: code below is temporary until also this show can be async
+
+    def add_to_queue_sync(self, message):
+        """Put an event on the Queue."""
+        asyncio.run_coroutine_threadsafe(self._add_to_queue(copy.deepcopy(message)), self.loop)
 
     @staticmethod
     def show(message):
         """Send a message on each display device."""
         for display in msgdisplay_devices:
-            display.msg_queue.put(copy.deepcopy(message))
+            display.add_to_queue_sync(copy.deepcopy(message))
 
 
 class DisplayDgt(object):

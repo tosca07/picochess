@@ -39,12 +39,12 @@ from constants import FLOAT_MSG_WAIT
 logger = logging.getLogger(__name__)
 
 
-class DgtDisplay(DisplayMsg, threading.Thread):
+class DgtDisplay(DisplayMsg):
 
     """Dispatcher for Messages towards DGT hardware or back to the event system (picochess)."""
 
-    def __init__(self, dgttranslate: DgtTranslate, dgtmenu: DgtMenu, time_control: TimeControl):
-        super(DgtDisplay, self).__init__()
+    def __init__(self, dgttranslate: DgtTranslate, dgtmenu: DgtMenu, time_control: TimeControl, loop: asyncio.AbstractEventLoop):
+        super(DgtDisplay, self).__init__(loop)
         self.dgttranslate = dgttranslate
         self.dgtmenu = dgtmenu
         self.time_control = time_control
@@ -65,10 +65,8 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         self.low_time = False
         self.c_last_player = ""
         self.c_time_counter = 0
-        self.loop = asyncio.new_event_loop()  # thread needs loop
         self._task = None  # task for message consumer
         self.timer = AsyncRepeatingTimer(1, self._process_once_per_second, loop=self.loop)
-        self.timer.start()
 
     def _convert_pico_string(self, pico_string):
         # print routine for longer text output like opening name, comments
@@ -1642,22 +1640,12 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         else:  # Default
             pass
 
-    def run(self):
-        """Call by threading.Thread start() function."""
-        asyncio.set_event_loop(self.loop)
-        self._task = self.loop.create_task(self.consume_message_queue())
-        self.loop.run_forever()
-
-
-    async def consume_message_queue(self):
+    async def message_consumer(self):
         """ DgtDisplay message consumer """
         logger.info("DgtDisplay msg_queue ready")
         while True:
             # Check if we have something to display
-            try:
-                message = self.msg_queue.get_nowait()
-                if not isinstance(message, Message.DGT_SERIAL_NR):
-                    logger.debug("received message from msg_queue: %s", message)
-                await self._process_message(message)
-            except queue.Empty:
-                await asyncio.sleep(FLOAT_MSG_WAIT)
+            message = await self.msg_queue.get()
+            if not isinstance(message, Message.DGT_SERIAL_NR):
+                logger.debug("received message from msg_queue: %s", message)
+            await self._process_message(message)

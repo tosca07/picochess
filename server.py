@@ -444,9 +444,8 @@ class WebDisplay(DisplayMsg):
     engine_name = "Picochess"
 
     def __init__(self, shared: dict, loop: asyncio.AbstractEventLoop):
-        super(WebDisplay, self).__init__()
+        super(WebDisplay, self).__init__(loop)
         self.shared = shared
-        self.loop: asyncio.AbstractEventLoop = loop  # main loop
         self._task = None  # task for message consumer
         self.starttime = datetime.datetime.now().strftime("%H:%M:%S")
 
@@ -549,7 +548,7 @@ class WebDisplay(DisplayMsg):
 
         pgn_game.headers["Time"] = self.starttime
 
-    async def task(self, message):
+    def task(self, message):
         """ Message task consumer for WebDisplay messages """
         def _oldstyle_fen(game: chess.Board):
             builder = []
@@ -593,7 +592,6 @@ class WebDisplay(DisplayMsg):
             except IndexError:
                 return chess.Move.null().uci()
 
-        await asyncio.sleep(0.05) # fake wait to make this a coroutine
         if False:  # switch-case
             pass
         elif isinstance(message, Message.START_NEW_GAME):
@@ -833,18 +831,9 @@ class WebDisplay(DisplayMsg):
         else:  # Default
             pass
 
-    def _create_task(self, msg):
-        # put callback to be executed by main event loop
-        self.loop.create_task(self.task(msg))
-
-
-    async def message_to_task(self):
+    async def message_consumer(self):
         """ Message task consumer for WebDisplay messages """
         logger.info("msg_queue ready")
         while True:
-            # Check if we have something to display
-            try:
-                message = self.msg_queue.get_nowait()
-                self._create_task(message)
-            except queue.Empty:
-                await asyncio.sleep(FLOAT_MSG_WAIT)
+            message = await self.msg_queue.get()
+            self.task(message)

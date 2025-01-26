@@ -306,12 +306,12 @@ class Emailer(object):
                 self._use_smtp(subject=subject, body=body, path=path)
 
 
-class PgnDisplay(DisplayMsg, threading.Thread):
+class PgnDisplay(DisplayMsg):
 
     """Deal with DisplayMessages related to pgn."""
 
-    def __init__(self, file_name: str, emailer: Emailer):
-        super(PgnDisplay, self).__init__()
+    def __init__(self, file_name: str, emailer: Emailer, loop: asyncio.AbstractEventLoop):
+        super(PgnDisplay, self).__init__(loop)
         self.file_name = file_name
         self.last_file_name = "games" + os.sep + "last_game.pgn"
         self.emailer = emailer
@@ -642,17 +642,10 @@ class PgnDisplay(DisplayMsg, threading.Thread):
             if message.game.move_stack:
                 self._save_pgn(message)
 
-    def run(self):
-        """Call by threading.Thread start() function."""
-        asyncio.run(self.consume_messages())
-
-    async def consume_messages(self):
+    async def message_consumer(self):
         """ PGN message consumer """
         logger.info("msg_queue ready")
         while True:
             # Check if we have something to display
-            try:
-                message = self.msg_queue.get_nowait()
-                self._process_message(message)
-            except queue.Empty:
-                await asyncio.sleep(FLOAT_MSG_WAIT)
+            message = await self.msg_queue.get()
+            self._process_message(message)

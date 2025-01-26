@@ -640,6 +640,9 @@ async def main() -> None:
     # Use asyncio's event loop as the Tornado IOLoop
     AsyncIOMainLoop().install()
     main_loop = asyncio.get_event_loop()
+    # the following calls could be done with one but in the future
+    # main loop is hopefully not global in utilities.py
+    # use main loop everywhere...
     DispatchDgt.set_main_loop(main_loop)
     Observable.set_main_loop(main_loop)
     state = PicochessState()
@@ -767,7 +770,8 @@ async def main() -> None:
     time_text.beep = False
 
     # The class dgtDisplay fires Event (Observable) & DispatchDgt (Dispatcher)
-    DgtDisplay(state.dgttranslate, state.dgtmenu, state.time_control).start()
+    my_dgt_display = DgtDisplay(state.dgttranslate, state.dgtmenu, state.time_control, main_loop)
+    my_dgt_display_task = asyncio.create_task(my_dgt_display.message_consumer())
 
     ModeInfo.set_clock_side(args.clockside)
 
@@ -799,9 +803,10 @@ async def main() -> None:
         sample_beeper,
         sample_beeper_level,
         board_type,
+        main_loop
     )
 
-    pico_talker.start()
+    pico_talker_task = asyncio.create_task(pico_talker.message_consumer())
 
     # Launch web server
     if args.web_server_port:
@@ -813,9 +818,9 @@ async def main() -> None:
         # moved starting WebDisplayt and WebVr here so that they are in same main loop
         logger.info("web server starting - initializing message queues")
         my_web_display = WebDisplay(shared, main_loop)
-        my_web_task = asyncio.create_task(my_web_display.message_to_task())
+        my_web_display_task = asyncio.create_task(my_web_display.message_consumer())
         my_web_vr = WebVr(shared, dgtboard, main_loop)
-        my_vr_task = asyncio.create_task(my_web_vr.message_to_task())
+        my_web_vr_task = asyncio.create_task(my_web_vr.message_to_task())
         logger.info("message queues ready - web server ready")
 
         dgtdispatcher.register("web")
@@ -835,7 +840,7 @@ async def main() -> None:
         dgtdispatcher.register("ser")
 
     # The class Dispatcher sends DgtApi messages at the correct (delayed) time out
-    my_dispatcher_task = asyncio.create_task(dgtdispatcher.process_dispatch_queue())
+    my_dispatcher_task = asyncio.create_task(dgtdispatcher.dispatch_consumer())
 
     # Save to PGN
     emailer = Emailer(email=args.email, mailgun_key=args.mailgun_key)
@@ -847,7 +852,8 @@ async def main() -> None:
         sfrom=args.smtp_from,
     )
 
-    PgnDisplay("games" + os.sep + args.pgn_file, emailer).start()
+    my_pgn_display = PgnDisplay("games" + os.sep + args.pgn_file, emailer, main_loop)
+    my_pgn_display_task = asyncio.create_task(my_pgn_display.message_consumer())
 
     # Update
     if args.enable_update:
@@ -2827,7 +2833,6 @@ async def main() -> None:
         def start(self):
             """ start the main loop with its message consumer """
             self._task = self.loop.create_task(self.event_consumer())
-            #self._task = asyncio.create_task(self.event_consumer())
 
 
         async def _pv_score_depth_analyser(self):
