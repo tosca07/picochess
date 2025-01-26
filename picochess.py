@@ -100,7 +100,7 @@ from utilities import (
     hms_time,
     get_engine_mame_par,
 )
-from utilities import AsyncRepeatingTimer
+from utilities import AsyncRepeatingTimer, DispatchDgt
 from pgn import Emailer, PgnDisplay, ModeInfo
 from server import WebDisplay, WebServer, WebVr
 from picotalker import PicoTalkerDisplay
@@ -640,6 +640,8 @@ async def main() -> None:
     # Use asyncio's event loop as the Tornado IOLoop
     AsyncIOMainLoop().install()
     main_loop = asyncio.get_event_loop()
+    DispatchDgt.set_main_loop(main_loop)
+    Observable.set_main_loop(main_loop)
     state = PicochessState()
     own_user = ""
     opp_user = ""
@@ -833,7 +835,7 @@ async def main() -> None:
         dgtdispatcher.register("ser")
 
     # The class Dispatcher sends DgtApi messages at the correct (delayed) time out
-    dgtdispatcher.start()
+    my_dispatcher_task = asyncio.create_task(dgtdispatcher.process_dispatch_queue())
 
     # Save to PGN
     emailer = Emailer(email=args.email, mailgun_key=args.mailgun_key)
@@ -1354,7 +1356,7 @@ async def main() -> None:
                 if self.state.interaction_mode in (Mode.BRAIN, Mode.ANALYSIS, Mode.KIBITZ, Mode.PONDER,
                                             Mode.TRAINING, Mode.OBSERVE, Mode.REMOTE):
                     DisplayMsg.show(msg)
-                    self.analyse(self.state.game)
+                    await self.analyse(self.state.game)
                     return
             if not self.state.reset_auto:
                 if self.state.automatic_takeback:
@@ -2175,7 +2177,7 @@ async def main() -> None:
                     if game_end:
                         DisplayMsg.show(game_end)
                     else:
-                        self.observe(self.state.game)
+                        await self.observe(self.state.game)
                 elif self.state.interaction_mode == Mode.OBSERVE:
                     msg = Message.REVIEW_MOVE_DONE(
                         move=move, fen=fen, turn=turn, game=self.state.game.copy()
@@ -2186,7 +2188,7 @@ async def main() -> None:
                         DisplayMsg.show(game_end)
                     else:
                         DisplayMsg.show(msg)
-                        self.observe(self.state.game)
+                        await self.observe(self.state.game)
                 else:  # self.state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.PONDER):
                     msg = Message.REVIEW_MOVE_DONE(
                         move=move, fen=fen, turn=turn, game=self.state.game.copy()
@@ -2197,7 +2199,7 @@ async def main() -> None:
                         DisplayMsg.show(game_end)
                     else:
                         DisplayMsg.show(msg)
-                        self.analyse(self.state.game)
+                        await self.analyse(self.state.game)
 
                 if (
                     self.picotutor_mode()
@@ -2225,9 +2227,9 @@ async def main() -> None:
                             await asyncio.sleep(0.7)
                 self.state.takeback_active = False
 
-        def observe(self, game: chess.Board) -> chess.engine.InfoDict | None:
+        async def observe(self, game: chess.Board) -> chess.engine.InfoDict | None:
             """Start a new ponder search on the current game."""
-            info = self.analyse(game)
+            info = await self.analyse(game)
             self.state.start_clock()
             return info
 
@@ -2297,7 +2299,7 @@ async def main() -> None:
                 )
 
 
-        def analyse(self, game: chess.Board) -> chess.engine.InfoDict | None:
+        async def analyse(self, game: chess.Board) -> chess.engine.InfoDict | None:
             """ analyse, observe etc depening on mode - create analysis info """
             # it will work to get a short hint move also when not pondering
             info: InfoDict | None = None
@@ -2329,7 +2331,7 @@ async def main() -> None:
                                 self.debug_pv_info(info)
                             info: InfoDict = info_list[0] # pv first
             if info:
-                self.send_analyse(info, engine_playing_moves)
+                await self.send_analyse(info, engine_playing_moves)
             return info
 
 
@@ -2416,7 +2418,7 @@ async def main() -> None:
                                 Message.START_NEW_GAME(game=self.state.game.copy(), newgame=False), state
                             )
                             await self.stop_search_and_clock()
-                            self.analyse(copy.deepcopy(self.state.game))
+                            await self.analyse(copy.deepcopy(self.state.game))
                         else:
                             # ask python-chess to correct the castling string
                             bit_board = chess.Board(fen2)
@@ -2438,7 +2440,7 @@ async def main() -> None:
                                     self.state,
                                 )
                                 await self.stop_search_and_clock()
-                                self.analyse(copy.deepcopy(self.state.game))
+                                await self.analyse(copy.deepcopy(self.state.game))
                             else:
                                 logger.info("wrong fen %s for 4 secs", self.state.error_fen)
                                 DisplayMsg.show(Message.WRONG_FEN())
@@ -2828,14 +2830,14 @@ async def main() -> None:
             #self._task = asyncio.create_task(self.event_consumer())
 
 
-        def _pv_score_depth_analyser(self):
+        async def _pv_score_depth_analyser(self):
             """ Analyse PV score depth """
             if self.state.game.fullmove_number > 1:
                 # @todo find a way to skip background analysis
                 # while we are doing inbook
                 user_to_move = self.state.is_user_turn()
                 if user_to_move or self.state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
-                    self.analyse(self.state.game)
+                    await self.analyse(self.state.game)
 
         async def event_consumer(self):
             """ Event consumer for main """
@@ -3710,7 +3712,7 @@ async def main() -> None:
                         self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
                         self.state.legal_fens_after_cmove = []
                         self.state.last_legal_fens = []
-                        self.analyse(copy.deepcopy(self.state.game))
+                        await self.analyse(copy.deepcopy(self.state.game))
                         self.state.play_mode = (
                             PlayMode.USER_WHITE
                             if self.state.game.turn == chess.WHITE

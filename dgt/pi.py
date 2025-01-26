@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import asyncio
 import logging
 import time
 from threading import Lock, Timer, Thread
@@ -51,11 +52,13 @@ class DgtPi(DgtIface, Thread):
         self._startup_i2c_clock()
         incoming_clock_thread = Timer(0, self._process_incoming_clock_forever)
         incoming_clock_thread.start()
+        self.loop = None
 
     def run(self):
         """Call by threading.Thread start() function."""
-        # @todo probably need to do something here
-        pass
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_forever()
 
     def _startup_i2c_clock(self):
         while self.lib.dgtpicom_init() < 0:

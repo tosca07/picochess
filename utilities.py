@@ -45,7 +45,8 @@ version = '4.0.3'
 logger = logging.getLogger(__name__)
 
 evt_queue: asyncio.Queue = asyncio.Queue()
-dispatch_queue: queue.Queue = queue.Queue()
+dispatch_queue: asyncio.Queue = asyncio.Queue()
+main_loop: asyncio.AbstractEventLoop
 
 msgdisplay_devices = []
 dgtdisplay_devices = []
@@ -59,11 +60,26 @@ class Observable(object):
         super(Observable, self).__init__()
 
     @staticmethod
+    def set_main_loop(loop: asyncio.AbstractEventLoop):
+        global main_loop
+        main_loop = loop
+
+    @staticmethod
     async def fire(event):
         """Put an event on the Queue."""
-        await evt_queue.put(copy.deepcopy(event))
+        await Observable._add_to_queue(event)
         logger.debug("put in evt_queue done")
 
+    @staticmethod
+    async def _add_to_queue(event):
+        """Put an event on the Queue."""
+        await evt_queue.put(event)
+
+    # @todo a sync fire method needed by menu.py at least for now
+    @staticmethod
+    def fire_sync(event):
+        """Put an event on the Queue."""
+        asyncio.run_coroutine_threadsafe(Observable._add_to_queue(copy.deepcopy(event)), main_loop)
 
 class DispatchDgt(object):
 
@@ -73,9 +89,21 @@ class DispatchDgt(object):
         super(DispatchDgt, self).__init__()
 
     @staticmethod
+    def set_main_loop(loop: asyncio.AbstractEventLoop):
+        global main_loop
+        main_loop = loop
+
+    @staticmethod
+    async def _add_to_queue(dgt):
+        """Put an event on the Queue."""
+        await dispatch_queue.put(dgt)
+
+    # @todo: code above and below is temporary until also this fire can be async
+
+    @staticmethod
     def fire(dgt):
         """Put an event on the Queue."""
-        dispatch_queue.put(copy.deepcopy(dgt))
+        asyncio.run_coroutine_threadsafe(DispatchDgt._add_to_queue(copy.deepcopy(dgt)), main_loop)
 
 
 class DisplayMsg(object):

@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import asyncio
 import logging
 from threading import Lock, Thread
 from utilities import hms_time
@@ -36,11 +37,13 @@ class DgtHw(DgtIface, Thread):
         super(DgtHw, self).__init__(dgtboard)
 
         self.lib_lock = Lock()
+        self.loop = None
 
     def run(self):
         """Call by threading.Thread start() function."""
-        # @todo probably need to do something here
-        pass
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_forever()
 
     def _display_on_dgt_xl(
         self, text: str, beep=False, left_icons=ClockIcons.NONE, right_icons=ClockIcons.NONE

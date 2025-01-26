@@ -31,7 +31,7 @@ from constants import FLOAT_MSG_WAIT
 logger = logging.getLogger(__name__)
 
 
-class Dispatcher(DispatchDgt, Thread):
+class Dispatcher(DispatchDgt):
 
     """A dispatcher taking the dispatch_queue and fill dgt_queue with the commands in time."""
 
@@ -153,22 +153,18 @@ class Dispatcher(DispatchDgt, Thread):
             self.maxtimer_running[dev] = False
             self.dgtmenu.disable_picochess_displayed(dev)
 
-    def run(self):
-        """Call by threading.Thread start() function."""
-        asyncio.run(self.process_dispatch_queue())
-
 
     async def process_dispatch_queue(self):
         """ Consume the dispatch event queue """
         logger.info('dispatch_queue ready')
         while True:
             # Check if we have something to display
+            msg = await dispatch_queue.get()
             try:
-                msg = dispatch_queue.get_nowait()
                 logger.debug('received command from dispatch_queue: %s devs: %s', msg, ','.join(msg.devs))
-                self.process_dispatch_message(deepcopy(msg))
-            except queue.Empty:
-                await asyncio.sleep(FLOAT_MSG_WAIT)
+                self.process_dispatch_message(msg)
+            except AttributeError:
+                logger.debug('incorrect message to DispatchDgt.fire(): %s', msg)
 
 
     def process_dispatch_message(self, message):
