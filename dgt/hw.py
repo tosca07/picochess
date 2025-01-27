@@ -29,7 +29,7 @@ from pgn import ModeInfo
 logger = logging.getLogger(__name__)
 
 
-class DgtHw(DgtIface, Thread):
+class DgtHw(DgtIface):
 
     """Handle the DgtXL/3000 communication."""
 
@@ -37,11 +37,6 @@ class DgtHw(DgtIface, Thread):
         super(DgtHw, self).__init__(dgtboard, loop)
 
         self.lib_lock = Lock()
-
-    def run(self):
-        """Call by threading.Thread start() function."""
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
 
     def _display_on_dgt_xl(
         self, text: str, beep=False, left_icons=ClockIcons.NONE, right_icons=ClockIcons.NONE

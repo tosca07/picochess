@@ -33,7 +33,7 @@ from pgn import ModeInfo
 logger = logging.getLogger(__name__)
 
 
-class DgtPi(DgtIface, Thread):
+class DgtPi(DgtIface):
 
     """Handle the DgtPi communication."""
 
@@ -50,13 +50,6 @@ class DgtPi(DgtIface, Thread):
         self.in_settime = False  # this is true between set_clock and clock_start => use set values instead of clock
 
         self._startup_i2c_clock()
-        incoming_clock_thread = Timer(0, self._process_incoming_clock_forever)
-        incoming_clock_thread.start()
-
-    def run(self):
-        """Call by threading.Thread start() function."""
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
 
     def _startup_i2c_clock(self):
         while self.lib.dgtpicom_init() < 0:
@@ -68,7 +61,7 @@ class DgtPi(DgtIface, Thread):
             DisplayMsg.show(Message.DGT_JACK_CONNECTED_ERROR())
         DisplayMsg.show(Message.DGT_CLOCK_VERSION(main=2, sub=2, dev="i2c", text=None))
 
-    def _process_incoming_clock_forever(self):
+    async def process_incoming_clock_forever(self):
         but = c_byte(0)
         buttime = c_byte(0)
         clktime = create_string_buffer(6)
@@ -137,7 +130,7 @@ class DgtPi(DgtIface, Thread):
                     time_left=self.l_time, time_right=self.r_time, connect=True, dev="i2c"
                 )
                 DisplayMsg.show(text)
-            time.sleep(0.1)
+            await asyncio.sleep(0.1)
 
     def _run_configure(self):
         res = self.lib.dgtpicom_configure()
