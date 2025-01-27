@@ -831,13 +831,15 @@ async def main() -> None:
         logger.debug("starting PicoChess in board mode")
         if args.dgtpi:
             my_dgtpi = DgtPi(dgtboard, main_loop)
-            my_dgtpi_task = asyncio.create_task(my_dgtpi.process_incoming_clock_forever())
             dgtdispatcher.register("i2c")
+            my_dgtpi_task = asyncio.create_task(my_dgtpi.dgt_consumer())
+            my_dgtpi_task = asyncio.create_task(my_dgtpi.process_incoming_clock_forever())
         else:
             logger.debug("(ser) starting the board connection")
             dgtboard.run()  # a clock can only be online together with the board, so we must start it infront
         my_dgthw = DgtHw(dgtboard, main_loop)
         dgtdispatcher.register("ser")
+        my_dgthw_task = asyncio.create_task(my_dgthw.dgt_consumer())
 
     # The class Dispatcher sends DgtApi messages at the correct (delayed) time out
     my_dispatcher_task = asyncio.create_task(dgtdispatcher.dispatch_consumer())
