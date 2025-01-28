@@ -21,7 +21,6 @@ from pgn import ModeInfo
 import logging
 import copy
 import subprocess
-import time
 import asyncio
 import chess  # type: ignore
 from utilities import DisplayMsg, Observable, DispatchDgt, AsyncRepeatingTimer, write_picochess_ini
@@ -1158,16 +1157,16 @@ class DgtDisplay(DisplayMsg):
                         )
                         DispatchDgt.fire(text)
                         if self.c_time_counter == 2 * self.dgtmenu.get_ponderinterval():
-                            time.sleep(0.3)
+                            await asyncio.sleep(0.3)
                     else:
                         if self.c_time_counter == 0:
-                            time.sleep(0.3)
+                            await asyncio.sleep(0.3)
                         self.c_time_counter = (self.c_time_counter + 1) % (
                             self.dgtmenu.get_ponderinterval() * 3
                         )
                         self._exit_display()
                         if self.c_time_counter == self.dgtmenu.get_ponderinterval():
-                            time.sleep(0.3)
+                            await asyncio.sleep(0.3)
 
     def _drawresign(self):
         _, _, _, rnk_5, rnk_4, _, _, _ = self.dgtmenu.get_dgt_fen().split("/")
@@ -1328,7 +1327,7 @@ class DgtDisplay(DisplayMsg):
                 text.beep = self.dgttranslate.bl(BeepLevel.CONFIG)
                 text.maxtime = 1
                 DispatchDgt.fire(text)
-                time.sleep(1)
+                await asyncio.sleep(1)
                 if self.dgtmenu.get_mode() in (Mode.PONDER, Mode.TRAINING):
                     self._reset_moves_and_score()
                     text.beep = False
@@ -1473,7 +1472,7 @@ class DgtDisplay(DisplayMsg):
 
         elif isinstance(message, Message.WRONG_FEN):
             DispatchDgt.fire(self.dgttranslate.text("C10_setpieces"))
-            time.sleep(1)
+            await asyncio.sleep(1)
 
         elif isinstance(message, Message.UPDATE_PICO):
             DispatchDgt.fire(self.dgttranslate.text("Y00_update"))
@@ -1495,7 +1494,7 @@ class DgtDisplay(DisplayMsg):
 
         elif isinstance(message, Message.ENGINE_NAME):
             DispatchDgt.fire(self.dgttranslate.text("K20_enginename", message.engine_name))
-            time.sleep(1.5)
+            await asyncio.sleep(1.5)
 
         elif isinstance(message, Message.SHOW_TEXT):
             string_part = ""
@@ -1503,16 +1502,16 @@ class DgtDisplay(DisplayMsg):
                 DispatchDgt.fire(self.dgttranslate.text(message.text_string))
             elif message.text_string == "NO_ARTWORK":
                 DispatchDgt.fire(self.dgttranslate.text("K20_no_artwork"))
-                time.sleep(2)
+                await asyncio.sleep(2)
             elif message.text_string == "NEW_POSITION":
                 DispatchDgt.fire(self.dgttranslate.text("K20_newposition"))
-                time.sleep(1.5)
+                await asyncio.sleep(1.5)
             elif message.text_string == "NEW_POSITION_SCAN":
-                time.sleep(0.5)
+                await asyncio.sleep(0.5)
             else:
                 for string_part in self._convert_pico_string(message.text_string):
                     DispatchDgt.fire(self.dgttranslate.text("K20_default", string_part))
-                    time.sleep(1.5)
+                    await asyncio.sleep(1.5)
 
         elif isinstance(message, Message.SEEKING):
             DispatchDgt.fire(self.dgttranslate.text("C10_seeking"))
@@ -1567,7 +1566,7 @@ class DgtDisplay(DisplayMsg):
             DispatchDgt.fire(self.dgttranslate.text("C10_position_fail", message.fen_result))
             DispatchDgt.fire(Dgt.LIGHT_SQUARE(square=message.fen_result[-2:], devs={"ser", "web"}))
             self.leds_are_on = True
-            time.sleep(3)
+            await asyncio.sleep(3)
 
         elif isinstance(message, Message.SHOW_ENGINENAME):
             pass
@@ -1602,13 +1601,13 @@ class DgtDisplay(DisplayMsg):
         elif isinstance(message, Message.TIMECONTROL_CHECK):
             msg_str = "TC"
             DispatchDgt.fire(self.dgttranslate.text("C10_timecontrol_check", msg_str))
-            time.sleep(2.5)
+            await asyncio.sleep(2.5)
             msg_str = "M" + str(message.movestogo) + "mv/" + str(message.time1)
             DispatchDgt.fire(self.dgttranslate.text("C10_timecontrol_check", msg_str))
-            time.sleep(3.5)
+            await asyncio.sleep(3.5)
             msg_str = "A" + str(message.time2) + "min"
             DispatchDgt.fire(self.dgttranslate.text("C10_timecontrol_check", msg_str))
-            time.sleep(3.5)
+            await asyncio.sleep(3.5)
 
         elif isinstance(message, Message.PGN_GAME_END):
             DispatchDgt.fire(self.dgttranslate.text("C10_pgngame_end", message.result))
@@ -1623,7 +1622,7 @@ class DgtDisplay(DisplayMsg):
                 text = self.dgttranslate.text("C10_gameresult_unknown")
             else:
                 text = self.dgttranslate.text("C10_gameresult_unknown")
-            time.sleep(1.5)
+            await asyncio.sleep(1.5)
 
             text.beep = self.dgttranslate.bl(BeepLevel.CONFIG)
             text.maxtime = 0.5
