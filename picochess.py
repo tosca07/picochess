@@ -68,7 +68,6 @@ import asyncio
 import paramiko
 import chess.pgn
 import chess.polyglot
-import chess.engine
 import dgt.util
 from tornado.platform.asyncio import AsyncIOMainLoop
 import chess.engine  # type: ignore
@@ -105,8 +104,7 @@ from server import WebDisplay, WebServer, WebVr
 from picotalker import PicoTalkerDisplay
 from dispatcher import Dispatcher
 
-from dgt.api import Dgt, Message, Event
-import dgt.util
+from dgt.api import Message, Event
 from dgt.util import GameResult, TimeMode, Mode, PlayMode, PicoComment, PicoCoach
 from dgt.hw import DgtHw
 from dgt.pi import DgtPi
@@ -770,7 +768,7 @@ async def main() -> None:
 
     # The class dgtDisplay fires Event (Observable) & DispatchDgt (Dispatcher)
     my_dgt_display = DgtDisplay(state.dgttranslate, state.dgtmenu, state.time_control, main_loop)
-    my_dgt_display_task = asyncio.create_task(my_dgt_display.message_consumer())
+    asyncio.create_task(my_dgt_display.message_consumer())
 
     ModeInfo.set_clock_side(args.clockside)
 
@@ -805,7 +803,7 @@ async def main() -> None:
         main_loop
     )
 
-    pico_talker_task = asyncio.create_task(pico_talker.message_consumer())
+    asyncio.create_task(pico_talker.message_consumer())
 
     # Launch web server
     if args.web_server_port:
@@ -817,9 +815,9 @@ async def main() -> None:
         # moved starting WebDisplayt and WebVr here so that they are in same main loop
         logger.info("web server starting - initializing message queues")
         my_web_display = WebDisplay(shared, main_loop)
-        my_web_display_task = asyncio.create_task(my_web_display.message_consumer())
+        asyncio.create_task(my_web_display.message_consumer())
         my_web_vr = WebVr(shared, dgtboard, main_loop)
-        my_web_vr_task = asyncio.create_task(my_web_vr.dgt_consumer())
+        asyncio.create_task(my_web_vr.dgt_consumer())
         logger.info("message queues ready - web server ready")
 
         dgtdispatcher.register("web")
@@ -832,17 +830,17 @@ async def main() -> None:
         if args.dgtpi:
             my_dgtpi = DgtPi(dgtboard, main_loop)
             dgtdispatcher.register("i2c")
-            my_dgtpi_task = asyncio.create_task(my_dgtpi.dgt_consumer())
-            my_dgtpi_task = asyncio.to_thread(asyncio.run, my_dgtpi.process_incoming_clock_forever())
+            asyncio.create_task(my_dgtpi.dgt_consumer())
+            asyncio.to_thread(asyncio.run, my_dgtpi.process_incoming_clock_forever())
         else:
             logger.debug("(ser) starting the board connection")
             dgtboard.run()  # a clock can only be online together with the board, so we must start it infront
         my_dgthw = DgtHw(dgtboard, main_loop)
         dgtdispatcher.register("ser")
-        my_dgthw_task = asyncio.create_task(my_dgthw.dgt_consumer())
+        asyncio.create_task(my_dgthw.dgt_consumer())
 
     # The class Dispatcher sends DgtApi messages at the correct (delayed) time out
-    my_dispatcher_task = asyncio.create_task(dgtdispatcher.dispatch_consumer())
+    asyncio.create_task(dgtdispatcher.dispatch_consumer())
 
     # Save to PGN
     emailer = Emailer(email=args.email, mailgun_key=args.mailgun_key)
@@ -855,7 +853,7 @@ async def main() -> None:
     )
 
     my_pgn_display = PgnDisplay("games" + os.sep + args.pgn_file, emailer, main_loop)
-    my_pgn_display_task = asyncio.create_task(my_pgn_display.message_consumer())
+    asyncio.create_task(my_pgn_display.message_consumer())
 
     # Update
     if args.enable_update:
@@ -869,7 +867,6 @@ async def main() -> None:
 
         def __init__(self, own_user, opp_user, game_time,
                      fischer_inc, login, state: PicochessState,
-                     time_text,
                      pico_talker: PicoTalkerDisplay,
                      dgtdispatcher: Dispatcher,
                      dgtboard: DgtBoard, board_type,
@@ -909,9 +906,21 @@ async def main() -> None:
             if self.state.engine_file is None:
                 self.state.engine_file = EngineProvider.installed_engines[0]["file"]
 
-        async def initialise(self):
-            """ Due to use of async some initialisation is moved here """
+            self.is_out_of_time_already = False  # molli: out of time message only once
+            self.all_books = get_opening_books()
+            try:
+                self.book_index = [book["file"] for book in self.all_books].index(args.book)
+            except ValueError:
+                logger.warning("selected book not present, defaulting to %s", self.all_books[7]["file"])
+                self.book_index = 7
+            self.state.book_in_use = self.args.book
+            self.bookreader = chess.polyglot.open_reader(self.all_books[self.book_index]["file"])
+            self.state.searchmoves = AlternativeMover()
             self.state.artwork_in_use = False
+
+
+        async def initialise(self, time_text):
+            """ Due to use of async some initialisation is moved here """
             if "/mame/" in self.state.engine_file and self.state.dgtmenu.get_engine_rdisplay():
                 await asyncio.sleep(20)
                 engine_file_art = self.state.engine_file + "_art"
@@ -941,20 +950,8 @@ async def main() -> None:
 
             # Startup - internal
             self.state.game = chess.Board()  # Create the current game
-            fen = self.state.game.fen()
             self.state.legal_fens = await compute_legal_fens(self.state.game.copy())  # Compute the legal FENs
-            self.is_out_of_time_already = False  # molli: out of time message only once
             self.state.flag_startup = True
-
-            all_books = get_opening_books()
-            try:
-                book_index = [book["file"] for book in all_books].index(args.book)
-            except ValueError:
-                logger.warning("selected book not present, defaulting to %s", all_books[7]["file"])
-                book_index = 7
-            self.state.book_in_use = self.args.book
-            self.bookreader = chess.polyglot.open_reader(all_books[book_index]["file"])
-            self.state.searchmoves = AlternativeMover()
 
             if self.args.pgn_elo and self.args.pgn_elo.isnumeric() and self.args.rating_deviation:
                 self.state.rating = Rating(float(args.pgn_elo), float(args.rating_deviation))
@@ -1013,8 +1010,8 @@ async def main() -> None:
                     info={
                         "interaction_mode": self.state.interaction_mode,
                         "play_mode": self.state.play_mode,
-                        "books": all_books,
-                        "book_index": book_index,
+                        "books": self.all_books,
+                        "book_index": self.book_index,
                         "level_text": level_text,
                         "level_name": self.state.engine_level,
                         "tc_init": self.state.time_control.get_parameters(),
@@ -2830,11 +2827,6 @@ async def main() -> None:
                 return True
             else:
                 return False
-
-
-        def start(self):
-            """ start the main loop with its message consumer """
-            self._task = self.loop.create_task(self.event_consumer())
 
 
         async def _pv_score_depth_analyser(self):
@@ -4853,15 +4845,14 @@ async def main() -> None:
 
 
     my_main = MainLoop(own_user, opp_user, game_time,
-                       fischer_inc, login, state,
-                       time_text,
+                       fischer_inc, login, state,                       
                        pico_talker, dgtdispatcher,
                        dgtboard, board_type,
                        main_loop, args)
 
-    await my_main.initialise()
-    my_main.start()  # start main message loop
-    await asyncio.gather(my_main._task)
+    await my_main.initialise(time_text)
+    main_task = main_loop.create_task(my_main.event_consumer())  # start main message loop
+    await asyncio.gather(main_task)
     await asyncio.Event().wait()  # wait forever
 
 
