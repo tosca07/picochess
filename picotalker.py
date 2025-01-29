@@ -566,7 +566,7 @@ class PicoTalkerDisplay(DisplayMsg):
         while True:
             # Check if we have something to say
             message = await self.msg_queue.get()
-            await asyncio.sleep(0.1) # give other tasks a priority
+            await asyncio.sleep(0.15) # give other tasks a priority
             self.process_picotalker_messages(message)
 
 

@@ -266,9 +266,8 @@ class PicochessState:
                         turn=self.game.turn, tc_init=tc_init, devs={"ser", "i2c", "web"}
                     )
                 )
-                time.sleep(
-                    0.5
-                )  # @todo give some time to clock to really do it. Find a better solution!
+                # removed sync sleep
+                # @todo give some time to clock to really do it. Check this solution!
         else:
             logger.warning("wrong function call [start]! mode: %s", self.interaction_mode)
 
@@ -286,9 +285,8 @@ class PicochessState:
                 pass
             else:
                 DisplayMsg.show(Message.CLOCK_STOP(devs={"ser", "i2c", "web"}))
-                time.sleep(
-                    0.7
-                )  # @todo give some time to clock to really do it. Find a better solution!
+                # removed sync sleep
+                # @todo give some time to clock to really do it. Check this solution!
         else:
             logger.warning("wrong function call [stop]! mode: %s", self.interaction_mode)
 

@@ -258,7 +258,7 @@ class WebVr(DgtIface):
     async def _runclock(self):
         """ callback from AsyncRepeatingTimer once every second """
         # this is probably only to show a running web clock
-        # the real clock measurement timecontrol is not here?
+        # the clock time is handled by TimeControl class
         if self.side_running == ClockSide.LEFT:
             time_left = self.l_time - 1
             if time_left <= 0:

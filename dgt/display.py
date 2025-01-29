@@ -795,7 +795,7 @@ class DgtDisplay(DisplayMsg):
         self.leds_are_on = False
         DispatchDgt.fire(Dgt.LIGHT_CLEAR(devs={"ser", "web"}))
 
-    async def _process_start_new_game(self, message):
+    def _process_start_new_game(self, message):
         self.c_time_counter = 0
         self.c_last_player = ""
         self.force_leds_off()
@@ -822,7 +822,7 @@ class DgtDisplay(DisplayMsg):
         ):
             self._set_clock()
 
-    async def _process_computer_move(self, message):
+    def _process_computer_move(self, message):
         self.last_pos_start = False
         self.force_leds_off(log=True)  # can happen in case of a book move
         move = message.move
@@ -878,7 +878,7 @@ class DgtDisplay(DisplayMsg):
         ):  # only display if the user has >60sec on his clock
             DispatchDgt.fire(self.dgttranslate.text(text_key))
 
-    async def _process_computer_move_done(self):
+    def _process_computer_move_done(self):
         self.c_last_player = "C"
         self.c_time_counter = 0
         self.force_leds_off()
@@ -904,7 +904,7 @@ class DgtDisplay(DisplayMsg):
         else:
             self._display_confirm("K05_okpico")
 
-    async def _process_user_move_done(self, message):
+    def _process_user_move_done(self, message):
         self.last_pos_start = False
         self.force_leds_off(log=True)  # can happen in case of a sliding move
 
@@ -931,7 +931,7 @@ class DgtDisplay(DisplayMsg):
         else:
             self._display_confirm("K05_okuser")
 
-    async def _process_review_move_done(self, message):
+    def _process_review_move_done(self, message):
         self.force_leds_off(log=True)  # can happen in case of a sliding move
         self.last_move = message.move
         self.last_fen = message.fen
@@ -941,7 +941,7 @@ class DgtDisplay(DisplayMsg):
         self.c_last_player = ""
         self.c_time_counter = 0
 
-    async def _process_time_control(self, message):
+    def _process_time_control(self, message):
         wait = not self.dgtmenu.get_confirm() or not message.show_ok
         if wait:
             DispatchDgt.fire(message.time_text)
@@ -1073,7 +1073,7 @@ class DgtDisplay(DisplayMsg):
                 self.dgtmenu.tc_node_list.append(timectrl.get_list_text())
                 self.dgtmenu.set_time_node(index)
 
-    async def _process_clock_start(self, message):
+    def _process_clock_start(self, message):
         self.time_control = TimeControl(**message.tc_init)
         side = (
             ClockSide.LEFT
@@ -1231,19 +1231,19 @@ class DgtDisplay(DisplayMsg):
             DispatchDgt.fire(self.dgttranslate.text("Y10_erroreng"))
 
         elif isinstance(message, Message.COMPUTER_MOVE):
-            await self._process_computer_move(message)
+            self._process_computer_move(message)
 
         elif isinstance(message, Message.START_NEW_GAME):
-            await self._process_start_new_game(message)
+            self._process_start_new_game(message)
 
         elif isinstance(message, Message.COMPUTER_MOVE_DONE):
-            await self._process_computer_move_done()
+            self._process_computer_move_done()
 
         elif isinstance(message, Message.USER_MOVE_DONE):
-            await self._process_user_move_done(message)
+            self._process_user_move_done(message)
 
         elif isinstance(message, Message.REVIEW_MOVE_DONE):
-            await self._process_review_move_done(message)
+            self._process_review_move_done(message)
 
         elif isinstance(message, Message.ALTERNATIVE_MOVE):
             self.force_leds_off()
@@ -1256,7 +1256,7 @@ class DgtDisplay(DisplayMsg):
                 DispatchDgt.fire(message.level_text)
 
         elif isinstance(message, Message.TIME_CONTROL):
-            await self._process_time_control(message)
+            self._process_time_control(message)
 
         elif isinstance(message, Message.OPENING_BOOK):
             if not self.dgtmenu.get_confirm() or not message.show_ok:
@@ -1374,7 +1374,7 @@ class DgtDisplay(DisplayMsg):
             logger.debug("search stopped")
 
         elif isinstance(message, Message.CLOCK_START):
-            await self._process_clock_start(message)
+            self._process_clock_start(message)
 
         elif isinstance(message, Message.CLOCK_STOP):
             DispatchDgt.fire(Dgt.CLOCK_STOP(devs=message.devs, wait=True))

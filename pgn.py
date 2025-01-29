@@ -645,4 +645,5 @@ class PgnDisplay(DisplayMsg):
         while True:
             # Check if we have something to display
             message = await self.msg_queue.get()
+            await asyncio.sleep(0.2) # give other tasks a priority
             self._process_message(message)
