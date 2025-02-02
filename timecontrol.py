@@ -161,7 +161,7 @@ class TimeControl(object):
         """Set the start time to the current time."""
         self.start_time = time.time()
 
-    async def _out_of_time(self):
+    def _out_of_time(self, time_start):
         """Fire an OUT_OF_TIME event."""
         self.run_color = None
         if self.mode == TimeMode.FIXED:
@@ -171,8 +171,8 @@ class TimeControl(object):
         elif self.active_color is not None:
             display_color = 'WHITE' if self.active_color == chess.WHITE else 'BLACK'
             txt = 'current clock time (before subtracting) is %f and color is %s, out of time event started from %f'
-            logger.debug(txt, self.internal_time[self.active_color], display_color)
-            await Observable.fire(Event.OUT_OF_TIME(color=self.active_color))
+            logger.debug(txt, self.internal_time[self.active_color], display_color, time_start)
+            Observable.fire_sync(Event.OUT_OF_TIME(color=self.active_color))
 
     def add_time(self, color):
         """Add the increment value to the color given."""

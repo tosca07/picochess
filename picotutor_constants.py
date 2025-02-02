@@ -2,7 +2,7 @@
 
 LOW_DEPTH = 5  # for 'obvious moves' calculation
 LOW_TIME = 0.2  # time limit for 'obvious moves' and first analysis
-DEEP_DEPTH = 17  # for best move calculation - deep limit for all analysis
+DEEP_DEPTH = 25  # for best move calculation - deep limit for all analysis
 NUM_THREADS = 1  # number of parallel threads (should not be higher)
 # VALID_ROOT_MOVES must be high enough to find also some bad moves
 # but not so high that depth on PI 4 is as low as 5 or LOW_DEPTH

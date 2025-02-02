@@ -786,7 +786,6 @@ class PicoTalkerDisplay(DisplayMsg):
             logger.debug("announcing REBOOT")
             self.talk(["pleasewait.ogg"])
             self.comment("shutdown")
-            time.sleep(3)
 
         elif isinstance(message, Message.MOVE_RETRY):
             logger.debug("announcing MOVE_RETRY")

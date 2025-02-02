@@ -63,6 +63,17 @@ class DgtDisplay(DisplayMsg):
         self._task = None  # task for message consumer
         self.timer = AsyncRepeatingTimer(1, self._process_once_per_second, loop=self.loop)
 
+
+    def start_once_per_second_timer(self):
+        """ start the once per second timer for rolling display """
+        self.timer.start()
+
+    
+    def stop_once_per_second_timer(self):
+        """ stop the once per second timer for rolling display """
+        self.timer.stop()
+
+
     def _convert_pico_string(self, pico_string):
         # print routine for longer text output like opening name, comments
         result_list = []

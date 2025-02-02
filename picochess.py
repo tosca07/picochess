@@ -767,6 +767,8 @@ async def main() -> None:
     # The class dgtDisplay fires Event (Observable) & DispatchDgt (Dispatcher)
     my_dgt_display = DgtDisplay(state.dgttranslate, state.dgtmenu, state.time_control, main_loop)
     asyncio.create_task(my_dgt_display.message_consumer())
+    my_dgt_display.start_once_per_second_timer()
+    # @todo optimise to start this timer only when playmode is needing it?
 
     ModeInfo.set_clock_side(args.clockside)
 
@@ -930,16 +932,15 @@ async def main() -> None:
             self.engine = UciEngine(
                 file=self.state.engine_file,
                 uci_shell=self.uci_local_shell,
-                mame_par=self.calc_engine_mame_par()
+                mame_par=self.calc_engine_mame_par(),
+                loop=self.loop,
             )
-
+            await self.engine.open_engine()
 
             await display_ip_info(state)
             await asyncio.sleep(1.0)
 
-            try:
-                t = self.engine.get_name()
-            except AttributeError:
+            if not self.engine.loaded_ok():
                 logger.error("engine %s not started", self.state.engine_file)
                 await asyncio.sleep(3)
                 DisplayMsg.show(Message.ENGINE_FAIL())
@@ -957,7 +958,7 @@ async def main() -> None:
             if self.args.engine_level == '""':
                 self.args.engine_level = None
             engine_opt, level_index = await self.get_engine_level_dict(args.engine_level)
-            self.engine.startup(engine_opt, self.state.rating)
+            await self.engine.startup(engine_opt, self.state.rating)
 
             if (
                 self.emulation_mode()
@@ -1066,8 +1067,10 @@ async def main() -> None:
                 i_engine_path=tutor_engine,
                 i_comment_file=self.state.comment_file,
                 i_lang=self.args.language,
-                i_coach_analyser=bool(self.args.coach_analyser)
+                i_coach_analyser=bool(self.args.coach_analyser),
+                loop=self.loop,
             )
+            await self.state.picotutor.open_engine()
             self.state.picotutor.set_status(
                 self.state.dgtmenu.get_picowatcher(),
                 self.state.dgtmenu.get_picocoach(),
@@ -1118,7 +1121,7 @@ async def main() -> None:
                     uci_dict["searchmoves"] = self.state.searchmoves.all(game)
                 # self.engine.position(copy.deepcopy(game))  # deepcopy not really needed
                 try:
-                    engine_res = self.engine.go(uci_dict, game)
+                    engine_res = await self.engine.go(uci_dict, game)
                 except Exception:
                     logger.error("fatal error no move received from engine")
                 # dont push game move onto board here yet
@@ -1133,7 +1136,7 @@ async def main() -> None:
 
         async def stop_search(self):
             """Stop current search."""
-            self.engine.stop()
+            await self.engine.stop()
             if not self.emulation_mode():
                 while not self.engine.is_waiting():
                     await asyncio.sleep(0.05)
@@ -1793,7 +1796,7 @@ async def main() -> None:
 
                 game_end = self.state.check_game_state()
                 if game_end:
-                    self.update_elo(game_end.result)
+                    await self.update_elo(game_end.result)
                     self.state.legal_fens = []
                     self.state.legal_fens_after_cmove = []
                     if self.online_mode():
@@ -2132,7 +2135,7 @@ async def main() -> None:
                     msg = Message.USER_MOVE_DONE(move=move, fen=fen, turn=turn, game=self.state.game.copy())
                     game_end = self.state.check_game_state()
                     if game_end:
-                        self.update_elo(game_end.result)
+                        await self.update_elo(game_end.result)
                         # molli: for online/emulation mode we have to publish this move as well to the engine
                         if self.online_mode():
                             logger.info("starting think()")
@@ -2236,9 +2239,9 @@ async def main() -> None:
             self.state.start_clock()
             return info
 
-        def update_elo(self, result):
+        async def update_elo(self, result):
             if self.engine.is_adaptive:
-                self.state.rating = self.engine.update_rating(
+                self.state.rating = await self.engine.update_rating(
                     self.state.rating,
                     determine_result(result, self.state.play_mode, self.state.game.turn == chess.WHITE),
                 )
@@ -2296,10 +2299,13 @@ async def main() -> None:
 
 
         def debug_pv_info(self, info: chess.engine.InfoDict):
-            logger.debug(
-                "engine pv move: %s - depth %d - score %s",
-                info.get("pv")[0].uci(), info.get("depth"), str(info["score"])
-                )
+            if info:
+                logger.debug(
+                    "engine pv move: %s - depth %d - score %s",
+                    info.get("pv")[0].uci(), info.get("depth"), str(info["score"])
+                    )
+            else:
+                logger.debug("empty InfoDict")
 
 
         async def analyse(self, game: chess.Board) -> chess.engine.InfoDict | None:
@@ -2322,7 +2328,7 @@ async def main() -> None:
                 if engine_playing_moves:
                     # optimisation to ask for info only in BRAIN mode
                     if self.state.interaction_mode == Mode.BRAIN:
-                        info: InfoDict = self.engine.playmode_analyse(game)
+                        info: InfoDict = await self.engine.playmode_analyse(game)
                         self.debug_pv_info(info)
                 else:
                     # optimisation, ask for result only if analysis was running
@@ -2864,7 +2870,7 @@ async def main() -> None:
 
             elif isinstance(event, Event.LEVEL):
                 if event.options:
-                    self.engine.startup(event.options, self.state.rating)
+                    await self.engine.startup(event.options, self.state.rating)
                 self.state.new_engine_level = event.level_name
                 DisplayMsg.show(
                     Message.LEVEL(
@@ -2933,60 +2939,68 @@ async def main() -> None:
                         DisplayMsg.show(Message.REMOTE_FAIL())
                         await asyncio.sleep(2)
 
-                if self.engine.quit():
-                    # Load the new one and send self.args.
+                await self.engine.quit()
+                # Load the new one and send self.args.
+                if self.remote_engine_mode() and flag_eng and self.uci_remote_shell:
+                    self.engine = UciEngine(
+                        file=remote_file,
+                        uci_shell=self.uci_remote_shell,
+                        mame_par=self.calc_engine_mame_par(),
+                        loop=self.loop,
+                    )
+                    await self.engine.open_engine()
+                else:
+                    self.engine = UciEngine(
+                        file=self.state.engine_file,
+                        uci_shell=self.uci_local_shell,
+                        mame_par=self.calc_engine_mame_par(),
+                        loop=self.loop,
+                    )
+                    await self.engine.open_engine()
+                try:
+                    t = self.engine.get_name()
+                except AttributeError:
+                    # New engine failed to start, restart old engine
+                    logger.error("new engine failed to start, reverting to %s", old_file)
+                    engine_fallback = True
+                    event.options = old_options
+                    self.state.engine_file = old_file
+                    help_str = old_file.rsplit(os.sep, 1)[1]
+                    remote_file = self.engine_remote_home + os.sep + help_str
+
                     if self.remote_engine_mode() and flag_eng and self.uci_remote_shell:
                         self.engine = UciEngine(
                             file=remote_file,
                             uci_shell=self.uci_remote_shell,
-                            mame_par=self.calc_engine_mame_par()
+                            mame_par=self.calc_engine_mame_par(),
+                            loop=self.loop,
                         )
+                        await self.engine.open_engine()
                     else:
+                        # restart old mame engine?
+                        self.state.artwork_in_use = False
+                        if "/mame/" in old_file and self.state.dgtmenu.get_engine_rdisplay():
+                            old_file_art = old_file + "_art"
+                            my_file = Path(old_file_art)
+                            if my_file.is_file():
+                                self.state.artwork_in_use = True
+                                old_file = old_file_art
+
                         self.engine = UciEngine(
-                            file=self.state.engine_file,
+                            file=old_file,
                             uci_shell=self.uci_local_shell,
-                            mame_par=self.calc_engine_mame_par()
+                            mame_par=self.calc_engine_mame_par(),
+                            loop=self.loop,
                         )
+                        await self.engine.open_engine()
                     try:
                         t = self.engine.get_name()
                     except AttributeError:
-                        # New engine failed to start, restart old engine
-                        logger.error("new engine failed to start, reverting to %s", old_file)
-                        engine_fallback = True
-                        event.options = old_options
-                        self.state.engine_file = old_file
-                        help_str = old_file.rsplit(os.sep, 1)[1]
-                        remote_file = self.engine_remote_home + os.sep + help_str
-
-                        if self.remote_engine_mode() and flag_eng and self.uci_remote_shell:
-                            self.engine = UciEngine(
-                                file=remote_file,
-                                uci_shell=self.uci_remote_shell,
-                                mame_par=self.calc_engine_mame_par()
-                            )
-                        else:
-                            # restart old mame engine?
-                            self.state.artwork_in_use = False
-                            if "/mame/" in old_file and self.state.dgtmenu.get_engine_rdisplay():
-                                old_file_art = old_file + "_art"
-                                my_file = Path(old_file_art)
-                                if my_file.is_file():
-                                    self.state.artwork_in_use = True
-                                    old_file = old_file_art
-
-                            self.engine = UciEngine(
-                                file=old_file,
-                                uci_shell=self.uci_local_shell,
-                                mame_par=self.calc_engine_mame_par()
-                            )
-                        try:
-                            t = self.engine.get_name()
-                        except AttributeError:
-                            # Help - old engine failed to restart. There is no engine
-                            logger.error("no engines started")
-                            DisplayMsg.show(Message.ENGINE_FAIL())
-                            await asyncio.sleep(3)
-                            sys.exit(-1)
+                        # Help - old engine failed to restart. There is no engine
+                        logger.error("no engines started")
+                        DisplayMsg.show(Message.ENGINE_FAIL())
+                        await asyncio.sleep(3)
+                        sys.exit(-1)
 
                     # All done - rock'n'roll
                     # @todo remove check for BRAIN mode and has_ponder
@@ -2995,31 +3009,32 @@ async def main() -> None:
                             "new engine doesnt support brain mode, reverting to %s", old_file
                         )
                         engine_fallback = True
-                        if self.engine.quit():
-                            if self.remote_engine_mode() and flag_eng and self.uci_remote_shell:
-                                self.engine = UciEngine(
-                                    file=remote_file,
-                                    uci_shell=self.uci_remote_shell,
-                                    mame_par=self.calc_engine_mame_par()
-                                )
-                            else:
-                                self.engine = UciEngine(
-                                    file=old_file,
-                                    uci_shell=self.uci_local_shell,
-                                    mame_par=self.calc_engine_mame_par()
-                                )
-                            self.engine.startup(old_options, self.state.rating)
-                            self.engine.newgame(self.state.game.copy())
-                            try:
-                                t = self.engine.get_name()
-                            except AttributeError:
-                                logger.error("no engines started")
-                                DisplayMsg.show(Message.ENGINE_FAIL())
-                                await asyncio.sleep(3)
-                                sys.exit(-1)
+                        await self.engine.quit()
+                        if self.remote_engine_mode() and flag_eng and self.uci_remote_shell:
+                            self.engine = UciEngine(
+                                file=remote_file,
+                                uci_shell=self.uci_remote_shell,
+                                mame_par=self.calc_engine_mame_par(),
+                                loop=self.loop,
+                            )
+                            await self.engine.open_engine()
                         else:
-                            logger.error("engine shutdown failure")
+                            self.engine = UciEngine(
+                                file=old_file,
+                                uci_shell=self.uci_local_shell,
+                                mame_par=self.calc_engine_mame_par(),
+                                loop=self.loop,
+                            )
+                            await self.engine.open_engine()
+                        await self.engine.startup(old_options, self.state.rating)
+                        self.engine.newgame(self.state.game.copy())
+                        try:
+                            t = self.engine.get_name()
+                        except AttributeError:
+                            logger.error("no engines started")
                             DisplayMsg.show(Message.ENGINE_FAIL())
+                            await asyncio.sleep(3)
+                            sys.exit(-1)
 
                     if (
                         self.emulation_mode()
@@ -3037,7 +3052,7 @@ async def main() -> None:
                             shell=True,
                         )
 
-                    self.engine.startup(event.options, self.state.rating)
+                    await self.engine.startup(event.options, self.state.rating)
 
                     if self.online_mode():
                         self.state.stop_clock()
@@ -3067,14 +3082,18 @@ async def main() -> None:
                                 self.engine = UciEngine(
                                     file=remote_file,
                                     uci_shell=self.uci_remote_shell,
-                                    mame_par=self.calc_engine_mame_par()
+                                    mame_par=self.calc_engine_mame_par(),
+                                    loop=self.loop,
                                 )
+                                await self.engine.open_engine()
                             else:
                                 self.engine = UciEngine(
                                     file=old_file,
                                     uci_shell=self.uci_local_shell,
-                                    mame_par=self.calc_engine_mame_par()
+                                    mame_par=self.calc_engine_mame_par(),
+                                    loop=self.loop,
                                 )
+                                await self.engine.open_engine()
                             try:
                                 t = self.engine.get_name()
                             except AttributeError:
@@ -3083,7 +3102,7 @@ async def main() -> None:
                                 DisplayMsg.show(Message.ENGINE_FAIL())
                                 await asyncio.sleep(3)
                                 sys.exit(-1)
-                            self.engine.startup(event.options, self.state.rating)
+                            await self.engine.startup(event.options, self.state.rating)
                         else:
                             await asyncio.sleep(2)
                     elif self.emulation_mode() or self.pgn_mode():
@@ -3156,9 +3175,6 @@ async def main() -> None:
                         self.state.stop_clock()
                     self.state.engine_text = state.dgtmenu.get_current_engine_name()
                     self.state.dgtmenu.exit_menu()
-                else:
-                    logger.error("engine shutdown failure")
-                    DisplayMsg.show(Message.ENGINE_FAIL())
 
                 self.state.old_engine_level = self.state.new_engine_level
                 self.state.engine_level = self.state.new_engine_level
@@ -3283,7 +3299,7 @@ async def main() -> None:
                 await self.stop_search_and_clock()
                 if self.engine.has_chess960():
                     self.engine.option("UCI_Chess960", uci960)
-                    self.engine.send()
+                    await self.engine.send()
 
                 DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION_SCAN"))
                 self.engine.newgame(self.state.game.copy())
@@ -3388,14 +3404,14 @@ async def main() -> None:
                     # see setup_position
                     if self.engine.has_chess960():
                         self.engine.option("UCI_Chess960", uci960)
-                        self.engine.send()
+                        await self.engine.send()
 
                     if self.state.interaction_mode == Mode.TRAINING:
-                        self.engine.stop()
+                        await self.engine.stop()
 
                     if self.online_mode():
                         DisplayMsg.show(Message.SEEKING())
-                        self.engine.stop()
+                        await self.engine.stop()
                         self.state.seeking_flag = True
                         self.state.stop_fen_timer()
                         ModeInfo.set_online_mode(mode=True)
@@ -3403,7 +3419,7 @@ async def main() -> None:
                         ModeInfo.set_online_mode(mode=False)
 
                     if self.emulation_mode():
-                        self.engine.stop()
+                        await self.engine.stop()
                     self.engine.newgame(self.state.game.copy())
 
                     self.state.done_computer_fen = None
@@ -3496,13 +3512,13 @@ async def main() -> None:
 
                         if self.engine.has_chess960():
                             self.engine.option("UCI_Chess960", uci960)
-                            self.engine.send()
+                            await self.engine.send()
 
                         self.state.time_control.reset()
                         self.state.searchmoves.reset()
 
                         DisplayMsg.show(Message.SEEKING())
-                        self.engine.stop()
+                        await self.engine.stop()
                         self.state.seeking_flag = True
 
                         self.engine.newgame(self.state.game.copy())
@@ -3639,7 +3655,7 @@ async def main() -> None:
                 else:
                     if self.engine.is_thinking():
                         self.state.stop_clock()
-                        self.engine.stop()
+                        await self.engine.stop()
                     elif not self.state.done_computer_fen:
                         if self.state.time_control.internal_running():
                             self.state.stop_clock()
@@ -3866,7 +3882,7 @@ async def main() -> None:
                     self.state.game_declared = True
                     self.state.stop_fen_timer()
                     self.state.legal_fens_after_cmove = []
-                    self.update_elo(event.result)
+                    await self.update_elo(event.result)
 
             elif isinstance(event, Event.REMOTE_MOVE):
                 self.state.flag_startup = False
@@ -4258,7 +4274,7 @@ async def main() -> None:
 
                                 game_end = self.state.check_game_state()
                                 if game_end:
-                                    self.update_elo(game_end)
+                                    await self.update_elo(game_end)
                                     self.state.legal_fens = []
                                     self.state.legal_fens_after_cmove = []
                                     if self.online_mode():
@@ -4550,51 +4566,50 @@ async def main() -> None:
                             self.state.engine_file = engine_file_art
                     old_options = self.engine.get_pgn_options()
                     DisplayMsg.show(Message.ENGINE_SETUP())
-                    if self.engine.quit():
-                        self.engine = UciEngine(
-                            file=self.state.engine_file,
-                            uci_shell=self.uci_local_shell,
-                            mame_par=self.calc_engine_mame_par()
-                        )
-                        self.engine.startup(old_options, self.state.rating)
-                        await self.stop_search_and_clock()
+                    await self.engine.quit()
+                    self.engine = UciEngine(
+                        file=self.state.engine_file,
+                        uci_shell=self.uci_local_shell,
+                        mame_par=self.calc_engine_mame_par(),
+                        loop=self.loop,
+                    )
+                    await self.engine.open_engine()
+                    await self.engine.startup(old_options, self.state.rating)
+                    await self.stop_search_and_clock()
 
-                        if (
-                            self.state.dgtmenu.get_engine_rdisplay()
-                            and not self.state.dgtmenu.get_engine_rwindow()
-                            and self.state.artwork_in_use
-                        ):
-                            # switch to fullscreen
-                            cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
-                            subprocess.run(
-                                cmd,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,
-                                universal_newlines=True,
-                                shell=True,
-                            )
-                        game_fen = self.state.game.board_fen()
-                        self.state.game = chess.Board()
-                        self.state.game.turn = chess.WHITE
-                        self.state.play_mode = PlayMode.USER_WHITE
-                        if game_fen != chess.STARTING_BOARD_FEN:
-                            msg = Message.START_NEW_GAME(game=self.state.game.copy(), newgame=True)
-                            DisplayMsg.show(msg)
-                        self.engine.newgame(self.state.game.copy())
-                        self.state.done_computer_fen = None
-                        self.state.done_move = self.state.pb_move = chess.Move.null()
-                        self.state.searchmoves.reset()
-                        self.state.game_declared = False
-                        self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
-                        self.state.last_legal_fens = []
-                        self.state.legal_fens_after_cmove = []
-                        self.is_out_of_time_already = False
-                        self.engine_mode()
-                        DisplayMsg.show(Message.RSPEED(rspeed=event.rspeed))
-                        self.update_elo_display()
-                    else:
-                        logger.error("engine shutdown failure")
-                        DisplayMsg.show(Message.ENGINE_FAIL())
+                    if (
+                        self.state.dgtmenu.get_engine_rdisplay()
+                        and not self.state.dgtmenu.get_engine_rwindow()
+                        and self.state.artwork_in_use
+                    ):
+                        # switch to fullscreen
+                        cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
+                        subprocess.run(
+                            cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            universal_newlines=True,
+                            shell=True,
+                        )
+                    game_fen = self.state.game.board_fen()
+                    self.state.game = chess.Board()
+                    self.state.game.turn = chess.WHITE
+                    self.state.play_mode = PlayMode.USER_WHITE
+                    if game_fen != chess.STARTING_BOARD_FEN:
+                        msg = Message.START_NEW_GAME(game=self.state.game.copy(), newgame=True)
+                        DisplayMsg.show(msg)
+                    self.engine.newgame(self.state.game.copy())
+                    self.state.done_computer_fen = None
+                    self.state.done_move = self.state.pb_move = chess.Move.null()
+                    self.state.searchmoves.reset()
+                    self.state.game_declared = False
+                    self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                    self.state.last_legal_fens = []
+                    self.state.legal_fens_after_cmove = []
+                    self.is_out_of_time_already = False
+                    self.engine_mode()
+                    DisplayMsg.show(Message.RSPEED(rspeed=event.rspeed))
+                    self.update_elo_display()
 
             elif isinstance(event, Event.TAKE_BACK):
                 if self.state.game.move_stack and (
@@ -4725,12 +4740,12 @@ async def main() -> None:
                         )
                     )
                     self.is_out_of_time_already = True
-                    self.update_elo(result)
+                    await self.update_elo(result)
 
             elif isinstance(event, Event.SHUTDOWN):
                 await self.stop_search()
                 self.state.stop_clock()
-                self.engine.quit()
+                await self.engine.quit()
 
                 try:
                     if self.uci_remote_shell:
@@ -4760,7 +4775,7 @@ async def main() -> None:
             elif isinstance(event, Event.REBOOT):
                 await self.stop_search()
                 self.state.stop_clock()
-                self.engine.quit()
+                await self.engine.quit()
                 result = GameResult.ABORT
                 DisplayMsg.show(
                     Message.GAME_ENDS(
@@ -4779,7 +4794,7 @@ async def main() -> None:
             elif isinstance(event, Event.EXIT):
                 await self.stop_search()
                 self.state.stop_clock()
-                self.engine.quit()
+                await self.engine.quit()
                 result = GameResult.ABORT
                 DisplayMsg.show(
                     Message.GAME_ENDS(

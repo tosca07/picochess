@@ -43,7 +43,8 @@ class PicoTutor:
         i_fen="",
         i_comment_file="",
         i_lang="en",
-        i_coach_analyser=False
+        i_coach_analyser=False,
+        loop=None,
     ):
         self.user_color = i_player_color
         self.max_valid_moves = c.VALID_ROOT_MOVES
@@ -86,6 +87,7 @@ class PicoTutor:
         self.board = chess.Board()
         self.ucishell = i_ucishell
         self.coach_analyser = i_coach_analyser
+        self.loop = loop  # main loop everywhere
 
         try:
             with open("chess-eco_pos.txt") as fp:
@@ -106,6 +108,37 @@ class PicoTutor:
         self._setup_comments(i_lang, i_comment_file)
 
         self._setup_board(i_fen)
+
+
+    async def open_engine(self):
+        """ open the tutor engine """            
+        if not self.engine and (self.watcher_on or self.coach_on):
+            # start engine only if needed, obvious moves in first_limit
+            low_limit = chess.engine.Limit(depth=c.LOW_DEPTH)
+            self.engine = UciEngine(
+                self.engine_path,
+                self.ucishell,
+                self.mame_par,
+                self.loop,
+                first_limit=low_limit,
+                multipv=self.max_valid_moves,
+                first_multipv=self.low_valid_moves
+            )
+            # avoid spreading await in this case
+            await self.engine.open_engine()
+            if self.engine.loaded_ok() is True:
+                options = {
+                    "MultiPV": self.max_valid_moves,
+                    "Contempt": 0,
+                    "Threads": c.NUM_THREADS
+                }
+                await self.engine.startup(options=options)
+                self.engine.set_mode(mode=EngineMode.WATCHING)
+            else:
+                # No need to call engine quit if its not loaded?
+                self.engine = None
+        if self.engine is None:
+            logger.debug("Engine loading failed in Picotutor")
 
     
     def is_coach_analyser(self) -> bool:
@@ -300,30 +333,6 @@ class PicoTutor:
         self.op = []
         self.user_color = chess.WHITE
 
-        if not self.engine and (self.watcher_on or self.coach_on):
-            # start engine only if needed, obvious moves in first_limit
-            low_limit = chess.engine.Limit(depth=c.LOW_DEPTH)
-            self.engine = UciEngine(
-                self.engine_path,
-                self.ucishell,
-                self.mame_par,
-                first_limit=low_limit,
-                multipv=self.max_valid_moves,
-                first_multipv=self.low_valid_moves
-            )
-            if self.engine.loaded_ok() is True:
-                options = {
-                    "MultiPV": self.max_valid_moves,
-                    "Contempt": 0,
-                    "Threads": c.NUM_THREADS
-                }
-                self.engine.startup(options=options)
-                self.engine.set_mode(mode=EngineMode.WATCHING)
-            else:
-                self.engine.quit()
-                self.engine = None
-        if self.engine is None:
-            logger.debug("Engine loading failed in Picotutor")
         self.best_info = []
         self.obvious_info = []
 

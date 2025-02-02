@@ -74,7 +74,8 @@ class Observable(object):
         await evt_queue.put(event)
 
     # @todo a sync fire method needed by menu.py at least for now
-    # Observable fire is by default async, DispatchDgt and others are still sync
+    # we also need it for the out_of_time Timer
+    # Observable fire is by default async as you see above, DispatchDgt and others are still sync
 
     @staticmethod
     def fire_sync(event):
@@ -284,8 +285,6 @@ def update_picochess(dgtpi: bool, auto_reboot: bool, dgttranslate: DgtTranslate)
             do_popen(['pip3', 'install', '-r', 'requirements.txt'])
             if auto_reboot:
                 reboot(dgtpi, dev='web')
-            else:
-                time.sleep(2)  # give time to display the "update" message
         else:
             logging.debug('no update available')
     else:
@@ -296,14 +295,12 @@ def shutdown(dgtpi: bool, dev: str):
     """Shutdown picochess."""
     logging.debug('shutting down system requested by (%s)', dev)
 
-    time.sleep(5)  # give some time to send out the pgn file or speak the event
     if platform.system() == 'Windows':
         os.system('shutdown /s')
     elif dgtpi:
         dgt_functions = cdll.LoadLibrary('etc/dgtpicom.so')
         dgt_functions.dgtpicom_off(1)
         os.system('sudo shutdown -h now')
-        time.sleep(5)
     else:
         os.system('sudo shutdown -h now')
         
@@ -311,7 +308,6 @@ def exit(dgtpi: bool, dev: str):
     """exit picochess."""
     logging.debug('exit picochess requested by (%s)', dev)
       
-    time.sleep(5)  # give some time to send out the pgn file or speak the event
     if platform.system() == 'Windows':
         os.system('sudo pkill -f chromium')
         os.system('sudo systemctl stop picochess')
@@ -321,7 +317,6 @@ def exit(dgtpi: bool, dev: str):
         os.system('sudo pkill -f chromium')
         os.system('sudo systemctl stop dgpi')
         os.system('sudo systemctl stop picochess')
-        time.sleep(5)
     else:
         os.system('sudo pkill -f chromium')
         os.system('sudo systemctl stop picochess')
@@ -331,7 +326,6 @@ def reboot(dgtpi: bool, dev: str):
     """Reboot picochess."""
     logging.debug('rebooting system requested by (%s)', dev)
     
-    time.sleep(5)  # give some time to send out the pgn file or speak the event
     if platform.system() == 'Windows':
         os.system('shutdown /r')
     elif dgtpi:
