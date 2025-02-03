@@ -1136,7 +1136,7 @@ async def main() -> None:
 
         async def stop_search(self):
             """Stop current search."""
-            await self.engine.stop()
+            self.engine.stop()
             if not self.emulation_mode():
                 while not self.engine.is_waiting():
                     await asyncio.sleep(0.05)
@@ -3407,11 +3407,11 @@ async def main() -> None:
                         await self.engine.send()
 
                     if self.state.interaction_mode == Mode.TRAINING:
-                        await self.engine.stop()
+                        self.engine.stop()
 
                     if self.online_mode():
                         DisplayMsg.show(Message.SEEKING())
-                        await self.engine.stop()
+                        self.engine.stop()
                         self.state.seeking_flag = True
                         self.state.stop_fen_timer()
                         ModeInfo.set_online_mode(mode=True)
@@ -3419,7 +3419,7 @@ async def main() -> None:
                         ModeInfo.set_online_mode(mode=False)
 
                     if self.emulation_mode():
-                        await self.engine.stop()
+                        self.engine.stop()
                     self.engine.newgame(self.state.game.copy())
 
                     self.state.done_computer_fen = None
@@ -3518,7 +3518,7 @@ async def main() -> None:
                         self.state.searchmoves.reset()
 
                         DisplayMsg.show(Message.SEEKING())
-                        await self.engine.stop()
+                        self.engine.stop()
                         self.state.seeking_flag = True
 
                         self.engine.newgame(self.state.game.copy())
@@ -3655,7 +3655,7 @@ async def main() -> None:
                 else:
                     if self.engine.is_thinking():
                         self.state.stop_clock()
-                        await self.engine.stop()
+                        self.engine.stop()
                     elif not self.state.done_computer_fen:
                         if self.state.time_control.internal_running():
                             self.state.stop_clock()
