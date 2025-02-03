@@ -20,7 +20,6 @@ import asyncio
 import os
 from typing import Optional
 import logging
-import time
 import configparser
 import re
 from enum import Enum
@@ -33,7 +32,6 @@ from chess.engine import Limit
 from chess import Board  # type: ignore
 from uci.rating import Rating, Result
 from utilities import write_picochess_ini
-from picotutor_constants import DEEP_DEPTH
 
 # settings are for engine thinking limits
 FLOAT_MAX_ENGINE_TIME = 2.0  # engine max thinking time
@@ -174,11 +172,13 @@ class ContinuousAnalysis:
         """ analyse while position stays same """
         first = True  # first analysis with different limit and multipv
         while self._running and current_game.fen() == self.game.fen():
-            if first: # shallow analysis first if requested by called
-                limit = self.first_limit if self.first_limit else Limit(depth=DEEP_DEPTH)
+            if first: # extra low_first loop if requested by called
+                limit = self.first_limit if self.first_limit else None
                 multipv = self.first_multipv if self.first_multipv else self.multipv
+                if not limit and not self.first_multipv:
+                    first = False  # optimise: no extra low_first loop
             else: # normal deep analysis
-                limit = Limit(depth=DEEP_DEPTH)  # more depth after first low
+                limit = None  # more depth after first low
                 multipv = self.multipv
             try:
                 await self._analyse_forever(current_game,
@@ -197,7 +197,8 @@ class ContinuousAnalysis:
                                 multipv: int | None,
                                 forever: bool,
                                 first: bool):
-        """ analyse forever if parameter forever true otherwise just one """
+        """ analyse forever if parameter forever true otherwise just one 
+            if first is true store an extra first low result """
         with await self.engine.analysis(current_game, limit=limit, multipv=multipv) as analysis:
             async for info in analysis:
                 # after waiting, check if position has changed
@@ -573,7 +574,9 @@ class UciEngine(object):
                 # mode might have changed, recover by starting analyser
                 self.analyser.start(self.engine, game,
                                     first_limit=self.first_limit,
-                                    multipv=self.multipv)
+                                    multipv=self.multipv,
+                                    first_multipv=self.first_multipv
+                                    )
         return result
 
     async def playmode_analyse(self, game: Board) -> chess.engine.InfoDict | None:
