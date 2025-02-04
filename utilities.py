@@ -165,12 +165,13 @@ class AsyncRepeatingTimer:
 
     """ Call function on a given interval - Async version to replace RepeatedTimer"""
 
-    def __init__(self, interval, callback, loop: asyncio.AbstractEventLoop, args=None, kwargs=None):
+    def __init__(self, interval, callback, loop: asyncio.AbstractEventLoop, repeating=True, args=None, kwargs=None):
         self.interval = interval      # Interval between each execution
         self.callback = callback      # Function to be repeatedly called
         self._task = None             # Reference to the asynchronous task
         self._running = False         # Keeps track of whether the timer is running
         self.loop = loop              # run callback in callers eventloop
+        self.repeating = repeating    # repeat is default, set false to run only once
         self.args = args if args is not None else []
         self.kwargs = kwargs if kwargs is not None else {}
 
@@ -186,6 +187,8 @@ class AsyncRepeatingTimer:
                 await self.callback(*self.args, **self.kwargs)
             else:
                 self.callback(*self.args, **self.kwargs)  # sync callback
+            if not self.repeating:
+                self._running = False
 
     def start(self):
         """Start the RepeatingTimer."""
