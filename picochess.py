@@ -203,7 +203,7 @@ class PicochessState:
         self.old_engine_level = ""
         self.error_fen = None
         self.fen_error_occured = False
-        self.fen_timer = None
+        self.fen_timer: AsyncRepeatingTimer | None = None
         self.fen_timer_running = False
         self.flag_flexible_ponder = False
         self.flag_last_engine_emu = False
@@ -879,8 +879,8 @@ async def main() -> None:
             self.login = login
             self.state = state
             self.engine = None  # placeholder for UciEngine
-            self.state.fen_timer = AsyncRepeatingTimer(4, self.expired_fen_timer, self.loop, args=[self.state])
-            self.state.fen_timer_running = False
+            self.state.fen_timer = None  # this and next line could be removed?
+            self.state.fen_timer_running = False  # already set in picostate init
             self.args = args
             self.pico_talker = pico_talker
             self.dgtdispatcher = dgtdispatcher
@@ -1989,7 +1989,7 @@ async def main() -> None:
                     await Observable.fire(Event.NEW_GAME(pos960=pos960))
                 else:
                     self.state.error_fen = fen
-                    self.start_fen_timer(state)
+                    self.start_fen_timer()
 
         async def user_move(self, move: chess.Move, sliding: bool, state: PicochessState):
             """Handle an user move."""
@@ -2263,7 +2263,7 @@ async def main() -> None:
                     )
                 )
 
-        def start_fen_timer(self, state: PicochessState):
+        def start_fen_timer(self):
             """Start the fen timer in case an unhandled fen string been received from board."""
             delay = 0
             if self.state.position_mode:
@@ -2273,7 +2273,7 @@ async def main() -> None:
             else:
                 delay = 4
                 self.state.delay_fen_error = 4
-            self.state.fen_timer = AsyncRepeatingTimer(delay, self.expired_fen_timer, self.loop, args=[self.state])
+            self.state.fen_timer = AsyncRepeatingTimer(delay, self.expired_fen_timer, self.loop, repeating=False)
             self.state.fen_timer.start()
             self.state.fen_timer_running = True
 
@@ -2367,7 +2367,7 @@ async def main() -> None:
                 if p:
                     await Observable.fire(Event.NEW_SCORE(score=p, mate=s.is_mate()))
 
-        async def expired_fen_timer(self, state: PicochessState):
+        async def expired_fen_timer(self):
             """Handle times up for an unhandled fen string send from board."""
             game_fen = ""
             self.state.fen_timer_running = False
@@ -2375,6 +2375,7 @@ async def main() -> None:
             internal_fen = ""
 
             if self.state.error_fen:
+                logger.debug("fen_timer expired %s", self.state.error_fen)
                 game_fen = self.state.game.board_fen()
                 if (
                     self.state.interaction_mode in (Mode.NORMAL, Mode.TRAINING, Mode.BRAIN)
