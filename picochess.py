@@ -293,8 +293,7 @@ class PicochessState:
     def stop_fen_timer(self) -> None:
         """Stop the fen timer cause another fen string been send."""
         if self.fen_timer_running:
-            self.fen_timer.cancel()
-            self.fen_timer.join()
+            self.fen_timer.stop()
             self.fen_timer_running = False
 
 
@@ -880,7 +879,7 @@ async def main() -> None:
             self.login = login
             self.state = state
             self.engine = None  # placeholder for UciEngine
-            self.state.fen_timer = threading.Timer(4, self.expired_fen_timer, args=[state])
+            self.state.fen_timer = AsyncRepeatingTimer(4, self.expired_fen_timer, self.loop, args=[self.state])
             self.state.fen_timer_running = False
             self.args = args
             self.pico_talker = pico_talker
@@ -1630,7 +1629,7 @@ async def main() -> None:
                     logger.info("wrong color move -> sliding, reverting to: %s", self.state.game.fen())
                 legal_moves = list(self.state.game.legal_moves)
                 move = legal_moves[state.last_legal_fens.index(fen)]
-                self.user_move(move, sliding=True, state=self.state)
+                await self.user_move(move, sliding=True, state=self.state)
                 if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING):
                     self.state.legal_fens = []
                 else:
@@ -1661,7 +1660,7 @@ async def main() -> None:
                         await asyncio.sleep(2)
                 logger.debug("user move did a move for pico")
 
-                self.user_move(move, sliding=False, state=self.state)
+                await self.user_move(move, sliding=False, state=self.state)
                 self.state.last_legal_fens = self.state.legal_fens
                 if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING):
                     self.state.legal_fens = []
@@ -1674,7 +1673,7 @@ async def main() -> None:
                 self.state.newgame_happened = False
                 legal_moves = list(self.state.game.legal_moves)
                 move = legal_moves[state.legal_fens.index(fen)]
-                self.user_move(move, sliding=False, state=self.state)
+                await self.user_move(move, sliding=False, state=self.state)
                 self.state.last_legal_fens = self.state.legal_fens
                 if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE):
                     self.state.legal_fens = []
@@ -1902,7 +1901,7 @@ async def main() -> None:
                 # standard user move handling
                 legal_moves = list(self.state.game.legal_moves)
                 move = legal_moves[state.legal_fens.index(fen)]
-                self.user_move(move, sliding=False, state=self.state)
+                await self.user_move(move, sliding=False, state=self.state)
                 self.state.last_legal_fens = self.state.legal_fens
                 self.state.newgame_happened = False
                 if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING):
@@ -2274,7 +2273,7 @@ async def main() -> None:
             else:
                 delay = 4
                 self.state.delay_fen_error = 4
-            self.state.fen_timer = threading.Timer(delay, self.expired_fen_timer, args=[state])
+            self.state.fen_timer = AsyncRepeatingTimer(delay, self.expired_fen_timer, self.loop, args=[self.state])
             self.state.fen_timer.start()
             self.state.fen_timer_running = True
 
