@@ -40,7 +40,7 @@ INT_EXPECTED_GAME_LENGTH = 100  # divide thinking time over expected game length
 
 # how long the chess engine should analyse
 # WATCHING
-FLOAT_ANALYSIS_WAIT = 0.2  # save CPU by waiting between update calls to analysis()
+FLOAT_ANALYSIS_WAIT = 0.2  # save CPU between update calls to analysis()
 # PLAYING
 FLOAT_ANALYSE_LIMIT = 0.1  # asking for hint while not pondering
 FLOAT_ANALYSE_PONDER_LIMIT = 0.05 # asking for a hint when pondering
@@ -139,7 +139,8 @@ class ContinuousAnalysis:
         :param delay: Time interval between each analysis iteration (in seconds).
         """
         self.engine = None
-        self.game = None
+        self.game = None  # latest position requested to be analysed
+        self.current_game = None  # latest position analysed
         self.delay = delay
         self.first_limit = Limit or None  # set in start
         self.multipv = int or None # set in start
@@ -149,6 +150,8 @@ class ContinuousAnalysis:
         self._analysis_data = None  # "best" InfoDict list
         self._first_data = None  # "low" InfoDict list
         self.loop = loop  # main loop everywhere
+        # following is used for debug only
+        self.whoami = ""  # set in start
 
 
     async def _analyze_position(self):
@@ -156,22 +159,21 @@ class ContinuousAnalysis:
         while self._running:  # outer loop waiting for an analysable position
             try:
                 if not self._game_analysable(self.game):
-                    logger.debug("ContinuousAnalyser waiting for analysable position")
-                    await asyncio.sleep(self.delay * 2)
+                    await asyncio.sleep(self.delay)
                     continue
-                # new position - start with new game and data
-                current_game = self.game.copy()
+                # new position - start with new current_game and empty data
+                self.current_game = self.game.copy()
                 self._analysis_data = self._first_data = None
-                await self._analyse_position(current_game)  # until position changes
+                await self._analyse_position()  # until position changes
             except asyncio.CancelledError:
                 logger.debug("ContinuousAnalyser cancelled")
                 break
 
     
-    async def _analyse_position(self, current_game: chess.Board):
+    async def _analyse_position(self):
         """ analyse while position stays same """
         first = True  # first analysis with different limit and multipv
-        while self._running and current_game.fen() == self.game.fen():
+        while self._running and self.current_game.fen() == self.game.fen():
             if first: # extra low_first loop if requested by called
                 limit = self.first_limit if self.first_limit else None
                 multipv = self.first_multipv if self.first_multipv else self.multipv
@@ -181,36 +183,36 @@ class ContinuousAnalysis:
                 limit = None  # more depth after first low
                 multipv = self.multipv
             try:
-                await self._analyse_forever(current_game,
-                                       limit,
-                                       multipv,
-                                       forever=not first,
-                                       first=first)
+                await self._analyse_forever(limit,
+                                            multipv,
+                                            forever=not first,
+                                            first=first)
                 first = False  # remaining deep analysis run forever
             except chess.engine.AnalysisComplete:
                 asyncio.sleep(self.delay)  # maybe it helps to wait some extra?
                 logger.debug("ContinuousAnalyser ran out of information")
 
 
-    async def _analyse_forever(self, current_game: chess.Board,
+    async def _analyse_forever(self, 
                                 limit: Limit | None,
                                 multipv: int | None,
                                 forever: bool,
                                 first: bool):
         """ analyse forever if parameter forever true otherwise just one 
             if first is true store an extra first low result """
-        with await self.engine.analysis(current_game, limit=limit, multipv=multipv) as analysis:
+        with await self.engine.analysis(self.current_game, limit=limit, multipv=multipv) as analysis:
             async for info in analysis:
                 # after waiting, check if position has changed
-                if current_game.fen() != self.game.fen():
+                if self.current_game.fen() != self.game.fen():
                     self._analysis_data = self._first_data = None
                     return  # old position, quit analysis
                 updated = self._update_analysis_data(first, analysis)  # update to latest
                 if updated:
-                    await asyncio.sleep(self.delay)  # save cpu
                     if not forever:
                         return  # stops analysis after first iteration
                 # else just wait for info so that we get updated True
+                # logger.debug("analyser running in %s", self.whoami)
+                await asyncio.sleep(self.delay)  # save cpu
 
 
     def _update_analysis_data(self,
@@ -231,13 +233,19 @@ class ContinuousAnalysis:
     def _game_analysable(self, game: chess.Board) -> bool:
         """ return True if game is analysable """
         if game is None:
-            logger.warning("no game to analyse")
+            logger.debug("no game to analyse")
             return False
         elif game.is_game_over():
-            logger.warning("nothing to analyse since game is over")
+            logger.debug("no game to analyse - game is over")
             return False
-        # @ todo if game is starting position continue
-        # should we also skip while in book? or is that main loops logic?
+        elif game.fen() == chess.Board.starting_fen:
+            logger.debug("no game to analyse yet - its starting position")
+            return False
+        elif game.fullmove_number < 2:
+            # remember that picotutor needs two history moves analysed
+            logger.debug("no game to analyse yet - only first move")
+            return False
+        # @todo skip while in book? or is that main loops logic?
         return True
 
 
@@ -263,6 +271,8 @@ class ContinuousAnalysis:
             self._running = True
             self._task = self.loop.create_task(self._analyze_position())
             logging.debug("ContinuousAnalysis started")
+            # following is for debug use only
+            self.whoami = "tutor engine" if self.first_limit else "pico engine"
         else:
             logging.info('ContinuousAnalysis already running - strange!')
 
@@ -278,7 +288,7 @@ class ContinuousAnalysis:
 
     def get_fen(self) -> str:
         """ return the fen the analysis is based on """
-        return self.game.fen() if self.game else ""
+        return self.current_game.fen() if self.current_game else ""
 
 
     def get_analysis(self) -> dict:
@@ -288,14 +298,13 @@ class ContinuousAnalysis:
         """
         result = { "low": self._first_data,
                     "best": self._analysis_data,
-                    "fen": self.game.fen()
+                    "fen": self.current_game.fen()
                     }
         return result
 
     def update_game(self, new_game: chess.Board):
         """ Updates the game for analysis in a thread-safe manner.
             Do not call if fen() is still the same """
-        assert(self.game.fen() != new_game.fen())  # can be removed
         self.game = new_game.copy()  # remember this game position
         # dont reset self._analysis_data and self._first_data to None
         # let the main loop self._analyze_position manage it
@@ -316,7 +325,7 @@ class ContinuousAnalysis:
 
         :return: A copy of the current chess board or None if no board is set.
         """
-        return self.game.copy() if self.game else None
+        return self.current_game.copy() if self.current_game else None
 
 
 class UciEngine(object):
