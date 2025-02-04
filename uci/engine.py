@@ -210,9 +210,9 @@ class ContinuousAnalysis:
                 if updated:
                     if not forever:
                         return  # stops analysis after first iteration
+                    await asyncio.sleep(self.delay)  # save cpu
                 # else just wait for info so that we get updated True
                 # logger.debug("analyser running in %s", self.whoami)
-                await asyncio.sleep(self.delay)  # save cpu
 
 
     def _update_analysis_data(self,
