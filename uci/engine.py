@@ -183,10 +183,7 @@ class ContinuousAnalysis:
                 limit = None  # more depth after first low
                 multipv = self.multipv
             try:
-                await self._analyse_forever(limit,
-                                            multipv,
-                                            forever=not first,
-                                            first=first)
+                await self._analyse_forever(limit, multipv, first)
                 first = False  # remaining deep analysis run forever
             except chess.engine.AnalysisComplete:
                 asyncio.sleep(self.delay)  # maybe it helps to wait some extra?
@@ -196,9 +193,8 @@ class ContinuousAnalysis:
     async def _analyse_forever(self, 
                                 limit: Limit | None,
                                 multipv: int | None,
-                                forever: bool,
                                 first: bool):
-        """ analyse forever if parameter forever true otherwise just one 
+        """ analyse forever if no Limit sent
             if first is true store an extra first low result """
         with await self.engine.analysis(self.current_game, limit=limit, multipv=multipv) as analysis:
             async for info in analysis:
@@ -208,12 +204,25 @@ class ContinuousAnalysis:
                     return  # old position, quit analysis
                 updated = self._update_analysis_data(first, analysis)  # update to latest
                 if updated:
-                    if not forever:
-                        return  # stops analysis after first iteration
+                    #  self.debug_analyser()  # normally commented out
+                    if limit:
+                        low_info: chess.engine.InfoDict = self._first_data[0]
+                        if "depth" in low_info:
+                            # dont start deep analysis until low ready
+                            if low_info.get("depth") >= limit.depth:
+                                return  # switches to deep without limit
                     await asyncio.sleep(self.delay)  # save cpu
                 # else just wait for info so that we get updated True
-                # logger.debug("analyser running in %s", self.whoami)
 
+
+    def debug_analyser(self):
+        """ use this debug call to see how low and deep depth evolves """
+        i: chess.engine.InfoDict = self._first_data[0]
+        j: chess.engine.InfoDict = self._analysis_data[0]
+        if "depth" in i and "depth" in j:
+            logger.debug("%s low depth: %d deep depth: %d",
+                         self.whoami, i.get("depth"), j.get("depth")
+                         )
 
     def _update_analysis_data(self,
                               first: bool,
@@ -272,7 +281,7 @@ class ContinuousAnalysis:
             self._task = self.loop.create_task(self._analyze_position())
             logging.debug("ContinuousAnalysis started")
             # following is for debug use only
-            self.whoami = "tutor engine" if self.first_limit else "pico engine"
+            self.whoami = "picotutor" if self.first_limit else "engine"
         else:
             logging.info('ContinuousAnalysis already running - strange!')
 
