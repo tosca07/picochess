@@ -205,12 +205,12 @@ class ContinuousAnalysis:
                 updated = self._update_analysis_data(first, analysis)  # update to latest
                 if updated:
                     #  self.debug_analyser()  # normally commented out
-                    if limit:
+                    if first and limit:
                         low_info: chess.engine.InfoDict = self._first_data[0]
                         if "depth" in low_info:
                             # dont start deep analysis until low ready
                             if low_info.get("depth") >= limit.depth:
-                                return  # switches to deep without limit
+                                return  # low done, next call non-first deep
                     await asyncio.sleep(self.delay)  # save cpu
                 # else just wait for info so that we get updated True
 
