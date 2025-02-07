@@ -264,11 +264,11 @@ class ContinuousAnalysis:
             logger.debug("no game to analyse - game is over")
             return False
         elif game.fen() == chess.Board.starting_fen:
-            logger.debug("no game to analyse yet - its starting position")
+            #  logger.debug("no game to analyse yet - its starting position")
             return False
         elif game.fullmove_number < 2:
             # remember that picotutor needs two history moves analysed
-            logger.debug("no game to analyse yet - only first move")
+            #  logger.debug("no game to analyse yet - only first move")
             return False
         # @todo skip while in book? or is that main loops logic?
         return True
