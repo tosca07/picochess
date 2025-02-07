@@ -23,6 +23,7 @@ import logging
 import configparser
 import re
 from enum import Enum
+import copy
 
 import spur  # type: ignore
 import paramiko
@@ -301,13 +302,15 @@ class ContinuousAnalysis:
 
 
     def get_analysis(self) -> dict:
-        """ :return: first and latest lists of InfoDict
-            key 'first': first low quick list of InfoDict (multipv)
-            key 'last': contains a deep list of InfoDict (multipv)
+        """ :return: deepcopied first low and latest best lists of InfoDict
+            key 'low': first low limited shallow list of InfoDict (multipv)
+            key 'best': a deep list of InfoDict (multipv)
         """
-        result = { "low": self._first_data,
-                    "best": self._analysis_data,
-                    "fen": self.current_game.fen()
+        # due to the nature of the async analysis update it
+        # continues to update it all the time, deepcopy needed
+        result = { "low": copy.deepcopy(self._first_data),
+                    "best": copy.deepcopy(self._analysis_data),
+                    "fen": copy.deepcopy(self.current_game.fen())
                     }
         return result
 
