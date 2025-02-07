@@ -41,7 +41,7 @@ INT_EXPECTED_GAME_LENGTH = 100  # divide thinking time over expected game length
 
 # how long the chess engine should analyse
 # WATCHING
-FLOAT_ANALYSIS_WAIT = 0.2  # save CPU between update calls to analysis()
+FLOAT_ANALYSIS_WAIT = 0.1  # save CPU in ContinuousAnalysis
 # PLAYING
 FLOAT_ANALYSE_LIMIT = 0.1  # asking for hint while not pondering
 FLOAT_ANALYSE_PONDER_LIMIT = 0.05 # asking for a hint when pondering
@@ -187,8 +187,8 @@ class ContinuousAnalysis:
                 await self._analyse_forever(limit, multipv, first)
                 first = False  # remaining deep analysis run forever
             except chess.engine.AnalysisComplete:
-                asyncio.sleep(self.delay)  # maybe it helps to wait some extra?
                 logger.debug("ContinuousAnalyser ran out of information")
+                asyncio.sleep(self.delay)  # maybe it helps to wait some extra?
 
 
     async def _analyse_forever(self, 
