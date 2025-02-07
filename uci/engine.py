@@ -141,11 +141,9 @@ class ContinuousAnalysis:
         """
         self.engine = None
         self.game = None  # latest position requested to be analysed
+        self.limit_reached = False  # True when limit reached for position
         self.current_game = None  # latest position analysed
         self.delay = delay
-        self.first_limit = Limit or None  # set in start
-        self.multipv = int or None # set in start
-        self.first_multipv = int or None # set in start
         self._running = False
         self._task = None
         self._analysis_data = None  # "best" InfoDict list
@@ -153,50 +151,64 @@ class ContinuousAnalysis:
         self.loop = loop  # main loop everywhere
         # following is used for debug only
         self.whoami = ""  # set in start
+        self._first_low_kwargs: dict | None = None  # set in start
+        self._normal_deep_kwargs: dict | None = None  # set in start
 
 
-    async def _analyze_position(self):
-        """Internal function for continuous analysis in the background thread."""
-        while self._running:  # outer loop waiting for an analysable position
+    async def watching_analyse(self):
+        """Internal function for continuous analysis in the background."""
+        limit_debug = True
+        while self._running:
             try:
+                if self.limit_reached:
+                    if limit_debug:
+                        logger.debug("%s analysis limited", self.whoami)
+                        limit_debug = False  # dont flood log with above debug
+                    await asyncio.sleep(self.delay)
+                    continue
                 if not self._game_analysable(self.game):
                     await asyncio.sleep(self.delay)
                     continue
                 # new position - start with new current_game and empty data
                 self.current_game = self.game.copy()
                 self._analysis_data = self._first_data = None
-                await self._analyse_position()  # until position changes
+                self.limit_reached = await self._analyse_position()
             except asyncio.CancelledError:
                 logger.debug("ContinuousAnalyser cancelled")
                 break
 
     
-    async def _analyse_position(self):
-        """ analyse while position stays same """
-        first = True  # first analysis with different limit and multipv
+    async def _analyse_position(self)->bool:
+        """ analyse while position stays same or limit reached
+            returns True if limit was reached for this position """
+        first = True
         while self._running and self.current_game.fen() == self.game.fen():
-            if first: # extra low_first loop if requested by called
-                limit = self.first_limit if self.first_limit else None
-                multipv = self.first_multipv if self.first_multipv else self.multipv
-                if not limit and not self.first_multipv:
-                    first = False  # optimise: no extra low_first loop
+            if first and self._first_low_kwargs:
+                kwargs = self._first_low_kwargs
             else: # normal deep analysis
-                limit = None  # more depth after first low
-                multipv = self.multipv
+                kwargs = self._normal_deep_kwargs
             try:
-                await self._analyse_forever(limit, multipv, first)
-                first = False  # remaining deep analysis run forever
+                await self._analyse_forever(first, kwargs)
+                if not first:
+                    return True  # limit reached, done with this position
             except chess.engine.AnalysisComplete:
                 logger.debug("ContinuousAnalyser ran out of information")
                 asyncio.sleep(self.delay)  # maybe it helps to wait some extra?
+            finally:
+                first = False  # no longer first _analyse_forever call
+        return False  # limit not reached, position changed
 
 
-    async def _analyse_forever(self, 
-                                limit: Limit | None,
-                                multipv: int | None,
-                                first: bool):
-        """ analyse forever if no Limit sent
-            if first is true store an extra first low result """
+
+    async def _analyse_forever(self, first: bool=False, kwargs: dict | None = None):
+        """ analyse forever if no kwargs Limit sent
+            if first is True store an extra first low result """
+        if kwargs:
+            limit: chess.engine.Limit = kwargs["limit"] if "limit" in kwargs else None
+            multipv: int = kwargs["multipv"] if "multipv" in kwargs else None
+        else:
+            limit = None
+            multipv = None
         with await self.engine.analysis(self.current_game, limit=limit, multipv=multipv) as analysis:
             async for info in analysis:
                 # after waiting, check if position has changed
@@ -206,12 +218,15 @@ class ContinuousAnalysis:
                 updated = self._update_analysis_data(first, analysis)  # update to latest
                 if updated:
                     #  self.debug_analyser()  # normally commented out
-                    if first and limit:
-                        low_info: chess.engine.InfoDict = self._first_data[0]
-                        if "depth" in low_info:
-                            # dont start deep analysis until low ready
-                            if low_info.get("depth") >= limit.depth:
-                                return  # low done, next call non-first deep
+                    if limit:
+                        # @todo change 0 to -1 to get all multipv finished
+                        if first:
+                            info_limit: chess.engine.InfoDict = self._first_data[0]
+                        else:
+                            info_limit: chess.engine.InfoDict = self._analysis_data[0]
+                        if "depth" in info_limit:
+                            if info_limit.get("depth") >= limit.depth:
+                                return  # limit reached
                     await asyncio.sleep(self.delay)  # save cpu
                 # else just wait for info so that we get updated True
 
@@ -228,7 +243,7 @@ class ContinuousAnalysis:
     def _update_analysis_data(self,
                               first: bool,
                               analysis: chess.engine.AnalysisResult)->bool:
-        """ internal function for updating in main loop _analyze_position 
+        """ internal function for updating while analysing 
             returns True if data was updated """
         result = False
         if analysis.multipv:
@@ -261,28 +276,30 @@ class ContinuousAnalysis:
 
     def start(self, engine: chess.engine.SimpleEngine,
               game: chess.Board,
-              first_limit: Limit | None = None,
-              multipv: int | None = None,
-              first_multipv: int | None = None):
+              normal_deep_kwargs: dict | None = None,
+              first_low_kwargs: dict | None = None
+              ):
         """
-        Starts the analysis
+        Starts the analysis. You may ask for two rounds by giving
+        an extra first_low_kwargs, typically with low limit like limit=5
+        Normal one will be deep and is run after optional first low
 
         :param engine: An instance of SimpleEngine managed externally.
         :param game: The current chess board (game) to analyze.
-        :param first_limit optional to ask for first obvious moves analysis
-        :param multipv: optional to ask for more than one root move
+        :param normal_deep_kwargs: limit the analysis, None means forever
+        :param first_low_kwargs: optional limit to get a first low analysis
         """
         if not self._running:
             self.engine = engine
             self.game = game.copy()  # remember this game position
-            self.first_limit = first_limit  # use this limit for first analysis call
-            self.multipv = multipv
-            self.first_multipv = first_multipv
+            self.limit_reached = False  # True when limit reached for position
+            self._first_low_kwargs = first_low_kwargs
+            self._normal_deep_kwargs = normal_deep_kwargs
             self._running = True
-            self._task = self.loop.create_task(self._analyze_position())
+            self._task = self.loop.create_task(self.watching_analyse())
             logging.debug("ContinuousAnalysis started")
             # following is for debug use only
-            self.whoami = "picotutor" if self.first_limit else "engine"
+            self.whoami = "picotutor" if self._first_low_kwargs else "engine"
         else:
             logging.info('ContinuousAnalysis already running - strange!')
 
@@ -318,6 +335,7 @@ class ContinuousAnalysis:
         """ Updates the game for analysis in a thread-safe manner.
             Do not call if fen() is still the same """
         self.game = new_game.copy()  # remember this game position
+        self.limit_reached = False  # True when limit reached for position
         # dont reset self._analysis_data and self._first_data to None
         # let the main loop self._analyze_position manage it
 
@@ -358,14 +376,17 @@ class UciEngine(object):
     # - self.pondering indicates if engine is to ponder
     #   without pondering analysis will be "static" one-timer
 
-    def __init__(self, file: str, uci_shell: UciShell, mame_par: str,
-                 loop: asyncio.AbstractEventLoop,
-                 first_limit: Limit | None = None,
-                 multipv: int | None = None,
-                 first_multipv: int | None = None,
+    def __init__(self,
+                file: str, uci_shell: UciShell,
+                mame_par: str,
+                loop: asyncio.AbstractEventLoop,
+                normal_deep_kwargs: dict | None = None,
+                first_low_kwargs: dict | None = None
                  ):
-        """  first_limit restricts first low analysis 
-             multipv sets number of root moves in analysis """
+        """ normal_deep_kwargs: normal deep limit - use None for forever
+               - a dict with limit and multipv
+            first_low_kwargs: extra limited first low analysis
+               - a dict with limit and multipv """
         super(UciEngine, self).__init__()
         logger.info("mame parameters=%s", mame_par)
         self.mode = EngineMode.PLAYING  # picochess starts in NORMAL mode
@@ -377,9 +398,8 @@ class UciEngine(object):
         self.is_adaptive = False
         self.engine_rating = -1
         self.uci_elo_eval_fn = None  # saved UCI_Elo eval function
-        self.first_limit = first_limit  # if !None this is for first analysis
-        self.multipv = multipv  # used by Analysis()
-        self.first_multipv = first_multipv  # used for first low obvious moves
+        self._normal_deep_kwargs = normal_deep_kwargs  # pass on to ContinousAnalysis.start
+        self._first_low_kwargs = first_low_kwargs  # pass on to ContinousAnalysis.start
         self.file = file
         self.mame_par = mame_par
         self.is_mame = "/mame/" in self.file
@@ -566,10 +586,11 @@ class UciEngine(object):
                 result = True  # was running - results to be expected
         else:
             if self.engine:
-                self.analyser.start(self.engine, game,
-                                    first_limit=self.first_limit,
-                                    multipv=self.multipv,
-                                    first_multipv=self.first_multipv)
+                self.analyser.start(self.engine,
+                                    game,
+                                    self._normal_deep_kwargs,
+                                    self._first_low_kwargs
+                                    )
             else:
                 logger.warning("start analysis requested but no engine loaded")
         return result
@@ -593,10 +614,10 @@ class UciEngine(object):
         else:
             if self.engine:
                 # mode might have changed, recover by starting analyser
-                self.analyser.start(self.engine, game,
-                                    first_limit=self.first_limit,
-                                    multipv=self.multipv,
-                                    first_multipv=self.first_multipv
+                self.analyser.start(self.engine,
+                                    game,
+                                    self._normal_deep_kwargs,
+                                    self._first_low_kwargs
                                     )
         return result
 

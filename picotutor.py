@@ -47,8 +47,6 @@ class PicoTutor:
         loop=None,
     ):
         self.user_color = i_player_color
-        self.max_valid_moves = c.VALID_ROOT_MOVES
-        self.low_valid_moves = c.LOW_ROOT_MOVES
         self.engine_path = i_engine_path
 
         self.engine = None # or UciEngine
@@ -115,20 +113,22 @@ class PicoTutor:
         if not self.engine and (self.watcher_on or self.coach_on):
             # start engine only if needed, obvious moves in first_limit
             low_limit = chess.engine.Limit(depth=c.LOW_DEPTH)
+            deep_limit = chess.engine.Limit(depth=c.DEEP_DEPTH)
+            low_kwargs = {"limit": low_limit, "multipv": c.LOW_ROOT_MOVES}
+            deep_kwargs = {"limit": deep_limit, "multipv": c.VALID_ROOT_MOVES}
             self.engine = UciEngine(
                 self.engine_path,
                 self.ucishell,
                 self.mame_par,
                 self.loop,
-                first_limit=low_limit,
-                multipv=self.max_valid_moves,
-                first_multipv=self.low_valid_moves
+                deep_kwargs,
+                low_kwargs
             )
             # avoid spreading await in this case
             await self.engine.open_engine()
             if self.engine.loaded_ok() is True:
                 options = {
-                    "MultiPV": self.max_valid_moves,
+                    "MultiPV": c.VALID_ROOT_MOVES,
                     "Contempt": 0,
                     "Threads": c.NUM_THREADS
                 }
