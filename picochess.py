@@ -1064,6 +1064,7 @@ async def main() -> None:
                 uci_shell = self.uci_remote_shell
             else:
                 uci_shell = self.uci_local_shell
+            depth = FLOAT_MAX_ANALYSIS_DEPTH if bool(self.args.coach_analyser) else None
             self.state.picotutor = PicoTutor(
                 i_ucishell=uci_shell,
                 i_engine_path=tutor_engine,
@@ -1071,6 +1072,7 @@ async def main() -> None:
                 i_lang=self.args.language,
                 i_coach_analyser=bool(self.args.coach_analyser),
                 loop=self.loop,
+                i_depth=depth,
             )
             await self.state.picotutor.open_engine()
             self.state.picotutor.set_status(

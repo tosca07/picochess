@@ -45,6 +45,7 @@ class PicoTutor:
         i_lang="en",
         i_coach_analyser=False,
         loop=None,
+        i_depth=None,
     ):
         self.user_color = i_player_color
         self.engine_path = i_engine_path
@@ -86,6 +87,7 @@ class PicoTutor:
         self.ucishell = i_ucishell
         self.coach_analyser = i_coach_analyser
         self.loop = loop  # main loop everywhere
+        self.deep_limit_depth = i_depth  # override picotutor value
 
         try:
             with open("chess-eco_pos.txt") as fp:
@@ -471,7 +473,11 @@ class PicoTutor:
             if self.engine.loaded_ok():
                 low_limit = chess.engine.Limit(depth=c.LOW_DEPTH)
                 low_kwargs = {"limit": low_limit, "multipv": c.LOW_ROOT_MOVES}
-                deep_limit = chess.engine.Limit(depth=c.DEEP_DEPTH)
+                if self.deep_limit_depth:
+                    # override when using coach_analyser True
+                    deep_limit = chess.engine.Limit(depth=self.deep_limit_depth)
+                else:
+                    deep_limit = chess.engine.Limit(depth=c.DEEP_DEPTH)
                 deep_kwargs = {"limit": deep_limit, "multipv": c.VALID_ROOT_MOVES}
                 self.engine.start_analysis(self.board, deep_kwargs, low_kwargs)
             else:
