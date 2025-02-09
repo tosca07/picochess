@@ -1339,7 +1339,7 @@ async def main() -> None:
             if not self.state.done_computer_fen:
                 self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
                 self.state.last_legal_fens = []
-            if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN):  # @todo handle Mode.REMOTE too
+            if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN):  # @todo handle Mode.REMOTE too and TRAINING?
                 if self.state.done_computer_fen:
                     logger.debug(
                         "best move displayed, dont search and also keep play mode: %s", self.state.play_mode
@@ -2299,8 +2299,7 @@ async def main() -> None:
         def is_engine_playing_moves(self) -> bool:
             """ return true if engine is playing moves based on self.state.Mode
                 otherwise engine is watching and user plays both sides """
-            # should Mode.TRAINING be included?
-            return bool(self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN))
+            return bool(self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING))
 
 
         def debug_pv_info(self, info: chess.engine.InfoDict):
@@ -2331,8 +2330,8 @@ async def main() -> None:
             if not info:
                 # get info from playing engine
                 if engine_playing_moves:
-                    # optimisation to ask for info only in BRAIN mode
-                    if self.state.interaction_mode == Mode.BRAIN:
+                    # optimisation to not ask for info in NORMAL mode
+                    if self.state.interaction_mode != Mode.NORMAL:
                         limit: Limit = Limit(time=FLOAT_MAX_ANALYSE_TIME)
                         info: InfoDict = await self.engine.playmode_analyse(game, limit)
                         self.debug_pv_info(info)
@@ -2842,13 +2841,11 @@ async def main() -> None:
 
 
         async def _pv_score_depth_analyser(self):
-            """ Analyse PV score depth """
+            """ Analyse PV score depth in the background """
             if self.state.game.fullmove_number > 1:
                 # @todo find a way to skip background analysis
                 # while we are doing inbook
-                user_to_move = self.state.is_user_turn()
-                if user_to_move or self.state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
-                    await self.analyse(self.state.game)
+                await self.analyse(self.state.game)
 
         async def event_consumer(self):
             """ Event consumer for main """
