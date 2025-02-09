@@ -292,9 +292,9 @@ class ContinuousAnalysis:
             self._normal_deep_kwargs = normal_deep_kwargs
             self._running = True
             self._task = self.loop.create_task(self.watching_analyse())
-            logging.debug("ContinuousAnalysis started")
-            # following is for debug use only
+            # whoami is for debug use only
             self.whoami = "picotutor" if self._first_low_kwargs else "engine"
+            logging.debug("%s ContinuousAnalysis started", self.whoami)
         else:
             logging.info('ContinuousAnalysis already running - strange!')
 
