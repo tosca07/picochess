@@ -121,6 +121,7 @@ from dgt.menu import DgtMenu
 from picotutor import PicoTutor
 from pathlib import Path
 FLOAT_MIN_BACKGROUND_TIME = 1.5  # dont update analysis more often than this
+FLOAT_MAX_ANALYSIS_DEPTH = 27  # same famous limit as in deep blue 1997?
 
 ONLINE_PREFIX = "Online"
 
@@ -2331,7 +2332,8 @@ async def main() -> None:
                         self.debug_pv_info(info)
                 else:
                     # optimisation, ask for result only if analysis was running
-                    if self.engine.start_analysis(game):
+                    deep_kwargs = {"limit": chess.engine.Limit(depth=FLOAT_MAX_ANALYSIS_DEPTH)}
+                    if self.engine.start_analysis(game, deep_kwargs):
                         result = self.engine.get_analysis(game)
                         info_list: list[InfoDict] = result.get("best")
                         if info_list:

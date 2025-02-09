@@ -224,7 +224,7 @@ class ContinuousAnalysis:
                             info_limit: chess.engine.InfoDict = self._first_data[0]
                         else:
                             info_limit: chess.engine.InfoDict = self._analysis_data[0]
-                        if "depth" in info_limit:
+                        if "depth" in info_limit and limit.depth:
                             if info_limit.get("depth") >= limit.depth:
                                 return  # limit reached
                     await asyncio.sleep(self.delay)  # save cpu
@@ -379,14 +379,9 @@ class UciEngine(object):
     def __init__(self,
                 file: str, uci_shell: UciShell,
                 mame_par: str,
-                loop: asyncio.AbstractEventLoop,
-                normal_deep_kwargs: dict | None = None,
-                first_low_kwargs: dict | None = None
+                loop: asyncio.AbstractEventLoop
                  ):
-        """ normal_deep_kwargs: normal deep limit - use None for forever
-               - a dict with limit and multipv
-            first_low_kwargs: extra limited first low analysis
-               - a dict with limit and multipv """
+        """ initialise engine with file and mame_par info """
         super(UciEngine, self).__init__()
         logger.info("mame parameters=%s", mame_par)
         self.mode = EngineMode.PLAYING  # picochess starts in NORMAL mode
@@ -398,8 +393,6 @@ class UciEngine(object):
         self.is_adaptive = False
         self.engine_rating = -1
         self.uci_elo_eval_fn = None  # saved UCI_Elo eval function
-        self._normal_deep_kwargs = normal_deep_kwargs  # pass on to ContinousAnalysis.start
-        self._first_low_kwargs = first_low_kwargs  # pass on to ContinousAnalysis.start
         self.file = file
         self.mame_par = mame_par
         self.is_mame = "/mame/" in self.file
@@ -575,9 +568,18 @@ class UciEngine(object):
         return self.res
 
 
-    def start_analysis(self, game: chess.Board) -> bool:
-        """ start analyser - returns True if already running 
-            in current game position - means result can be expected """
+    def start_analysis(self, game: chess.Board,
+                        normal_deep_kwargs: dict | None = None,
+                        first_low_kwargs: dict | None = None
+                        ) -> bool:
+        """ start analyser - returns True if if it was already running
+            in current game position, which means result can be expected
+
+            parameters:
+            normal_deep_kwargs: normal deep limit - use None for forever
+               - a dict with limit and multipv
+            first_low_kwargs: extra limited first low analysis
+               - a dict with limit and multipv """
         result = False
         if self.analyser.is_running():
             if game.fen() != self.analyser.get_fen():
@@ -588,8 +590,8 @@ class UciEngine(object):
             if self.engine:
                 self.analyser.start(self.engine,
                                     game,
-                                    self._normal_deep_kwargs,
-                                    self._first_low_kwargs
+                                    normal_deep_kwargs,
+                                    first_low_kwargs
                                     )
             else:
                 logger.warning("start analysis requested but no engine loaded")
@@ -612,13 +614,7 @@ class UciEngine(object):
                 logger.debug("warning: analysis for old position %s", self.analyser.get_fen())
                 logger.debug("current new position is %s", game.fen())
         else:
-            if self.engine:
-                # mode might have changed, recover by starting analyser
-                self.analyser.start(self.engine,
-                                    game,
-                                    self._normal_deep_kwargs,
-                                    self._first_low_kwargs
-                                    )
+            logger.debug("caller has forgot to start analysis")
         return result
 
     async def playmode_analyse(self, game: Board) -> chess.engine.InfoDict | None:

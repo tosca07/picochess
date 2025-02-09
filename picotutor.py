@@ -112,17 +112,11 @@ class PicoTutor:
         """ open the tutor engine """            
         if not self.engine and (self.watcher_on or self.coach_on):
             # start engine only if needed, obvious moves in first_limit
-            low_limit = chess.engine.Limit(depth=c.LOW_DEPTH)
-            deep_limit = chess.engine.Limit(depth=c.DEEP_DEPTH)
-            low_kwargs = {"limit": low_limit, "multipv": c.LOW_ROOT_MOVES}
-            deep_kwargs = {"limit": deep_limit, "multipv": c.VALID_ROOT_MOVES}
             self.engine = UciEngine(
                 self.engine_path,
                 self.ucishell,
                 self.mame_par,
-                self.loop,
-                deep_kwargs,
-                low_kwargs
+                self.loop
             )
             # avoid spreading await in this case
             await self.engine.open_engine()
@@ -475,7 +469,11 @@ class PicoTutor:
         # after newgame event
         if self.engine:
             if self.engine.loaded_ok():
-                self.engine.start_analysis(self.board)
+                low_limit = chess.engine.Limit(depth=c.LOW_DEPTH)
+                low_kwargs = {"limit": low_limit, "multipv": c.LOW_ROOT_MOVES}
+                deep_limit = chess.engine.Limit(depth=c.DEEP_DEPTH)
+                deep_kwargs = {"limit": deep_limit, "multipv": c.VALID_ROOT_MOVES}
+                self.engine.start_analysis(self.board, deep_kwargs, low_kwargs)
             else:
                 logger.error("engine has terminated in picotutor?")
 
