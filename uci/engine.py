@@ -39,12 +39,7 @@ FLOAT_MAX_ENGINE_TIME = 2.0  # engine max thinking time
 FLOAT_MIN_ENGINE_TIME = 0.1  # engine min thinking time
 INT_EXPECTED_GAME_LENGTH = 100  # divide thinking time over expected game length
 
-# how long the chess engine should analyse
-# WATCHING
 FLOAT_ANALYSIS_WAIT = 0.1  # save CPU in ContinuousAnalysis
-# PLAYING
-FLOAT_ANALYSE_LIMIT = 0.1  # asking for hint while not pondering
-FLOAT_ANALYSE_PONDER_LIMIT = 0.05 # asking for a hint when pondering
 
 UCI_ELO = "UCI_Elo"
 UCI_ELO_NON_STANDARD = "UCI Elo"
@@ -617,18 +612,16 @@ class UciEngine(object):
             logger.debug("caller has forgot to start analysis")
         return result
 
-    async def playmode_analyse(self, game: Board) -> chess.engine.InfoDict | None:
-        """ Get analysis update from pondering engine - BRAIN mode """
+    async def playmode_analyse(self, game: Board,
+                               limit: chess.engine.Limit,
+                               ) -> chess.engine.InfoDict | None:
+        """ Get analysis update from playing engine """
         if self.idle is False:
             # protect engine against calls if its not idle
             return None
         try:
             self.idle = False  # engine is going to be busy now
-            if self.pondering:
-                limit = FLOAT_ANALYSE_PONDER_LIMIT  # shorter
-            else:
-                limit = FLOAT_ANALYSE_LIMIT  # longer
-            info = await self.engine.analyse(game, chess.engine.Limit(time=limit))
+            info = await self.engine.analyse(game, limit)
         except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
             info = None

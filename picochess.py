@@ -68,6 +68,7 @@ import asyncio
 import paramiko
 import chess.pgn
 import chess.polyglot
+from chess.engine import Limit
 import dgt.util
 from tornado.platform.asyncio import AsyncIOMainLoop
 import chess.engine  # type: ignore
@@ -121,7 +122,11 @@ from dgt.menu import DgtMenu
 from picotutor import PicoTutor
 from pathlib import Path
 FLOAT_MIN_BACKGROUND_TIME = 1.5  # dont update analysis more often than this
+# Limit analysis of engine
+# ENGINE WATCHING
 FLOAT_MAX_ANALYSIS_DEPTH = 27  # same famous limit as in deep blue 1997?
+# ENGINE PLAYING
+FLOAT_MAX_ANALYSE_TIME = 0.1  # asking for hint while not pondering
 
 ONLINE_PREFIX = "Online"
 
@@ -2328,7 +2333,8 @@ async def main() -> None:
                 if engine_playing_moves:
                     # optimisation to ask for info only in BRAIN mode
                     if self.state.interaction_mode == Mode.BRAIN:
-                        info: InfoDict = await self.engine.playmode_analyse(game)
+                        limit: Limit = Limit(time=FLOAT_MAX_ANALYSE_TIME)
+                        info: InfoDict = await self.engine.playmode_analyse(game, limit)
                         self.debug_pv_info(info)
                 else:
                     # optimisation, ask for result only if analysis was running
