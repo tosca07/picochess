@@ -47,12 +47,6 @@ UCI_ELO_NON_STANDARD2 = "UCI_Limit"
 
 logger = logging.getLogger(__name__)
 
-class EngineMode(Enum):
-    """ represent modes of using chess engine """
-    PLAYING = 1  # user plays engine
-    WATCHING = 2  # engine is observing/analysing, user plays both sides
-
-
 
 class WindowsShellType:
     """Shell type supporting Windows for spur."""
@@ -379,7 +373,6 @@ class UciEngine(object):
         """ initialise engine with file and mame_par info """
         super(UciEngine, self).__init__()
         logger.info("mame parameters=%s", mame_par)
-        self.mode = EngineMode.PLAYING  # picochess starts in NORMAL mode
         self.idle = True
         self.pondering = False  # normal mode no pondering
         self.loop = loop  # main loop everywhere
@@ -496,18 +489,11 @@ class UciEngine(object):
         if self.is_mame:
             os.system("sudo pkill -9 -f mess")
 
+
     def stop(self):
-        """ In PLAYMODE wait for engine to stop thinking
-            always stops analyser """
-        if self.mode == EngineMode.WATCHING:
-            if self.analyser.is_running() is not None:
-                self.analyser.stop()
-            else:
-                logger.debug("no analyser running in stop")
-        elif self.mode == EngineMode.PLAYING:
-            if self.analyser.is_running():
-                logger.debug("analyser thread running in PLAYING mode - stopping it")
-                self.analyser.stop()
+        """ Stop background ContinuousAnalyser """
+        if self.analyser.is_running() is not None:
+            self.analyser.stop()
 
 
     def pause_pgn_audio(self):
@@ -549,6 +535,9 @@ class UciEngine(object):
             # @todo: how does the user affect the ponder value in this call
             self.idle = False  # engine is going to be busy now
             self.res = await self.engine.play(game, chess.engine.Limit(time=use_time), ponder=self.pondering)
+        except asyncio.CancelledError:
+            logger.error("engine move calculation cancelled terminated")
+            self.res = None
         except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
             self.res = None
@@ -655,19 +644,10 @@ class UciEngine(object):
             # to avoid unnecessary stop and start?
             self.analyser.stop()
 
-    def set_mode(self, mode: int, ponder: bool = True):
-        """Set engine mode."""
-        self.mode = mode
-        if self.mode == EngineMode.PLAYING:
-            # Modes: NORMAL, BRAIN
-            if self.analyser.is_running() is not None:
-                self.analyser.stop()  # stop analysing - let ponder do it
-            self.pondering = ponder  # True in BRAIN mode = Ponder On menu
-        elif self.mode == EngineMode.WATCHING:
-            # Modes: ANALYSIS = Hint On, OBSERVING, etc...
-            # self.analyser will be started in start_analysis
-            # pondering has no meaning in ANALYSIS - leave unchanged
-            pass
+
+    def set_mode(self, ponder: bool = True):
+        """ Set engine ponder mode for a playing engine """
+        self.pondering = ponder  # True in BRAIN mode = Ponder On menu
 
     async def startup(self, options: dict, rating: Optional[Rating] = None):
         """Startup engine."""

@@ -31,9 +31,6 @@
 # g5 TRAINING (this is new in 2.00)                     -
 # h5 REMOTE (working again from 1.00 on)                REMOTE
 
-# chess engine plays in NORMAL, BRAIN, and TRAINING:    EngineMode.PLAYING
-# in the other modes the engine is observing:           EngineMode.WATCHING
-
 # Playing/Training Modes - Original old (2016?) description
 # When using these modes, please be patient and don’t rush moves. Allow a few seconds for the scores and moves to appear. If you see any bug when rushing moves, let us know on the mailing list.
 # Normal mode (enabled by white queen on A5).
@@ -75,7 +72,7 @@ import chess.engine  # type: ignore
 from chess.engine import InfoDict
 
 from configuration import Configuration
-from uci.engine import UciShell, UciEngine, EngineMode
+from uci.engine import UciShell, UciEngine
 from uci.engine_provider import EngineProvider
 from uci.rating import Rating, determine_result
 
@@ -2807,7 +2804,7 @@ async def main() -> None:
             if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
                 # optimisation, dont ask for ponder unless needed
                 ponder_mode = True if self.state.interaction_mode == Mode.BRAIN else False
-                self.engine.set_mode(mode=EngineMode.PLAYING, ponder=ponder_mode)
+                self.engine.set_mode(ponder=ponder_mode)
                 if self.state.interaction_mode in (Mode.BRAIN, Mode.TRAINING):
                     self.background_analyse_timer.start()
                 else:
@@ -2821,7 +2818,7 @@ async def main() -> None:
                 )
                 self.state.picotutor.reset()
             elif self.state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
-                self.engine.set_mode(mode=EngineMode.WATCHING)
+                self.engine.set_mode()
                 self.background_analyse_timer.start()  # permanent brain in analysis mode
                 # tutor cannot run if playing engine is only watching?
                 self.state.picotutor.set_status(

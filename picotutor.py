@@ -26,7 +26,7 @@ from typing import Tuple
 import chess  # type: ignore
 from chess.engine import InfoDict
 import chess.engine
-from uci.engine import UciShell, UciEngine, EngineMode
+from uci.engine import UciShell, UciEngine
 from dgt.util import PicoComment, PicoCoach
 
 # PicoTutor Constants
@@ -127,7 +127,7 @@ class PicoTutor:
                     "Threads": c.NUM_THREADS
                 }
                 await self.engine.startup(options=options)
-                self.engine.set_mode(mode=EngineMode.WATCHING)
+                self.engine.set_mode()  # not needed as we dont ponder?
             else:
                 # No need to call engine quit if its not loaded?
                 self.engine = None
