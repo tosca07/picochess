@@ -527,17 +527,11 @@ class UciEngine(object):
     async def go(self, time_dict: dict, game: Board) -> chess.engine.PlayResult:
         """Go engine."""
         logger.debug("molli: timedict: %s", str(time_dict))
-        if self.analyser.is_running():
-            logger.debug("analyser should not be running when PLAYING")
-            self.analyser.stop()
         use_time = self.get_engine_limit(time_dict, game)
         try:
             # @todo: how does the user affect the ponder value in this call
             self.idle = False  # engine is going to be busy now
             self.res = await self.engine.play(game, chess.engine.Limit(time=use_time), ponder=self.pondering)
-        except asyncio.CancelledError:
-            logger.error("engine move calculation cancelled terminated")
-            self.res = None
         except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
             self.res = None
