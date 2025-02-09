@@ -169,7 +169,7 @@ class ContinuousAnalysis:
                 self._analysis_data = self._first_data = None
                 self.limit_reached = await self._analyse_position()
             except asyncio.CancelledError:
-                logger.debug("ContinuousAnalyser cancelled")
+                logger.debug("%s ContinuousAnalyser cancelled", self.whoami)
                 break
 
     
@@ -304,7 +304,7 @@ class ContinuousAnalysis:
             if self._task is not None:
                 self._task.cancel()
                 self._task = None
-                logging.debug("ContinuousAnalysis stopped")
+                logging.debug("%s ContinuousAnalysis stopped", self.whoami)
         self._running = False
 
 
@@ -501,7 +501,6 @@ class UciEngine(object):
             always stops analyser """
         if self.mode == EngineMode.WATCHING:
             if self.analyser.is_running() is not None:
-                logger.debug("stop analyser")
                 self.analyser.stop()
             else:
                 logger.debug("no analyser running in stop")
