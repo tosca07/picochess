@@ -164,7 +164,9 @@ class ContinuousAnalysis:
                 self.limit_reached = await self._analyse_position()
             except asyncio.CancelledError:
                 logger.debug("%s ContinuousAnalyser cancelled", self.whoami)
-                break
+                # same situation as in stop
+                self._task = None
+                self._running = False
 
     
     async def _analyse_position(self)->bool:
@@ -298,8 +300,8 @@ class ContinuousAnalysis:
             if self._task is not None:
                 self._task.cancel()
                 self._task = None
+                self._running = False
                 logging.debug("%s ContinuousAnalysis stopped", self.whoami)
-        self._running = False
 
 
     def get_fen(self) -> str:
