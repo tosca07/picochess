@@ -144,18 +144,22 @@ class ContinuousAnalysis:
         self._normal_deep_kwargs: dict | None = None  # set in start
 
 
-    async def watching_analyse(self):
+    async def _watching_analyse(self):
         """Internal function for continuous analysis in the background."""
-        limit_debug = True
+        debug_once = True
+        self.limit_reached = False  # True when depth limit reached for position
         while self._running:
             try:
                 if self.limit_reached:
-                    if limit_debug:
+                    if debug_once:
                         logger.debug("%s analysis limited", self.whoami)
-                        limit_debug = False  # dont flood log with above debug
+                        debug_once = False  # dont flood log
                     await asyncio.sleep(self.delay)
                     continue
                 if not self._game_analysable(self.game):
+                    if debug_once:
+                        logger.debug("%s no game to analyse", self.whoami)
+                        debug_once = False  # dont flood log
                     await asyncio.sleep(self.delay)
                     continue
                 # new position - start with new current_game and empty data
@@ -249,17 +253,10 @@ class ContinuousAnalysis:
     def _game_analysable(self, game: chess.Board) -> bool:
         """ return True if game is analysable """
         if game is None:
-            logger.debug("no game to analyse")
             return False
-        elif game.is_game_over():
-            logger.debug("no game to analyse - game is over")
+        if game.is_game_over():
             return False
-        elif game.fen() == chess.Board.starting_fen:
-            #  logger.debug("no game to analyse yet - its starting position")
-            return False
-        elif game.fullmove_number < 2:
-            # remember that picotutor needs two history moves analysed
-            #  logger.debug("no game to analyse yet - only first move")
+        if game.fen() == chess.Board.starting_fen:
             return False
         # @todo skip while in book? or is that main loops logic?
         return True
@@ -287,7 +284,7 @@ class ContinuousAnalysis:
             self._first_low_kwargs = first_low_kwargs
             self._normal_deep_kwargs = normal_deep_kwargs
             self._running = True
-            self._task = self.loop.create_task(self.watching_analyse())
+            self._task = self.loop.create_task(self._watching_analyse())
             # whoami is for debug use only
             self.whoami = "picotutor" if self._first_low_kwargs else "engine"
             logging.debug("%s ContinuousAnalysis started", self.whoami)
