@@ -112,7 +112,7 @@ class PicoTutor:
 
     async def open_engine(self):
         """ open the tutor engine """            
-        if not self.engine and (self.watcher_on or self.coach_on):
+        if not self.engine and (self.coach_on or self.watcher_on or self.coach_analyser):
             # start engine only if needed, obvious moves in first_limit
             self.engine = UciEngine(
                 self.engine_path,
@@ -138,11 +138,9 @@ class PicoTutor:
 
     
     def is_coach_analyser(self) -> bool:
-        return (
-            self.coach_analyser and
-            self.coach_on and
-            self.watcher_on
-        )
+        # to be an analyser for main we have to have a loaded engine
+        # and the setting coach_analyser must be True in picochess.ini
+        return (self.engine.loaded_ok() and self.coach_analyser) if self.engine else False
 
 
     def _setup_comments(self, i_lang, i_comment_file):
@@ -471,10 +469,16 @@ class PicoTutor:
         # after newgame event
         if self.engine:
             if self.engine.loaded_ok():
-                low_limit = chess.engine.Limit(depth=c.LOW_DEPTH)
-                low_kwargs = {"limit": low_limit, "multipv": c.LOW_ROOT_MOVES}
+                if(self.coach_on or self.watcher_on):
+                    low_limit = chess.engine.Limit(depth=c.LOW_DEPTH)
+                    low_kwargs = {"limit": low_limit, "multipv": c.LOW_ROOT_MOVES}
+                else:
+                    if not self.coach_analyser:  # like assert on, log if not
+                        logger.warning("why is picotutor analysis started?")
+                    assert(self.coach_analyser)  # can be removed after testing period
+                    low_kwargs = None  # main program dont need first low
                 if self.deep_limit_depth:
-                    # override when using coach_analyser True
+                    # override for main program when using coach_analyser True
                     deep_limit = chess.engine.Limit(depth=self.deep_limit_depth)
                 else:
                     deep_limit = chess.engine.Limit(depth=c.DEEP_DEPTH)

@@ -889,6 +889,7 @@ async def main() -> None:
             self.dgtdispatcher = dgtdispatcher
             self.dgtboard = dgtboard
             self.board_type = board_type
+            # @todo start background analyser only when new game starts
             self.background_analyse_timer = AsyncRepeatingTimer(
                 FLOAT_MIN_BACKGROUND_TIME,
                 self._pv_score_depth_analyser,
@@ -2316,7 +2317,8 @@ async def main() -> None:
             # it will work to get a short hint move also when not pondering
             info: InfoDict | None = None
             engine_playing_moves = self.is_engine_playing_moves()
-            if engine_playing_moves and self.state.picotutor.is_coach_analyser():
+            user_turn = self.state.is_user_turn()
+            if self.state.picotutor.is_coach_analyser() and user_turn:
                 # we ask picotutor engine for best move info
                 result = self.state.picotutor.get_analysis()
                 if result.get("fen") == game.fen():
@@ -2335,9 +2337,9 @@ async def main() -> None:
                         info: InfoDict = await self.engine.playmode_analyse(game, limit)
                         self.debug_pv_info(info)
                 else:
-                    # optimisation, ask for result only if analysis was running
                     deep_kwargs = {"limit": chess.engine.Limit(depth=FLOAT_MAX_ANALYSIS_DEPTH)}
                     if self.engine.start_analysis(game, deep_kwargs):
+                        # optimisation, ask only if analysis was already running
                         result = self.engine.get_analysis(game)
                         info_list: list[InfoDict] = result.get("best")
                         if info_list:
@@ -2841,10 +2843,13 @@ async def main() -> None:
 
         async def _pv_score_depth_analyser(self):
             """ Analyse PV score depth in the background """
-            if self.state.game.fullmove_number > 1:
-                # @todo find a way to skip background analysis
-                # while we are doing inbook
-                await self.analyse(self.state.game)
+            if self.state.game:
+                if (self.state.game.fullmove_number > 1 and
+                    not self.state.game.is_game_over()
+                ):
+                    # @todo find a way to skip background analysis
+                    # while we are doing inbook
+                    await self.analyse(self.state.game)
 
         async def event_consumer(self):
             """ Event consumer for main """
