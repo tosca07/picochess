@@ -501,7 +501,8 @@ class UciEngine(object):
 
 
     def get_engine_limit(self, time_dict: dict, game: Board) -> float:
-        """ a simple algorithm to get engine thinking time """
+        """ a simple algorithm to get engine thinking time 
+            parameter game will not change """
         try:
             if game.turn == chess.WHITE:
                 t = time_dict["wtime"]
@@ -524,13 +525,14 @@ class UciEngine(object):
         return use_time
 
     async def go(self, time_dict: dict, game: Board) -> chess.engine.PlayResult:
-        """Go engine."""
+        """Go engine.
+           parameter game will not change, it is deep copied """
         logger.debug("molli: timedict: %s", str(time_dict))
         use_time = self.get_engine_limit(time_dict, game)
         try:
             # @todo: how does the user affect the ponder value in this call
             self.idle = False  # engine is going to be busy now
-            self.res = await self.engine.play(game, chess.engine.Limit(time=use_time), ponder=self.pondering)
+            self.res = await self.engine.play(copy.deepcopy(game), chess.engine.Limit(time=use_time), ponder=self.pondering)
         except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
             self.res = None
@@ -596,13 +598,14 @@ class UciEngine(object):
     async def playmode_analyse(self, game: Board,
                                limit: chess.engine.Limit,
                                ) -> chess.engine.InfoDict | None:
-        """ Get analysis update from playing engine """
+        """ Get analysis update from playing engine
+            parameter game will not change, it is deep copied """
         if self.idle is False:
             # protect engine against calls if its not idle
             return None
         try:
             self.idle = False  # engine is going to be busy now
-            info = await self.engine.analyse(game, limit)
+            info = await self.engine.analyse(copy.deepcopy(game), limit)
         except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
             info = None
@@ -631,7 +634,12 @@ class UciEngine(object):
         return True  # should not be needed any more
 
     def newgame(self, game: Board):
-        """Engine sometimes need this to setup internal values."""
+        """Engine sometimes need this to setup internal values.
+           parameter game will not change """
+        # game param is kept here for backward and possible
+        # future compatibility
+        # example: if analyser is going to run forever the board
+        # needs to be sent to it
         if self.analyser.is_running():
             # @todo we could send new board to analyser?
             # to avoid unnecessary stop and start?
