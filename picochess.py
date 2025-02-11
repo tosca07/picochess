@@ -1367,7 +1367,7 @@ async def main() -> None:
                 if self.state.interaction_mode in (Mode.BRAIN, Mode.ANALYSIS, Mode.KIBITZ, Mode.PONDER,
                                             Mode.TRAINING, Mode.OBSERVE, Mode.REMOTE):
                     DisplayMsg.show(msg)
-                    await self.analyse(self.state.game)
+                    await self.analyse()
                     return
             if not self.state.reset_auto:
                 if self.state.automatic_takeback:
@@ -2188,7 +2188,7 @@ async def main() -> None:
                     if game_end:
                         DisplayMsg.show(game_end)
                     else:
-                        await self.observe(self.state.game)
+                        await self.observe()
                 elif self.state.interaction_mode == Mode.OBSERVE:
                     msg = Message.REVIEW_MOVE_DONE(
                         move=move, fen=fen, turn=turn, game=self.state.game.copy()
@@ -2199,7 +2199,7 @@ async def main() -> None:
                         DisplayMsg.show(game_end)
                     else:
                         DisplayMsg.show(msg)
-                        await self.observe(self.state.game)
+                        await self.observe()
                 else:  # self.state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.PONDER):
                     msg = Message.REVIEW_MOVE_DONE(
                         move=move, fen=fen, turn=turn, game=self.state.game.copy()
@@ -2210,7 +2210,7 @@ async def main() -> None:
                         DisplayMsg.show(game_end)
                     else:
                         DisplayMsg.show(msg)
-                        await self.analyse(self.state.game)
+                        await self.analyse()
 
                 if (
                     self.picotutor_mode()
@@ -2238,9 +2238,9 @@ async def main() -> None:
                             await asyncio.sleep(0.7)
                 self.state.takeback_active = False
 
-        async def observe(self, game: chess.Board) -> chess.engine.InfoDict | None:
+        async def observe(self) -> chess.engine.InfoDict | None:
             """Start a new ponder search on the current game."""
-            info = await self.analyse(game)
+            info = await self.analyse()
             self.state.start_clock()
             return info
 
@@ -2312,7 +2312,7 @@ async def main() -> None:
                 logger.debug("empty InfoDict")
 
 
-        async def analyse(self, game: chess.Board) -> chess.engine.InfoDict | None:
+        async def analyse(self) -> chess.engine.InfoDict | None:
             """ analyse, observe etc depening on mode - create analysis info """
             # it will work to get a short hint move also when not pondering
             info: InfoDict | None = None
@@ -2321,11 +2321,11 @@ async def main() -> None:
             if self.state.picotutor.is_coach_analyser() and user_turn:
                 # we ask picotutor engine for best move info
                 result = self.state.picotutor.get_analysis()
-                if result.get("fen") == game.fen():
+                if result.get("fen") == self.state.game.fen():
                     # analysis was for our current board position
                     info_list: list[chess.engine.InfoDict]  = result.get("best")
                     if info_list:
-                        info: InfoDict = info_list[0] # pv first
+                        info = info_list[0] # pv first
                         logger.debug("we got picotutor best move!")
                         self.debug_pv_info(info)
             if not info:
@@ -2435,7 +2435,7 @@ async def main() -> None:
                                 Message.START_NEW_GAME(game=self.state.game.copy(), newgame=False), state
                             )
                             await self.stop_search_and_clock()
-                            await self.analyse(copy.deepcopy(self.state.game))
+                            await self.analyse()
                         else:
                             # ask python-chess to correct the castling string
                             bit_board = chess.Board(fen2)
@@ -2457,7 +2457,7 @@ async def main() -> None:
                                     self.state,
                                 )
                                 await self.stop_search_and_clock()
-                                await self.analyse(copy.deepcopy(self.state.game))
+                                await self.analyse()
                             else:
                                 logger.info("wrong fen %s for 4 secs", self.state.error_fen)
                                 DisplayMsg.show(Message.WRONG_FEN())
@@ -2849,7 +2849,7 @@ async def main() -> None:
                 ):
                     # @todo find a way to skip background analysis
                     # while we are doing inbook
-                    await self.analyse(self.state.game)
+                    await self.analyse()
 
         async def event_consumer(self):
             """ Event consumer for main """
@@ -3734,7 +3734,7 @@ async def main() -> None:
                         self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
                         self.state.legal_fens_after_cmove = []
                         self.state.last_legal_fens = []
-                        await self.analyse(copy.deepcopy(self.state.game))
+                        await self.analyse()
                         self.state.play_mode = (
                             PlayMode.USER_WHITE
                             if self.state.game.turn == chess.WHITE
