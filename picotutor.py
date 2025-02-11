@@ -78,7 +78,7 @@ class PicoTutor:
         self.lang = i_lang
         self.expl_start_position = True
         self.pos = False # do we need this in the new PicoTutor?
-        self.watcher_on = True
+        self.watcher_on = False
         self.coach_on = False
         self.explorer_on = False
         self.comments_on = False
@@ -111,16 +111,17 @@ class PicoTutor:
 
 
     async def open_engine(self):
-        """ open the tutor engine """            
-        if not self.engine and (self.coach_on or self.watcher_on or self.coach_analyser):
-            # start engine only if needed, obvious moves in first_limit
+        """ open the tutor engine """
+        # @todo we have to start the engine always as the set_status has
+        # not yet been changed to async --> causes changes in main
+        # set_status might later be changed that require this engine
+        if not self.engine:
             self.engine = UciEngine(
                 self.engine_path,
                 self.ucishell,
                 self.mame_par,
                 self.loop
             )
-            # avoid spreading await in this case
             await self.engine.open_engine()
             if self.engine.loaded_ok() is True:
                 options = {
@@ -315,6 +316,8 @@ class PicoTutor:
 
 
     def reset(self):
+        # only called from one picotutor place, maybe not needed really?
+        # set_status calls _reset_int anyway .... it could do that when needed
         self._reset_int()
         self.board = chess.Board()
 
@@ -332,6 +335,7 @@ class PicoTutor:
 
         self.best_history = []
         self.obvious_history = []
+        # whats the purpose of the following two lines?
         self.best_history.append((0, chess.Move.null(), 0.00, 0))
         self.obvious_history.append((0, chess.Move.null(), 0.00, 0))
 
@@ -473,8 +477,6 @@ class PicoTutor:
                     low_limit = chess.engine.Limit(depth=c.LOW_DEPTH)
                     low_kwargs = {"limit": low_limit, "multipv": c.LOW_ROOT_MOVES}
                 else:
-                    if not self.coach_analyser:  # like assert on, log if not
-                        logger.warning("why is picotutor analysis started?")
                     low_kwargs = None  # main program dont need first low
                 if self.deep_limit_depth:
                     # override for main program when using coach_analyser True

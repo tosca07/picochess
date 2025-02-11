@@ -1075,13 +1075,13 @@ async def main() -> None:
                 loop=self.loop,
                 i_depth=depth,
             )
-            await self.state.picotutor.open_engine()
             self.state.picotutor.set_status(
                 self.state.dgtmenu.get_picowatcher(),
                 self.state.dgtmenu.get_picocoach(),
                 self.state.dgtmenu.get_picoexplorer(),
                 self.state.dgtmenu.get_picocomment(),
             )
+            await self.state.picotutor.open_engine()
 
             ModeInfo.set_game_ending(result="*")
             
