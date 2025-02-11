@@ -2334,13 +2334,13 @@ async def main() -> None:
                     # optimisation to not ask for info in NORMAL mode
                     if self.state.interaction_mode != Mode.NORMAL:
                         limit: Limit = Limit(time=FLOAT_MAX_ANALYSE_TIME)
-                        info: InfoDict = await self.engine.playmode_analyse(game, limit)
+                        info: InfoDict = await self.engine.playmode_analyse(self.state.game, limit)
                         self.debug_pv_info(info)
                 else:
                     deep_kwargs = {"limit": chess.engine.Limit(depth=FLOAT_MAX_ANALYSIS_DEPTH)}
-                    if self.engine.start_analysis(game, deep_kwargs):
+                    if self.engine.start_analysis(self.state.game, deep_kwargs):
                         # optimisation, ask only if analysis was already running
-                        result = self.engine.get_analysis(game)
+                        result = self.engine.get_analysis(self.state.game)
                         info_list: list[InfoDict] = result.get("best")
                         if info_list:
                             for info in info_list:
