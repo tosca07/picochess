@@ -123,6 +123,7 @@ FLOAT_MIN_BACKGROUND_TIME = 1.5  # dont update analysis more often than this
 # ENGINE WATCHING
 FLOAT_MAX_ANALYSIS_DEPTH = 27  # same famous limit as in deep blue 1997?
 # ENGINE PLAYING
+# Dont make the following large as it will block engine play go
 FLOAT_MAX_ANALYSE_TIME = 0.1  # asking for hint while not pondering
 
 ONLINE_PREFIX = "Online"
@@ -2319,20 +2320,22 @@ async def main() -> None:
             info: InfoDict | None = None
             engine_playing_moves = self.is_engine_playing_moves()
             user_turn = self.state.is_user_turn()
-            if self.state.picotutor.is_coach_analyser() and user_turn:
+            if self.state.picotutor.is_coach_analyser():
                 # we ask picotutor engine for best move info
-                result = self.state.picotutor.get_analysis()
-                if result.get("fen") == self.state.game.fen():
-                    # analysis was for our current board position
-                    info_list: list[chess.engine.InfoDict]  = result.get("best")
-                    if info_list:
-                        info = info_list[0] # pv first
-                        logger.debug("we got picotutor best move!")
-                        self.debug_pv_info(info)
-            if not info:
+                if user_turn:
+                    result = self.state.picotutor.get_analysis()
+                    if result.get("fen") == self.state.game.fen():
+                        # analysis was for our current board position
+                        info_list: list[chess.engine.InfoDict]  = result.get("best")
+                        if info_list:
+                            info = info_list[0] # pv first
+                            logger.debug("we got picotutor best move!")
+                            self.debug_pv_info(info)
+            else:
                 # get info from playing engine
                 if engine_playing_moves:
                     # optimisation to not ask for info in NORMAL mode
+                    # this section is needed to avoid CancelledError from chess lib
                     if self.state.interaction_mode != Mode.NORMAL:
                         limit: Limit = Limit(time=FLOAT_MAX_ANALYSE_TIME)
                         info: InfoDict = await self.engine.playmode_analyse(self.state.game, limit)

@@ -392,6 +392,7 @@ class UciEngine(object):
         self.res: chess.engine.PlayResult = None
         self.level_support = False
         self.shell = None  # check if uci files can be used any more
+        self.engine_lock = asyncio.Lock()
 
     async def open_engine(self):
         """ Open engine. Call after __init__ """
@@ -532,9 +533,9 @@ class UciEngine(object):
         logger.debug("molli: timedict: %s", str(time_dict))
         use_time = self.get_engine_limit(time_dict, game)
         try:
-            # @todo: how does the user affect the ponder value in this call
-            self.idle = False  # engine is going to be busy now
-            self.res = await self.engine.play(copy.deepcopy(game), chess.engine.Limit(time=use_time), ponder=self.pondering)
+            async with self.engine_lock:
+                self.idle = False  # engine is going to be busy now
+                self.res = await self.engine.play(copy.deepcopy(game), chess.engine.Limit(time=use_time), ponder=self.pondering)
         except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
             self.res = None
@@ -606,8 +607,9 @@ class UciEngine(object):
             # protect engine against calls if its not idle
             return None
         try:
-            self.idle = False  # engine is going to be busy now
-            info = await self.engine.analyse(copy.deepcopy(game), limit)
+            async with self.engine_lock:
+                self.idle = False  # engine is going to be busy now
+                info = await self.engine.analyse(copy.deepcopy(game), limit)
         except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
             info = None
