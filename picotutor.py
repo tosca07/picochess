@@ -475,7 +475,6 @@ class PicoTutor:
                 else:
                     if not self.coach_analyser:  # like assert on, log if not
                         logger.warning("why is picotutor analysis started?")
-                    assert(self.coach_analyser)  # can be removed after testing period
                     low_kwargs = None  # main program dont need first low
                 if self.deep_limit_depth:
                     # override for main program when using coach_analyser True
