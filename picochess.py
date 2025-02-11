@@ -231,7 +231,7 @@ class PicochessState:
         self.online_decrement = 0
         self.pb_move = chess.Move.null()  # Best ponder move
         self.pgn_book_test = False
-        self._picotutor: Optional[PicoTutor] = None
+        self.picotutor: PicoTutor | None = None
         self.play_mode = PlayMode.USER_WHITE
         self.position_mode = False
         self.reset_auto = False
@@ -1731,6 +1731,7 @@ async def main() -> None:
                 game_end = self.state.check_game_state()
                 valid = True
                 if self.picotutor_mode():
+                    # @todo why do we pop a picotutor move here?
                     self.state.picotutor.pop_last_move()
                     valid = self.state.picotutor.push_move(self.state.done_move)
                     if not valid:
