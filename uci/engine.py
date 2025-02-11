@@ -122,7 +122,7 @@ class UciShell(object):
 
 class ContinuousAnalysis:
     """ class for continous analysis from a chess engine """
-    def __init__(self, delay: float, loop: asyncio.AbstractEventLoop):
+    def __init__(self, delay: float, loop: asyncio.AbstractEventLoop, engine_debug_name: str):
         """
         A continuous analysis generator that runs in a background thread.
 
@@ -138,8 +138,7 @@ class ContinuousAnalysis:
         self._analysis_data = None  # "best" InfoDict list
         self._first_data = None  # "low" InfoDict list
         self.loop = loop  # main loop everywhere
-        # following is used for debug only
-        self.whoami = ""  # set in start
+        self.whoami = engine_debug_name  # picotutor or engine
         self._first_low_kwargs: dict | None = None  # set in start
         self._normal_deep_kwargs: dict | None = None  # set in start
 
@@ -285,11 +284,9 @@ class ContinuousAnalysis:
             self._normal_deep_kwargs = normal_deep_kwargs
             self._running = True
             self._task = self.loop.create_task(self._watching_analyse())
-            # whoami is for debug use only
-            self.whoami = "picotutor" if self._first_low_kwargs else "engine"
             logging.debug("%s ContinuousAnalysis started", self.whoami)
         else:
-            logging.info('ContinuousAnalysis already running - strange!')
+            logging.info("%s ContinuousAnalysis already running - strange!", self.whoami)
 
     def stop(self):
         """Stops the continuous analysis."""
@@ -367,7 +364,8 @@ class UciEngine(object):
     def __init__(self,
                 file: str, uci_shell: UciShell,
                 mame_par: str,
-                loop: asyncio.AbstractEventLoop
+                loop: asyncio.AbstractEventLoop,
+                engine_debug_name: str = "engine"
                  ):
         """ initialise engine with file and mame_par info """
         super(UciEngine, self).__init__()
@@ -375,7 +373,11 @@ class UciEngine(object):
         self.idle = True
         self.pondering = False  # normal mode no pondering
         self.loop = loop  # main loop everywhere
-        self.analyser = ContinuousAnalysis(delay=FLOAT_ANALYSIS_WAIT, loop=self.loop)
+        self.analyser = ContinuousAnalysis(
+            delay=FLOAT_ANALYSIS_WAIT,
+            loop=self.loop,
+            engine_debug_name=engine_debug_name
+            )
         # previous existing attributes:
         self.is_adaptive = False
         self.engine_rating = -1

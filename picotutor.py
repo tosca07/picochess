@@ -120,7 +120,8 @@ class PicoTutor:
                 self.engine_path,
                 self.ucishell,
                 self.mame_par,
-                self.loop
+                self.loop,
+                "picotutor"
             )
             await self.engine.open_engine()
             if self.engine.loaded_ok() is True:
