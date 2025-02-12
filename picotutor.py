@@ -349,7 +349,7 @@ class PicoTutor:
         self.expl_start_position = True
 
 
-    def set_user_color(self, i_user_color):
+    async def set_user_color(self, i_user_color):
 
         self.pause()
         self.best_history = []
@@ -365,12 +365,12 @@ class PicoTutor:
 
         self.user_color = i_user_color
         if self.user_color == self.board.turn and self.board.fullmove_number > 1:
-            self.start()
+            await self.start()
 
     def get_user_color(self):
         return self.user_color
 
-    def set_position(self, i_fen, i_turn=chess.WHITE, i_ignore_expl=False):
+    async def set_position(self, i_fen, i_turn=chess.WHITE, i_ignore_expl=False):
         self.reset()
         self.board = chess.Board(i_fen)
         chess.Board.turn = i_turn
@@ -391,11 +391,11 @@ class PicoTutor:
             # if it is user player's turn then start analyse engine
             # otherwise it is computer opponents turn and anaylze negine
             # should be paused
-            self.start()
+            await self.start()
         else:
             self.pause()
 
-    def push_move(self, i_uci_move: chess.Move):
+    async def push_move(self, i_uci_move: chess.Move):
         if i_uci_move not in self.board.legal_moves:
             return False
 
@@ -409,9 +409,9 @@ class PicoTutor:
             # should be paused
             self.op.append(self.board.san(i_uci_move))
             self.board.push(i_uci_move)
-            self.start()
+            await self.start()
         else:
-            self.eval_legal_moves()  # take snapshot of current evaluation
+            await self.eval_legal_moves()  # take snapshot of current evaluation
             self.eval_user_move(i_uci_move)  # determine & save evaluation of user move
             # push the move after evaluation
             self.op.append(self.board.san(i_uci_move))
@@ -434,7 +434,7 @@ class PicoTutor:
             self.obvious_history.append((-1, chess.Move.null(), 0.00, 0))
 
 
-    def _update_internal_state_after_pop(self, poped_move: chess.Move) -> None:
+    async def _update_internal_state_after_pop(self, poped_move: chess.Move) -> None:
         try:
             self.op.pop()
         except IndexError:
@@ -449,18 +449,18 @@ class PicoTutor:
             # if it is user player's turn then start analyse engine
             # otherwise it is computer opponents turn and analyze negine
             # should be paused
-            self.start()
+            await self.start()
         else:
             self.pause()
 
-    def pop_last_move(self):
+    async def pop_last_move(self):
         poped_move = chess.Move.null()
         self.best_moves = []
         self.obvious_moves = []
 
         if self.board.move_stack:
             poped_move = self.board.pop()
-            self._update_internal_state_after_pop(poped_move)
+            await self._update_internal_state_after_pop(poped_move)
 
         return poped_move
 
@@ -470,7 +470,7 @@ class PicoTutor:
     def get_move_counter(self):
         return self.board.fullmove_number
 
-    def start(self):
+    async def start(self):
         # after newgame event
         if self.engine:
             if self.engine.loaded_ok():
@@ -485,7 +485,7 @@ class PicoTutor:
                 else:
                     deep_limit = chess.engine.Limit(depth=c.DEEP_DEPTH)
                 deep_kwargs = {"limit": deep_limit, "multipv": c.VALID_ROOT_MOVES}
-                self.engine.start_analysis(self.board, deep_kwargs, low_kwargs)
+                await self.engine.start_analysis(self.board, deep_kwargs, low_kwargs)
             else:
                 logger.error("engine has terminated in picotutor?")
 
@@ -621,7 +621,7 @@ class PicoTutor:
         return best_score
 
 
-    def eval_legal_moves(self):
+    async def eval_legal_moves(self):
         """ Update analysis information from engine """
         if not (self.coach_on or self.watcher_on):
             return
@@ -629,7 +629,7 @@ class PicoTutor:
         self.obvious_moves = []
         self.alt_best_moves = []
         # eval_pv_list below will build new lists
-        result = self.engine.get_analysis(self.board)
+        result = await self.engine.get_analysis(self.board)
         self.obvious_info: list[chess.engine.InfoDict] = result.get("low")
         self.best_info: list[chess.engine.InfoDict]  = result.get("best")
         if self.best_info:

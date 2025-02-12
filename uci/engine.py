@@ -122,16 +122,21 @@ class UciShell(object):
 
 class ContinuousAnalysis:
     """ class for continous analysis from a chess engine """
-    def __init__(self, delay: float, loop: asyncio.AbstractEventLoop, engine_debug_name: str):
+    def __init__(self,
+                 engine: chess.engine.SimpleEngine,
+                 delay: float,
+                 loop: asyncio.AbstractEventLoop,
+                 engine_debug_name: str
+                 ):
         """
-        A continuous analysis generator that runs in a background thread.
+        A continuous analysis generator that runs as a background async task.
 
-        :param delay: Time interval between each analysis iteration (in seconds).
+        :param delay: Time interval to do CPU saving sleep between analysis.
         """
         self.engine = None
         self.game = None  # latest position requested to be analysed
         self.limit_reached = False  # True when limit reached for position
-        self.current_game = None  # latest position analysed
+        self.current_game = None  # latest position being analysed
         self.delay = delay
         self._running = False
         self._task = None
@@ -141,6 +146,32 @@ class ContinuousAnalysis:
         self.whoami = engine_debug_name  # picotutor or engine
         self._first_low_kwargs: dict | None = None  # set in start
         self._normal_deep_kwargs: dict | None = None  # set in start
+        self.lock = asyncio.Lock()
+        self.pause_event = asyncio.Event()
+        self.pause_event.set()  # Start unpaused
+        self.engine = engine
+        if not self.engine:
+            logger.error("%s ContinuousAnalysis initialised without engine", self.whoami)
+
+
+    async def play_move(self,
+                        game: Board,
+                        limit: Limit,
+                        pondering: bool
+                        ) -> chess.engine.PlayResult:
+        """Plays the best move and updates the board."""
+        result = None
+        self.pause_event.clear()  # Pause analysis
+        try:
+            async with self.lock:
+                result = await self.engine.play(copy.deepcopy(game), limit=limit, ponder=pondering)
+            # @todo we could update the current game here
+            # so that analysis on user turn would start immediately
+        except chess.engine.EngineTerminatedError:
+            logger.error("Engine terminated")
+        finally:
+            self.pause_event.set()  # Resume analysis
+        return result
 
 
     async def _watching_analyse(self):
@@ -162,8 +193,9 @@ class ContinuousAnalysis:
                     await asyncio.sleep(self.delay)
                     continue
                 # new position - start with new current_game and empty data
-                self.current_game = self.game.copy()
-                self._analysis_data = self._first_data = None
+                async with self.lock:
+                    self.current_game = self.game.copy()
+                    self._analysis_data = self._first_data = None
                 self.limit_reached = await self._analyse_position()
             except asyncio.CancelledError:
                 logger.debug("%s ContinuousAnalyser cancelled", self.whoami)
@@ -205,28 +237,31 @@ class ContinuousAnalysis:
             multipv = None
         with await self.engine.analysis(self.current_game, limit=limit, multipv=multipv) as analysis:
             async for info in analysis:
-                # after waiting, check if position has changed
-                if self.current_game.fen() != self.game.fen():
-                    self._analysis_data = self._first_data = None
-                    return  # old position, quit analysis
-                updated = self._update_analysis_data(first, analysis)  # update to latest
-                if updated:
-                    #  self.debug_analyser()  # normally commented out
-                    if limit:
-                        # @todo change 0 to -1 to get all multipv finished
-                        if first:
-                            info_limit: chess.engine.InfoDict = self._first_data[0]
-                        else:
-                            info_limit: chess.engine.InfoDict = self._analysis_data[0]
-                        if "depth" in info_limit and limit.depth:
-                            if info_limit.get("depth") >= limit.depth:
-                                return  # limit reached
-                    await asyncio.sleep(self.delay)  # save cpu
+                await self.pause_event.wait()  # Wait if analysis is paused
+                async with self.lock:
+                    # after waiting, check if position has changed
+                    if self.current_game.fen() != self.game.fen():
+                        self._analysis_data = self._first_data = None
+                        return  # old position, quit analysis
+                    updated = self._update_analysis_data(first, analysis)  # update to latest
+                    if updated:
+                        #  self.debug_analyser()  # normally commented out
+                        if limit:
+                            # @todo change 0 to -1 to get all multipv finished
+                            if first:
+                                info_limit: chess.engine.InfoDict = self._first_data[0]
+                            else:
+                                info_limit: chess.engine.InfoDict = self._analysis_data[0]
+                            if "depth" in info_limit and limit.depth:
+                                if info_limit.get("depth") >= limit.depth:
+                                    return  # limit reached
+                await asyncio.sleep(self.delay)  # save cpu
                 # else just wait for info so that we get updated True
 
 
     def debug_analyser(self):
         """ use this debug call to see how low and deep depth evolves """
+        # lock is on when we come here
         i: chess.engine.InfoDict = self._first_data[0]
         j: chess.engine.InfoDict = self._analysis_data[0]
         if "depth" in i and "depth" in j:
@@ -239,6 +274,7 @@ class ContinuousAnalysis:
                               analysis: chess.engine.AnalysisResult)->bool:
         """ internal function for updating while analysing 
             returns True if data was updated """
+        # lock is on when we come here
         result = False
         if analysis.multipv:
             if first:
@@ -261,7 +297,7 @@ class ContinuousAnalysis:
         return True
 
 
-    def start(self, engine: chess.engine.SimpleEngine,
+    def start(self,
               game: chess.Board,
               normal_deep_kwargs: dict | None = None,
               first_low_kwargs: dict | None = None
@@ -277,14 +313,16 @@ class ContinuousAnalysis:
         :param first_low_kwargs: optional limit to get a first low analysis
         """
         if not self._running:
-            self.engine = engine
-            self.game = game.copy()  # remember this game position
-            self.limit_reached = False  # True when limit reached for position
-            self._first_low_kwargs = first_low_kwargs
-            self._normal_deep_kwargs = normal_deep_kwargs
-            self._running = True
-            self._task = self.loop.create_task(self._watching_analyse())
-            logging.debug("%s ContinuousAnalysis started", self.whoami)
+            if not self.engine:
+                logger.error("%s ContinuousAnalysis cannot start without engine", self.whoami)
+            else:
+                self.game = game.copy()  # remember this game position
+                self.limit_reached = False  # True when limit reached for position
+                self._first_low_kwargs = first_low_kwargs
+                self._normal_deep_kwargs = normal_deep_kwargs
+                self._running = True
+                self._task = self.loop.create_task(self._watching_analyse())
+                logging.debug("%s ContinuousAnalysis started", self.whoami)
         else:
             logging.info("%s ContinuousAnalysis already running - strange!", self.whoami)
 
@@ -303,26 +341,28 @@ class ContinuousAnalysis:
         return self.current_game.fen() if self.current_game else ""
 
 
-    def get_analysis(self) -> dict:
+    async def get_analysis(self) -> dict:
         """ :return: deepcopied first low and latest best lists of InfoDict
             key 'low': first low limited shallow list of InfoDict (multipv)
             key 'best': a deep list of InfoDict (multipv)
         """
         # due to the nature of the async analysis update it
         # continues to update it all the time, deepcopy needed
-        result = { "low": copy.deepcopy(self._first_data),
-                    "best": copy.deepcopy(self._analysis_data),
-                    "fen": copy.deepcopy(self.current_game.fen())
-                    }
-        return result
+        async with self.lock:
+            result = { "low": copy.deepcopy(self._first_data),
+                        "best": copy.deepcopy(self._analysis_data),
+                        "fen": copy.deepcopy(self.current_game.fen())
+                        }
+            return result
 
-    def update_game(self, new_game: chess.Board):
+    async def update_game(self, new_game: chess.Board):
         """ Updates the game for analysis in a thread-safe manner.
             Do not call if fen() is still the same """
-        self.game = new_game.copy()  # remember this game position
-        self.limit_reached = False  # True when limit reached for position
-        # dont reset self._analysis_data and self._first_data to None
-        # let the main loop self._analyze_position manage it
+        async with self.lock:
+            self.game = new_game.copy()  # remember this game position
+            self.limit_reached = False  # True when limit reached for position
+            # dont reset self._analysis_data and self._first_data to None
+            # let the main loop self._analyze_position manage it
 
 
     def is_running(self) -> bool:
@@ -373,11 +413,7 @@ class UciEngine(object):
         self.idle = True
         self.pondering = False  # normal mode no pondering
         self.loop = loop  # main loop everywhere
-        self.analyser = ContinuousAnalysis(
-            delay=FLOAT_ANALYSIS_WAIT,
-            loop=self.loop,
-            engine_debug_name=engine_debug_name
-            )
+        self.analyser: ContinuousAnalysis | None = None
         # previous existing attributes:
         self.is_adaptive = False
         self.engine_rating = -1
@@ -392,6 +428,7 @@ class UciEngine(object):
         self.res: chess.engine.PlayResult = None
         self.level_support = False
         self.shell = None  # check if uci files can be used any more
+        self.engine_debug_name = engine_debug_name
         self.engine_lock = asyncio.Lock()
 
     async def open_engine(self):
@@ -405,6 +442,12 @@ class UciEngine(object):
             logger.info("mfile %s", mfile)
             logger.info("opening engine")
             self.transport, self.engine = await chess.engine.popen_uci(mfile)
+            self.analyser = ContinuousAnalysis(
+                engine=self.engine,
+                delay=FLOAT_ANALYSIS_WAIT,
+                loop=self.loop,
+                engine_debug_name=self.engine_debug_name
+                )
             if self.engine:
                 if "name" in self.engine.id:
                     self.engine_name = self.engine.id["name"]
@@ -535,7 +578,8 @@ class UciEngine(object):
         try:
             async with self.engine_lock:
                 self.idle = False  # engine is going to be busy now
-                self.res = await self.engine.play(copy.deepcopy(game), chess.engine.Limit(time=use_time), ponder=self.pondering)
+                limit: Limit = Limit(time=use_time)
+                self.res = await self.analyser.play_move(game, limit, self.pondering)
         except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
             self.res = None
@@ -549,7 +593,7 @@ class UciEngine(object):
         return self.res
 
 
-    def start_analysis(self, game: chess.Board,
+    async def start_analysis(self, game: chess.Board,
                         normal_deep_kwargs: dict | None = None,
                         first_low_kwargs: dict | None = None
                         ) -> bool:
@@ -564,16 +608,16 @@ class UciEngine(object):
         result = False
         if self.analyser.is_running():
             if game.fen() != self.analyser.get_fen():
-                self.analyser.update_game(game)  # new position
+                await self.analyser.update_game(game)  # new position
             else:
                 result = True  # was running - results to be expected
         else:
             if self.engine:
-                self.analyser.start(self.engine,
-                                    game,
-                                    normal_deep_kwargs,
-                                    first_low_kwargs
-                                    )
+                async with self.engine_lock:
+                    self.analyser.start(game,
+                                        normal_deep_kwargs,
+                                        first_low_kwargs
+                                        )
             else:
                 logger.warning("start analysis requested but no engine loaded")
         return result
@@ -583,16 +627,16 @@ class UciEngine(object):
         """ check if analyser is running """
         return self.analyser.is_running()
 
-    def get_analysis(self, game: chess.Board) -> dict:
+    async def get_analysis(self, game: chess.Board) -> dict:
         """ key 'first': first low/quick list of InfoDict (multipv)
             key 'last': newest list of InfoDict (multipv) """
         # failed answer is empty lists
         result = {"low": [], "best": [], "fen": ""}
         if self.analyser.is_running():
             if self.analyser.get_fen() == game.fen():
-                result = self.analyser.get_analysis()
+                result = await self.analyser.get_analysis()
             else:
-                logger.debug("warning: analysis for old position %s", self.analyser.get_fen())
+                logger.debug("warning: analysis for old position")
                 logger.debug("current new position is %s", game.fen())
         else:
             logger.debug("caller has forgot to start analysis")
