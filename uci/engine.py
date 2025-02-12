@@ -176,20 +176,21 @@ class ContinuousAnalysis:
 
     async def _watching_analyse(self):
         """Internal function for continuous analysis in the background."""
-        debug_once = True
+        debug_once_limit = True
+        debug_once_game = True
         self.limit_reached = False  # True when depth limit reached for position
         while self._running:
             try:
                 if self.limit_reached:
-                    if debug_once:
-                        logger.debug("%s analysis limited", self.whoami)
-                        debug_once = False  # dont flood log
+                    if debug_once_limit:
+                        logger.debug("%s ContinuousAnalyser analysis limited", self.whoami)
+                        debug_once_limit = False  # dont flood log
                     await asyncio.sleep(self.delay)
                     continue
                 if not self._game_analysable(self.game):
-                    if debug_once:
-                        logger.debug("%s no game to analyse", self.whoami)
-                        debug_once = False  # dont flood log
+                    if debug_once_game:
+                        logger.debug("%s ContinuousAnalyser no game to analyse", self.whoami)
+                        debug_once_game = False  # dont flood log
                     await asyncio.sleep(self.delay)
                     continue
                 # new position - start with new current_game and empty data
@@ -213,6 +214,7 @@ class ContinuousAnalysis:
                 kwargs = self._first_low_kwargs
             else: # normal deep analysis
                 kwargs = self._normal_deep_kwargs
+                first = False  # deep has only one call to forever
             try:
                 await self._analyse_forever(first, kwargs)
                 if not first:
@@ -262,12 +264,18 @@ class ContinuousAnalysis:
     def debug_analyser(self):
         """ use this debug call to see how low and deep depth evolves """
         # lock is on when we come here
-        i: chess.engine.InfoDict = self._first_data[0]
-        j: chess.engine.InfoDict = self._analysis_data[0]
-        if "depth" in i and "depth" in j:
-            logger.debug("%s low depth: %d deep depth: %d",
-                         self.whoami, i.get("depth"), j.get("depth")
-                         )
+        if self._first_data:
+            i: chess.engine.InfoDict = self._first_data[0]
+            if "depth" in i:
+                logger.debug("%s ContinuousAnalyser low depth: %d",
+                            self.whoami, i.get("depth")
+                            )
+        if self._analysis_data:
+            j: chess.engine.InfoDict = self._analysis_data[0]
+            if "depth" in j:
+                logger.debug("%s ContinuousAnalyser deep depth: %d",
+                            self.whoami, j.get("depth")
+                            )
 
     def _update_analysis_data(self,
                               first: bool,
