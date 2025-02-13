@@ -17,6 +17,8 @@ apt -y install python3-dev
 apt -y install python3-venv
 apt -y install libffi-dev libssl-dev
 apt -y install tk tcl libtcl8.6
+# following line is for (building) and running leela-chess-zero
+apt -y install libopenblas-dev ninja-build meson
 
 if [ -d "/opt/picochess" ]; then
     echo "picochess already exists, updating code..."
