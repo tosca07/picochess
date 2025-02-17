@@ -12,7 +12,7 @@ DGT Clock Compatibility – Runs on the DGT Pi 3000 electronic clock, which then
 About This Fork
 ===============
 This fork of Picochess focuses on:
-Upgrading dependencies – Uses the latest Python, python-chess, and Tornado libraries.
+Upgrading dependencies – Uses the latest Python with the latest chess, and Tornado libraries.
 Asynchronous Architecture – Replaces threads with an async-based architecture for improved performance and scalability.
 
 Requirements
