@@ -24,10 +24,10 @@ Requirements
 Quick Installation
 ------------------
 Get the installations script, give it execution rights, and run it. This will install the repository in /opt/picochess.
-> wget -L https://raw.github.com/JohanSjoblom/Picochess/master/install-picochess.sh
-> chmod a+x install-picochess.sh
-> ./install-picochess
-> reboot and if everything went well Picochess should start as a service
+- wget -L https://raw.github.com/JohanSjoblom/Picochess/master/install-picochess.sh
+- chmod a+x install-picochess.sh
+- ./install-picochess
+- reboot and if everything went well Picochess should start as a service
 
 Installation with more info
 ---------------------------
