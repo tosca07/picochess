@@ -1,9 +1,19 @@
 PicoChess
 =========
+Picochess transforms your Raspberry Pi or any Debian-based computer into a powerful chess computer. It is not a chess engine itself but a manager for the chess engines you choose to use.
+This repository includes Stockfish 17 and Leela Chess Zero (LCZero) by default, and you can easily add any other chess engine of your choice.
 
-Stand alone chess computer based on Raspberry PI or on a Debian computer. You can use different chess engines to play or analyse. You can play Stockfish 17 or LC0 as compiled versions of them are included in the repo. LC0 has a really small neural net. You can download larger and different ones from online sources. Picochess supports DGT electronic clocks and many different chess boards.  You do not need DGT hardware to play or analyse, you can use a web browser (default installation).
+Features
+========
+Play via Web Browser – Enjoy chess directly from your browser.
+Electronic Chess Board Support – Compatible with DGT e-boards for an authentic playing experience.
+DGT Clock Compatibility – Runs on the DGT Pi 3000 electronic clock, which then becomes an all in one partner for the e-board.
 
-This is a long term update to fix the technical debt of the picochess, the existing Picochess was using very old python chess and web modules. This first baseline has the latest chess and web python modules now. The target is to update all python modules. The program is not yet fully async but the target is to convert most things to async. Maybe all the threads wont be needed any more then.
+About This Fork
+===============
+This fork of Picochess focuses on:
+Upgrading dependencies – Uses the latest Python, python-chess, and Tornado libraries.
+Asynchronous Architecture – Replaces threads with an async-based architecture for improved performance and scalability.
 
 Requirements
 ------------
@@ -11,26 +21,30 @@ Requirements
 - Raspberry Pi 3, or Pi 4 (aarch64) or Debian (x86_64)
 - RaspiOS Bookworm (latest) 64bit recommended
 
-Installation
-------------
-Note: Everything is really early and experimental and installation script (install-picochess.sh) has been testad with PI 4 and Debian.
-I have done some initial basic testing with a browser and a DGT bluetooth board. So far the DGT board has only been tested with PI 4.
+Quick Installation
+------------------
+Get the installations script, give it execution rights, and run it. This will install the repository in /opt/picochess.
+> wget -L https://raw.github.com/JohanSjoblom/Picochess/master/install-picochess.sh
+> chmod a+x install-picochess.sh
+> ./install-picochess
+> reboot and if everything went well Picochess should start as a service
 
+Installation with more info
+---------------------------
 1. You need a Raspberry PI 4 (or 3) and a 32G SD card.
 2. Use Raspberry Pi Imager to crete a PI operating system on your SD card as follows:
 3. Choose PI 4 and 64bit OS (I have not tested PI 3 yet, but feel free to test)
-4. Username is assumed to be pi which should be standard on the imager. You can make sure by changing options before writing to the SD card.
-5. If you don't not use a network cable on your PI define your WiFi settings.
-6. Add ssh support if you don't work locally on the PI with attached screen, keyboard and mouse.
+4. Username is assumed to be pi which should be standard on the imager. You can make sure by editing options in the imager.
+5. If you don't not use a network cable on your PI remember to define your WiFi settings.
+6. Add ssh support if you don't work locally on your Raspberry Pi with attached screen, keyboard and mouse.
 7. Write the image to the SD.
-8. Boot your PI with the SD card inserted. A standard image will boot after first start, and the second time it starts you should be able to login as user pi.
-9. Using sudo raspi-config make changes to advanced options: select PulseAudio and X11. Without PulseAudio the picochess spoken voice can lag.
-10. Get this repo. First cd /opt then do sudo git clone. This should create your /opt/picochess folder. Alternative: Download the install-picochess.sh script and run it using sudo.
-11. In the picochess folder run the sudo install-picochess.sh script. This install script will do git clone if you dont have the repo, and git pull if you already have it to get updates.
-12. Install script will update the PI system before starting.
-13. Reboot when install is done. When you login again the voice should say "picochess", "engine startup", "ok".
-14. Open your web browser on localhost:8080 or from another computer using the IP address of your PI. You can change the web port in pocochess.ini
-15. Start playing !
+8. Boot your PI with the SD card inserted. A standard image will reboot after first start, and the second time it starts you should be able to login as user pi.
+9. Using sudo raspi-config make changes to advanced options: select PulseAudio and X11. PulseAudio prevents lag in the picochess spoken voice.
+10. Get this repo. First cd /opt then do sudo git clone. This should create your /opt/picochess folder. Alternative: Download the install-picochess.sh script and run it using sudo. See quick installation above.
+11. Run the install-picochess.sh script. The script will first do a system update which may run for a while depending on how old your installation is. Then it will do git clone if you dont have the repo, and git pull if you already have the repo in /opt/picochess.
+12. Reboot when install is done. When you login again the voice should say "picochess", "engine startup", "ok".
+13. Open your web browser on localhost:8080 or from another computer using the IP address of your PI. You can change the web port in pocochess.ini
+14. Start playing !
 
 Tailoring: edit the picochess.ini file.
 Troubleshooting: check the log in /opt/picochess/logs/picochess.log
