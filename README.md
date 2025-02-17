@@ -5,15 +5,15 @@ This repository includes Stockfish 17 and Leela Chess Zero (LCZero) by default, 
 
 Features
 ========
-Play via Web Browser – Enjoy chess directly from your browser.
-Electronic Chess Board Support – Compatible with DGT e-board, Certabo, Chesslink, Chessnut, and Ichessone for an authentic playing experience. Note that no guarantees can be given that it will work with all of these boards, but the community has worked hard to maintain this possibility. I currently use a DGT e-board myself.
-DGT Clock Compatibility – Runs on the DGT Pi 3000 electronic clock which becomes an all-in one chess computer.
+- Play via Web Browser – Enjoy chess directly from your browser.
+- Electronic Chess Board Support – Compatible with DGT e-board, Certabo, Chesslink, Chessnut, and Ichessone for an authentic playing experience. Note that no guarantees can be given that it will work with all of these boards, but the community has worked hard to maintain this possibility. I currently use a DGT e-board myself.
+- DGT Clock Compatibility – Runs on the DGT Pi 3000 electronic clock which becomes an all-in one chess computer.
 
 About This Fork
 ===============
 This fork of Picochess focuses on:
-Upgrading dependencies – Uses the latest Python with the latest chess, and Tornado libraries.
-Asynchronous Architecture – Replaces threads with an async-based architecture for improved performance and scalability.
+- Upgrading dependencies – Uses the latest Python with the latest chess, and Tornado libraries.
+- Asynchronous Architecture – Replaces threads with an async-based architecture for improved performance and scalability.
 
 Requirements
 ------------
