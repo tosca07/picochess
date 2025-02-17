@@ -25,7 +25,6 @@ from pathlib import Path
 from shutil import which
 from random import randint
 import os
-import time
 import asyncio
 
 import chess  # type: ignore
@@ -205,9 +204,9 @@ class PicoTalkerDisplay(DisplayMsg):
         return c_group_no
 
     def set_computer(self, picotalker):
-        """Set the computer talker."""
+        """Set the computer talker.
+           molli: set correct number and assign it to voice group comment variables"""
         self.computer_picotalker = picotalker
-        """molli: set correct number and assign it to voice group comment variables"""
         self.c_no_beforecmove = self.calc_no_group_comments("f_beforecmove")
         self.c_no_beforeumove = self.calc_no_group_comments("f_beforeumove")
         self.c_no_cmove = self.calc_no_group_comments("f_cmove")
@@ -257,9 +256,7 @@ class PicoTalkerDisplay(DisplayMsg):
     def talk(self, sounds, dev=SYSTEM):
         if self.low_time:
             return
-        if False:  # switch-case
-            pass
-        elif dev == self.USER:
+        if dev == self.USER:  # switch-case
             if self.user_picotalker:
                 self.user_picotalker.talk(sounds)
         elif dev == self.COMPUTER:
@@ -404,7 +401,7 @@ class PicoTalkerDisplay(DisplayMsg):
             )
         ):
             # don't use factor for these events
-            c_prob = c_prob
+            pass
         else:
             c_prob = round(c_prob * (self.c_comment_factor / 100))
 

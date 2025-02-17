@@ -138,7 +138,7 @@ class PicoTutor:
         if self.engine is None:
             logger.debug("Engine loading failed in Picotutor")
 
-    
+
     def is_coach_analyser(self) -> bool:
         # to be an analyser for main we have to have a loaded engine
         # and the setting coach_analyser must be True in picochess.ini
@@ -185,13 +185,12 @@ class PicoTutor:
         self.coach_on = b_coach
         self.explorer_on = explorer
         self.comments_on = comments
-        
-        
+
         self.stop()
-                    
+
         if watcher or b_coach:
             self._reset_int()
-            
+
     def get_game_comment(self, pico_comment=PicoComment.COM_OFF, com_factor=0):
         max_range = 0
         max_range_all = 0
@@ -561,7 +560,7 @@ class PicoTutor:
                 # user move is <= lowest score seen, last on list
                 pv_extra_key, extra_move, score, mate = self.obvious_moves[-1]
             self.obvious_history.append((pv_key, user_move, score, mate))
-    
+
 
     def in_best_moves(self, user_move: chess.Move) -> tuple:
         """ find move in obvious moves 

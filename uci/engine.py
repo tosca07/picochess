@@ -22,7 +22,6 @@ from typing import Optional
 import logging
 import configparser
 import re
-from enum import Enum
 import copy
 
 import spur  # type: ignore
@@ -53,7 +52,9 @@ class WindowsShellType:
 
     supports_which = True
 
-    def generate_run_command(self, command_args, store_pid, cwd=None, update_env={}, new_process_group=False):
+    def generate_run_command(self, command_args, store_pid, cwd=None, update_env=None, new_process_group=False):
+        if not update_env:
+            update_env = {}
         if new_process_group:
             raise spur.ssh.UnsupportedArgumentError("'new_process_group' is not supported when using a windows shell")
 
@@ -185,13 +186,13 @@ class ContinuousAnalysis:
                     if debug_once_limit:
                         logger.debug("%s ContinuousAnalyser analysis limited", self.whoami)
                         debug_once_limit = False  # dont flood log
-                    await asyncio.sleep(self.delay)
+                    await asyncio.sleep(self.delay * 2)
                     continue
                 if not self._game_analysable(self.game):
                     if debug_once_game:
                         logger.debug("%s ContinuousAnalyser no game to analyse", self.whoami)
                         debug_once_game = False  # dont flood log
-                    await asyncio.sleep(self.delay)
+                    await asyncio.sleep(self.delay * 2)
                     continue
                 # new position - start with new current_game and empty data
                 async with self.lock:
@@ -204,7 +205,7 @@ class ContinuousAnalysis:
                 self._task = None
                 self._running = False
 
-    
+
     async def _analyse_position(self)->bool:
         """ analyse while position stays same or limit reached
             returns True if limit was reached for this position """
@@ -497,7 +498,7 @@ class UciEngine(object):
         """Send options to engine."""
         try:
             await self.engine.configure(self.options)
-        except Exception as e:
+        except chess.engine.EngineError as e:
             logger.warning(e)
 
     def has_levels(self):
@@ -557,25 +558,21 @@ class UciEngine(object):
     def get_engine_limit(self, time_dict: dict, game: Board) -> float:
         """ a simple algorithm to get engine thinking time 
             parameter game will not change """
-        try:
-            if game.turn == chess.WHITE:
-                t = time_dict["wtime"]
-            else:
-                t = time_dict["btime"]
-            use_time = float(t)
-            use_time = use_time / 1000.0  # convert to seconds
-            # divide usable time over first N moves
-            max_moves_left = INT_EXPECTED_GAME_LENGTH - game.fullmove_number
-            if max_moves_left > 0:
-                use_time = use_time / max_moves_left
-            # apply upper and lower limits
-            if use_time > FLOAT_MAX_ENGINE_TIME:
-                use_time = FLOAT_MAX_ENGINE_TIME
-            elif use_time < FLOAT_MIN_ENGINE_TIME:
-                use_time = FLOAT_MIN_ENGINE_TIME
-        except Exception as e:
-            use_time = 0.2  # fallback so that play does not stop
-            logger.warning(e)
+        if game.turn == chess.WHITE:
+            t = time_dict["wtime"]
+        else:
+            t = time_dict["btime"]
+        use_time = float(t)
+        use_time = use_time / 1000.0  # convert to seconds
+        # divide usable time over first N moves
+        max_moves_left = INT_EXPECTED_GAME_LENGTH - game.fullmove_number
+        if max_moves_left > 0:
+            use_time = use_time / max_moves_left
+        # apply upper and lower limits
+        if use_time > FLOAT_MAX_ENGINE_TIME:
+            use_time = FLOAT_MAX_ENGINE_TIME
+        elif use_time < FLOAT_MIN_ENGINE_TIME:
+            use_time = FLOAT_MIN_ENGINE_TIME
         return use_time
 
     async def go(self, time_dict: dict, game: Board) -> chess.engine.PlayResult:
@@ -692,14 +689,9 @@ class UciEngine(object):
     def newgame(self, game: Board):
         """Engine sometimes need this to setup internal values.
            parameter game will not change """
-        # game param is kept here for backward and possible
-        # future compatibility
-        # example: if analyser is going to run forever the board
-        # needs to be sent to it
-        if self.analyser.is_running():
-            # @todo we could send new board to analyser?
-            # to avoid unnecessary stop and start?
-            self.analyser.stop()
+        if self.analyser.is_running() and game:
+            # send new board to analyser? avoid stop?
+            self.analyser.update_game(game)
 
 
     def set_mode(self, ponder: bool = True):

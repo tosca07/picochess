@@ -32,7 +32,7 @@ from tornado.websocket import WebSocketHandler  # type: ignore
 from utilities import Observable, DisplayMsg, hms_time, AsyncRepeatingTimer
 from web.picoweb import picoweb as pw
 
-from dgt.api import Dgt, Event, Message
+from dgt.api import Event, Message
 from dgt.util import PlayMode, Mode, ClockSide, GameResult
 from dgt.iface import DgtIface
 from eboard.eboard import EBoard
@@ -147,7 +147,6 @@ class EventHandler(WebSocketHandler):
 
     def on_message(self, message):
         logger.debug("WebSocket message " + message)
-        pass
 
     def data_received(self, chunk):
         pass
@@ -157,7 +156,7 @@ class EventHandler(WebSocketHandler):
         real_ip = x_real_ip if x_real_ip else self.request.remote_ip
         return real_ip
 
-    def open(self):
+    def open(self, *args: str, **kwargs: str):
         EventHandler.clients.add(self)
         client_ips.append(self.real_ip())
 
@@ -216,7 +215,7 @@ class HelpHandler(ServerRequestHandler):
 
 class WebServer():
     def __init__(self):
-        super(WebServer, self).__init__()
+        pass
 
     def make_app(self, theme: str, shared: dict) -> tornado.web.Application:
         """ define web pages and their handlers """
@@ -336,7 +335,7 @@ class WebVr(DgtIface):
         EventHandler.write_to_clients(result)
         return True
 
-    def display_text_on_clock(self, message: Dgt.DISPLAY_TEXT):
+    def display_text_on_clock(self, message):
         """Display a text on the web clock."""
         if message.web_text != "":
             text = message.web_text
@@ -420,7 +419,7 @@ class WebVr(DgtIface):
         EventHandler.write_to_clients(result)
         return True
 
-    def promotion_done(self, move):
+    def promotion_done(self, uci_move):
         pass
 
     def get_name(self):
@@ -496,7 +495,7 @@ class WebDisplay(DisplayMsg):
 
         if "game_info" in self.shared:
             if "level_text" in self.shared["game_info"]:
-                text: Dgt.DISPLAY_TEXT = self.shared["game_info"]["level_text"]
+                text = self.shared["game_info"]["level_text"]
                 engine_level = " ({0})".format(text.large_text)
                 if text.large_text == "" or text.large_text == " ":
                     engine_level = ""
@@ -588,9 +587,8 @@ class WebDisplay(DisplayMsg):
             except IndexError:
                 return chess.Move.null().uci()
 
-        if False:  # switch-case
-            pass
-        elif isinstance(message, Message.START_NEW_GAME):
+        # switch-case
+        if isinstance(message, Message.START_NEW_GAME):
             WebDisplay.result_sav = ""
             self.starttime = datetime.datetime.now().strftime("%H:%M:%S")
             pgn_str = _transfer(message.game)
