@@ -2980,15 +2980,80 @@ async def main() -> None:
                         DisplayMsg.show(Message.ENGINE_FAIL())
                         await asyncio.sleep(3)
                         sys.exit(-1)
-
-                    # All done - rock'n'roll
-                    # @todo remove check for BRAIN mode and has_ponder
-                    if self.state.interaction_mode == Mode.BRAIN and not self.engine.has_ponder():
-                        logger.debug(
-                            "new engine doesnt support brain mode, reverting to %s", old_file
+                # All done - rock'n'roll
+                # @todo remove check for BRAIN mode and has_ponder
+                if self.state.interaction_mode == Mode.BRAIN and not self.engine.has_ponder():
+                    logger.debug(
+                        "new engine doesnt support brain mode, reverting to %s", old_file
+                    )
+                    engine_fallback = True
+                    await self.engine.quit()
+                    if self.remote_engine_mode() and flag_eng and self.uci_remote_shell:
+                        self.engine = UciEngine(
+                            file=remote_file,
+                            uci_shell=self.uci_remote_shell,
+                            mame_par=self.calc_engine_mame_par(),
+                            loop=self.loop,
                         )
+                        await self.engine.open_engine()
+                    else:
+                        self.engine = UciEngine(
+                            file=old_file,
+                            uci_shell=self.uci_local_shell,
+                            mame_par=self.calc_engine_mame_par(),
+                            loop=self.loop,
+                        )
+                        await self.engine.open_engine()
+                    await self.engine.startup(old_options, self.state.rating)
+                    self.engine.newgame(self.state.game.copy())
+                    if not self.engine.loaded_ok():
+                        logger.error("no engines started")
+                        DisplayMsg.show(Message.ENGINE_FAIL())
+                        await asyncio.sleep(3)
+                        sys.exit(-1)
+
+                if (
+                    self.emulation_mode()
+                    and self.state.dgtmenu.get_engine_rdisplay()
+                    and self.state.artwork_in_use
+                    and not self.state.dgtmenu.get_engine_rwindow()
+                ):
+                    # switch to fullscreen
+                    cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
+                    subprocess.run(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        universal_newlines=True,
+                        shell=True,
+                    )
+
+                await self.engine.startup(event.options, self.state.rating)
+
+                if self.online_mode():
+                    self.state.stop_clock()
+                    DisplayMsg.show(Message.ONLINE_LOGIN())
+                    # check if login successful (correct server & correct user)
+                    (
+                        self.login,
+                        own_color,
+                        self.self.own_user,
+                        self.self.opp_user,
+                        self.game_time,
+                        self.fischer_inc,
+                    ) = await read_online_user_info()
+                    logger.debug("molli online login: %s", self.login)
+
+                    if "ok" not in self.login:
+                        # server connection failed: check settings!
+                        DisplayMsg.show(Message.ONLINE_FAILED())
+                        await asyncio.sleep(3)
                         engine_fallback = True
-                        await self.engine.quit()
+                        event.options = dict()
+                        old_file = "engines/aarch64/a-stockf"
+                        help_str = old_file.rsplit(os.sep, 1)[1]
+                        remote_file = self.engine_remote_home + os.sep + help_str
+
                         if self.remote_engine_mode() and flag_eng and self.uci_remote_shell:
                             self.engine = UciEngine(
                                 file=remote_file,
@@ -3005,151 +3070,85 @@ async def main() -> None:
                                 loop=self.loop,
                             )
                             await self.engine.open_engine()
-                        await self.engine.startup(old_options, self.state.rating)
-                        self.engine.newgame(self.state.game.copy())
                         if not self.engine.loaded_ok():
+                            # Help - old engine failed to restart. There is no engine
                             logger.error("no engines started")
                             DisplayMsg.show(Message.ENGINE_FAIL())
                             await asyncio.sleep(3)
                             sys.exit(-1)
-
-                    if (
-                        self.emulation_mode()
-                        and self.state.dgtmenu.get_engine_rdisplay()
-                        and self.state.artwork_in_use
-                        and not self.state.dgtmenu.get_engine_rwindow()
-                    ):
-                        # switch to fullscreen
-                        cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
-                        subprocess.run(
-                            cmd,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            universal_newlines=True,
-                            shell=True,
-                        )
-
-                    await self.engine.startup(event.options, self.state.rating)
-
-                    if self.online_mode():
-                        self.state.stop_clock()
-                        DisplayMsg.show(Message.ONLINE_LOGIN())
-                        # check if login successful (correct server & correct user)
-                        (
-                            self.login,
-                            own_color,
-                            self.self.own_user,
-                            self.self.opp_user,
-                            self.game_time,
-                            self.fischer_inc,
-                        ) = await read_online_user_info()
-                        logger.debug("molli online login: %s", self.login)
-
-                        if "ok" not in self.login:
-                            # server connection failed: check settings!
-                            DisplayMsg.show(Message.ONLINE_FAILED())
-                            await asyncio.sleep(3)
-                            engine_fallback = True
-                            event.options = dict()
-                            old_file = "engines/aarch64/a-stockf"
-                            help_str = old_file.rsplit(os.sep, 1)[1]
-                            remote_file = self.engine_remote_home + os.sep + help_str
-
-                            if self.remote_engine_mode() and flag_eng and self.uci_remote_shell:
-                                self.engine = UciEngine(
-                                    file=remote_file,
-                                    uci_shell=self.uci_remote_shell,
-                                    mame_par=self.calc_engine_mame_par(),
-                                    loop=self.loop,
-                                )
-                                await self.engine.open_engine()
-                            else:
-                                self.engine = UciEngine(
-                                    file=old_file,
-                                    uci_shell=self.uci_local_shell,
-                                    mame_par=self.calc_engine_mame_par(),
-                                    loop=self.loop,
-                                )
-                                await self.engine.open_engine()
-                            if not self.engine.loaded_ok():
-                                # Help - old engine failed to restart. There is no engine
-                                logger.error("no engines started")
-                                DisplayMsg.show(Message.ENGINE_FAIL())
-                                await asyncio.sleep(3)
-                                sys.exit(-1)
-                            await self.engine.startup(event.options, self.state.rating)
-                        else:
-                            await asyncio.sleep(2)
-                    elif self.emulation_mode() or self.pgn_mode():
-                        # molli for emulation engines we have to reset to starting position
-                        await self.stop_search_and_clock()
-                        game_fen = self.state.game.board_fen()
-                        self.state.game = chess.Board()
-                        self.state.game.turn = chess.WHITE
-                        self.state.play_mode = PlayMode.USER_WHITE
-                        self.engine.newgame(self.state.game.copy())
-                        self.state.done_computer_fen = None
-                        self.state.done_move = self.state.pb_move = chess.Move.null()
-                        self.state.searchmoves.reset()
-                        self.state.game_declared = False
-                        self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
-                        self.state.last_legal_fens = []
-                        self.state.legal_fens_after_cmove = []
-                        self.is_out_of_time_already = False
-                        real_new_game = game_fen != chess.STARTING_BOARD_FEN
-                        msg = Message.START_NEW_GAME(game=self.state.game.copy(), newgame=real_new_game)
-                        DisplayMsg.show(msg)
+                        await self.engine.startup(event.options, self.state.rating)
                     else:
-                        self.engine.newgame(self.state.game.copy())
+                        await asyncio.sleep(2)
+                elif self.emulation_mode() or self.pgn_mode():
+                    # molli for emulation engines we have to reset to starting position
+                    await self.stop_search_and_clock()
+                    game_fen = self.state.game.board_fen()
+                    self.state.game = chess.Board()
+                    self.state.game.turn = chess.WHITE
+                    self.state.play_mode = PlayMode.USER_WHITE
+                    self.engine.newgame(self.state.game.copy())
+                    self.state.done_computer_fen = None
+                    self.state.done_move = self.state.pb_move = chess.Move.null()
+                    self.state.searchmoves.reset()
+                    self.state.game_declared = False
+                    self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                    self.state.last_legal_fens = []
+                    self.state.legal_fens_after_cmove = []
+                    self.is_out_of_time_already = False
+                    real_new_game = game_fen != chess.STARTING_BOARD_FEN
+                    msg = Message.START_NEW_GAME(game=self.state.game.copy(), newgame=real_new_game)
+                    DisplayMsg.show(msg)
+                else:
+                    self.engine.newgame(self.state.game.copy())
 
-                    self.engine_mode()
+                self.engine_mode()
 
-                    if engine_fallback:
-                        msg = Message.ENGINE_FAIL()
-                        # molli: in case of engine fail, set correct old engine display settings
-                        for index in range(0, len(EngineProvider.installed_engines)):
-                            if EngineProvider.installed_engines[index]["file"] == old_file:
-                                logger.debug("molli index:%s", str(index))
-                                self.state.dgtmenu.set_engine_index(index)
-                        # in case engine fails, reset level as well
-                        if self.state.old_engine_level:
-                            level_text = self.state.dgttranslate.text(
-                                "B00_level", self.state.old_engine_level
-                            )
-                            level_text.beep = False
-                        else:
-                            level_text = None
-                        DisplayMsg.show(
-                            Message.LEVEL(
-                                level_text=level_text,
-                                level_name=self.state.old_engine_level,
-                                do_speak=False,
-                            )
+                if engine_fallback:
+                    msg = Message.ENGINE_FAIL()
+                    # molli: in case of engine fail, set correct old engine display settings
+                    for index in range(0, len(EngineProvider.installed_engines)):
+                        if EngineProvider.installed_engines[index]["file"] == old_file:
+                            logger.debug("molli index:%s", str(index))
+                            self.state.dgtmenu.set_engine_index(index)
+                    # in case engine fails, reset level as well
+                    if self.state.old_engine_level:
+                        level_text = self.state.dgttranslate.text(
+                            "B00_level", self.state.old_engine_level
                         )
-                        self.state.new_engine_level = self.state.old_engine_level
+                        level_text.beep = False
                     else:
-                        self.state.searchmoves.reset()
-                        msg = Message.ENGINE_READY(
-                            eng=event.eng,
-                            eng_text=event.eng_text,
-                            engine_name=self.engine.get_name(),
-                            has_levels=self.engine.has_levels(),
-                            has_960=self.engine.has_chess960(),
-                            has_ponder=self.engine.has_ponder(),
-                            show_ok=event.show_ok,
+                        level_text = None
+                    DisplayMsg.show(
+                        Message.LEVEL(
+                            level_text=level_text,
+                            level_name=self.state.old_engine_level,
+                            do_speak=False,
                         )
-                    # Schedule cleanup of old objects
-                    gc.collect()
+                    )
+                    self.state.new_engine_level = self.state.old_engine_level
+                else:
+                    self.state.searchmoves.reset()
+                    msg = Message.ENGINE_READY(
+                        eng=event.eng,
+                        eng_text=event.eng_text,
+                        engine_name=self.engine.get_name(),
+                        has_levels=self.engine.has_levels(),
+                        has_960=self.engine.has_chess960(),
+                        has_ponder=self.engine.has_ponder(),
+                        show_ok=event.show_ok,
+                    )
+                # Schedule cleanup of old objects
+                gc.collect()
 
-                    await self.set_wait_state(msg, not engine_fallback)
-                    if self.state.interaction_mode in (
-                        Mode.NORMAL,
-                        Mode.BRAIN,
-                        Mode.TRAINING,
-                    ):  # engine isnt started/searching => stop the clock
-                        self.state.stop_clock()
-                    self.state.engine_text = state.dgtmenu.get_current_engine_name()
-                    self.state.dgtmenu.exit_menu()
+                await self.set_wait_state(msg, not engine_fallback)
+                if self.state.interaction_mode in (
+                    Mode.NORMAL,
+                    Mode.BRAIN,
+                    Mode.TRAINING,
+                ):  # engine isnt started/searching => stop the clock
+                    self.state.stop_clock()
+                self.state.engine_text = state.dgtmenu.get_current_engine_name()
+                self.state.dgtmenu.exit_menu()
 
                 self.state.old_engine_level = self.state.new_engine_level
                 self.state.engine_level = self.state.new_engine_level

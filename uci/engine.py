@@ -460,8 +460,8 @@ class UciEngine(object):
             if self.engine:
                 if "name" in self.engine.id:
                     self.engine_name = self.engine.id["name"]
-                    i = re.search(r"\W+", self.engine_name).start()
-                    if i is not None:
+                    i = self.engine_name.find(" ")
+                    if i != -1:
                         self.engine_name = self.engine_name[:i]
             else:
                 logger.error("engine executable %s not found", self.file)
