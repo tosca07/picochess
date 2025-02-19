@@ -86,3 +86,14 @@ gamesdb/tcscid
 obooksrv/obooksrv
 etc/dgtpicom
 etc/dgtpicom.so
+
+# Pi engines aarch64
+engines/aarch64
+!engine/aarch64/engines.ini
+!engines/aarch64/a-stockf
+!engines/aarch64/a-stockf.uci
+!engines/aarch64/lc0v0311
+!engines/aarch64/lc0v0311.uci
+!engines/aarch64/LD2.pb.gz
+!engines/aarch64/NNUE/StockfishNN
+!engines/aarch64/NNUE/StockfishNN.uci
