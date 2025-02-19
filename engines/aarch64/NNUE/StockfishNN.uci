@@ -1,0 +1,93 @@
+[DEFAULT]
+Hash = 192 
+Threads = 1
+SyzygyPath = /opt/picochess/tablebases/syzygy 
+Move Overhead = 2000
+
+[Auto]
+UCI_LimitStrength = true
+UCI_Elo = max(1320, int(auto / 50 + 1) * 50)
+
+[Elo@1320]
+UCI_LimitStrength = true
+UCI_Elo = 1320
+
+[Elo@1400]
+UCI_LimitStrength = true
+UCI_Elo = 1400
+
+[Elo@1500]
+UCI_LimitStrength = true
+UCI_Elo = 1500
+
+[Elo@1600]
+UCI_LimitStrength = true
+UCI_Elo = 1600
+
+[Elo@1700]
+UCI_LimitStrength = true
+UCI_Elo = 1700
+
+[Elo@1800]
+UCI_LimitStrength = true
+UCI_Elo = 1800
+
+[Elo@1900]
+UCI_LimitStrength = true
+UCI_Elo = 1900
+
+[Elo@2000]
+UCI_LimitStrength = true
+UCI_Elo = 2000
+
+[Elo@2100]
+UCI_LimitStrength = true
+UCI_Elo = 2100
+
+[Elo@2200]
+UCI_LimitStrength = true
+UCI_Elo = 2200
+
+[Elo@2300]
+UCI_LimitStrength = true
+UCI_Elo = 2300
+
+[Elo@2400]
+UCI_LimitStrength = true
+UCI_Elo = 2400
+
+[Elo@2500]
+UCI_LimitStrength = true
+UCI_Elo = 2500
+
+[Elo@2600]
+UCI_LimitStrength = true
+UCI_Elo = 2600
+
+[Elo@2700]
+UCI_LimitStrength = true
+UCI_Elo = 2700
+
+[Elo@2800]
+UCI_LimitStrength = true
+UCI_Elo = 2800
+
+[Elo@2900]
+UCI_LimitStrength = true
+UCI_Elo = 2900
+
+[Elo@3000]
+UCI_LimitStrength = true
+UCI_Elo = 3000
+Threads = 2
+
+[Elo@3100]
+UCI_LimitStrength = true
+UCI_Elo = 3100
+Threads = 2
+
+[Elo@3190]
+UCI_LimitStrength = false
+UCI_Elo = 3190
+Threads = 3
+
