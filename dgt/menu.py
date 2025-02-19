@@ -2694,8 +2694,7 @@ class DgtMenu(object):
             text = self._fire_event(event)
             self.engine_restart = True
             self.res_engine_index = self.menu_engine_index = (
-                # @todo the -1 at the end is probably a bug?
-                len(EngineProvider.modern_engines) + self.menu_retro_engine_index - 1
+                len(EngineProvider.modern_engines) + self.menu_retro_engine_index
             )
             self.res_engine_level = self.menu_retro_engine_level
 
