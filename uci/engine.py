@@ -558,10 +558,25 @@ class UciEngine(object):
     def get_engine_limit(self, time_dict: dict, game: Board) -> float:
         """ a simple algorithm to get engine thinking time 
             parameter game will not change """
-        if game.turn == chess.WHITE:
-            t = time_dict["wtime"]
+        if self.is_mame:
+            if "movetime" in time_dict:
+                t = time_dict["movetime"]
+            else:
+                logger.debug("mame engine using fallback time")
+                t = 1000 * FLOAT_MAX_ENGINE_TIME  # fallback
         else:
-            t = time_dict["btime"]
+            if game.turn == chess.WHITE:
+                if "wtime" in time_dict:
+                    t = time_dict["wtime"]
+                else:
+                    t = 1000 * FLOAT_MAX_ENGINE_TIME  # fallback
+                    logger.debug("engine using fallback time for white")
+            else:
+                if "btime" in time_dict:
+                    t = time_dict["btime"]
+                else:
+                    t = 1000 * FLOAT_MAX_ENGINE_TIME  # fallback
+                    logger.debug("engine using fallback time for black")
         use_time = float(t)
         use_time = use_time / 1000.0  # convert to seconds
         # divide usable time over first N moves
