@@ -89,7 +89,6 @@ etc/dgtpicom.so
 
 # Pi engines aarch64
 engines/aarch64/
-engines/aarch64/engines.ini
 !engines/aarch64/a-stockf
 !engines/aarch64/a-stockf.uci
 !engines/aarch64/lc0v0311
