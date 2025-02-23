@@ -900,21 +900,23 @@ async def main() -> None:
 
         async def initialise(self, time_text):
             """ Due to use of async some initialisation is moved here """
+            engine_file_to_load = self.state.engine_file  # assume not mame
             if "/mame/" in self.state.engine_file and self.state.dgtmenu.get_engine_rdisplay():
-                await asyncio.sleep(20)
                 engine_file_art = self.state.engine_file + "_art"
                 my_file = Path(engine_file_art)
                 if my_file.is_file():
                     self.state.artwork_in_use = True
-                    self.state.engine_file = engine_file_art
+                    engine_file_to_load = engine_file_art  # load mame
 
             self.engine = UciEngine(
-                file=self.state.engine_file,
+                file=engine_file_to_load,
                 uci_shell=self.uci_local_shell,
                 mame_par=self.calc_engine_mame_par(),
                 loop=self.loop,
             )
             await self.engine.open_engine()
+            if engine_file_to_load != self.state.engine_file:
+                await asyncio.sleep(1)  # mame artwork wait
 
             await display_ip_info(state)
             await asyncio.sleep(1.0)
@@ -2875,16 +2877,17 @@ async def main() -> None:
 
                 self.state.engine_file = event.eng["file"]
                 self.state.artwork_in_use = False
+                engine_file_to_load = self.state.engine_file  # assume not mame
                 if "/mame/" in self.state.engine_file and self.state.dgtmenu.get_engine_rdisplay():
                     engine_file_art = self.state.engine_file + "_art"
                     my_file = Path(engine_file_art)
                     if my_file.is_file():
                         self.state.artwork_in_use = True
-                        self.state.engine_file = engine_file_art
+                        engine_file_to_load = engine_file_art  # load mame
                     else:
                         DisplayMsg.show(Message.SHOW_TEXT(text_string="NO_ARTWORK"))
 
-                help_str = self.state.engine_file.rsplit(os.sep, 1)[1]
+                help_str = engine_file_to_load.rsplit(os.sep, 1)[1]
                 remote_file = self.engine_remote_home + os.sep + help_str
 
                 flag_eng = False
@@ -2934,12 +2937,14 @@ async def main() -> None:
                     await self.engine.open_engine()
                 else:
                     self.engine = UciEngine(
-                        file=self.state.engine_file,
+                        file=engine_file_to_load,
                         uci_shell=self.uci_local_shell,
                         mame_par=self.calc_engine_mame_par(),
                         loop=self.loop,
                     )
                     await self.engine.open_engine()
+                    if engine_file_to_load != self.state.engine_file:
+                        await asyncio.sleep(1)  # mame artwork wait
                 if not self.engine.loaded_ok():
                     # New engine failed to start, restart old engine
                     logger.error("new engine failed to start, reverting to %s", old_file)
@@ -4547,22 +4552,25 @@ async def main() -> None:
                 if self.emulation_mode():
                     # restart engine with new retro speed
                     self.state.artwork_in_use = False
+                    engine_file_to_load = self.state.engine_file  # assume not mame
                     if "/mame/" in self.state.engine_file and self.state.dgtmenu.get_engine_rdisplay():
                         engine_file_art = self.state.engine_file + "_art"
                         my_file = Path(engine_file_art)
                         if my_file.is_file():
                             self.state.artwork_in_use = True
-                            self.state.engine_file = engine_file_art
+                            engine_file_to_load = engine_file_art  # load mame
                     old_options = self.engine.get_pgn_options()
                     DisplayMsg.show(Message.ENGINE_SETUP())
                     await self.engine.quit()
                     self.engine = UciEngine(
-                        file=self.state.engine_file,
+                        file=engine_file_to_load,
                         uci_shell=self.uci_local_shell,
                         mame_par=self.calc_engine_mame_par(),
                         loop=self.loop,
                     )
                     await self.engine.open_engine()
+                    if engine_file_to_load != self.state.engine_file:
+                        await asyncio.sleep(1)  # mame artwork wait
                     await self.engine.startup(old_options, self.state.rating)
                     await self.stop_search_and_clock()
 
