@@ -485,9 +485,9 @@ class DgtDisplay(DisplayMsg):
             elif button == 0x20:
                 self._power_off(message.dev)
             elif button == 0x40:
-                self._process_lever(right_side_down=True, dev=message.dev)
+                await self._process_lever(right_side_down=True, dev=message.dev)
             elif button == -0x40:
-                self._process_lever(right_side_down=False, dev=message.dev)
+                await self._process_lever(right_side_down=False, dev=message.dev)
 
     async def _process_fen(self, fen, raw):
         level_map = (
