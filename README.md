@@ -1,13 +1,13 @@
 PicoChess
 =========
 Picochess transforms your Raspberry Pi or any Debian-based computer into a powerful chess computer. It is not a chess engine itself but a manager for the chess engines you choose to use.
-This repository includes Stockfish 17 and Leela Chess Zero (LCZero) by default, and you can easily add any other chess engine of your choice.
+This repository includes Stockfish 17 and Leela Chess Zero (LCZero) as examples. You need to chose them through "modern engines" in the menu. If you want retro and special engines you should have a look in the picochess google group.
 
 Features
 ========
-- Play via Web Browser – Enjoy chess directly from your browser.
-- Electronic Chess Board Support – Compatible with DGT e-board, Certabo, Chesslink, Chessnut, and Ichessone for an authentic playing experience. Note that no guarantees can be given that it will work with all of these boards, but the community has worked hard to maintain this possibility. I currently use a DGT e-board myself.
-- DGT Clock Compatibility – Runs on the DGT Pi 3000 electronic clock which becomes an all-in one chess computer.
+- Play via Web Browser. Enjoy chess directly from your browser.
+- Electronic Chess Board support, compatible with DGT e-board, Certabo, Chesslink, Chessnut, and Ichessone for an authentic playing experience. Note that no guarantees can be given that it will work with all of these boards, but the community has worked hard to maintain this possibility. I currently use a DGT e-board myself.
+- DGT Clock Compatibility. Runs on the DGT Pi 3000 electronic clock which becomes an all-in one chess computer.
 
 About This Fork
 ===============
@@ -28,6 +28,24 @@ Get the installations script, give it execution rights, and run it. This will in
 - chmod a+x install-picochess.sh
 - ./install-picochess
 - reboot and if everything went well Picochess should start as a service
+The script installs the following services in /etc/systemd/system/
+- picochess, main service
+- obooksrv, opening books window on web page
+- gamesdb, games window on web page
+
+How to open the web page and play?
+Use localhost:8080 in your browser to open the web page. If you are running on another machine replace localhost with the ip address of your Pi4. 
+
+Additional scripts you might find useful:
+- install-dgtpi-clock.sh, run this on DGT3000 Dgt Pi clock hardware, installs dgtpi service
+- connect-dgt-on-debian.sh, needed on Debian laptops to connect them to a Bluetooth DGT e-board
+
+How to add more engines?
+From start only modern engines can be chosen from menu. For more engines see the picochess group. To add an engine you need:
+- locate the /opt/picochess/engines folder - Pi uses aarch64 and Debian laptops x86_64 folder
+- add an executable file like "engineX" and a text file "engineX.uci" with settings
+- add an [engineX] section in engines.ini file
+To get a lot of Pi engines copy the entire /opt/picoshess/engines/aarch64 folder from an image found in the picochess google group.
 
 Installation with more info
 ---------------------------
