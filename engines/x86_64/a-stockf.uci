@@ -1,87 +1,93 @@
-# Debug Log File, NumaPolicy, Threads, Hash, Clear Hash, Ponder
-# MultiPV, Skill Level, Move Overhead, nodestime, UCI_Chess960
-# UCI_LimitStrength, UCI_Elo, UCI_ShowWDL, SyzygyPath, SyzygyProbeDepth
-# Syzygy50MoveRule, SyzygyProbeLimit, EvalFile, EvalFileSmall
-
 [DEFAULT]
-Ponder = True
-Move Overhead = 2000
-Skill Level = 20
-Threads = 2
 Hash = 192 
-Debug Log File ="a-stockf.log"
-UCI_LimitStrength = True
+Threads = 1
+SyzygyPath = /opt/picochess/tablebases/syzygy 
+Move Overhead = 2000
 
 [Auto]
-UCI_Elo = max(1350, int(auto / 50 + 1) * 50)
+UCI_LimitStrength = true
+UCI_Elo = max(1320, int(auto / 50 + 1) * 50)
 
-[Level@00] 
-Skill Level = 0 
+[Elo@1320]
+UCI_LimitStrength = true
+UCI_Elo = 1320
 
-[Level@01]
-Skill Level = 1
+[Elo@1400]
+UCI_LimitStrength = true
+UCI_Elo = 1400
 
-[Level@02]
-Skill Level = 2 
+[Elo@1500]
+UCI_LimitStrength = true
+UCI_Elo = 1500
 
-[Level@03]
-Skill Level = 3 
+[Elo@1600]
+UCI_LimitStrength = true
+UCI_Elo = 1600
 
-[Level@04]
-Skill Level = 4
+[Elo@1700]
+UCI_LimitStrength = true
+UCI_Elo = 1700
 
-[Level@05]
-Skill Level = 5
+[Elo@1800]
+UCI_LimitStrength = true
+UCI_Elo = 1800
 
-[Level@06]
-Skill Level = 6
+[Elo@1900]
+UCI_LimitStrength = true
+UCI_Elo = 1900
 
-[Level@07]
-Skill Level = 7
+[Elo@2000]
+UCI_LimitStrength = true
+UCI_Elo = 2000
 
-[Level@08]
-Skill Level = 8
+[Elo@2100]
+UCI_LimitStrength = true
+UCI_Elo = 2100
 
-[Level@09]
-Skill Level = 9 
+[Elo@2200]
+UCI_LimitStrength = true
+UCI_Elo = 2200
 
-[Level@10]
-Skill Level = 10
+[Elo@2300]
+UCI_LimitStrength = true
+UCI_Elo = 2300
 
-[Level@11]
-Skill Level = 11
+[Elo@2400]
+UCI_LimitStrength = true
+UCI_Elo = 2400
 
-[Level@12]
-Skill Level = 12
+[Elo@2500]
+UCI_LimitStrength = true
+UCI_Elo = 2500
 
-[Level@13]
-Skill Level = 13
+[Elo@2600]
+UCI_LimitStrength = true
+UCI_Elo = 2600
 
-[Level@14]
-Skill Level = 14
+[Elo@2700]
+UCI_LimitStrength = true
+UCI_Elo = 2700
 
-[Level@15]
-Skill Level = 15
+[Elo@2800]
+UCI_LimitStrength = true
+UCI_Elo = 2800
 
-[Level@16]
-Skill Level = 16
+[Elo@2900]
+UCI_LimitStrength = true
+UCI_Elo = 2900
 
-[Level@17]
-Skill Level = 17
+[Elo@3000]
+UCI_LimitStrength = true
+UCI_Elo = 3000
+Threads = 2
 
-[Level@18]
-Skill Level = 18
-Threads = 3
-Hash = 192 
+[Elo@3100]
+UCI_LimitStrength = true
+UCI_Elo = 3100
+Threads = 2
 
-[Level@19]
-Skill Level = 19
-Threads = 3
-Hash = 192 
-
-[Level@20]
-Threads = 3
-Hash = 192
-Skill Level = 20
+[Elo@3190]
 UCI_LimitStrength = false
-SyzygyPath = /opt/picochess/tablebases/syzygy
+UCI_Elo = 3190
+Threads = 3
+
