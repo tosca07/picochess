@@ -23,10 +23,10 @@ Requirements
 
 Quick Installation
 ------------------
-Get the installations script, give it execution rights, and run it. This will install the repository in /opt/picochess.
+Get the installations script, give it execution rights, and run it as sudo. It will clone the repository to /opt/picochess and install the needed services as listed below.
 - wget -L https://raw.github.com/JohanSjoblom/Picochess/master/install-picochess.sh
 - chmod a+x install-picochess.sh
-- ./install-picochess
+- sudo ./install-picochess
 - reboot and if everything went well Picochess should start as a service
 The script installs the following services in /etc/systemd/system/
 - picochess, main service
@@ -42,13 +42,14 @@ Additional scripts you might find useful:
 
 How to add more engines?
 From start only modern engines can be chosen from menu. For more engines see the picochess group. To add an engine you need:
-- locate the /opt/picochess/engines folder - Pi uses aarch64 and Debian laptops x86_64 folder
-- add an executable file like "engineX" and a text file "engineX.uci" with settings
-- add an [engineX] section in engines.ini file
-To get a lot of Pi engines copy the entire /opt/picoshess/engines/aarch64 folder from an image found in the picochess google group.
+- Locate the /opt/picochess/engines folder - Pi uses /aarch64 and Debian laptops /x86_64 folder.
+- Add an executable file like "engineX" and a file with settings for it: "engineX.uci".
+- Add an [engineX] section in engines.ini file.
 
-Installation with more info
----------------------------
+If you have a Pi4 image from the picochess group you can copy the entire /opt/picoshess/engines/aarch64 folder from the image to your Pi4.
+
+Installation with more detailed info
+------------------------------------
 1. You need a Raspberry PI 4 (or 3) and a 32G SD card.
 2. Use Raspberry Pi Imager to crete a PI operating system on your SD card as follows:
 3. Choose PI 4 and 64bit OS (I have not tested PI 3 yet, but feel free to test)
