@@ -205,6 +205,8 @@ class Emailer(object):
         self.smtp_user = None
         self.smtp_pass = None
         self.smtp_from = None
+        self.smtp_port = None
+        self.smtp_starttls = None
 
         if email and mailgun_key:
             self.mailgun_key = base64.b64decode(str.encode(mailgun_key)).decode("utf-8")
@@ -220,6 +222,10 @@ class Emailer(object):
             # lib with ssl encryption
             logger.debug("SMTP Mail delivery: Import SSL SMTP Lib")
             from smtplib import SMTP_SSL as SMTP
+        elif self.smtp_starttls:
+            logger.debug("SMTP Mail delivery: Import SSL SMTP Lib (with STARTTLS)")
+            from smtplib import SMTP
+            from ssl import create_default_context
         else:
             # lib without encryption (SMTP-port 21)
             logger.debug("SMTP Mail delivery: Import standard SMTP Lib (no SSL encryption)")
@@ -253,9 +259,24 @@ class Emailer(object):
             msg.add_header("Content-Disposition", "attachment", filename=os.path.basename(path))
             outer.attach(msg)
 
-            logger.debug("SMTP Mail delivery: trying to connect to " + self.smtp_server)
-            conn = SMTP(self.smtp_server)  # contact smtp server
-            conn.set_debuglevel(False)  # no debug info from smtp lib
+            if (self.smtp_starttls):
+
+                # handle starttls smtp server connections
+                logger.debug("SMTP Mail delivery: trying to connect to " + self.smtp_server + " via port " + str(self.smtp_port))
+                context = create_default_context()
+                conn = SMTP(self.smtp_server, self.smtp_port)
+                conn.set_debuglevel(1)
+                #conn.ehlo()  # Can be omitted
+                conn.starttls(context=context)
+                #conn.ehlo()  # Can be omitted
+                logger.debug("SMTP Username, password: " + self.smtp_user + ", " + "XXXXXXX")
+
+            else:
+
+                logger.debug("SMTP Mail delivery: trying to connect to " + self.smtp_server)
+                conn = SMTP(self.smtp_server)  # contact smtp server
+                conn.set_debuglevel(False)  # no debug info from smtp lib
+
             if self.smtp_user is not None and self.smtp_pass is not None:
                 logger.debug("SMTP Mail delivery: trying to log to SMTP Server")
                 conn.login(self.smtp_user, self.smtp_pass)  # login at smtp server
@@ -284,13 +305,15 @@ class Emailer(object):
         )
         logger.debug(out)
 
-    def set_smtp(self, sserver=None, sencryption=None, suser=None, spass=None, sfrom=None):
+    def set_smtp(self, sserver=None, sencryption=None, suser=None, spass=None, sfrom=None, sport=None, sstarttls=None):
         """Store information for SMTP based mail delivery."""
         self.smtp_server = sserver
         self.smtp_encryption = sencryption
         self.smtp_user = suser
         self.smtp_pass = spass
         self.smtp_from = sfrom
+        self.smtp_port = sport
+        self.smtp_starttls = sstarttls
 
     def send(self, subject: str, body: str, path: str):
         """Send the email out."""
@@ -637,7 +660,8 @@ class PgnDisplay(DisplayMsg):
         elif isinstance(message, Message.SAVE_GAME):
             logger.debug("molli: save game message pgn dispatch")
             if message.game.move_stack:
-                self._save_pgn(message)
+                #self._save_pgn(message)
+                self._save_and_email_pgn(message)
 
     async def message_consumer(self):
         """ PGN message consumer """
