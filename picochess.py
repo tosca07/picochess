@@ -809,7 +809,7 @@ async def main() -> None:
             my_dgtpi = DgtPi(dgtboard, main_loop)
             dgtdispatcher.register("i2c")
             asyncio.create_task(my_dgtpi.dgt_consumer())
-            await asyncio.to_thread(asyncio.run, my_dgtpi.process_incoming_clock_forever())
+            asyncio.create_task(my_dgtpi.process_incoming_clock_forever())
         else:
             logger.debug("(ser) starting the board connection")
             dgtboard.run()  # a clock can only be online together with the board, so we must start it infront
