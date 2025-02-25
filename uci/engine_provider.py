@@ -30,9 +30,9 @@ class EngineProvider(object):
         cls.modern_engines: List[Dict[str, str]] = read_engine_ini(filename='engines.ini')
         cls.retro_engines: List[Dict[str, str]] = read_engine_ini(filename='retro.ini')
         cls.favorite_engines: List[Dict[str, str]] = read_engine_ini(filename='favorites.ini')
-        cls.installed_engines: List[Dict[str, str]] = cls.modern_engines + cls.retro_engines + cls.favorite_engines
         # set retro/favorite engines to the list of modern engines in case retro.ini or favorites.ini is empty
         if not cls.retro_engines:
             cls.retro_engines = cls.modern_engines
         if not cls.favorite_engines:
             cls.favorite_engines = cls.modern_engines
+        cls.installed_engines: List[Dict[str, str]] = cls.modern_engines + cls.retro_engines + cls.favorite_engines
