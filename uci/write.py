@@ -18,6 +18,7 @@
 import platform
 import configparser
 import os
+import asyncio
 from uci.engine import UciShell, UciEngine
 
 
@@ -102,7 +103,14 @@ def write_engine_ini(engine_path=None):
     uci_shell = UciShell()
     for engine_file_name in engine_list:
         if is_exe(engine_path + os.sep + engine_file_name):
-            engine = UciEngine(file=engine_path + os.sep + engine_file_name, uci_shell=uci_shell)
+            mame_par = ""  # attempt a simple porting of this code
+            loop = asyncio.get_event_loop()  # _could_ work as we just ask for name
+            engine = UciEngine(
+                               file=engine_path + os.sep + engine_file_name,
+                               uci_shell=uci_shell,
+                               mame_par=mame_par,
+                               loop=loop
+                               )
             if engine:
                 print(engine_file_name)
                 try:
