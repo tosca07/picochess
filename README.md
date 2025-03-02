@@ -1,7 +1,7 @@
 PicoChess
 =========
 Picochess transforms your Raspberry Pi or any Debian-based computer into a powerful chess computer. It is not a chess engine itself but a manager for the chess engines you choose to use.
-This repository includes Stockfish 17 and Leela Chess Zero (LCZero) as examples. You need to chose them through "modern engines" in the menu. If you want retro and special engines you should have a look in the picochess google group.
+This repository includes Stockfish 17 and Leela Chess Zero (LCZero) as examples. If you want to add more engines you should have a look in the picochess google group. The retro and mame engines like Mephisto works, but the special and historical engines do not work at the moment.
 
 Features
 ========
@@ -37,8 +37,8 @@ How to open the web page and play?
 Use localhost:8080 in your browser to open the web page. If you are running on another machine replace localhost with the ip address of your Pi4. 
 
 Additional scripts you might find useful:
-- install-dgtpi-clock.sh, run this on DGT3000 Dgt Pi clock hardware, installs dgtpi service
-- connect-dgt-on-debian.sh, needed on Debian laptops to connect them to a Bluetooth DGT e-board
+- install-dgtpi-clock.sh, run this on DGT3000 Dgt Pi clock hardware, it installs the dgtpi service
+- connect-dgt-on-debian.sh, needed on Debian laptops to connect to a Bluetooth DGT e-board
 
 How to add more engines?
 In the repo there are only Stockfish and LC0 examples. To add an engine you need:
