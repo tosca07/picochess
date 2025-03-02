@@ -19,6 +19,8 @@ apt -y install libffi-dev libssl-dev
 apt -y install tk tcl libtcl8.6
 # following line is for (building) and running leela-chess-zero
 apt -y install libopenblas-dev ninja-build meson
+# following line are to run mame (missing on lite images)
+sudo apt install libsdl2-2.0-0 libsdl2-ttf-2.0-0 qt5ct
 
 if [ -d "/opt/picochess" ]; then
     echo "picochess already exists, updating code..."
