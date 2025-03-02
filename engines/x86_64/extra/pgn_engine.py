@@ -13,7 +13,6 @@ import os
 import sys
 import time
 import chess
-import chess.uci
 import chess.pgn
 import chess.engine
 import random
@@ -112,7 +111,11 @@ def write_log(x):
         log.flush()
 
 def convert_to_uci(move):
-    global p_own_color
+    # is this function even needed? can we remove it
+    # there is no global variable any more so hard coding to black
+    # could own_color be read from .uci file as information?
+    # and if this information is really needed, why not use chess lib functions?
+    p_own_color = 'b'
 
     if move == 'O-O' or move == 'o-o':
         if p_own_color == 'b':
@@ -184,38 +187,11 @@ def get_move():
                 log.write('new move_counter %s\n' % str(move_counter))
 
             if think_time > 0:
-                engine.stop()
-                engine.position(board)
 
-                result = engine.go(movetime=think_time)
+                move = ''
+                ponder_move = ''
 
-                if result.bestmove != None:
-                    move = result.bestmove.uci()
-                    ##ponder_move = result.ponder.uci()
-                else:
-                    move = ''
-                    ponder_move = ''
-
-                if str(info_handler.info["depth"]) == 'None':
-                    info_str = "info depth 0"
-                else:
-                    info_str = "info depth " + str(info_handler.info["depth"])
-
-                if str(info_handler.info["score"][1].cp) == 'None':
-                    info_str = info_str + " multipv 1 score cp 0"
-                else:
-                    info_str = info_str + " multipv 1 score cp " + str(info_handler.info["score"][1].cp)
-
-                if str(info_handler.info["score"][1].mate) == 'None':
-                    info_str = info_str
-                else:
-                    info_str = info_str + " mate " + str(info_handler.info["score"][1].mate)
-
-                if log:
-                    log.write('engine move: %s\n' % str(move))
-                    ##log.write('engine ponder: %s\n' % str(ponder_move))
-                    log.write('info handler: %s\n' % info_handler.info)
-                    log.flush()
+                info_str = "info depth 0"
 
             ponder_move = move ## molli: the ponder move for pico is the current engine move
             ##else:
@@ -540,10 +516,7 @@ while True:
     sys.stdout.flush()
 
     try:
-        if sys.version < '3':
-            line = raw_input()
-        else:
-            line = input()
+        line = input()
     except KeyboardInterrupt:    # XBoard sends Control-C characters, so these must be caught
         if not is_uci:
             pass        #   Otherwise Python would quit.
@@ -563,8 +536,6 @@ while True:
 
                 game_started = False
             is_uci = False
-            if think_time > 0 and engine:
-                engine.quit()
             sys.exit(0)
         elif line == 'new':
             newgame()
@@ -712,13 +683,6 @@ while True:
 
             ##start engine
             if p_engine_path != '' and p_think_time > 0:
-                engine = chess.uci.popen_engine(p_engine_path)
-                engine.uci()
-                engine.setoption({"Contempt": 0}) ## for analysis better
-                engine.isready()
-
-                info_handler = chess.uci.InfoHandler()
-                engine.info_handlers.append(info_handler)
 
                 think_time = p_think_time * 1000
 
