@@ -1024,7 +1024,7 @@ async def main() -> None:
             if self.pgn_mode():
                 ModeInfo.set_pgn_mode(mode=True)
                 self.state.flag_last_engine_pgn = True
-                self.det_pgn_guess_tctrl()
+                await self.det_pgn_guess_tctrl()
             else:
                 ModeInfo.set_pgn_mode(mode=False)
 
@@ -3174,7 +3174,7 @@ async def main() -> None:
                     if not self.state.flag_last_engine_pgn:
                         self.state.tc_init_last = self.state.time_control.get_parameters()
 
-                    self.det_pgn_guess_tctrl()
+                    await self.det_pgn_guess_tctrl()
 
                     self.state.flag_last_engine_pgn = True
                 elif self.emulation_mode():
