@@ -41,10 +41,11 @@ Additional scripts you might find useful:
 - connect-dgt-on-debian.sh, needed on Debian laptops to connect them to a Bluetooth DGT e-board
 
 How to add more engines?
-From start only modern engines can be chosen from menu. For more engines see the picochess group. To add an engine you need:
-- Locate the /opt/picochess/engines folder - Pi uses /aarch64 and Debian laptops /x86_64 folder.
-- Add an executable file like "engineX" and a file with settings for it: "engineX.uci".
-- Add an [engineX] section in engines.ini file.
+In the repo there are only Stockfish and LC0 examples. To add an engine you need:
+- locate the /opt/picochess/engines folder - Pi uses aarch64 and Debian laptops x86_64 folder
+- add an executable file like "engineX" and a text file "engineX.uci" with settings
+- add an [engineX] section in engines.ini file
+To get a lot of Pi engines copy the entire /opt/picoshess/engines/ folder from an image found in the picochess google group.
 
 If you have a Pi4 image from the picochess group you can copy the entire /opt/picoshess/engines/aarch64 folder from the image to your Pi4.
 

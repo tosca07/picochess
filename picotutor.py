@@ -647,13 +647,13 @@ class PicoTutor:
         self.log_pv_lists()
 
 
-    def get_analysis(self) -> dict:
+    async def get_analysis(self) -> dict:
         """ get best move info if exists - during user thinking """
         # failed answer is empty lists
         result = {"low": [], "best": [], "fen": ""}
         if self.engine:
             if self.engine.is_analyser_running():
-                result = self.engine.get_analysis(self.board)
+                result = await self.engine.get_analysis(self.board)
         return result
 
 

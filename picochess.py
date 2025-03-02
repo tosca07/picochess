@@ -809,7 +809,7 @@ async def main() -> None:
             my_dgtpi = DgtPi(dgtboard, main_loop)
             dgtdispatcher.register("i2c")
             asyncio.create_task(my_dgtpi.dgt_consumer())
-            asyncio.to_thread(asyncio.run, my_dgtpi.process_incoming_clock_forever())
+            asyncio.create_task(my_dgtpi.process_incoming_clock_forever())
         else:
             logger.debug("(ser) starting the board connection")
             dgtboard.run()  # a clock can only be online together with the board, so we must start it infront
@@ -1024,7 +1024,7 @@ async def main() -> None:
             if self.pgn_mode():
                 ModeInfo.set_pgn_mode(mode=True)
                 self.state.flag_last_engine_pgn = True
-                self.det_pgn_guess_tctrl()
+                await self.det_pgn_guess_tctrl()
             else:
                 ModeInfo.set_pgn_mode(mode=False)
 
@@ -3174,7 +3174,7 @@ async def main() -> None:
                     if not self.state.flag_last_engine_pgn:
                         self.state.tc_init_last = self.state.time_control.get_parameters()
 
-                    self.det_pgn_guess_tctrl()
+                    await self.det_pgn_guess_tctrl()
 
                     self.state.flag_last_engine_pgn = True
                 elif self.emulation_mode():
