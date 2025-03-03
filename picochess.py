@@ -827,6 +827,8 @@ async def main() -> None:
         suser=args.smtp_user,
         spass=args.smtp_pass,
         sencryption=args.smtp_encryption,
+        sstarttls=args.smtp_starttls,
+        sport=args.smtp_port,
         sfrom=args.smtp_from,
     )
 
@@ -4816,6 +4818,8 @@ async def main() -> None:
                     suser=self.args.smtp_user,
                     spass=self.args.smtp_pass,
                     sencryption=self.args.smtp_encryption,
+                    sstarttls=args.smtp_starttls,
+                    sport=args.smtp_port,
                     sfrom=self.args.smtp_from,
                 )
                 body = "You probably want to forward this file to a picochess developer ;-)"

@@ -140,6 +140,15 @@ class Configuration:
             help="use ssl encryption connection to email server",
         )
         self.parser.add_argument(
+            "-mt",
+            "--smtp-starttls",
+            action="store_true",
+            help="use starttls encryption connection to email server",
+        )
+        self.parser.add_argument(
+            "-mr", "--smtp-port", type=int, help="port for email server", default=21
+        )
+        self.parser.add_argument(
             "-mf", "--smtp-from", type=str, help="From email", default="no-reply@picochess.org"
         )
         self.parser.add_argument(
