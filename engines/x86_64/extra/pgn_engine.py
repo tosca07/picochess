@@ -9,20 +9,14 @@
 #
 ############################################################################
 
-import os
 import sys
 import time
 import chess
 import chess.pgn
 import chess.engine
 import random
-import threading
-import logging
-import subprocess
-import queue
 import pygame
 from pathlib import Path
-from shutil import which
 
 ###########################################################################################
 # UCI Wrapper
@@ -694,7 +688,15 @@ while True:
             pass
 
         elif line[:2] == 'go':
+            if log:
+                log.write('pgn_engine go called')
             pub_move()
+
+        elif line[:4] == 'play':
+            if log:
+                log.write('pgn_engine play called')
+            pub_move()
+
 
         elif line == 'force':
             if is_uci:
