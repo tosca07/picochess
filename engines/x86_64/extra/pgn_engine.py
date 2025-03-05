@@ -105,11 +105,7 @@ def write_log(x):
         log.flush()
 
 def convert_to_uci(move):
-    # is this function even needed? can we remove it
-    # there is no global variable any more so hard coding to black
-    # could own_color be read from .uci file as information?
-    # and if this information is really needed, why not use chess lib functions?
-    p_own_color = 'b'
+    global p_own_color
 
     if move == 'O-O' or move == 'o-o':
         if p_own_color == 'b':
@@ -369,7 +365,7 @@ def newgame():
 
     i = 0
     if l_continue:
-        for move in pgn_game.main_line():   ## molli: later mainline_moves() for python-chess 25
+        for move in pgn_game.mainline_moves():   ## molli: later mainline_moves() for python-chess 25
             i = i + 1
             move_list.append(move.uci())
 
@@ -384,7 +380,7 @@ def newgame():
 
     try:
         log_p = open(log_file_pgn_info, 'w')
-    except:
+    except OSError:
         log_p = ''
         print("# Could not create user log file")
 
@@ -691,12 +687,6 @@ while True:
             if log:
                 log.write('pgn_engine go called')
             pub_move()
-
-        elif line[:4] == 'play':
-            if log:
-                log.write('pgn_engine play called')
-            pub_move()
-
 
         elif line == 'force':
             if is_uci:

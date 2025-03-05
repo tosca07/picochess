@@ -498,6 +498,7 @@ class UciEngine(object):
         """Send options to engine."""
         try:
             await self.engine.configure(self.options)
+            self.engine.send_line("isready\n")
         except chess.engine.EngineError as e:
             logger.warning(e)
 

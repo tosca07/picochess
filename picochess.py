@@ -33,6 +33,7 @@ import math
 from typing import Any, List, Optional, Set, Tuple
 import asyncio
 from pathlib import Path
+import platform
 
 import paramiko
 import chess.pgn
@@ -464,7 +465,8 @@ async def log_pgn(state: PicochessState):
 
 async def read_pgn_info():
     info = {}
-    pgn_info_path = "/opt/picochess/engines/aarch64/extra/pgn_game_info.txt"
+    arch = platform.machine()
+    pgn_info_path = "/opt/picochess/engines/" + arch + "/extra/pgn_game_info.txt"
     try:
         with open(pgn_info_path) as info_file:
             for line in info_file:
@@ -1108,14 +1110,18 @@ async def main() -> None:
                     engine_res = await self.engine.go(uci_dict, self.state.game)
                 except Exception as e:
                     logger.error("fatal error no move received from engine %s", e)
+                    engine_res = None
                 # dont push game move onto board here yet
                 # webplay: Event.BEST_MOVE pushes the move on display
                 # dgt board: BEST_MOVE 1) informs the user who 2) makes the move
                 # and 3) dgt event --> process_fen() which pushes move
-                logger.debug("engine moved %s", engine_res.move.uci)
-                await Observable.fire(
-                    Event.BEST_MOVE(move=engine_res.move, ponder=engine_res.ponder, inbook=False)
-                )
+                if engine_res:
+                    logger.debug("engine moved %s", engine_res.move.uci)
+                    await Observable.fire(
+                        Event.BEST_MOVE(move=engine_res.move, ponder=engine_res.ponder, inbook=False)
+                    )
+                else:
+                    logger.error("no move received from engine")
             self.state.automatic_takeback = False
 
         async def stop_search(self):
@@ -1394,11 +1400,11 @@ async def main() -> None:
                     if self.state.max_guess_white > 0:
                         if self.state.game.turn == chess.WHITE:
                             if self.state.no_guess_white > self.state.max_guess_white:
-                                self.get_next_pgn_move()
+                                await self.get_next_pgn_move()
                     elif self.state.max_guess_black > 0:
                         if self.state.game.turn == chess.BLACK:
                             if self.state.no_guess_black > self.state.max_guess_black:
-                                self.get_next_pgn_move()
+                                await self.get_next_pgn_move()
 
                 if self.state.game.board_fen() == chess.STARTING_BOARD_FEN:
                     pos960 = 518
@@ -1824,18 +1830,18 @@ async def main() -> None:
                             if self.state.max_guess_white > 0:
                                 if self.state.no_guess_white > self.state.max_guess_white:
                                     self.state.last_legal_fens = []
-                                    self.get_next_pgn_move()
+                                    await self.get_next_pgn_move()
                             else:
                                 self.state.last_legal_fens = []
-                                self.get_next_pgn_move()
+                                await self.get_next_pgn_move()
                         elif self.state.game.turn == chess.BLACK:
                             if self.state.max_guess_black > 0:
                                 if self.state.no_guess_black > self.state.max_guess_black:
                                     self.state.last_legal_fens = []
-                                    self.get_next_pgn_move()
+                                    await self.get_next_pgn_move()
                             else:
                                 self.state.last_legal_fens = []
-                                self.get_next_pgn_move()
+                                await self.get_next_pgn_move()
 
                 self.state.last_legal_fens = []
                 self.state.newgame_happened = False
@@ -1940,11 +1946,11 @@ async def main() -> None:
                         if self.state.max_guess_white > 0:
                             if self.state.game.turn == chess.WHITE:
                                 if self.state.no_guess_white > self.state.max_guess_white:
-                                    self.get_next_pgn_move()
+                                    await self.get_next_pgn_move()
                         elif self.state.max_guess_black > 0:
                             if self.state.game.turn == chess.BLACK:
                                 if self.state.no_guess_black > self.state.max_guess_black:
-                                    self.get_next_pgn_move()
+                                    await self.get_next_pgn_move()
 
             logger.debug("fen: %s result: %s", fen, handled_fen)
             self.state.stop_fen_timer()
@@ -3634,7 +3640,7 @@ async def main() -> None:
                             if self.state.max_guess_white > 0:
                                 if self.state.no_guess_white > self.state.max_guess_white:
                                     self.state.last_legal_fens = []
-                                    self.get_next_pgn_move()
+                                    await self.get_next_pgn_move()
 
             elif isinstance(event, Event.PAUSE_RESUME):
                 if self.pgn_mode():
@@ -4301,18 +4307,18 @@ async def main() -> None:
                                             if self.state.max_guess_white > 0:
                                                 if self.state.no_guess_white > self.state.max_guess_white:
                                                     self.state.last_legal_fens = []
-                                                    self.get_next_pgn_move()
+                                                    await self.get_next_pgn_move()
                                             else:
                                                 self.state.last_legal_fens = []
-                                                self.get_next_pgn_move()
+                                                await self.get_next_pgn_move()
                                         elif self.state.game.turn == chess.BLACK:
                                             if self.state.max_guess_black > 0:
                                                 if self.state.no_guess_black > self.state.max_guess_black:
                                                     self.state.last_legal_fens = []
-                                                    self.get_next_pgn_move()
+                                                    await self.get_next_pgn_move()
                                             else:
                                                 self.state.last_legal_fens = []
-                                                self.get_next_pgn_move()
+                                                await self.get_next_pgn_move()
 
                                 self.state.last_legal_fens = []
                                 self.state.newgame_happened = False
