@@ -33,6 +33,7 @@ import math
 from typing import Any, List, Optional, Set, Tuple
 import asyncio
 from pathlib import Path
+import platform
 
 import paramiko
 import chess.pgn
@@ -464,7 +465,8 @@ async def log_pgn(state: PicochessState):
 
 async def read_pgn_info():
     info = {}
-    pgn_info_path = "/opt/picochess/engines/aarch64/extra/pgn_game_info.txt"
+    arch = platform.machine()
+    pgn_info_path = "/opt/picochess/engines/" + arch + "/extra/pgn_game_info.txt"
     try:
         with open(pgn_info_path) as info_file:
             for line in info_file:
@@ -1106,16 +1108,28 @@ async def main() -> None:
                     uci_dict["searchmoves"] = self.state.searchmoves.all(self.state.game)
                 try:
                     engine_res = await self.engine.go(uci_dict, self.state.game)
+                    if engine_res:
+                        logger.debug("engine moved %s", engine_res.move.uci)
+                        await Observable.fire(
+                            Event.BEST_MOVE(move=engine_res.move, ponder=engine_res.ponder, inbook=False)
+                        )
+                        # webplay: Event.BEST_MOVE pushes the move on display
+                        # dgt board: BEST_MOVE 1) informs 2) user moves, 3) dgt event to process_fen() push
+                    else:
+                        logger.error("fatal no move received from engine")
+                        #  this code is most likely never reached, exception below is more likely
+                        await Observable.fire(
+                            Event.BEST_MOVE(move=None, ponder=None, inbook=False)
+                        )
                 except Exception as e:
-                    logger.error("fatal error no move received from engine %s", e)
-                # dont push game move onto board here yet
-                # webplay: Event.BEST_MOVE pushes the move on display
-                # dgt board: BEST_MOVE 1) informs the user who 2) makes the move
-                # and 3) dgt event --> process_fen() which pushes move
-                logger.debug("engine moved %s", engine_res.move.uci)
-                await Observable.fire(
-                    Event.BEST_MOVE(move=engine_res.move, ponder=engine_res.ponder, inbook=False)
-                )
+                    if self.pgn_mode():
+                        logger.debug("pgn_mode no valid move received from engine %s", e)
+                    else:
+                        logger.error("fatal - engine failed to make a move %s", e)
+                    #  @todo do we need to check for pgn_mode or other?
+                    await Observable.fire(
+                        Event.BEST_MOVE(move=None, ponder=None, inbook=False)
+                    )
             self.state.automatic_takeback = False
 
         async def stop_search(self):
@@ -1394,11 +1408,11 @@ async def main() -> None:
                     if self.state.max_guess_white > 0:
                         if self.state.game.turn == chess.WHITE:
                             if self.state.no_guess_white > self.state.max_guess_white:
-                                self.get_next_pgn_move()
+                                await self.get_next_pgn_move()
                     elif self.state.max_guess_black > 0:
                         if self.state.game.turn == chess.BLACK:
                             if self.state.no_guess_black > self.state.max_guess_black:
-                                self.get_next_pgn_move()
+                                await self.get_next_pgn_move()
 
                 if self.state.game.board_fen() == chess.STARTING_BOARD_FEN:
                     pos960 = 518
@@ -1424,9 +1438,6 @@ async def main() -> None:
                 self.state.done_computer_fen = None
                 self.state.done_move = self.state.pb_move = chess.Move.null()
 
-            self.state.play_mode = (
-                PlayMode.USER_WHITE if self.state.play_mode == PlayMode.USER_BLACK else PlayMode.USER_BLACK
-            )
             msg = Message.SET_PLAYMODE(play_mode=self.state.play_mode)
             DisplayMsg.show(msg)
             msg = Message.COMPUTER_MOVE_DONE()
@@ -1824,18 +1835,18 @@ async def main() -> None:
                             if self.state.max_guess_white > 0:
                                 if self.state.no_guess_white > self.state.max_guess_white:
                                     self.state.last_legal_fens = []
-                                    self.get_next_pgn_move()
+                                    await self.get_next_pgn_move()
                             else:
                                 self.state.last_legal_fens = []
-                                self.get_next_pgn_move()
+                                await self.get_next_pgn_move()
                         elif self.state.game.turn == chess.BLACK:
                             if self.state.max_guess_black > 0:
                                 if self.state.no_guess_black > self.state.max_guess_black:
                                     self.state.last_legal_fens = []
-                                    self.get_next_pgn_move()
+                                    await self.get_next_pgn_move()
                             else:
                                 self.state.last_legal_fens = []
-                                self.get_next_pgn_move()
+                                await self.get_next_pgn_move()
 
                 self.state.last_legal_fens = []
                 self.state.newgame_happened = False
@@ -1940,11 +1951,11 @@ async def main() -> None:
                         if self.state.max_guess_white > 0:
                             if self.state.game.turn == chess.WHITE:
                                 if self.state.no_guess_white > self.state.max_guess_white:
-                                    self.get_next_pgn_move()
+                                    await self.get_next_pgn_move()
                         elif self.state.max_guess_black > 0:
                             if self.state.game.turn == chess.BLACK:
                                 if self.state.no_guess_black > self.state.max_guess_black:
-                                    self.get_next_pgn_move()
+                                    await self.get_next_pgn_move()
 
             logger.debug("fen: %s result: %s", fen, handled_fen)
             self.state.stop_fen_timer()
@@ -3634,7 +3645,7 @@ async def main() -> None:
                             if self.state.max_guess_white > 0:
                                 if self.state.no_guess_white > self.state.max_guess_white:
                                     self.state.last_legal_fens = []
-                                    self.get_next_pgn_move()
+                                    await self.get_next_pgn_move()
 
             elif isinstance(event, Event.PAUSE_RESUME):
                 if self.pgn_mode():
@@ -4301,18 +4312,18 @@ async def main() -> None:
                                             if self.state.max_guess_white > 0:
                                                 if self.state.no_guess_white > self.state.max_guess_white:
                                                     self.state.last_legal_fens = []
-                                                    self.get_next_pgn_move()
+                                                    await self.get_next_pgn_move()
                                             else:
                                                 self.state.last_legal_fens = []
-                                                self.get_next_pgn_move()
+                                                await self.get_next_pgn_move()
                                         elif self.state.game.turn == chess.BLACK:
                                             if self.state.max_guess_black > 0:
                                                 if self.state.no_guess_black > self.state.max_guess_black:
                                                     self.state.last_legal_fens = []
-                                                    self.get_next_pgn_move()
+                                                    await self.get_next_pgn_move()
                                             else:
                                                 self.state.last_legal_fens = []
-                                                self.get_next_pgn_move()
+                                                await self.get_next_pgn_move()
 
                                 self.state.last_legal_fens = []
                                 self.state.newgame_happened = False

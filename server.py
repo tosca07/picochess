@@ -21,6 +21,7 @@ import logging
 from collections import OrderedDict
 from typing import Set
 import asyncio
+import platform
 
 import chess  # type: ignore
 import chess.pgn as pgn  # type: ignore
@@ -48,8 +49,10 @@ logger = logging.getLogger(__name__)
 
 def read_pgn_info():
     info = {}
+    arch = platform.machine()
+    pgn_info_path = "/opt/picochess/engines/" + arch + "/extra/pgn_game_info.txt"
     try:
-        with open("/opt/picochess/engines/aarch64/extra/pgn_game_info.txt") as info_file:
+        with open(pgn_info_path) as info_file:
             for line in info_file:
                 name, value = line.partition("=")[::2]
                 info[name.strip()] = value.strip()

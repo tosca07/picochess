@@ -1,0 +1,180 @@
+[Last Game]
+pgn_game_file = /opt/picochess/games/last_game.pgn
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 1
+
+[SaveGame1]
+pgn_game_file = /opt/picochess/games/picochess_game_1.pgn
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 1
+
+[SaveGame2]
+pgn_game_file = /opt/picochess/games/picochess_game_2.pgn
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 1
+
+[SaveGame3]
+pgn_game_file = /opt/picochess/games/picochess_game_3.pgn
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 1
+
+[All Games]
+pgn_game_file = /opt/picochess/games/games.pgn
+game_sequence = backward
+max_guess = 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 1
+
+[Book Train.]
+pgn_game_file = /opt/picochess/engines/pgn_engine/pgn_games/book_test.pgn
+max_guess= 1
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 1
+
+[Fool's Mate]
+pgn_game_file = /opt/picochess/engines/pgn_engine/pgn_games/fool.pgn
+max_guess = 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 1
+
+[Turing Game]
+pgn_game_file = /opt/picochess/engines/pgn_engine/pgn_games/turing.pgn
+max_guess = 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 1
+
+[GuessTuring]
+pgn_game_file = /opt/picochess/engines/pgn_engine/pgn_games/turing.pgn
+max_guess = 2
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 1
+
+[Hoerspiel]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/hoerspiel_nwz.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/hoerspiel_nwz.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 1
+
+[EvergreenG]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/anderssen_dufresne_1852.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/evergreen_game_pfleger.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 1
+
+[EvergreenE]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/anderssen_dufresne_1852.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/evergreen_game_kingcrusher.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 0
+
+[Kasp-Karp87]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/WCS1987_Kasparov_Karpov_Game2.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/HelmutPfleger_WCS1987_Game2_Kasparov_Karpov.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 0
+
+[Meier-Kramn]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/meier_kramnik_2011.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/Helmut_Pfleger_Meier_Kramnik.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 0
+
+[Kasp.Topalov]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/kasparov_topalov_1999.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/Pfleger_GaryKasparov_VeselinTopalov.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 5
+
+[RetiAlechin]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/reti_alechin_1925.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/Pfleger_RichardRetiAlexanderAljechin.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 0
+
+[AlphaZero1]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/alphazero_stockfish_2018.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/AnnaRudolph_AlphaZeroStockfish.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 0
+
+[AlphaZero2]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/AlphaZeroStockfish_positional_play.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/AlphaZeros_Positional_Play.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 0
+
+[AlphaZero3]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/AlphaZeroStockfish_Castling_opposite.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/AttackLikeAlphaZeroOppositeSideCastling.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 0
+
+[AlphaZero4]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/AlphaZero_PowerofTheKing.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/AlphaZero_PowerofTheKing.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 0
+
+[DeepBlue 96]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/kasparov_deepblue_1996_5.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/DeepBlueVsKasparov1996Game5.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 0
+
+[TVWorldCup1]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/spassky_timman_1982.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/Spassky_Timman_1982.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 0
+
+[TVWorldCup2]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/timman_spassky_1982.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/Timman_Spassky_1982.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 0
+
+[TVWorldCup3]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/karpov_nunn_1982.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/Karpov_Nunn_1982.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 0
+
+[TVWorldCup4]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/seirawan_karpov_1982.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/Seirawan_Karpov_1982.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 0
+
+[OldestGame]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/oldest_game_1475.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/First_Recorded_Chess_Game_Anna_Rudolf.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 0
+
+[Al_Kasparov]
+pgn_game_file  = /opt/picochess/engines/pgn_engine/pgn_games/Kasparov_Lloyds_1993.pgn
+pgn_audio_file = /opt/picochess/engines/pgn_engine/pgn_audio/Kasparov_Lloyds_1993.ogg
+max_guess= 0
+engine_path = /opt/picochess/engines/aarch64/a-stockf
+think_time = 0
