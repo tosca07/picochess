@@ -498,7 +498,8 @@ class UciEngine(object):
         """Send options to engine."""
         try:
             await self.engine.configure(self.options)
-            self.engine.send_line("isready\n")
+            # some engines like pgn_engine will not work without this
+            self.engine.send_line("isready")
         except chess.engine.EngineError as e:
             logger.warning(e)
 
@@ -705,6 +706,9 @@ class UciEngine(object):
     def newgame(self, game: Board):
         """Engine sometimes need this to setup internal values.
            parameter game will not change """
+        if self.engine:
+            # some engines like pgn_engine will not work without this
+            self.engine.send_line("ucinewgame")
         if self.analyser.is_running() and game:
             # send new board to analyser? avoid stop?
             self.analyser.update_game(game)
