@@ -1108,20 +1108,28 @@ async def main() -> None:
                     uci_dict["searchmoves"] = self.state.searchmoves.all(self.state.game)
                 try:
                     engine_res = await self.engine.go(uci_dict, self.state.game)
+                    if engine_res:
+                        logger.debug("engine moved %s", engine_res.move.uci)
+                        await Observable.fire(
+                            Event.BEST_MOVE(move=engine_res.move, ponder=engine_res.ponder, inbook=False)
+                        )
+                        # webplay: Event.BEST_MOVE pushes the move on display
+                        # dgt board: BEST_MOVE 1) informs 2) user moves, 3) dgt event to process_fen() push
+                    else:
+                        logger.error("fatal no move received from engine")
+                        #  this code is most likely never reached, exception below is more likely
+                        await Observable.fire(
+                            Event.BEST_MOVE(move=None, ponder=None, inbook=False)
+                        )
                 except Exception as e:
-                    logger.error("fatal error no move received from engine %s", e)
-                    engine_res = None
-                # dont push game move onto board here yet
-                # webplay: Event.BEST_MOVE pushes the move on display
-                # dgt board: BEST_MOVE 1) informs the user who 2) makes the move
-                # and 3) dgt event --> process_fen() which pushes move
-                if engine_res:
-                    logger.debug("engine moved %s", engine_res.move.uci)
+                    if self.pgn_mode():
+                        logger.debug("pgn_mode no valid move received from engine %s", e)
+                    else:
+                        logger.error("fatal - engine failed to make a move %s", e)
+                    #  @todo do we need to check for pgn_mode or other?
                     await Observable.fire(
-                        Event.BEST_MOVE(move=engine_res.move, ponder=engine_res.ponder, inbook=False)
+                        Event.BEST_MOVE(move=None, ponder=None, inbook=False)
                     )
-                else:
-                    logger.error("no move received from engine")
             self.state.automatic_takeback = False
 
         async def stop_search(self):
@@ -1430,9 +1438,6 @@ async def main() -> None:
                 self.state.done_computer_fen = None
                 self.state.done_move = self.state.pb_move = chess.Move.null()
 
-            self.state.play_mode = (
-                PlayMode.USER_WHITE if self.state.play_mode == PlayMode.USER_BLACK else PlayMode.USER_BLACK
-            )
             msg = Message.SET_PLAYMODE(play_mode=self.state.play_mode)
             DisplayMsg.show(msg)
             msg = Message.COMPUTER_MOVE_DONE()
