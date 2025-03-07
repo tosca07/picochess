@@ -9,20 +9,14 @@
 #
 ############################################################################
 
-import os
 import sys
 import time
 import chess
 import chess.pgn
 import chess.engine
 import random
-import threading
-import logging
-import subprocess
-import queue
 import pygame
 from pathlib import Path
-from shutil import which
 
 ###########################################################################################
 # UCI Wrapper
@@ -111,11 +105,15 @@ def write_log(x):
         log.flush()
 
 def convert_to_uci(move):
+<<<<<<< HEAD
     # is this function even needed? can we remove it
     # there is no global variable any more so hard coding to black
     # could own_color be read from .uci file as information?
     # and if this information is really needed, why not use chess lib functions?
     p_own_color = 'b'
+=======
+    global p_own_color
+>>>>>>> 47d87fbed87ca2d1720748ef748ec7ba5ceb4d94
 
     if move == 'O-O' or move == 'o-o':
         if p_own_color == 'b':
@@ -375,7 +373,11 @@ def newgame():
 
     i = 0
     if l_continue:
+<<<<<<< HEAD
         for move in pgn_game.main_line():   ## molli: later mainline_moves() for python-chess 25
+=======
+        for move in pgn_game.mainline_moves():   ## molli: later mainline_moves() for python-chess 25
+>>>>>>> 47d87fbed87ca2d1720748ef748ec7ba5ceb4d94
             i = i + 1
             move_list.append(move.uci())
 
@@ -390,7 +392,11 @@ def newgame():
 
     try:
         log_p = open(log_file_pgn_info, 'w')
+<<<<<<< HEAD
     except:
+=======
+    except OSError:
+>>>>>>> 47d87fbed87ca2d1720748ef748ec7ba5ceb4d94
         log_p = ''
         print("# Could not create user log file")
 
@@ -694,6 +700,11 @@ while True:
             pass
 
         elif line[:2] == 'go':
+<<<<<<< HEAD
+=======
+            if log:
+                log.write('pgn_engine go called')
+>>>>>>> 47d87fbed87ca2d1720748ef748ec7ba5ceb4d94
             pub_move()
 
         elif line == 'force':

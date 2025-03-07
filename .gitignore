@@ -26,6 +26,9 @@ engines/x86_64/old/
 engines/mame_emulation
 # pgn engine audio files are large
 engines/pgn_engine/pgn_audio/
+# ignore files that pgn_engine writes
+engines/x86_64/extra/pgn_game_info.txt
+engines/x86_64/extra/pgn_engine-log.txt
 # Script engines are not yet in repo
 engines/script_engines/
 engines/aarch64/script/

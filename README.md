@@ -1,7 +1,7 @@
 PicoChess
 =========
 Picochess transforms your Raspberry Pi or any Debian-based computer into a powerful chess computer. It is not a chess engine itself but a manager for the chess engines you choose to use.
-This repository includes Stockfish 17 and Leela Chess Zero (LCZero) as examples. You need to chose them through "modern engines" in the menu. If you want retro and special engines you should have a look in the picochess google group.
+This repository includes Stockfish 17 and Leela Chess Zero (LCZero) as examples. If you want to add more engines you should have a look in the picochess google group. The retro and mame engines like Mephisto works, but the special and historical engines do not work at the moment.
 
 Features
 ========
@@ -23,10 +23,10 @@ Requirements
 
 Quick Installation
 ------------------
-Get the installations script, give it execution rights, and run it. This will install the repository in /opt/picochess.
+Get the installations script, give it execution rights, and run it as sudo. It will clone the repository to /opt/picochess and install the needed services as listed below.
 - wget -L https://raw.github.com/JohanSjoblom/Picochess/master/install-picochess.sh
 - chmod a+x install-picochess.sh
-- ./install-picochess
+- sudo ./install-picochess
 - reboot and if everything went well Picochess should start as a service
 The script installs the following services in /etc/systemd/system/
 - picochess, main service
@@ -37,8 +37,8 @@ How to open the web page and play?
 Use localhost:8080 in your browser to open the web page. If you are running on another machine replace localhost with the ip address of your Pi4. 
 
 Additional scripts you might find useful:
-- install-dgtpi-clock.sh, run this on DGT3000 Dgt Pi clock hardware, installs dgtpi service
-- connect-dgt-on-debian.sh, needed on Debian laptops to connect them to a Bluetooth DGT e-board
+- install-dgtpi-clock.sh, run this on DGT3000 Dgt Pi clock hardware, it installs the dgtpi service
+- connect-dgt-on-debian.sh, needed on Debian laptops to connect to a Bluetooth DGT e-board
 
 How to add more engines?
 In the repo there are only Stockfish and LC0 examples. To add an engine you need:
@@ -47,8 +47,10 @@ In the repo there are only Stockfish and LC0 examples. To add an engine you need
 - add an [engineX] section in engines.ini file
 To get a lot of Pi engines copy the entire /opt/picoshess/engines/ folder from an image found in the picochess google group.
 
-Installation with more info
----------------------------
+If you have a Pi4 image from the picochess group you can copy the entire /opt/picoshess/engines/aarch64 folder from the image to your Pi4.
+
+Installation with more detailed info
+------------------------------------
 1. You need a Raspberry PI 4 (or 3) and a 32G SD card.
 2. Use Raspberry Pi Imager to crete a PI operating system on your SD card as follows:
 3. Choose PI 4 and 64bit OS (I have not tested PI 3 yet, but feel free to test)

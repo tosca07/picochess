@@ -141,6 +141,12 @@ book = books/h-varied.bin
 ## Some SMTP Server require an SSL encryption (e.g. GMail). If so, uncomment the next line.
 #smtp-encryption = True
 
+## Use STARTTLS encryption for mail server communication. Port number default to 587
+## smtp-encryption should be either undeclared or False, otherwise smtp-encryption takes
+## priority
+smtp-starttls = False
+smtp-port = 587
+
 ## In case the SMTP Server thinks you are spamming, you must enter a valid from email here
 #smtp-from = no-reply@picochess.org
 

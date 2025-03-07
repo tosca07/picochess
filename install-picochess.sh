@@ -19,6 +19,8 @@ apt -y install libffi-dev libssl-dev
 apt -y install tk tcl libtcl8.6
 # following line is for (building) and running leela-chess-zero
 apt -y install libopenblas-dev ninja-build meson
+# following line are to run mame (missing on lite images)
+apt -y install libsdl2-2.0-0 libsdl2-ttf-2.0-0 qt5ct
 
 if [ -d "/opt/picochess" ]; then
     echo "picochess already exists, updating code..."
@@ -84,7 +86,6 @@ echo " ------- "
 echo "Picochess installation complete. Please reboot"
 echo "NOTE: If you are on DGTPi clock hardware you need to run install-dgtpi-clock.sh"
 echo "After reboot open a browser to localhost:8080"
-echo "Default picochess.ini-example-web has been copied to picochess.ini"
 echo "If you have a DGT board you need to change the board type"
 echo "in the picochess.ini like this: board-type = dgt"
 echo "Other board types are also supported - see the picochess.ini file"
