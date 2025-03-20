@@ -32,7 +32,7 @@ class Rating(object):
         self.rating = rating
         self.rating_deviation = rating_deviation
 
-    def rate(self, other: 'Rating', result: Result) -> 'Rating':
+    def rate(self, other: "Rating", result: Result) -> "Rating":
         """
         Rate with Glicko rating (see http://www.glicko.net/glicko/glicko.pdf)
         """
@@ -43,38 +43,61 @@ class Rating(object):
         new_rating = self.rating + Rating.Q / denominator * g * (result.value - expected_outcome)
         return Rating(new_rating, math.sqrt(1.0 / denominator))
 
-    def _expected_outcome(self, other: 'Rating'):
+    def _expected_outcome(self, other: "Rating"):
         return 1.0 / (1 + math.pow(10, -self._g(other.rating_deviation) * (self.rating - other.rating) / 400.0))
 
     def _g(self, deviation: float) -> float:
         return 1.0 / math.sqrt(1 + (3 * (math.pow(Rating.Q, 2)) * math.pow(deviation, 2) / math.pow(math.pi, 2)))
 
-    def is_similar_to(self, other: 'Rating') -> bool:
-        return math.fabs(self.rating - other.rating) < Rating.THRESHOLD and math.fabs(
-            self.rating_deviation - other.rating_deviation) < Rating.THRESHOLD
+    def is_similar_to(self, other: "Rating") -> bool:
+        return (
+            math.fabs(self.rating - other.rating) < Rating.THRESHOLD
+            and math.fabs(self.rating_deviation - other.rating_deviation) < Rating.THRESHOLD
+        )
 
 
 def determine_result(result, play_mode, is_whites_turn) -> Optional[Result]:
     res = None
-    if (result == GameResult.DRAW or result == GameResult.STALEMATE or result == GameResult.SEVENTYFIVE_MOVES
-            or result == GameResult.FIVEFOLD_REPETITION or result == GameResult.INSUFFICIENT_MATERIAL):
+    if (
+        result == GameResult.DRAW
+        or result == GameResult.STALEMATE
+        or result == GameResult.SEVENTYFIVE_MOVES
+        or result == GameResult.FIVEFOLD_REPETITION
+        or result == GameResult.INSUFFICIENT_MATERIAL
+    ):
         res = Result.DRAW
     else:
-        if (result == GameResult.WIN_BLACK and play_mode == PlayMode.USER_BLACK
-                or result == GameResult.WIN_WHITE and play_mode == PlayMode.USER_WHITE):
+        if (
+            result == GameResult.WIN_BLACK
+            and play_mode == PlayMode.USER_BLACK
+            or result == GameResult.WIN_WHITE
+            and play_mode == PlayMode.USER_WHITE
+        ):
             res = Result.WIN
-        elif (result == GameResult.WIN_WHITE and play_mode == PlayMode.USER_BLACK
-              or result == GameResult.WIN_BLACK and play_mode == PlayMode.USER_WHITE):
+        elif (
+            result == GameResult.WIN_WHITE
+            and play_mode == PlayMode.USER_BLACK
+            or result == GameResult.WIN_BLACK
+            and play_mode == PlayMode.USER_WHITE
+        ):
             res = Result.LOSS
         elif result == GameResult.OUT_OF_TIME:
-            if (play_mode == PlayMode.USER_WHITE and not is_whites_turn
-                    or play_mode == PlayMode.USER_BLACK and is_whites_turn):
+            if (
+                play_mode == PlayMode.USER_WHITE
+                and not is_whites_turn
+                or play_mode == PlayMode.USER_BLACK
+                and is_whites_turn
+            ):
                 res = Result.WIN
             else:
                 res = Result.LOSS
         elif result == GameResult.MATE:
-            if (play_mode == PlayMode.USER_BLACK and is_whites_turn
-                    or play_mode == PlayMode.USER_WHITE and not is_whites_turn):
+            if (
+                play_mode == PlayMode.USER_BLACK
+                and is_whites_turn
+                or play_mode == PlayMode.USER_WHITE
+                and not is_whites_turn
+            ):
                 res = Result.WIN
             else:
                 res = Result.LOSS

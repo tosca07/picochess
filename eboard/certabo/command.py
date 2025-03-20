@@ -55,8 +55,8 @@ def _set_bit(data: bytearray, pos: int, val: int):
     pos_byte = int(pos / 8)
     posBit = pos % 8
     oldByte = data[pos_byte]
-    oldByte = (((0xFF7F >> posBit) & oldByte) & 0x00FF)
-    newByte = ((val << (8 - (posBit + 1))) | oldByte)
+    oldByte = ((0xFF7F >> posBit) & oldByte) & 0x00FF
+    newByte = (val << (8 - (posBit + 1))) | oldByte
     data[pos_byte] = newByte
 
 
@@ -65,4 +65,4 @@ def set_leds_off() -> bytearray:
 
 
 def set_leds_calibrate() -> bytearray:
-    return bytearray(b'\xff\xff\x08\x00\x00\x08\xff\xff')
+    return bytearray(b"\xff\xff\x08\x00\x00\x08\xff\xff")

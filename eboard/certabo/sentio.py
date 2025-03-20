@@ -22,7 +22,7 @@ import eboard.certabo.command
 
 
 class Sentio(object):
-    """ Sentio handles board states from e-boards, that do not feature piece recognition """
+    """Sentio handles board states from e-boards, that do not feature piece recognition"""
 
     def __init__(self, callback: ParserCallback, led_control: CertaboLedControl):
         self.last_occupied_squares: Optional[List[int]] = None
@@ -33,7 +33,7 @@ class Sentio(object):
         self.led_control = led_control
 
     def uci_move(self, move: str):
-        """ Called from the protocol when an engine made a move """
+        """Called from the protocol when an engine made a move"""
         try:
             chess_move = chess.Move.from_uci(move)
             if self.board.is_legal(chess_move):
@@ -42,7 +42,7 @@ class Sentio(object):
             pass
 
     def promotion_done(self, move: str):
-        """ Called from the protocol when the user selected a piece for promotion """
+        """Called from the protocol when the user selected a piece for promotion"""
         try:
             chess_move = chess.Move.from_uci(move)
             self._make_move(chess_move)
@@ -50,7 +50,7 @@ class Sentio(object):
             pass
 
     def occupied_squares(self, occupied: List[int]):
-        """ Called when the board receives board data, consisting of the squares that are occupied marked with a 1 """
+        """Called when the board receives board data, consisting of the squares that are occupied marked with a 1"""
         if self.last_occupied_squares == occupied:
             return
         self.last_occupied_squares = occupied.copy()
@@ -175,8 +175,9 @@ class Sentio(object):
 
     def _write_led_command(self, cmd: bytearray):
         if self.last_engine_move is not None:
-            cmd = eboard.certabo.command.add_led_squares(cmd, [self.last_engine_move.from_square,
-                                                               self.last_engine_move.to_square])
+            cmd = eboard.certabo.command.add_led_squares(
+                cmd, [self.last_engine_move.from_square, self.last_engine_move.to_square]
+            )
         self.led_control.write_led_command(cmd)
 
 

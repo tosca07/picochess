@@ -28,7 +28,7 @@ def set_led(pos, is_reversed: bool):
                 _set_bit(leds, square, 1)
 
     prefix = bytearray(2)
-    prefix[0] = 0x0a
+    prefix[0] = 0x0A
     prefix[1] = 0x08
     return prefix + leds
 
@@ -37,18 +37,18 @@ def _set_bit(data: bytearray, pos: int, val: int):
     posByte = int(pos / 8)
     posBit = pos % 8
     oldByte = data[posByte]
-    oldByte = (((0xFF7F >> posBit) & oldByte) & 0x00FF)
-    newByte = ((val << (8 - (posBit + 1))) | oldByte)
+    oldByte = ((0xFF7F >> posBit) & oldByte) & 0x00FF
+    newByte = (val << (8 - (posBit + 1))) | oldByte
     data[posByte] = newByte
 
 
 def set_led_off():
-    return b'\x0a\x08\x00\x00\x00\x00\x00\x00\x00\x00'
+    return b"\x0a\x08\x00\x00\x00\x00\x00\x00\x00\x00"
 
 
 def request_realtime_mode():
-    return b'\x21\x01\x00'
+    return b"\x21\x01\x00"
 
 
 def request_battery_status():
-    return b'\x29\x01\x00'
+    return b"\x29\x01\x00"

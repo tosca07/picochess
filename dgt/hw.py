@@ -30,7 +30,6 @@ logger = logging.getLogger(__name__)
 
 
 class DgtHw(DgtIface):
-
     """Handle the DgtXL/3000 communication."""
 
     def __init__(self, dgtboard: EBoard, loop: asyncio.AbstractEventLoop):
@@ -38,9 +37,7 @@ class DgtHw(DgtIface):
 
         self.lib_lock = Lock()
 
-    def _display_on_dgt_xl(
-        self, text: str, beep=False, left_icons=ClockIcons.NONE, right_icons=ClockIcons.NONE
-    ):
+    def _display_on_dgt_xl(self, text: str, beep=False, left_icons=ClockIcons.NONE, right_icons=ClockIcons.NONE):
         text = text.ljust(6)
         if len(text) > 6:
             logger.warning("(ser) clock message too long [%s]", text)
@@ -219,9 +216,7 @@ class DgtHw(DgtIface):
         with self.lib_lock:
             l_hms = hms_time(self.dgtboard.l_time)
             r_hms = hms_time(self.dgtboard.r_time)
-            res = self.dgtboard.set_and_run(
-                l_run, l_hms[0], l_hms[1], l_hms[2], r_run, r_hms[0], r_hms[1], r_hms[2]
-            )
+            res = self.dgtboard.set_and_run(l_run, l_hms[0], l_hms[1], l_hms[2], r_run, r_hms[0], r_hms[1], r_hms[2])
             if not res:
                 logger.warning("finally failed %i", res)
                 return False

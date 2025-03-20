@@ -29,14 +29,14 @@ def set_led(pos, is_reversed: bool):
 
     prefix = bytearray(5)
     prefix[0] = 0x45
-    prefix[1] = 0x4c
+    prefix[1] = 0x4C
     prefix[2] = 0x80  # 50% brightness, red level
-    prefix[3] = 0x0f  # blue level, green level
+    prefix[3] = 0x0F  # blue level, green level
     prefix[4] = 0x00  # indicators of row 9
     postfix = bytearray(3)
     postfix[0] = 0x00  # indicators of row 0
     postfix[1] = 0x01  # no flash, clear previous
-    postfix[2] = 0xff  # permanent
+    postfix[2] = 0xFF  # permanent
     return prefix + leds + postfix
 
 
@@ -44,22 +44,22 @@ def _set_bit(data: bytearray, pos: int, val: int):
     posByte = int(pos / 8)
     posBit = pos % 8
     oldByte = data[posByte]
-    oldByte = (((0xFF7F >> posBit) & oldByte) & 0x00FF)
-    newByte = ((val << (8 - (posBit + 1))) | oldByte)
+    oldByte = ((0xFF7F >> posBit) & oldByte) & 0x00FF
+    newByte = (val << (8 - (posBit + 1))) | oldByte
     data[posByte] = newByte
 
 
 def set_led_off():
-    return b'\x45\x4c\x00\x0f\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\xff'
+    return b"\x45\x4c\x00\x0f\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\xff"
 
 
 def request_battery_status():
-    return b'\x52\x42'
+    return b"\x52\x42"
 
 
 def request_board():
-    return b'\x52\x50'
+    return b"\x52\x50"
 
 
 def request_board_updates():
-    return b'\x43\x50\x49\x52\x51'
+    return b"\x43\x50\x49\x52\x51"

@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class ChessnutAgent:
 
     def __init__(self, appque):
-        self.name = 'ChessnutAgent'
+        self.name = "ChessnutAgent"
         self.appque = appque
         self.brd = Protocol(self.appque, self.name)
         self.init_position = False
@@ -31,26 +31,26 @@ class ChessnutAgent:
         if self.brd.connected:
             self.realtime_mode()
         else:
-            logger.warning('Connection to Chessnut failed.')
+            logger.warning("Connection to Chessnut failed.")
             return
 
-        logger.debug('waiting for board position')
+        logger.debug("waiting for board position")
         start = time.time()
         warned = False
         while not self.init_position:
             if self.brd.error_condition:
-                logger.info('Chessnut board not available.')
+                logger.info("Chessnut board not available.")
                 return
             if time.time() - start > 2 and not warned:
                 warned = True
-                logger.info('Searching for Chessnut board...')
+                logger.info("Searching for Chessnut board...")
             self.init_position = self.brd.position_initialized()
             time.sleep(0.1)
 
         if self.init_position:
-            logger.debug('board position received, init ok.')
+            logger.debug("board position received, init ok.")
         else:
-            logger.error('no board position received')
+            logger.error("no board position received")
 
     def quit(self):
         self.brd.quit()

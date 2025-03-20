@@ -71,12 +71,12 @@ class Transport(object):
         :param que: Queue that will receive events from chess board
         """
         if usb_support is False:
-            logger.error('Cannot communicate: PySerial module not installed.')
+            logger.error("Cannot communicate: PySerial module not installed.")
             self.init = False
             return
         self.que = que
         self.init = True
-        logger.debug('USB init ok')
+        logger.debug("USB init ok")
         self.last_agent_state = None
         self.error_state = False
         self.thread_active = False
@@ -93,31 +93,31 @@ class Transport(object):
 
         :returns: Name of the port with a Certabo board, None on failure
         """
-        logger.info('Searching for Certabo board...')
+        logger.info("Searching for Certabo board...")
         port = None
         ports = self.usb_port_search()
         if len(ports) > 0:
             if len(ports) > 1:
-                logger.warning(f'Found {len(ports)} Certabo boards, using first found.')
+                logger.warning(f"Found {len(ports)} Certabo boards, using first found.")
             port = ports[0]
-            logger.info(f'Autodetected Certabo board at USB port: {port}')
+            logger.info(f"Autodetected Certabo board at USB port: {port}")
         return port
 
     def test_board(self, port):
-        logger.debug(f'Testing port: {port}')
+        logger.debug(f"Testing port: {port}")
         try:
             self.usb_dev = serial.Serial(port, 38400, timeout=2, write_timeout=1)
             self.usb_dev.dtr = 0
-            msg = self.usb_read().decode(encoding='UTF-8', errors='ignore')
-            if ':' in msg and '\r\n' in msg:
-                logger.debug(f'Message found: {msg}')
+            msg = self.usb_read().decode(encoding="UTF-8", errors="ignore")
+            if ":" in msg and "\r\n" in msg:
+                logger.debug(f"Message found: {msg}")
                 self.usb_dev.close()
                 return True
             else:
                 self.usb_dev.close()
                 return False
         except (OSError, serial.SerialException) as e:
-            logger.error(f'Board detection on {port} resulted in error {e}')
+            logger.error(f"Board detection on {port} resulted in error {e}")
         try:
             self.usb_dev.close()
         except (OSError, serial.SerialException):
@@ -138,7 +138,7 @@ class Transport(object):
 
         :returns: True on success, False on failure.
         """
-        logger.debug(f'Testing port: {port}')
+        logger.debug(f"Testing port: {port}")
         try:
             s = serial.Serial(port, 38400)
             s.close()
@@ -159,7 +159,7 @@ class Transport(object):
         for port in ports:
             if self.usb_port_check(port):
                 if self.test_board(port):
-                    logger.debug(f'Found board at: {port}')
+                    logger.debug(f"Found board at: {port}")
                     vports.append(port)
                     break  # only one port necessary
         return vports
@@ -174,7 +174,7 @@ class Transport(object):
             self.usb_dev.write(msg)
             self.usb_dev.flush()
         except Exception as e:
-            logger.error(f'Failed to write {msg}: {e}')
+            logger.error(f"Failed to write {msg}: {e}")
             self.error_state = True
 
     def usb_read(self):
@@ -190,7 +190,7 @@ class Transport(object):
     def agent_state(self, que, state, msg):
         if state != self.last_agent_state:
             self.last_agent_state = state
-            que.put('agent-state: ' + state + ' ' + msg)
+            que.put("agent-state: " + state + " " + msg)
 
     def open_mt(self, port):
         """
@@ -203,11 +203,11 @@ class Transport(object):
             self.usb_dev = serial.Serial(port, 38400, timeout=0.1)
             self.usb_dev.dtr = 0
         except Exception as e:
-            emsg = f'USB cannot open port {port}, {e}'
+            emsg = f"USB cannot open port {port}, {e}"
             logger.error(emsg)
-            self.agent_state(self.que, 'offline', emsg)
+            self.agent_state(self.que, "offline", emsg)
             return False
-        logger.debug(f'USB port {port} open')
+        logger.debug(f"USB port {port} open")
         self.thread_active = True
         self.event_thread = threading.Thread(target=self.event_worker_thread, args=(self.que,))
         self.event_thread.setDaemon(True)
@@ -218,8 +218,8 @@ class Transport(object):
         """
         Background thread that sends data received via usb to the queue `que`.
         """
-        logger.debug('USB worker thread started.')
-        self.agent_state(self.que, 'online', f'Connected to {self.uport}')
+        logger.debug("USB worker thread started.")
+        self.agent_state(self.que, "online", f"Connected to {self.uport}")
         self.error_state = False
         posted = False
         while self.thread_active:
@@ -228,20 +228,19 @@ class Transport(object):
                 try:
                     self.usb_dev.close()
                 except Exception as e:
-                    logger.debug(f'Failed to close usb: {e}')
+                    logger.debug(f"Failed to close usb: {e}")
                 try:
-                    self.usb_dev = serial.Serial(
-                        self.uport, 38400, timeout=0.1)
+                    self.usb_dev = serial.Serial(self.uport, 38400, timeout=0.1)
                     self.usb_dev.dtr = 0
-                    self.agent_state(self.que, 'online', f'Reconnected to {self.uport}')
+                    self.agent_state(self.que, "online", f"Reconnected to {self.uport}")
                     self.error_state = False
                     posted = False
                     break
                 except Exception as e:
                     if posted is False:
-                        emsg = f'Failed to reconnect to {self.uport}, {e}'
+                        emsg = f"Failed to reconnect to {self.uport}, {e}"
                         logger.warning(emsg)
-                        self.agent_state(self.que, 'offline', emsg)
+                        self.agent_state(self.que, "offline", emsg)
                         posted = True
 
             self._usb_read(que)

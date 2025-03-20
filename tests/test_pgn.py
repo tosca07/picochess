@@ -38,8 +38,6 @@ class TestPgnDisplay(unittest.TestCase):
         msg = FakeMessage(game, PlayMode.USER_WHITE)
 
         pgn = self.testee._generate_pgn_from_message(msg)
-        empty_game = EMPTY_GAME.format(
-            datetime.date.today().strftime("%Y.%m.%d"), self.testee.startime
-        )
+        empty_game = EMPTY_GAME.format(datetime.date.today().strftime("%Y.%m.%d"), self.testee.startime)
 
         self.assertEqual(str(pgn), empty_game)

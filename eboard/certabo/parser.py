@@ -34,7 +34,7 @@ class CertaboPiece(object):
         return self.piece_id
 
     def __repr__(self):
-        return f'CertaboPiece(piece_id={self.piece_id})'
+        return f"CertaboPiece(piece_id={self.piece_id})"
 
 
 class BoardTranslator:
@@ -82,7 +82,7 @@ class ParserCallback(object):
 NO_PIECE = CertaboPiece(bytearray(5))
 BLACK_EXTRA_QUEEN_SQUARE = 19
 WHITE_EXTRA_QUEEN_SQUARE = 43
-NO_STONE = ' '
+NO_STONE = " "
 
 
 def to_square(i: int):
@@ -106,11 +106,11 @@ class Parser(object):
         self.buffer = bytearray()
 
         if len(data) > 15:
-            input_str = data.decode(encoding='UTF-8', errors='ignore')
-            if '\r\n' not in input_str:
+            input_str = data.decode(encoding="UTF-8", errors="ignore")
+            if "\r\n" not in input_str:
                 self._add_to_buffer(data)
             else:
-                split_data = input_str.split(':')
+                split_data = input_str.split(":")
                 for index, part in enumerate(split_data):
                     if len(part) > 0 and not self._parse(part) and index == len(split_data) - 1:
                         position = len(data) - len(part) - 1
@@ -124,7 +124,7 @@ class Parser(object):
         self.buffer += arr
 
     def _parse(self, part: str):
-        split_input = re.sub('[\r\nL*]', '', part).split()
+        split_input = re.sub("[\r\nL*]", "", part).split()
         if not self.piece_recognition and len(split_input) > 8:
             self.piece_recognition = True
             self.callback.has_piece_recognition(True)
@@ -259,13 +259,29 @@ class CalibrationSquare(object):
 
     def get_stone(self):
         if 7 < self.square < 16:
-            return 'p'
+            return "p"
         if 47 < self.square < 56:
-            return 'P'
-        square_to_stone = {0: 'r', 7: 'r', 1: 'n', 6: 'n', 2: 'b', 5: 'b', 3: 'q',
-                           BLACK_EXTRA_QUEEN_SQUARE: 'q', 4: 'k',
-                           56: 'R', 63: 'R', 57: 'N', 62: 'N', 58: 'B', 61: 'B', 59: 'Q',
-                           WHITE_EXTRA_QUEEN_SQUARE: 'Q', 60: 'K'}
+            return "P"
+        square_to_stone = {
+            0: "r",
+            7: "r",
+            1: "n",
+            6: "n",
+            2: "b",
+            5: "b",
+            3: "q",
+            BLACK_EXTRA_QUEEN_SQUARE: "q",
+            4: "k",
+            56: "R",
+            63: "R",
+            57: "N",
+            62: "N",
+            58: "B",
+            61: "B",
+            59: "Q",
+            WHITE_EXTRA_QUEEN_SQUARE: "Q",
+            60: "K",
+        }
         if self.square in square_to_stone:
             return self._no_stone_or(square_to_stone[self.square])
         else:
@@ -273,7 +289,7 @@ class CalibrationSquare(object):
 
     def _no_stone_or(self, stone: str):
         if self.pieceId == NO_PIECE:
-            return ' '
+            return " "
         else:
             return stone
 

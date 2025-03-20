@@ -34,6 +34,7 @@ import picotutor_constants as c
 
 logger = logging.getLogger(__name__)
 
+
 class PicoTutor:
     def __init__(
         self,
@@ -50,9 +51,9 @@ class PicoTutor:
         self.user_color = i_player_color
         self.engine_path = i_engine_path
 
-        self.engine = None # or UciEngine
-        self.best_info : list[InfoDict] = []  # best = deep
-        self.obvious_info : list[InfoDict] = []  # obvious = low = shallow
+        self.engine = None  # or UciEngine
+        self.best_info: list[InfoDict] = []  # best = deep
+        self.obvious_info: list[InfoDict] = []  # obvious = low = shallow
 
         # history contain user made moves from above best or obvious
         # stored in list of tuple(index, move, score, mate)
@@ -68,7 +69,7 @@ class PicoTutor:
         self.mate = 0
         self.best_moves = []
         self.obvious_moves = []
-        self.op = [] # list of played uci moves not needed?
+        self.op = []  # list of played uci moves not needed?
         self.last_inside_book_moveno = 0
         self.alt_best_moves = []
         self.comments = []
@@ -77,12 +78,12 @@ class PicoTutor:
         self.comment_all_no = 0
         self.lang = i_lang
         self.expl_start_position = True
-        self.pos = False # do we need this in the new PicoTutor?
+        self.pos = False  # do we need this in the new PicoTutor?
         self.watcher_on = False
         self.coach_on = False
         self.explorer_on = False
         self.comments_on = False
-        self.mame_par = "" # @todo create this info?
+        self.mame_par = ""  # @todo create this info?
         self.board = chess.Board()
         self.ucishell = i_ucishell
         self.coach_analyser = i_coach_analyser
@@ -91,11 +92,7 @@ class PicoTutor:
 
         try:
             with open("chess-eco_pos.txt") as fp:
-                self.book_data = list(
-                    csv.DictReader(
-                        filter(lambda row: row[0] != "#", fp.readlines()), delimiter="|"
-                    )
-                )
+                self.book_data = list(csv.DictReader(filter(lambda row: row[0] != "#", fp.readlines()), delimiter="|"))
         except EnvironmentError:
             self.book_data = []
 
@@ -109,27 +106,16 @@ class PicoTutor:
 
         self._setup_board(i_fen)
 
-
     async def open_engine(self):
-        """ open the tutor engine """
+        """open the tutor engine"""
         # @todo we have to start the engine always as the set_status has
         # not yet been changed to async --> causes changes in main
         # set_status might later be changed that require this engine
         if not self.engine:
-            self.engine = UciEngine(
-                self.engine_path,
-                self.ucishell,
-                self.mame_par,
-                self.loop,
-                "picotutor"
-            )
+            self.engine = UciEngine(self.engine_path, self.ucishell, self.mame_par, self.loop, "picotutor")
             await self.engine.open_engine()
             if self.engine.loaded_ok() is True:
-                options = {
-                    "MultiPV": c.VALID_ROOT_MOVES,
-                    "Contempt": 0,
-                    "Threads": c.NUM_THREADS
-                }
+                options = {"MultiPV": c.VALID_ROOT_MOVES, "Contempt": 0, "Threads": c.NUM_THREADS}
                 await self.engine.startup(options=options)
                 self.engine.set_mode()  # not needed as we dont ponder?
             else:
@@ -138,12 +124,10 @@ class PicoTutor:
         if self.engine is None:
             logger.debug("Engine loading failed in Picotutor")
 
-
     def is_coach_analyser(self) -> bool:
         # to be an analyser for main we have to have a loaded engine
         # and the setting coach_analyser must be True in picochess.ini
         return (self.engine.loaded_ok() and self.coach_analyser) if self.engine else False
-
 
     def _setup_comments(self, i_lang, i_comment_file):
         if i_comment_file:
@@ -157,9 +141,7 @@ class PicoTutor:
                 self.comment_no = len(self.comments)
 
         try:
-            general_comment_file = (
-                "/opt/picochess/engines/aarch64/general_game_comments_" + i_lang + ".txt"
-            )
+            general_comment_file = "/opt/picochess/engines/aarch64/general_game_comments_" + i_lang + ".txt"
             with open(general_comment_file) as fp:
                 self.comments_all = fp.readlines()
         except Exception:
@@ -167,7 +149,6 @@ class PicoTutor:
 
         if self.comments_all:
             self.comment_all_no = len(self.comments_all)
-
 
     def _setup_board(self, i_fen):
         if i_fen:
@@ -314,13 +295,11 @@ class PicoTutor:
         else:
             return "", False
 
-
     def reset(self):
         # only called from one picotutor place, maybe not needed really?
         # set_status calls _reset_int anyway .... it could do that when needed
         self._reset_int()
         self.board = chess.Board()
-
 
     def _reset_int(self):
         self.stop()
@@ -346,7 +325,6 @@ class PicoTutor:
         self.hint_move = chess.Move.null()
         self.mate = 0
         self.expl_start_position = True
-
 
     async def set_user_color(self, i_user_color):
 
@@ -419,7 +397,6 @@ class PicoTutor:
 
         return True
 
-
     def _update_internal_history_after_pop(self, poped_move: chess.Move) -> None:
         try:
             if self.best_history[-1] == poped_move:
@@ -431,7 +408,6 @@ class PicoTutor:
                 self.obvious_history.pop()
         except IndexError:
             self.obvious_history.append((-1, chess.Move.null(), 0.00, 0))
-
 
     async def _update_internal_state_after_pop(self, poped_move: chess.Move) -> None:
         try:
@@ -473,7 +449,7 @@ class PicoTutor:
         # after newgame event
         if self.engine:
             if self.engine.loaded_ok():
-                if(self.coach_on or self.watcher_on):
+                if self.coach_on or self.watcher_on:
                     low_limit = chess.engine.Limit(depth=c.LOW_DEPTH)
                     low_kwargs = {"limit": low_limit, "multipv": c.LOW_ROOT_MOVES}
                 else:
@@ -488,13 +464,11 @@ class PicoTutor:
             else:
                 logger.error("engine has terminated in picotutor?")
 
-
     def pause(self):
         # during thinking time of opponent tutor should be paused
         # after the user move has been pushed
         if self.engine:
             self.engine.stop()
-
 
     def stop(self):
         if self.engine:
@@ -502,9 +476,8 @@ class PicoTutor:
             self.best_info = []
             self.obvious_info = []
 
-
     def log_pv_lists(self):
-        """ logging help for picotutor developers """
+        """logging help for picotutor developers"""
         if self.board.turn:
             logger.debug("PicoTutor White to move %d", self.board.fullmove_number)
         else:
@@ -522,10 +495,9 @@ class PicoTutor:
                     move, score, mate = PicoTutor._get_score(self.user_color, info)
                     logger.debug("%s score %d mate in %d depth %d", move.uci(), score, mate, info["depth"])
 
-
-    def eval_user_move(self, user_move:chess.Move):
-        """ add user move to best and obvious history
-            update the pv_best_move selection """
+    def eval_user_move(self, user_move: chess.Move):
+        """add user move to best and obvious history
+        update the pv_best_move selection"""
         if not (self.coach_on or self.watcher_on):
             return
         # t tuple(pv_key, move, score, mate)
@@ -546,10 +518,10 @@ class PicoTutor:
             self.best_history.append((pv_key, user_move, score, mate))
             self.pv_best_move = []
             self.pv_user_move = []
-        t =self.in_obvious_moves(user_move)
+        t = self.in_obvious_moves(user_move)
         # add score to history list
         if t:
-            #pv_key = t[0]
+            # pv_key = t[0]
             self.obvious_history.append(t)
         else:
             logger.debug("did not find user move %s in obvious moves", user_move.uci())
@@ -561,10 +533,9 @@ class PicoTutor:
                 pv_extra_key, extra_move, score, mate = self.obvious_moves[-1]
             self.obvious_history.append((pv_key, user_move, score, mate))
 
-
     def in_best_moves(self, user_move: chess.Move) -> tuple:
-        """ find move in obvious moves 
-            return None or tuple(pv_key, move, score, mate) """
+        """find move in obvious moves
+        return None or tuple(pv_key, move, score, mate)"""
         for t in self.best_moves:
             # tuple index 1 is move
             if t[1] == user_move:
@@ -572,8 +543,8 @@ class PicoTutor:
         return None
 
     def in_obvious_moves(self, user_move: chess.Move) -> tuple:
-        """ find move in obvious moves 
-            return None or tuple(pv_key, move, score) """
+        """find move in obvious moves
+        return None or tuple(pv_key, move, score)"""
         for t in self.obvious_moves:
             # tuple index 1 is move
             if t[1] == user_move:
@@ -581,13 +552,12 @@ class PicoTutor:
         return None
 
     def sort_score(self, tupel):
-        """ define score:int as sort key """
+        """define score:int as sort key"""
         return tupel[2]
-
 
     @staticmethod
     def _get_score(user_color: chess.Color, info: chess.engine.InfoDict) -> tuple:
-        """ return tuple (move, score, mate) extracted from info """
+        """return tuple (move, score, mate) extracted from info"""
         move = info["pv"][0] if "pv" in info else chess.Move.null()
         score = mate = 0
         if "score" in info:
@@ -601,13 +571,12 @@ class PicoTutor:
             return (move, score, mate)
         return (move, score, mate)
 
-
     # @todo re-design this method?
     @staticmethod
     def _eval_pv_list(user_color: chess.Color, info_list: list[InfoDict], best_moves) -> int | None:
-        """ fill in best_moves from InfoDict list
-            it assumes best_moves is emptied before called
-            :return the best score """
+        """fill in best_moves from InfoDict list
+        it assumes best_moves is emptied before called
+        :return the best score"""
         best_score = -999
         pv_key = 0  # index in InfoDict list
         while pv_key < len(info_list):
@@ -619,9 +588,8 @@ class PicoTutor:
             pv_key = pv_key + 1
         return best_score
 
-
     async def eval_legal_moves(self):
-        """ Update analysis information from engine """
+        """Update analysis information from engine"""
         if not (self.coach_on or self.watcher_on):
             return
         self.best_moves = []
@@ -630,25 +598,24 @@ class PicoTutor:
         # eval_pv_list below will build new lists
         result = await self.engine.get_analysis(self.board)
         self.obvious_info: list[chess.engine.InfoDict] = result.get("low")
-        self.best_info: list[chess.engine.InfoDict]  = result.get("best")
+        self.best_info: list[chess.engine.InfoDict] = result.get("best")
         if self.best_info:
             best_score = PicoTutor._eval_pv_list(self.user_color, self.best_info, self.best_moves)
             if self.best_moves:
                 self.best_moves.sort(key=self.sort_score, reverse=True)
                 # collect possible good alternative moves
-                for (pv_key, move, score, mate) in self.best_moves:
+                for pv_key, move, score, mate in self.best_moves:
                     if move:
                         diff = abs(best_score - score)
                         if diff <= 0.2:
                             self.alt_best_moves.append(move)
         if self.obvious_info:
             PicoTutor._eval_pv_list(self.user_color, self.obvious_info, self.obvious_moves)
-            self.obvious_moves.sort(key= self.sort_score, reverse=True)
+            self.obvious_moves.sort(key=self.sort_score, reverse=True)
         self.log_pv_lists()
 
-
     async def get_analysis(self) -> dict:
-        """ get best move info if exists - during user thinking """
+        """get best move info if exists - during user thinking"""
         # failed answer is empty lists
         result = {"low": [], "best": [], "fen": ""}
         if self.engine:
@@ -656,9 +623,8 @@ class PicoTutor:
                 result = await self.engine.get_analysis(self.board)
         return result
 
-
     def get_user_move_eval(self) -> tuple:
-        """ return eval str and moves to mate """
+        """return eval str and moves to mate"""
         if not (self.coach_on or self.watcher_on):
             return
         eval_string = ""
@@ -668,11 +634,11 @@ class PicoTutor:
 
         # check precondition for calculations
         if (
-            len(self.best_history) < 2 or
-            len(self.obvious_history) < 1 or
-            len(self.best_moves) < 2 or
-            len(self.obvious_moves) < 2
-            ):
+            len(self.best_history) < 2
+            or len(self.obvious_history) < 1
+            or len(self.best_moves) < 2
+            or len(self.obvious_moves) < 2
+        ):
             eval_string = ""
             return eval_string, self.mate
 
@@ -739,12 +705,11 @@ class PicoTutor:
             eval_string = "?"
 
         # Dubious
-        elif ((
+        elif (
             best_deep_diff > c.DUBIOUS_TH
             and (abs(deep_low_diff) > c.UNCLEAR_DIFF or not_in_obvious)
-            and (score_hist_diff > c.POS_INCREASE))
-            or (not_in_best and len(self.best_moves) > 4)
-        ):
+            and (score_hist_diff > c.POS_INCREASE)
+        ) or (not_in_best and len(self.best_moves) > 4):
             eval_string = "?!"
 
         ###############################################################
@@ -786,13 +751,11 @@ class PicoTutor:
         logger.debug("evaluation %s", eval_string)
         return eval_string, self.mate
 
-
     def get_user_move_info(self):
         if not (self.coach_on or self.watcher_on):
             return
         # not sending self.pv_best_move as its not used?
         return self.hint_move, self.pv_user_move
-
 
     def get_pos_analysis(self):
         if not (self.coach_on or self.watcher_on):

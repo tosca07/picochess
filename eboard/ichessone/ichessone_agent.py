@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class IChessOneAgent:
 
     def __init__(self, appque):
-        self.name = 'IChessOneAgent'
+        self.name = "IChessOneAgent"
         self.appque = appque
         self.brd = Protocol(self.appque, self.name)
         self.init_position = False
@@ -31,26 +31,26 @@ class IChessOneAgent:
         if self.brd.connected:
             self.request_board_updates()
         else:
-            logger.warning('Connection to iChessOne failed.')
+            logger.warning("Connection to iChessOne failed.")
             return
 
-        logger.debug('waiting for board position')
+        logger.debug("waiting for board position")
         start = time.time()
         warned = False
         while not self.init_position:
             if self.brd.error_condition:
-                logger.info('iChessOne board not available.')
+                logger.info("iChessOne board not available.")
                 return
             if time.time() - start > 2 and not warned:
                 warned = True
-                logger.info('Searching for iChessOne board...')
+                logger.info("Searching for iChessOne board...")
             self.init_position = self.brd.position_initialized()
             time.sleep(0.1)
 
         if self.init_position:
-            logger.debug('board position received, init ok.')
+            logger.debug("board position received, init ok.")
         else:
-            logger.error('no board position received')
+            logger.error("no board position received")
 
     def quit(self):
         self.brd.quit()

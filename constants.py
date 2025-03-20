@@ -1,2 +1,1 @@
-""" Constants to influence behaviour of picochess """
-
+"""Constants to influence behaviour of picochess"""

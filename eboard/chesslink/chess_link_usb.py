@@ -42,7 +42,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class Transport():
+class Transport:
     """
     ChessLink transport implementation for USB connections.
 
@@ -63,12 +63,12 @@ class Transport():
         :param protocol_dbg: True: byte-level ChessLink protocol debug messages
         """
         if usb_support is False:
-            logger.error('Cannot communicate: PySerial module not installed.')
+            logger.error("Cannot communicate: PySerial module not installed.")
             self.init = False
             return
         self.que = que  # asyncio.Queue()
         self.init = True
-        logger.debug('USB init ok')
+        logger.debug("USB init ok")
         self.protocol_debug = protocol_dbg
         self.last_agent_state = None
         self.error_state = False
@@ -90,16 +90,15 @@ class Transport():
         :param iface: not used for USB.
         :returns: Name of the port with a ChessLink board, None on failure.
         """
-        logger.info('Searching for ChessLink boards...')
-        logger.info('Note: search can be disabled in < chess_link_config.json >'
-                    ' by setting {"autodetect": false}')
+        logger.info("Searching for ChessLink boards...")
+        logger.info("Note: search can be disabled in < chess_link_config.json >" ' by setting {"autodetect": false}')
         port = None
         ports = self.usb_port_search()
         if len(ports) > 0:
             if len(ports) > 1:
-                logger.warning(f'Found {len(ports)} Millennium boards, using first found.')
+                logger.warning(f"Found {len(ports)} Millennium boards, using first found.")
             port = ports[0]
-            logger.info(f'Autodetected Millennium board at USB port: {port}')
+            logger.info(f"Autodetected Millennium board at USB port: {port}")
         return port
 
     def test_board(self, port):
@@ -108,26 +107,26 @@ class Transport():
 
         :returns: Version string on ok, None on failure.
         """
-        logger.debug(f'Testing port: {port}')
+        logger.debug(f"Testing port: {port}")
         try:
             self.usb_dev = serial.Serial(port, 38400, timeout=2, write_timeout=1)
             self.usb_dev.dtr = 0
-            self.write_mt('V')
-            version = self.usb_read_synchr(self.usb_dev, 'v', 7)
+            self.write_mt("V")
+            version = self.usb_read_synchr(self.usb_dev, "v", 7)
             if len(version) != 7:
                 self.usb_dev.close()
-                logger.debug(f'Message length {len(version)} instead of 7')
+                logger.debug(f"Message length {len(version)} instead of 7")
                 return None
-            if version[0] != 'v':
-                logger.debug(f'Unexpected reply {version}')
+            if version[0] != "v":
+                logger.debug(f"Unexpected reply {version}")
                 self.usb_dev.close()
                 return None
-            verstring = f'{version[1] + version[2]}.{version[3] + version[4]}'
-            logger.debug(f'Millennium {verstring} at {port}')
+            verstring = f"{version[1] + version[2]}.{version[3] + version[4]}"
+            logger.debug(f"Millennium {verstring} at {port}")
             self.usb_dev.close()
             return verstring
         except (OSError, serial.SerialException) as e:
-            logger.debug(f'Board detection on {port} resulted in error {e}')
+            logger.debug(f"Board detection on {port} resulted in error {e}")
         try:
             self.usb_dev.close()
         except Exception:
@@ -140,7 +139,7 @@ class Transport():
 
         :returns: True on success, False on failure.
         """
-        logger.debug(f'Testing port: {port}')
+        logger.debug(f"Testing port: {port}")
         try:
             s = serial.Serial(port, 38400)
             s.close()
@@ -162,7 +161,7 @@ class Transport():
             if self.usb_port_check(port):
                 version = self.test_board(port)
                 if version is not None:
-                    logger.debug(f'Found board at: {port}')
+                    logger.debug(f"Found board at: {port}")
                     vports.append(port)
                     break  # only one port necessary
         return vports
@@ -180,11 +179,11 @@ class Transport():
             bts.append(bo)
         try:
             if self.protocol_debug is True:
-                logger.debug(f'Trying write <{bts}>')
+                logger.debug(f"Trying write <{bts}>")
             self.usb_dev.write(bts)
             self.usb_dev.flush()
         except Exception as e:
-            logger.error(f'Failed to write {msg}: {e}')
+            logger.error(f"Failed to write {msg}: {e}")
             self.error_state = True
             return False
         if self.protocol_debug is True:
@@ -201,7 +200,7 @@ class Transport():
             try:
                 b = chr(ord(usbdev.read()) & 127)
             except Exception as e:
-                logger.debug(f'USB read failed: {e}')
+                logger.debug(f"USB read failed: {e}")
                 return []
             if b == cmd:
                 rep.append(b)
@@ -210,8 +209,8 @@ class Transport():
             try:
                 b = chr(ord(usbdev.read()) & 127)
                 rep.append(b)
-            except (Exception) as e:
-                logger.error(f'Read error {e}')
+            except Exception as e:
+                logger.error(f"Read error {e}")
                 break
         if clp.check_block_crc(rep) is False:
             return []
@@ -220,7 +219,7 @@ class Transport():
     def agent_state(self, que, state, msg):
         if state != self.last_agent_state:
             self.last_agent_state = state
-            que.put('agent-state: ' + state + ' ' + msg)
+            que.put("agent-state: " + state + " " + msg)
 
     def open_mt(self, port):
         """
@@ -233,14 +232,13 @@ class Transport():
             self.usb_dev = serial.Serial(port, 38400, timeout=0.1)
             self.usb_dev.dtr = 0
         except Exception as e:
-            emsg = f'USB cannot open port {port}, {e}'
+            emsg = f"USB cannot open port {port}, {e}"
             logger.error(emsg)
-            self.agent_state(self.que, 'offline', emsg)
+            self.agent_state(self.que, "offline", emsg)
             return False
-        logger.debug(f'USB port {port} open')
+        logger.debug(f"USB port {port} open")
         self.thread_active = True
-        self.event_thread = threading.Thread(
-            target=self.event_worker_thread, args=(self.que,))
+        self.event_thread = threading.Thread(target=self.event_worker_thread, args=(self.que,))
         self.event_thread.setDaemon(True)
         self.event_thread.start()
         return True
@@ -249,11 +247,11 @@ class Transport():
         """
         Background thread that sends data received via usb to the queue `que`.
         """
-        logger.debug('USB worker thread started.')
+        logger.debug("USB worker thread started.")
         cmd_started = False
         cmd_size = 0
-        cmd = ''
-        self.agent_state(self.que, 'online', f'Connected to {self.uport}')
+        cmd = ""
+        self.agent_state(self.que, "online", f"Connected to {self.uport}")
         self.error_state = False
         posted = False
         while self.thread_active:
@@ -262,23 +260,22 @@ class Transport():
                 try:
                     self.usb_dev.close()
                 except Exception as e:
-                    logger.debug(f'Failed to close usb: {e}')
+                    logger.debug(f"Failed to close usb: {e}")
                 try:
-                    self.usb_dev = serial.Serial(
-                        self.uport, 38400, timeout=0.1)
+                    self.usb_dev = serial.Serial(self.uport, 38400, timeout=0.1)
                     self.usb_dev.dtr = 0
-                    self.agent_state(self.que, 'online', f'Reconnected to {self.uport}')
+                    self.agent_state(self.que, "online", f"Reconnected to {self.uport}")
                     self.error_state = False
                     posted = False
                     break
                 except Exception as e:
                     if posted is False:
-                        emsg = f'Failed to reconnect to {self.uport}, {e}'
+                        emsg = f"Failed to reconnect to {self.uport}, {e}"
                         logger.warning(emsg)
-                        self.agent_state(self.que, 'offline', emsg)
+                        self.agent_state(self.que, "offline", emsg)
                         posted = True
 
-            b = ''
+            b = ""
             try:
                 if cmd_started is False:
                     self.usb_dev.timeout = None
@@ -291,11 +288,11 @@ class Transport():
                     continue
             except Exception as e:
                 if len(cmd) > 0:
-                    logger.debug(f'USB command \'{cmd[0]}\' interrupted: {e}')
+                    logger.debug(f"USB command '{cmd[0]}' interrupted: {e}")
                 time.sleep(0.1)
                 cmd_started = False
                 cmd_size = 0
-                cmd = ''
+                cmd = ""
                 self.error_state = True
                 continue
             if len(b) > 0:
@@ -312,10 +309,10 @@ class Transport():
                         cmd_started = False
                         cmd_size = 0
                         if self.protocol_debug is True:
-                            logger.debug(f'USB received cmd: {cmd}')
+                            logger.debug(f"USB received cmd: {cmd}")
                         if clp.check_block_crc(cmd):
                             que.put(cmd)
-                        cmd = ''
+                        cmd = ""
 
     def get_name(self):
         """
@@ -323,7 +320,7 @@ class Transport():
 
         :returns: 'chess_link_usb'
         """
-        return 'chesslink.chess_link_usb'
+        return "chesslink.chess_link_usb"
 
     def is_init(self):
         """
@@ -331,5 +328,5 @@ class Transport():
 
         :returns: True on success.
         """
-        logger.debug('Ask for init')
+        logger.debug("Ask for init")
         return self.init

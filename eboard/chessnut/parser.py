@@ -54,7 +54,7 @@ class Parser(object):
                                 board, self.reversed = check_reversed(board, self.reversed, self.callback)
                                 self.callback.board_update(to_short_fen(board))
                             i = new_pos
-                    elif (i + 3) < len(data) and data[i] == 0x2a and data[i + 1] == 0x02:  # battery
+                    elif (i + 3) < len(data) and data[i] == 0x2A and data[i + 1] == 0x02:  # battery
                         self.callback.battery(*to_battery(data[i + 2], data[i + 3]))
                         i += 3
                 i += 1
@@ -64,7 +64,7 @@ class Parser(object):
     def _parse_position(self, data, index):
         data_length = 36
         if len(data) >= (index + data_length + 2):
-            data = data[index + 2:]
+            data = data[index + 2 :]
             index += data_length + 1
             return index, data
         else:
@@ -90,9 +90,21 @@ class Parser(object):
 
     @staticmethod
     def _to_stone(value):
-        translation = {0: ' ',
-                       0x07: 'P', 0x06: 'R', 0x0a: 'N', 0x09: 'B', 0x0b: 'Q', 0x0c: 'K',
-                       0x04: 'p', 0x08: 'r', 0x05: 'n', 0x03: 'b', 0x01: 'q', 0x02: 'k'}
+        translation = {
+            0: " ",
+            0x07: "P",
+            0x06: "R",
+            0x0A: "N",
+            0x09: "B",
+            0x0B: "Q",
+            0x0C: "K",
+            0x04: "p",
+            0x08: "r",
+            0x05: "n",
+            0x03: "b",
+            0x01: "q",
+            0x02: "k",
+        }
         if value in translation:
             return translation[value]
         else:

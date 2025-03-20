@@ -26,8 +26,8 @@ from eboard.chessnut.parser import Parser, ParserCallback, Battery
 from eboard.chessnut import command
 
 logger = logging.getLogger(__name__)
-READ_CHARACTERISTIC = '1b7e8262-2877-41c3-b46e-cf057c562023'
-WRITE_CHARACTERISTIC = '1b7e8272-2877-41c3-b46e-cf057c562023'
+READ_CHARACTERISTIC = "1b7e8262-2877-41c3-b46e-cf057c562023"
+WRITE_CHARACTERISTIC = "1b7e8272-2877-41c3-b46e-cf057c562023"
 
 
 class Protocol(ParserCallback):
@@ -47,7 +47,7 @@ class Protocol(ParserCallback):
         """
         super().__init__()
         self.name = name
-        logger.debug('Chessnut starting')
+        logger.debug("Chessnut starting")
         self.error_condition = False
         self.appque = appque
         self.board_mutex = threading.Lock()
@@ -59,8 +59,9 @@ class Protocol(ParserCallback):
         self.parser = Parser(self)
         self.brd_reversed = False
         self.device_in_config = False
-        self.debouncer = MoveDebouncer(350, lambda fen: self.appque.put({'cmd': 'raw_board_position', 'fen': fen,
-                                                                         'actor': self.name}))
+        self.debouncer = MoveDebouncer(
+            350, lambda fen: self.appque.put({"cmd": "raw_board_position", "fen": fen, "actor": self.name})
+        )
 
         self.thread_active = True
         self.event_thread = threading.Thread(target=self._event_worker_thread)
@@ -71,13 +72,13 @@ class Protocol(ParserCallback):
         try:
             self._read_config()
         except Exception as e:
-            logger.debug(f'No valid default configuration, starting board-scan: {e}')
+            logger.debug(f"No valid default configuration, starting board-scan: {e}")
         while True:
             if not self.device_in_config:
                 self._search_board()
 
             if self.config is None or self.trans is None:
-                logger.error('Cannot connect.')
+                logger.error("Cannot connect.")
                 if self.config is None:
                     self.config = {}
                     self.write_configuration()
@@ -91,12 +92,12 @@ class Protocol(ParserCallback):
             time.sleep(3)
 
     def _read_config(self):
-        with open('chessnut_config.json', 'r') as f:
+        with open("chessnut_config.json", "r") as f:
             self.config = json.load(f)
-            if 'btle_iface' not in self.config:
-                self.config['btle_iface'] = 0
+            if "btle_iface" not in self.config:
+                self.config["btle_iface"] = 0
                 self.write_configuration()
-            if 'address' in self.config:
+            if "address" in self.config:
                 logger.debug(f"Checking default configuration for board at {self.config['address']}")
                 trans = self._open_transport()
                 if trans is not None:
@@ -106,34 +107,34 @@ class Protocol(ParserCallback):
     def _search_board(self):
         try:
             tr = Transport(self.trque, READ_CHARACTERISTIC, WRITE_CHARACTERISTIC)
-            logger.debug('created obj')
+            logger.debug("created obj")
             if tr.is_init():
-                logger.debug('Transport loaded.')
+                logger.debug("Transport loaded.")
                 if self.config is not None:
-                    btle = self.config['btle_iface']
+                    btle = self.config["btle_iface"]
                 else:
                     btle = 0
-                address = tr.search_board('Chessnut', btle)
+                address = tr.search_board("Chessnut", btle)
                 if address is not None:
-                    logger.debug(f'Found board at address {address}')
-                    self.config = {'address': address}
+                    logger.debug(f"Found board at address {address}")
+                    self.config = {"address": address}
                     self.trans = tr
                     self.write_configuration()
             else:
-                logger.warning('Bluetooth failed to initialize')
+                logger.warning("Bluetooth failed to initialize")
         except Exception as e:
-            logger.warning(f'Internal error, import of Bluetooth failed: {e}')
+            logger.warning(f"Internal error, import of Bluetooth failed: {e}")
 
     def _connect(self):
-        address = self.config['address']
-        logger.debug(f'Valid board available at {address}')
-        logger.debug(f'Connecting to Chessnut at {address}')
+        address = self.config["address"]
+        logger.debug(f"Valid board available at {address}")
+        logger.debug(f"Connecting to Chessnut at {address}")
         self.connected = self.trans.open_mt(address)
         if self.connected:
-            logger.info(f'Connected to Chessnut at {address}')
+            logger.info(f"Connected to Chessnut at {address}")
         else:
             self.trans.quit()
-            logger.error(f'Connection to Chessnut at {address} FAILED.')
+            logger.error(f"Connection to Chessnut at {address} FAILED.")
             self.config = {}
             self.write_configuration()
             self.error_condition = True
@@ -166,41 +167,40 @@ class Protocol(ParserCallback):
 
         :return: True on success, False on error
         """
-        if 'btle_iface' not in self.config:
-            self.config['btle_iface'] = 0
+        if "btle_iface" not in self.config:
+            self.config["btle_iface"] = 0
         try:
-            with open('chessnut_config.json', 'w') as f:
+            with open("chessnut_config.json", "w") as f:
                 json.dump(self.config, f, indent=4)
                 return True
         except Exception as e:
-            logger.error(f'Failed to save default configuration {self.config} to chessnut_config.json: {e}')
+            logger.error(f"Failed to save default configuration {self.config} to chessnut_config.json: {e}")
         return False
 
     def _event_worker_thread(self):
         """
         The event worker thread is automatically started during __init__.
         """
-        logger.debug('Chessnut worker thread started.')
+        logger.debug("Chessnut worker thread started.")
         while self.thread_active:
             if not self.trque.empty():
                 msg = self.trque.get()
-                token = 'agent-state: '
-                if msg[:len(token)] == token:
-                    toks = msg[len(token):]
-                    i = toks.find(' ')
+                token = "agent-state: "
+                if msg[: len(token)] == token:
+                    toks = msg[len(token) :]
+                    i = toks.find(" ")
                     if i != -1:
                         state = toks[:i]
-                        emsg = toks[i + 1:]
+                        emsg = toks[i + 1 :]
                     else:
                         state = toks
-                        emsg = ''
-                    logger.info(
-                        f'Agent state of {self.name} changed to {state}, {emsg}')
-                    if state == 'offline':
+                        emsg = ""
+                    logger.info(f"Agent state of {self.name} changed to {state}, {emsg}")
+                    if state == "offline":
                         self.error_condition = True
                     else:
                         self.error_condition = False
-                    self.appque.put({'cmd': 'agent_state', 'state': state, 'message': emsg})
+                    self.appque.put({"cmd": "agent_state", "state": state, "message": emsg})
                     continue
 
                 self.parser.parse(msg)
@@ -213,8 +213,8 @@ class Protocol(ParserCallback):
             self.last_fen = short_fen
 
     def battery(self, percent: int, status: Battery):
-        msg = f'{status.name} {percent}'
-        self.appque.put({'cmd': 'battery', 'message': msg})
+        msg = f"{status.name} {percent}"
+        self.appque.put({"cmd": "battery", "message": msg})
 
     def reversed(self, value: bool):
         self.brd_reversed = value
@@ -246,5 +246,5 @@ class Protocol(ParserCallback):
         if tr.is_init():
             return tr
         else:
-            logger.warning('Bluetooth transport failed to initialize')
+            logger.warning("Bluetooth transport failed to initialize")
         return None

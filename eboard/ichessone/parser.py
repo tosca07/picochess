@@ -45,7 +45,7 @@ class Parser(object):
             i = 0
             while i < len(data):
                 if (i + 2) < len(data):
-                    if data[i] == 0x3d and data[i + 1] == 0x70:  # position
+                    if data[i] == 0x3D and data[i + 1] == 0x70:  # position
                         new_pos, position_data = self._parse_position(data, i)
                         board = self._to_board(position_data)
                         if len(board) > 0 and None not in board:
@@ -54,7 +54,7 @@ class Parser(object):
                                 board, self.reversed = check_reversed(board, self.reversed, self.callback)
                                 self.callback.board_update(to_short_fen(board))
                             i = new_pos
-                    elif (i + 3) < len(data) and data[i] == 0x3d and data[i + 1] == 0x62:  # battery
+                    elif (i + 3) < len(data) and data[i] == 0x3D and data[i + 1] == 0x62:  # battery
                         self.callback.battery(*to_battery(data[i + 3], data[i + 2]))
                         i += 3
                 i += 1
@@ -64,7 +64,7 @@ class Parser(object):
     def _parse_position(self, data, index):
         data_length = 32
         if len(data) >= (index + data_length + 2):
-            data = data[index + 2:]
+            data = data[index + 2 :]
             index += data_length + 1
             return index, data
         else:
@@ -90,9 +90,21 @@ class Parser(object):
 
     @staticmethod
     def _to_stone(value):
-        translation = {0: ' ',
-                       0x01: 'P', 0x04: 'R', 0x02: 'N', 0x03: 'B', 0x05: 'Q', 0x06: 'K',
-                       0x07: 'p', 0x0a: 'r', 0x08: 'n', 0x09: 'b', 0x0b: 'q', 0x0c: 'k'}
+        translation = {
+            0: " ",
+            0x01: "P",
+            0x04: "R",
+            0x02: "N",
+            0x03: "B",
+            0x05: "Q",
+            0x06: "K",
+            0x07: "p",
+            0x0A: "r",
+            0x08: "n",
+            0x09: "b",
+            0x0B: "q",
+            0x0C: "k",
+        }
         if value in translation:
             return translation[value]
         else:

@@ -10,7 +10,7 @@ class TestAlternativeMover(unittest.TestCase):
     def setUp(self):
         self.testee = AlternativeMover()
         self.game = chess.Board()
-        self.e2e4 = chess.Move.from_uci('e2e4')
+        self.e2e4 = chess.Move.from_uci("e2e4")
 
     def test_alternative_move_tracking(self):
         moves = self.testee.all(self.game)
@@ -35,11 +35,11 @@ class TestAlternativeMover(unittest.TestCase):
         self.assertTrue(self.e2e4 in moves)
 
     def test_all_excluded_moves(self):
-        only_move_fen = 'k7/8/2K5/8/8/8/8/1Q6 b - - 0 1'
-        self.testee.exclude(chess.Move.from_uci('a8a7'))
+        only_move_fen = "k7/8/2K5/8/8/8/8/1Q6 b - - 0 1"
+        self.testee.exclude(chess.Move.from_uci("a8a7"))
         moves = self.testee.all(chess.Board(only_move_fen))
 
-        self.assertTrue(chess.Move.from_uci('a8a7') in moves)
+        self.assertTrue(chess.Move.from_uci("a8a7") in moves)
 
     def test_book_no_moves(self):
         bookreader = mock.create_autospec(chess.polyglot.MemoryMappedReader)
@@ -60,7 +60,7 @@ class TestAlternativeMover(unittest.TestCase):
         bookreader = mock.create_autospec(chess.polyglot.MemoryMappedReader)
         book_move = chess.polyglot.Entry(1, 796, 0, 1)
         book_move_2 = chess.polyglot.Entry(1, 1804, 0, 1)
-        e4e2 = chess.Move.from_uci('e4e2')
+        e4e2 = chess.Move.from_uci("e4e2")
         bookreader.weighted_choice.side_effect = [book_move, book_move_2]
         move = self.testee.book(bookreader, self.game)
 
@@ -108,25 +108,25 @@ class TestAlternativeMover(unittest.TestCase):
 class TestReadPGNInfo(unittest.TestCase):
     def test_read_pgn_info(self):
         game_name, problem, fen, result, white, black = read_pgn_info()
-        self.assertEqual('Kasparov 25 board Simul', game_name.strip())
-        self.assertEqual('', problem.strip())
-        self.assertEqual('', fen.strip())
-        self.assertEqual('1/2-1/2', result.strip())
-        self.assertEqual('Kasparov', white.strip())
-        self.assertEqual('Lloyds Bank: Munro, Clarke, Cooper, Drew', black.strip())
+        self.assertEqual("Kasparov 25 board Simul", game_name.strip())
+        self.assertEqual("", problem.strip())
+        self.assertEqual("", fen.strip())
+        self.assertEqual("1/2-1/2", result.strip())
+        self.assertEqual("Kasparov", white.strip())
+        self.assertEqual("Lloyds Bank: Munro, Clarke, Cooper, Drew", black.strip())
 
 
 class TestReadOnlineGame(unittest.TestCase):
     def test_read_online_result(self):
         result, winner = read_online_result()
-        self.assertEqual(result, 'unknown')
-        self.assertEqual(winner, '')
+        self.assertEqual(result, "unknown")
+        self.assertEqual(winner, "")
 
     def test_read_online_user_info(self):
         login, own_color, own_user, opp_user, game_time, fisher_inc = read_online_user_info()
-        self.assertEqual(login, 'ok')
-        self.assertEqual(own_color, 'W')
-        self.assertEqual(own_user, 'GuestBLQS')
-        self.assertEqual(opp_user, 'levoll')
+        self.assertEqual(login, "ok")
+        self.assertEqual(own_color, "W")
+        self.assertEqual(own_user, "GuestBLQS")
+        self.assertEqual(opp_user, "levoll")
         self.assertEqual(game_time, 5)
         self.assertEqual(fisher_inc, 0)

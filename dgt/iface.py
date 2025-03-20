@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 
 
 class DgtIface(DisplayDgt):
-
     """An Interface class for DgtHw, DgtPi, DgtVr."""
 
     def __init__(self, dgtboard: EBoard, loop: asyncio.AbstractEventLoop):
@@ -97,19 +96,19 @@ class DgtIface(DisplayDgt):
             """Return move text for clock display."""
             if short:
                 directory = {}
-                if language == 'de':
-                    directory = {'R': 'T', 'N': 'S', 'B': 'L', 'Q': 'D'}
-                if language == 'nl':
-                    directory = {'R': 'T', 'N': 'P', 'B': 'L', 'Q': 'D'}
-                if language == 'fr':
-                    directory = {'R': 'T', 'N': 'C', 'B': 'F', 'Q': 'D', 'K': '@'}
-                if language == 'es':
-                    directory = {'R': 'T', 'N': 'C', 'B': 'A', 'Q': 'D', 'K': '@'}
-                if language == 'it':
-                    directory = {'R': 'T', 'N': 'C', 'B': 'A', 'Q': 'D', 'K': '@'}
+                if language == "de":
+                    directory = {"R": "T", "N": "S", "B": "L", "Q": "D"}
+                if language == "nl":
+                    directory = {"R": "T", "N": "P", "B": "L", "Q": "D"}
+                if language == "fr":
+                    directory = {"R": "T", "N": "C", "B": "F", "Q": "D", "K": "@"}
+                if language == "es":
+                    directory = {"R": "T", "N": "C", "B": "A", "Q": "D", "K": "@"}
+                if language == "it":
+                    directory = {"R": "T", "N": "C", "B": "A", "Q": "D", "K": "@"}
                 for i, j in directory.items():
                     text = text.replace(i, j)
-                text = text.replace('@', 'R')  # replace the King "@" from fr, es, it languages
+                text = text.replace("@", "R")  # replace the King "@" from fr, es, it languages
             if capital:
                 return text.upper()
             else:
@@ -123,9 +122,14 @@ class DgtIface(DisplayDgt):
             else:
                 move_text = bit_board.san(message.move)
         else:
-            logger.warning('[%s] illegal move %s found - uci960: %s fen: %s', self.get_name(), message.move,
-                           message.uci960, message.fen)
-            move_text = 'er{}' if is_xl else 'err {}'
+            logger.warning(
+                "[%s] illegal move %s found - uci960: %s fen: %s",
+                self.get_name(),
+                message.move,
+                message.uci960,
+                message.fen,
+            )
+            move_text = "er{}" if is_xl else "err {}"
             move_text = move_text.format(message.move.uci()[:4])
 
         if message.side == ClockSide.RIGHT:
@@ -137,11 +141,11 @@ class DgtIface(DisplayDgt):
         return bit_board, move(move_text, message.lang, message.capital and not is_xl, not message.long)
 
     async def _process_message(self, message):
-        """ Message task consumer for WebVR - can we do await anywhere? """
+        """Message task consumer for WebVR - can we do await anywhere?"""
         if self.get_name() not in message.devs:
             return True
 
-        logger.debug('(%s) handle DgtApi: %s started', ','.join(message.devs), message)
+        logger.debug("(%s) handle DgtApi: %s started", ",".join(message.devs), message)
         self.case_res = True
 
         if False:  # switch-case
@@ -166,10 +170,10 @@ class DgtIface(DisplayDgt):
             if self.side_running != ClockSide.NONE:
                 self.case_res = self.stop_clock(message.devs)
             else:
-                logger.debug('(%s) clock is already stopped', ','.join(message.devs))
+                logger.debug("(%s) clock is already stopped", ",".join(message.devs))
         elif isinstance(message, Dgt.CLOCK_VERSION):
-            if 'i2c' in message.devs:
-                logger.debug('(i2c) clock found => starting the board connection')
+            if "i2c" in message.devs:
+                logger.debug("(i2c) clock found => starting the board connection")
                 self.dgtboard.run()  # finally start the serial board connection - see picochess.py
             else:
                 if message.main == 2:
@@ -178,15 +182,14 @@ class DgtIface(DisplayDgt):
             self.promotion_done(message.uci_move)
         else:  # switch-default
             await asyncio.sleep(0.05)  # fake wait to make this a coroutine
-        logger.debug('(%s) handle DgtApi: %s ended', ','.join(message.devs), message)
+        logger.debug("(%s) handle DgtApi: %s ended", ",".join(message.devs), message)
         return self.case_res
 
-
     async def dgt_consumer(self):
-        """ Message task consumer for WebVr messages """
-        logger.info('[%s] dgt_queue ready', self.get_name())
+        """Message task consumer for WebVr messages"""
+        logger.info("[%s] dgt_queue ready", self.get_name())
         while True:
             message = await self.dgt_queue.get()
             res = await self._process_message(message)
             if not res:
-                logger.warning('DgtApi command %s failed result: %s', message, res)
+                logger.warning("DgtApi command %s failed result: %s", message, res)

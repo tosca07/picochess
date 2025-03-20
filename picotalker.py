@@ -36,7 +36,6 @@ logger = logging.getLogger(__name__)
 
 
 class PicoTalker(object):
-
     """Handle the human speaking of events."""
 
     def __init__(self, localisation_id_voice, speed_factor: float):
@@ -73,9 +72,7 @@ class PicoTalker(object):
             if Path(voice_file).is_file():
                 command = ["play", voice_file, "tempo", str(self.speed_factor)]
                 try:  # use blocking call
-                    subprocess.call(
-                        command, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-                    )
+                    subprocess.call(command, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     result = True
                 except OSError as os_exc:
                     logger.warning("OSError: %s => turn voice OFF", os_exc)
@@ -87,7 +84,6 @@ class PicoTalker(object):
 
 
 class PicoTalkerDisplay(DisplayMsg):
-
     """Listen on messages for talking."""
 
     USER = "user"
@@ -205,7 +201,7 @@ class PicoTalkerDisplay(DisplayMsg):
 
     def set_computer(self, picotalker):
         """Set the computer talker.
-           molli: set correct number and assign it to voice group comment variables"""
+        molli: set correct number and assign it to voice group comment variables"""
         self.computer_picotalker = picotalker
         self.c_no_beforecmove = self.calc_no_group_comments("f_beforecmove")
         self.c_no_beforeumove = self.calc_no_group_comments("f_beforeumove")
@@ -556,19 +552,17 @@ class PicoTalkerDisplay(DisplayMsg):
         logger.debug("molli: talker voice_parts = %s", voice_parts)
         return voice_parts
 
-
     async def message_consumer(self):
-        """ consume Picotalker messages """
+        """consume Picotalker messages"""
         logger.info("picotalker msg_queue ready")
         while True:
             # Check if we have something to say
             message = await self.msg_queue.get()
-            await asyncio.sleep(0.15) # give other tasks a priority
+            await asyncio.sleep(0.15)  # give other tasks a priority
             self.process_picotalker_messages(message)
 
-
     def process_picotalker_messages(self, message):
-        """ process Picotalker messages """
+        """process Picotalker messages"""
         previous_move = chess.Move.null()  # Ignore repeated broadcasts of a move
         last_pos_dir = ""
         if isinstance(message, Message.ENGINE_FAIL):
@@ -635,11 +629,7 @@ class PicoTalkerDisplay(DisplayMsg):
             last_pos_dir = ""
             if message.result == GameResult.OUT_OF_TIME:
                 logger.debug("announcing GAME_ENDS/TIME_CONTROL")
-                wins = (
-                    "whitewins.ogg"
-                    if message.game.turn == chess.BLACK
-                    else "blackwins.ogg"
-                )
+                wins = "whitewins.ogg" if message.game.turn == chess.BLACK else "blackwins.ogg"
                 self.talk(["timelost.ogg", wins])
                 if wins == "whitewins.ogg":
                     if self.play_mode == PlayMode.USER_WHITE:
@@ -739,11 +729,7 @@ class PicoTalkerDisplay(DisplayMsg):
         elif isinstance(message, Message.PLAY_MODE):
             logger.debug("announcing PLAY_MODE")
             self.play_mode = message.play_mode
-            userplay = (
-                "userblack.ogg"
-                if message.play_mode == PlayMode.USER_BLACK
-                else "userwhite.ogg"
-            )
+            userplay = "userblack.ogg" if message.play_mode == PlayMode.USER_BLACK else "userwhite.ogg"
             self.talk([userplay])
             if message.play_mode == PlayMode.USER_BLACK:
                 self.comment("ublack")

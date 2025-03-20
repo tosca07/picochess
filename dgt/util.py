@@ -23,7 +23,6 @@ except ImportError:
 
 
 class MyEnum(enum.Enum):
-
     """Prevent __init__ problem Class."""
 
     def __init__(self, *args):
@@ -32,7 +31,6 @@ class MyEnum(enum.Enum):
 
 @enum.unique
 class Top(MyEnum):
-
     """Top Class."""
 
     MODE = "B00_top_mode_menu"  # Mode Menu
@@ -59,7 +57,6 @@ class Top(MyEnum):
 
 
 class TopLoop(object):
-
     """TopLoop Class."""
 
     def __init__(self):
@@ -211,7 +208,6 @@ class GameReadLoop(object):
 
 @enum.unique
 class PicoTutor(MyEnum):
-
     """PicoTutor Class."""
 
     WATCHER = "B00_picotutor_picowatcher_menu"
@@ -326,7 +322,6 @@ class PicoCommentLoop(object):
 
 @enum.unique
 class Mode(MyEnum):
-
     """Mode Class."""
 
     NORMAL = "B00_mode_normal_menu"
@@ -353,7 +348,6 @@ class Mode(MyEnum):
 
 
 class ModeLoop(object):
-
     """ModeLoop Class."""
 
     def __init__(self):
@@ -372,7 +366,6 @@ class ModeLoop(object):
 
 @enum.unique
 class PlayMode(MyEnum):
-
     """PlayMode Class."""
 
     USER_WHITE = "B10_playmode_white_user"
@@ -380,7 +373,6 @@ class PlayMode(MyEnum):
 
 
 class TimeMode(MyEnum):
-
     """TimeMode Class."""
 
     FIXED = "B00_timemode_fixed_menu"  # Fixed seconds per move
@@ -403,7 +395,6 @@ class TimeMode(MyEnum):
 
 
 class TimeModeLoop(object):
-
     """TimeModeLoop Class."""
 
     def __init__(self):
@@ -483,7 +474,6 @@ class EngineRetroSettingsLoop(object):
 
 
 class System(MyEnum):
-
     """System Class."""
 
     POWER = "B00_system_power_menu"
@@ -512,7 +502,6 @@ class System(MyEnum):
 
 
 class SystemLoop(object):
-
     """SystemLoop Class."""
 
     def __init__(self):
@@ -607,7 +596,6 @@ class ThemeLoop(object):
 
 
 class Info(MyEnum):
-
     """Info Class."""
 
     VERSION = "B00_info_version_menu"
@@ -637,7 +625,6 @@ class InfoLoop(object):
 
 
 class Language(MyEnum):
-
     """Language Class."""
 
     EN = "B00_language_en_menu"
@@ -653,7 +640,6 @@ class Language(MyEnum):
 
 
 class LanguageLoop(object):
-
     """LanguageLoop Class."""
 
     def __init__(self):
@@ -671,7 +657,6 @@ class LanguageLoop(object):
 
 
 class Beep(MyEnum):
-
     """Beep Class."""
 
     OFF = "B00_beep_off_menu"
@@ -685,7 +670,6 @@ class Beep(MyEnum):
 
 
 class BeepLoop(object):
-
     """BeepLoop Class."""
 
     def __init__(self):
@@ -703,7 +687,6 @@ class BeepLoop(object):
 
 
 class Voice(MyEnum):
-
     """Voice Class."""
 
     SPEED = "B00_voice_speed_menu"
@@ -718,7 +701,6 @@ class Voice(MyEnum):
 
 
 class VoiceLoop(object):
-
     """VoiceLoop Class."""
 
     def __init__(self):
@@ -737,7 +719,6 @@ class VoiceLoop(object):
 
 @enum.unique
 class Display(MyEnum):
-
     """Display Class."""
 
     CLOCKSIDE = "B00_display_clockside_menu"
@@ -760,7 +741,6 @@ class Display(MyEnum):
 
 
 class DisplayLoop(object):
-
     """DisplayLoop Class."""
 
     def __init__(self):
@@ -779,7 +759,6 @@ class DisplayLoop(object):
 
 @enum.unique
 class GameResult(MyEnum):
-
     """Game end result."""
 
     MATE = "B00_gameresult_mate"
@@ -796,7 +775,6 @@ class GameResult(MyEnum):
 
 @enum.unique
 class BeepLevel(MyEnum):
-
     """Define the beep level for each beep event."""
 
     YES = 0x0F  # Always ON
@@ -809,7 +787,6 @@ class BeepLevel(MyEnum):
 
 @enum.unique
 class ClockSide(MyEnum):
-
     """Side to display the message."""
 
     LEFT = 0x01
@@ -819,7 +796,6 @@ class ClockSide(MyEnum):
 
 @enum.unique
 class ClockIcons(MyEnum):
-
     """DGT clock icons."""
 
     NONE = 0x00
@@ -829,7 +805,6 @@ class ClockIcons(MyEnum):
 
 @enum.unique
 class DgtCmd(MyEnum):
-
     """COMMAND CODES FROM PC TO BOARD."""
 
     # Commands not resulting in returning messages:
@@ -845,53 +820,36 @@ class DgtCmd(MyEnum):
     DGT_RETURN_BUSADRES = 0x46  # Results in a DGT_MSG_BUSADRES message
     DGT_SEND_TRADEMARK = 0x47  # Results in a DGT_MSG_TRADEMARK message
     DGT_SEND_EE_MOVES = 0x49  # Results in a DGT_MSG_EE_MOVES message
-    DGT_SEND_UPDATE_NICE = (
-        0x4B  # Results in DGT_MSG_FIELD_UPDATE messages and DGT_MSG_BWTIME messages,
-    )
+    DGT_SEND_UPDATE_NICE = 0x4B  # Results in DGT_MSG_FIELD_UPDATE messages and DGT_MSG_BWTIME messages,
     # the latter only at time changes, as long as the board is in UPDATE_NICE mode
-    DGT_SEND_BATTERY_STATUS = (
-        0x4C  # New command for bluetooth board. Requests the battery status from the board.
-    )
+    DGT_SEND_BATTERY_STATUS = 0x4C  # New command for bluetooth board. Requests the battery status from the board.
     DGT_SEND_VERSION = 0x4D  # Results in a DGT_MSG_VERSION message
     DGT_SEND_BRD_50B = 0x50  # Results in a DGT_MSG_BOARD_DUMP_50 message: only the black squares
-    DGT_SCAN_50B = (
-        0x51  # Sets the board in scanning only the black squares. This is written in EEPROM
-    )
+    DGT_SCAN_50B = 0x51  # Sets the board in scanning only the black squares. This is written in EEPROM
     DGT_SEND_BRD_50W = 0x52  # Results in a DGT_MSG_BOARD_DUMP_50 message: only the black squares
-    DGT_SCAN_50W = (
-        0x53  # Sets the board in scanning only the black squares. This is written in EEPROM.
-    )
+    DGT_SCAN_50W = 0x53  # Sets the board in scanning only the black squares. This is written in EEPROM.
     DGT_SCAN_100 = 0x54  # Sets the board in scanning all squares. This is written in EEPROM
     DGT_RETURN_LONG_SERIALNR = 0x55  # Results in a DGT_LONG_SERIALNR message
-    DGT_SET_LEDS = (
-        0x60  # Only for the Revelation II to switch a LED pattern on. This is a command that
-    )
+    DGT_SET_LEDS = 0x60  # Only for the Revelation II to switch a LED pattern on. This is a command that
     # has three extra bytes with data.
     # Clock commands, returns ACK message if mode is in UPDATE or UPDATE_NICE
     DGT_CLOCK_MESSAGE = 0x2B  # This message contains a command for the clock.
 
 
 class DgtClk(MyEnum):
-
     """DESCRIPTION OF THE COMMANDS FROM BOARD TO PC."""
 
-    DGT_CMD_CLOCK_DISPLAY = (
-        0x01  # This command can control the segments of six 7-segment characters,
-    )
+    DGT_CMD_CLOCK_DISPLAY = 0x01  # This command can control the segments of six 7-segment characters,
     # two dots, two semicolons and the two '1' symbols.
     DGT_CMD_CLOCK_ICONS = 0x02  # Used to control the clock icons like flags etc.
     DGT_CMD_CLOCK_END = 0x03  # This command clears the message and brings the clock back to the
     # normal display (showing clock times).
     DGT_CMD_CLOCK_BUTTON = 0x08  # Requests the current button pressed (if any).
     DGT_CMD_CLOCK_VERSION = 0x09  # This commands requests the clock version.
-    DGT_CMD_CLOCK_SETNRUN = (
-        0x0A  # This commands controls the clock times and counting direction, when
-    )
+    DGT_CMD_CLOCK_SETNRUN = 0x0A  # This commands controls the clock times and counting direction, when
     # the clock is in mode 23. A clock can be paused or counting down. But
     # counting up isn't supported on current DGT XL's (1.14 and lower) yet.
-    DGT_CMD_CLOCK_BEEP = (
-        0x0B  # This clock command turns the beep on, for a specified time (64ms * byte 5)
-    )
+    DGT_CMD_CLOCK_BEEP = 0x0B  # This clock command turns the beep on, for a specified time (64ms * byte 5)
     DGT_CMD_CLOCK_ASCII = 0x0C  # This clock command sends a ASCII message to the clock that
     # can be displayed only by the DGT3000 clock.
     DGT_CMD_REV2_ASCII = 0x0D  # This rev2 command sends a ASCII message to the clock that
@@ -901,7 +859,6 @@ class DgtClk(MyEnum):
 
 
 class DgtAck(MyEnum):
-
     """DESCRIPTION OF THE ACKNOWLEDGMENTS FROM BOARD TO PC."""
 
     DGT_ACK_CLOCK_DISPLAY = 0x01  # Display ack
@@ -919,7 +876,6 @@ class DgtAck(MyEnum):
 
 
 class DgtMsg(enum.IntEnum):
-
     """DESCRIPTION OF THE MESSAGES FROM BOARD TO PC."""
 
     MESSAGE_BIT = 0x80  # The Message ID is the logical OR of MESSAGE_BIT and ID code

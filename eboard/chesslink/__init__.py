@@ -13,4 +13,4 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-__all__ = ['board', 'chess_link', 'chess_link_agent', 'chess_link_bluepy', 'chess_link_protocol', 'chess_link_usb']
+__all__ = ["board", "chess_link", "chess_link_agent", "chess_link_bluepy", "chess_link_protocol", "chess_link_usb"]

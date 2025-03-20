@@ -66,7 +66,7 @@ class MoveDebouncer(object):
             self.timer.cancel()
 
     def _shall_start_timer(self, short_fen: str):
-        self.previous_fens = self.previous_fens[len(self.previous_fens) - 2:]  # keep two entries max
+        self.previous_fens = self.previous_fens[len(self.previous_fens) - 2 :]  # keep two entries max
         for previous in self.previous_fens:
             if self._is_move_extendable(previous, short_fen):
                 self.previous_fens = []
@@ -74,14 +74,14 @@ class MoveDebouncer(object):
         return False
 
     def _is_move_extendable(self, previous_fen: str, fen: str):
-        board = self._board_from_fen(previous_fen, 'b')
+        board = self._board_from_fen(previous_fen, "b")
         legal_moves = board.legal_moves
         legal_fens = self._legal_fens(board, legal_moves)
         result = False
         if fen in legal_fens:
             result = self._is_extendable(board, legal_moves, legal_fens.index(fen))
         else:
-            board = self._board_from_fen(previous_fen, 'w')
+            board = self._board_from_fen(previous_fen, "w")
             legal_moves = board.legal_moves
             legal_fens = self._legal_fens(board, legal_moves)
             if fen in legal_fens:
@@ -98,7 +98,7 @@ class MoveDebouncer(object):
         return False
 
     def _board_from_fen(self, board_fen: str, color: str):
-        return chess.Board(board_fen + ' ' + color + ' - - 0 1')
+        return chess.Board(board_fen + " " + color + " - - 0 1")
 
     def _legal_fens(self, b: chess.Board, legal_moves: list):
         board = b.copy()

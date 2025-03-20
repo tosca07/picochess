@@ -34,15 +34,9 @@ class Configuration:
             help="address of the remote engine server",
             default=None,
         )
-        self.parser.add_argument(
-            "-eru", "--engine-remote-user", type=str, help="username for the remote engine server"
-        )
-        self.parser.add_argument(
-            "-erp", "--engine-remote-pass", type=str, help="password for the remote engine server"
-        )
-        self.parser.add_argument(
-            "-erk", "--engine-remote-key", type=str, help="key file for the remote engine server"
-        )
+        self.parser.add_argument("-eru", "--engine-remote-user", type=str, help="username for the remote engine server")
+        self.parser.add_argument("-erp", "--engine-remote-pass", type=str, help="password for the remote engine server")
+        self.parser.add_argument("-erk", "--engine-remote-key", type=str, help="key file for the remote engine server")
         self.parser.add_argument(
             "-erh",
             "--engine-remote-home",
@@ -101,9 +95,7 @@ class Configuration:
         self.parser.add_argument(
             "-pf", "--pgn-file", type=str, help="pgn file used to store the games", default="games.pgn"
         )
-        self.parser.add_argument(
-            "-pu", "--pgn-user", type=str, help="user name for the pgn file", default=None
-        )
+        self.parser.add_argument("-pu", "--pgn-user", type=str, help="user name for the pgn file", default=None)
         self.parser.add_argument(
             "-pe",
             "--pgn-elo",
@@ -121,18 +113,10 @@ class Configuration:
             metavar="PORT",
             help="launch web server",
         )
-        self.parser.add_argument(
-            "-m", "--email", type=str, help="email used to send pgn/log files", default=None
-        )
-        self.parser.add_argument(
-            "-ms", "--smtp-server", type=str, help="address of email server", default=None
-        )
-        self.parser.add_argument(
-            "-mu", "--smtp-user", type=str, help="username for email server", default=None
-        )
-        self.parser.add_argument(
-            "-mp", "--smtp-pass", type=str, help="password for email server", default=None
-        )
+        self.parser.add_argument("-m", "--email", type=str, help="email used to send pgn/log files", default=None)
+        self.parser.add_argument("-ms", "--smtp-server", type=str, help="address of email server", default=None)
+        self.parser.add_argument("-mu", "--smtp-user", type=str, help="username for email server", default=None)
+        self.parser.add_argument("-mp", "--smtp-pass", type=str, help="password for email server", default=None)
         self.parser.add_argument(
             "-me",
             "--smtp-encryption",
@@ -145,12 +129,8 @@ class Configuration:
             action="store_true",
             help="use starttls encryption connection to email server",
         )
-        self.parser.add_argument(
-            "-mr", "--smtp-port", type=int, help="port for email server", default=21
-        )
-        self.parser.add_argument(
-            "-mf", "--smtp-from", type=str, help="From email", default="no-reply@picochess.org"
-        )
+        self.parser.add_argument("-mr", "--smtp-port", type=int, help="port for email server", default=21)
+        self.parser.add_argument("-mf", "--smtp-from", type=str, help="From email", default="no-reply@picochess.org")
         self.parser.add_argument(
             "-mk",
             "--mailgun-key",
@@ -173,9 +153,7 @@ class Configuration:
             help="sets (some-)beep level from 0(=no beeps) to 15(=all beeps)",
         )
         self.parser.add_argument("-uv", "--user-voice", type=str, help="voice for user", default=None)
-        self.parser.add_argument(
-            "-cv", "--computer-voice", type=str, help="voice for computer", default=None
-        )
+        self.parser.add_argument("-cv", "--computer-voice", type=str, help="voice for computer", default=None)
         self.parser.add_argument(
             "-sv",
             "--speed-voice",
@@ -198,9 +176,7 @@ class Configuration:
             action="store_true",
             help="speak last computer move again when 'set pieces' displayed",
         )
-        self.parser.add_argument(
-            "-u", "--enable-update", action="store_true", help="enable picochess updates"
-        )
+        self.parser.add_argument("-u", "--enable-update", action="store_true", help="enable picochess updates")
         self.parser.add_argument(
             "-ur", "--enable-update-reboot", action="store_true", help="reboot system after update"
         )
@@ -241,9 +217,7 @@ class Configuration:
             default="en",
             help="picochess language",
         )
-        self.parser.add_argument(
-            "-c", "--enable-console", action="store_true", help="use console interface"
-        )
+        self.parser.add_argument("-c", "--enable-console", action="store_true", help="use console interface")
         self.parser.add_argument(
             "-cl",
             "--enable-capital-letters",
@@ -293,9 +267,7 @@ class Configuration:
             action="store_false",
             help="switch off flexible analysis mode",
         )
-        self.parser.add_argument(
-            "-prem", "--premove", action="store_false", help="switch off premove detection"
-        )
+        self.parser.add_argument("-prem", "--premove", action="store_false", help="switch off premove detection")
         self.parser.add_argument(
             "-ctga",
             "--continue-game",

@@ -192,7 +192,6 @@ class ModeInfo:
 
 
 class Emailer(object):
-
     """Handle eMail with subject, body and an attached file."""
 
     def __init__(self, email=None, mailgun_key=None):
@@ -259,16 +258,18 @@ class Emailer(object):
             msg.add_header("Content-Disposition", "attachment", filename=os.path.basename(path))
             outer.attach(msg)
 
-            if (self.smtp_starttls):
+            if self.smtp_starttls:
 
                 # handle starttls smtp server connections
-                logger.debug("SMTP Mail delivery: trying to connect to " + self.smtp_server + " via port " + str(self.smtp_port))
+                logger.debug(
+                    "SMTP Mail delivery: trying to connect to " + self.smtp_server + " via port " + str(self.smtp_port)
+                )
                 context = create_default_context()
                 conn = SMTP(self.smtp_server, self.smtp_port)
                 conn.set_debuglevel(1)
-                #conn.ehlo()  # Can be omitted
+                # conn.ehlo()  # Can be omitted
                 conn.starttls(context=context)
-                #conn.ehlo()  # Can be omitted
+                # conn.ehlo()  # Can be omitted
                 logger.debug("SMTP Username, password: " + self.smtp_user + ", " + "XXXXXXX")
 
             else:
@@ -318,16 +319,13 @@ class Emailer(object):
     def send(self, subject: str, body: str, path: str):
         """Send the email out."""
         if self.email:  # check if email address to send the pgn to is provided
-            if (
-                self.mailgun_key
-            ):  # check if we have mailgun-key available to send the pgn successful
+            if self.mailgun_key:  # check if we have mailgun-key available to send the pgn successful
                 self._use_mailgun(subject=subject, body=body)
             if self.smtp_server:  # check if smtp server address provided
                 self._use_smtp(subject=subject, body=body, path=path)
 
 
 class PgnDisplay(DisplayMsg):
-
     """Deal with DisplayMessages related to pgn."""
 
     def __init__(self, file_name: str, emailer: Emailer, loop: asyncio.AbstractEventLoop):
@@ -510,9 +508,9 @@ class PgnDisplay(DisplayMsg):
             pgn_game.accept(exporter)
 
         self.emailer.send("Game PGN", str(pgn_game), self.file_name)
-        
+
         try:
-            subprocess.run(['python3', '/home/pi/drupebox/drupebox.py'])
+            subprocess.run(["python3", "/home/pi/drupebox/drupebox.py"])
         except FileNotFoundError:
             pass
 
@@ -525,12 +523,12 @@ class PgnDisplay(DisplayMsg):
         with open(l_file_name, "w") as file:
             exporter = chess.pgn.FileExporter(file)
             pgn_game.accept(exporter)
-    
+
         try:
-            subprocess.run(['python3', '/home/pi/drupebox/drupebox.py'])
+            subprocess.run(["python3", "/home/pi/drupebox/drupebox.py"])
         except FileNotFoundError:
             pass
-        
+
         logger.debug("molli: save pgn finished")
 
     def _process_message(self, message):
@@ -576,7 +574,7 @@ class PgnDisplay(DisplayMsg):
             if "engine_elo" in message.info:
                 self.engine_elo = message.info["engine_elo"]
             try:
-                subprocess.run(['python3', '/home/pi/drupebox/drupebox.py'])
+                subprocess.run(["python3", "/home/pi/drupebox/drupebox.py"])
             except FileNotFoundError:
                 pass
 
@@ -638,11 +636,7 @@ class PgnDisplay(DisplayMsg):
             self.old_engine_elo = self.engine_elo
 
         elif isinstance(message, Message.GAME_ENDS):
-            if (
-                message.game.move_stack
-                and not ModeInfo.get_pgn_mode()
-                and self.mode != Mode.PONDER
-            ):
+            if message.game.move_stack and not ModeInfo.get_pgn_mode() and self.mode != Mode.PONDER:
                 self._save_and_email_pgn(message)
 
         elif isinstance(message, Message.START_NEW_GAME):
@@ -660,14 +654,14 @@ class PgnDisplay(DisplayMsg):
         elif isinstance(message, Message.SAVE_GAME):
             logger.debug("molli: save game message pgn dispatch")
             if message.game.move_stack:
-                #self._save_pgn(message)
+                # self._save_pgn(message)
                 self._save_and_email_pgn(message)
 
     async def message_consumer(self):
-        """ PGN message consumer """
+        """PGN message consumer"""
         logger.info("msg_queue ready")
         while True:
             # Check if we have something to display
             message = await self.msg_queue.get()
-            await asyncio.sleep(0.2) # give other tasks a priority
+            await asyncio.sleep(0.2)  # give other tasks a priority
             self._process_message(message)

@@ -38,7 +38,7 @@ from configobj import ConfigObj, ConfigObjError, DuplicateError  # type: ignore
 from typing import Optional
 
 # picochess version
-version = '4.0.5'
+version = "4.0.5"
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,6 @@ dgtdisplay_devices = []
 
 
 class Observable(object):
-
     """Input devices are observable."""
 
     def __init__(self):
@@ -82,8 +81,8 @@ class Observable(object):
         """Put an event on the Queue."""
         asyncio.run_coroutine_threadsafe(Observable._add_to_queue(copy.deepcopy(event)), main_loop)
 
-class DispatchDgt(object):
 
+class DispatchDgt(object):
     """Input devices are observable."""
 
     def __init__(self):
@@ -108,7 +107,6 @@ class DispatchDgt(object):
 
 
 class DisplayMsg(object):
-
     """Display devices (DGT XL clock, Piface LCD, pgn file...)."""
 
     def __init__(self, loop: asyncio.AbstractEventLoop):
@@ -135,7 +133,6 @@ class DisplayMsg(object):
 
 
 class DisplayDgt(object):
-
     """Display devices (DGT XL clock, Piface LCD, pgn file...)."""
 
     def __init__(self, loop: asyncio.AbstractEventLoop):
@@ -162,26 +159,24 @@ class DisplayDgt(object):
 
 
 class AsyncRepeatingTimer:
-
-    """ Call function on a given interval - Async version to replace RepeatedTimer"""
+    """Call function on a given interval - Async version to replace RepeatedTimer"""
 
     def __init__(self, interval, callback, loop: asyncio.AbstractEventLoop, repeating=True, args=None, kwargs=None):
-        self.interval = interval      # Interval between each execution
-        self.callback = callback      # Function to be repeatedly called
-        self._task = None             # Reference to the asynchronous task
-        self._running = False         # Keeps track of whether the timer is running
-        self.loop = loop              # run callback in callers eventloop
-        self.repeating = repeating    # repeat is default, set false to run only once
+        self.interval = interval  # Interval between each execution
+        self.callback = callback  # Function to be repeatedly called
+        self._task = None  # Reference to the asynchronous task
+        self._running = False  # Keeps track of whether the timer is running
+        self.loop = loop  # run callback in callers eventloop
+        self.repeating = repeating  # repeat is default, set false to run only once
         self.args = args if args is not None else []
         self.kwargs = kwargs if kwargs is not None else {}
-
 
     def is_running(self):
         """Return the running status."""
         return self._running
 
     async def _run(self):
-        while self._running:          # Continue running until the timer is stopped
+        while self._running:  # Continue running until the timer is stopped
             await asyncio.sleep(self.interval)
             if asyncio.iscoroutinefunction(self.callback):
                 await self.callback(*self.args, **self.kwargs)
@@ -196,8 +191,8 @@ class AsyncRepeatingTimer:
             self._running = True
             self._task = self.loop.create_task(self._run())
         else:
-            logging.info('repeated timer already running - strange!')
-    
+            logging.info("repeated timer already running - strange!")
+
     def stop(self):
         """Stop the RepeatingTimer."""
         if self._running:
@@ -206,7 +201,7 @@ class AsyncRepeatingTimer:
                 self._task.cancel()
                 self._task = None
         else:
-            logging.info('repeated timer already stopped - strange!')
+            logging.info("repeated timer already stopped - strange!")
 
 
 def get_opening_books():
@@ -214,26 +209,29 @@ def get_opening_books():
     config = configparser.ConfigParser()
     config.optionxform = str
     program_path = os.path.dirname(os.path.realpath(__file__)) + os.sep
-    book_path = program_path + 'books'
-    config.read(book_path + os.sep + 'books.ini')
+    book_path = program_path + "books"
+    config.read(book_path + os.sep + "books.ini")
 
     library = []
     for section in config.sections():
-        text = Dgt.DISPLAY_TEXT(web_text=config[section]['large'], large_text=config[section]['large'], medium_text=config[section]['medium'], small_text=config[section]['small'],
-                                wait=True, beep=False, maxtime=0, devs={'ser', 'i2c', 'web'})
-        library.append(
-            {
-                'file': 'books' + os.sep + section,
-                'text': text
-            }
+        text = Dgt.DISPLAY_TEXT(
+            web_text=config[section]["large"],
+            large_text=config[section]["large"],
+            medium_text=config[section]["medium"],
+            small_text=config[section]["small"],
+            wait=True,
+            beep=False,
+            maxtime=0,
+            devs={"ser", "i2c", "web"},
         )
+        library.append({"file": "books" + os.sep + section, "text": text})
     return library
 
 
 def hms_time(seconds: int):
     """Transfer a seconds integer to hours,mins,secs."""
     if seconds < 0:
-        logging.warning('negative time %i', seconds)
+        logging.warning("negative time %i", seconds)
         return 0, 0, 0
     mins, secs = divmod(seconds, 60)
     hours, mins = divmod(mins, 60)
@@ -244,99 +242,100 @@ def do_popen(command, log=True, force_en_env=False):
     """Connect via Popen and log the result."""
     if force_en_env:  # force an english environment
         force_en_env = os.environ.copy()
-        force_en_env['LC_ALL'] = 'C'
+        force_en_env["LC_ALL"] = "C"
         stdout, stderr = Popen(command, stdout=PIPE, stderr=PIPE, env=force_en_env).communicate()
     else:
         stdout, stderr = Popen(command, stdout=PIPE, stderr=PIPE).communicate()
     if log:
-        logging.debug([output.decode(encoding='UTF-8') for output in [stdout, stderr]])
-    return stdout.decode(encoding='UTF-8')
+        logging.debug([output.decode(encoding="UTF-8") for output in [stdout, stderr]])
+    return stdout.decode(encoding="UTF-8")
 
 
 def git_name():
     """Get the git execute name."""
-    return 'git.exe' if platform.system() == 'Windows' else 'git'
+    return "git.exe" if platform.system() == "Windows" else "git"
 
 
 def get_tags():
     """Get the last 3 tags from git."""
     git = git_name()
-    tags = [(tags, tags[1] + tags[-2:]) for tags in do_popen([git, 'tag'], log=False).split('\n')[-4:-1]]
+    tags = [(tags, tags[1] + tags[-2:]) for tags in do_popen([git, "tag"], log=False).split("\n")[-4:-1]]
     return tags  # returns something like [('v0.9j', 09j'), ('v0.9k', '09k'), ('v0.9l', '09l')]
 
 
 def checkout_tag(tag):
     """Update picochess by tag from git."""
     git = git_name()
-    do_popen([git, 'checkout', tag])
-    do_popen(['pip3', 'install', '-r', 'requirements.txt'])
+    do_popen([git, "checkout", tag])
+    do_popen(["pip3", "install", "-r", "requirements.txt"])
 
 
 def update_picochess(dgtpi: bool, auto_reboot: bool, dgttranslate: DgtTranslate):
     """Update picochess from git."""
     git = git_name()
 
-    branch = do_popen([git, 'rev-parse', '--abbrev-ref', 'HEAD'], log=False).rstrip()
-    if branch == 'master':
+    branch = do_popen([git, "rev-parse", "--abbrev-ref", "HEAD"], log=False).rstrip()
+    if branch == "master":
         # Fetch remote repo
-        do_popen([git, 'remote', 'update'])
+        do_popen([git, "remote", "update"])
         # Check if update is needed - need to make sure, we get english answers
-        output = do_popen([git, 'status', '-uno'], force_en_env=True)
-        if 'up-to-date' not in output and 'Your branch is ahead of' not in output:
-            DispatchDgt.fire(dgttranslate.text('Y25_update'))
+        output = do_popen([git, "status", "-uno"], force_en_env=True)
+        if "up-to-date" not in output and "Your branch is ahead of" not in output:
+            DispatchDgt.fire(dgttranslate.text("Y25_update"))
             # Update
-            logging.debug('updating picochess')
-            do_popen([git, 'pull', 'origin', branch])
-            do_popen(['pip3', 'install', '-r', 'requirements.txt'])
+            logging.debug("updating picochess")
+            do_popen([git, "pull", "origin", branch])
+            do_popen(["pip3", "install", "-r", "requirements.txt"])
             if auto_reboot:
-                reboot(dgtpi, dev='web')
+                reboot(dgtpi, dev="web")
         else:
-            logging.debug('no update available')
+            logging.debug("no update available")
     else:
-        logging.warning('wrong branch %s', branch)
+        logging.warning("wrong branch %s", branch)
 
 
 def shutdown(dgtpi: bool, dev: str):
     """Shutdown picochess."""
-    logging.debug('shutting down system requested by (%s)', dev)
+    logging.debug("shutting down system requested by (%s)", dev)
 
-    if platform.system() == 'Windows':
-        os.system('shutdown /s')
+    if platform.system() == "Windows":
+        os.system("shutdown /s")
     elif dgtpi:
-        dgt_functions = cdll.LoadLibrary('etc/dgtpicom.so')
+        dgt_functions = cdll.LoadLibrary("etc/dgtpicom.so")
         dgt_functions.dgtpicom_off(1)
-        os.system('sudo shutdown -h now')
+        os.system("sudo shutdown -h now")
     else:
-        os.system('sudo shutdown -h now')
-        
+        os.system("sudo shutdown -h now")
+
+
 def exit(dgtpi: bool, dev: str):
     """exit picochess."""
-    logging.debug('exit picochess requested by (%s)', dev)
-      
-    if platform.system() == 'Windows':
-        os.system('sudo pkill -f chromium')
-        os.system('sudo systemctl stop picochess')
+    logging.debug("exit picochess requested by (%s)", dev)
+
+    if platform.system() == "Windows":
+        os.system("sudo pkill -f chromium")
+        os.system("sudo systemctl stop picochess")
     elif dgtpi:
-        dgt_functions = cdll.LoadLibrary('etc/dgtpicom.so')
+        dgt_functions = cdll.LoadLibrary("etc/dgtpicom.so")
         dgt_functions.dgtpicom_off(1)
-        os.system('sudo pkill -f chromium')
-        os.system('sudo systemctl stop dgpi')
-        os.system('sudo systemctl stop picochess')
+        os.system("sudo pkill -f chromium")
+        os.system("sudo systemctl stop dgpi")
+        os.system("sudo systemctl stop picochess")
     else:
-        os.system('sudo pkill -f chromium')
-        os.system('sudo systemctl stop picochess')
+        os.system("sudo pkill -f chromium")
+        os.system("sudo systemctl stop picochess")
 
 
 def reboot(dgtpi: bool, dev: str):
     """Reboot picochess."""
-    logging.debug('rebooting system requested by (%s)', dev)
-    
-    if platform.system() == 'Windows':
-        os.system('shutdown /r')
+    logging.debug("rebooting system requested by (%s)", dev)
+
+    if platform.system() == "Windows":
+        os.system("shutdown /r")
     elif dgtpi:
-        os.system('sudo reboot')
+        os.system("sudo reboot")
     else:
-        os.system('sudo reboot')
+        os.system("sudo reboot")
 
 
 def _get_internal_ip() -> Optional[str]:
@@ -359,24 +358,24 @@ def get_location():
     """Return the location of the user and the external and internal ip adr."""
     if int_ip := _get_internal_ip():
         try:
-            response = urllib.request.urlopen('https://get.geojs.io/v1/ip/geo.json')
+            response = urllib.request.urlopen("https://get.geojs.io/v1/ip/geo.json")
             j = json.loads(response.read().decode())
 
-            country_name = j.get('country', '')
-            country_code = j.get('country_code', '')
-            city = j.get('city', '')
-            ext_ip = j.get('IPv4', None)
+            country_name = j.get("country", "")
+            country_code = j.get("country_code", "")
+            city = j.get("city", "")
+            ext_ip = j.get("IPv4", None)
 
             return f"{city}, {country_name} {country_code}", ext_ip, int_ip
         except Exception:
             pass
-    return '?', None, None
+    return "?", None, None
 
 
 def write_picochess_ini(key: str, value):
     """Update picochess.ini config file with key/value."""
     try:
-        config = ConfigObj('picochess.ini', default_encoding='utf8')
+        config = ConfigObj("picochess.ini", default_encoding="utf8")
         config[key] = value
         config.write()
     except (ConfigObjError, DuplicateError) as conf_exc:
@@ -385,9 +384,9 @@ def write_picochess_ini(key: str, value):
 
 def get_engine_mame_par(engine_rspeed: float, engine_rsound=False) -> str:
     if engine_rspeed < 0.01:
-        engine_mame_par = '-nothrottle'
+        engine_mame_par = "-nothrottle"
     else:
-        engine_mame_par = '-speed ' + str(engine_rspeed)
+        engine_mame_par = "-speed " + str(engine_rspeed)
     if not engine_rsound:
-        engine_mame_par = engine_mame_par + ' -sound none'
+        engine_mame_par = engine_mame_par + " -sound none"
     return engine_mame_par

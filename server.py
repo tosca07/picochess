@@ -120,16 +120,12 @@ class ChannelHandler(ServerRequestHandler):
             EventHandler.write_to_clients(result)
         elif action == "move":
             move = chess.Move.from_uci(
-                self.get_argument("source")
-                + self.get_argument("target")
-                + self.get_argument("promotion")
+                self.get_argument("source") + self.get_argument("target") + self.get_argument("promotion")
             )
             await Observable.fire(Event.REMOTE_MOVE(move=move, fen=self.get_argument("fen")))
         elif action == "promotion":
             move = chess.Move.from_uci(
-                self.get_argument("source")
-                + self.get_argument("target")
-                + self.get_argument("promotion")
+                self.get_argument("source") + self.get_argument("target") + self.get_argument("promotion")
             )
             await Observable.fire(Event.PROMOTION(move=move, fen=self.get_argument("fen")))
         elif action == "clockbutton":
@@ -142,7 +138,8 @@ class ChannelHandler(ServerRequestHandler):
 
 
 class EventHandler(WebSocketHandler):
-    """ Started by /event HTTP call - Clients are WebDisplay and WebVr classes """
+    """Started by /event HTTP call - Clients are WebDisplay and WebVr classes"""
+
     clients: Set[WebSocketHandler] = set()
 
     def initialize(self, shared=None):
@@ -169,7 +166,7 @@ class EventHandler(WebSocketHandler):
 
     @classmethod
     def write_to_clients(cls, msg):
-        """ This is the main event loop message producer for WebDisplay and WebVR """
+        """This is the main event loop message producer for WebDisplay and WebVR"""
         for client in cls.clients:
             client.write_message(msg)
 
@@ -216,12 +213,12 @@ class HelpHandler(ServerRequestHandler):
         self.render("web/picoweb/templates/help.html", theme=self.theme)
 
 
-class WebServer():
+class WebServer:
     def __init__(self):
         pass
 
     def make_app(self, theme: str, shared: dict) -> tornado.web.Application:
-        """ define web pages and their handlers """
+        """define web pages and their handlers"""
         wsgi_app = tornado.wsgi.WSGIContainer(pw)
         return tornado.web.Application(
             [
@@ -258,7 +255,7 @@ class WebVr(DgtIface):
             self.shared["clock_text"] = {}
 
     async def _runclock(self):
-        """ callback from AsyncRepeatingTimer once every second """
+        """callback from AsyncRepeatingTimer once every second"""
         # this is probably only to show a running web clock
         # the clock time is handled by TimeControl class
         if self.side_running == ClockSide.LEFT:
@@ -275,14 +272,10 @@ class WebVr(DgtIface):
                 self.virtual_timer.stop()
                 time_right = 0
             self.r_time = time_right
-        #logger.debug(
+        # logger.debug(
         #    "(web) clock new time received l:%s r:%s", hms_time(self.l_time), hms_time(self.r_time)
-        #)
-        DisplayMsg.show(
-            Message.DGT_CLOCK_TIME(
-                time_left=self.l_time, time_right=self.r_time, connect=True, dev="web"
-            )
-        )
+        # )
+        DisplayMsg.show(Message.DGT_CLOCK_TIME(time_left=self.l_time, time_right=self.r_time, connect=True, dev="web"))
         self._display_time(self.l_time, self.r_time)
 
     def _display_time(self, time_left: int, time_right: int):
@@ -294,15 +287,11 @@ class WebVr(DgtIface):
             if ModeInfo.get_clock_side() == "left":
                 text_l = "{}:{:02d}.{:02d}".format(l_hms[0], l_hms[1], l_hms[2])
                 text_r = "{}:{:02d}.{:02d}".format(r_hms[0], r_hms[1], r_hms[2])
-                icon_d = (
-                    "fa-caret-right" if self.side_running == ClockSide.RIGHT else "fa-caret-left"
-                )
+                icon_d = "fa-caret-right" if self.side_running == ClockSide.RIGHT else "fa-caret-left"
             else:
                 text_r = "{}:{:02d}.{:02d}".format(l_hms[0], l_hms[1], l_hms[2])
                 text_l = "{}:{:02d}.{:02d}".format(r_hms[0], r_hms[1], r_hms[2])
-                icon_d = (
-                    "fa-caret-right" if self.side_running == ClockSide.LEFT else "fa-caret-left"
-                )
+                icon_d = "fa-caret-right" if self.side_running == ClockSide.LEFT else "fa-caret-left"
             if self.side_running == ClockSide.NONE:
                 icon_d = "fa-sort"
             text = text_l + '&nbsp;<i class="fa ' + icon_d + '"></i>&nbsp;' + text_r
@@ -512,15 +501,11 @@ class WebDisplay(DisplayMsg):
             if "play_mode" in self.shared["game_info"]:
                 if self.shared["game_info"]["play_mode"] == PlayMode.USER_WHITE:
                     pgn_game.headers["White"] = user_name
-                    pgn_game.headers["Black"] = (
-                        WebDisplay.engine_name + engine_level + retro_speed_str
-                    )
+                    pgn_game.headers["Black"] = WebDisplay.engine_name + engine_level + retro_speed_str
                     pgn_game.headers["WhiteElo"] = str(user_elo)
                     pgn_game.headers["BlackElo"] = str(comp_elo)
                 else:
-                    pgn_game.headers["White"] = (
-                        WebDisplay.engine_name + engine_level + retro_speed_str
-                    )
+                    pgn_game.headers["White"] = WebDisplay.engine_name + engine_level + retro_speed_str
                     pgn_game.headers["Black"] = user_name
                     pgn_game.headers["WhiteElo"] = str(comp_elo)
                     pgn_game.headers["BlackElo"] = str(user_elo)
@@ -547,7 +532,8 @@ class WebDisplay(DisplayMsg):
         pgn_game.headers["Time"] = self.starttime
 
     def task(self, message):
-        """ Message task consumer for WebDisplay messages """
+        """Message task consumer for WebDisplay messages"""
+
         def _oldstyle_fen(game: chess.Board):
             builder = []
             builder.append(game.board_fen())
@@ -565,23 +551,17 @@ class WebDisplay(DisplayMsg):
             self.shared["headers"].update(pgn_game.headers)
 
         def _send_headers():
-            EventHandler.write_to_clients(
-                {"event": "Header", "headers": dict(self.shared["headers"])}
-            )
+            EventHandler.write_to_clients({"event": "Header", "headers": dict(self.shared["headers"])})
 
         def _send_title():
             if "ip_info" in self.shared:
-                EventHandler.write_to_clients(
-                    {"event": "Title", "ip_info": self.shared["ip_info"]}
-                )
+                EventHandler.write_to_clients({"event": "Title", "ip_info": self.shared["ip_info"]})
 
         def _transfer(game: chess.Board):
             pgn_game = pgn.Game().from_board(game)
             self._build_game_header(pgn_game)
             self.shared["headers"] = pgn_game.headers
-            return pgn_game.accept(
-                pgn.StringExporter(headers=True, comments=False, variations=False)
-            )
+            return pgn_game.accept(pgn.StringExporter(headers=True, comments=False, variations=False))
 
         def peek_uci(game: chess.Board):
             """Return last move in uci format."""
@@ -620,15 +600,11 @@ class WebDisplay(DisplayMsg):
             self.shared["system_info"].update(message.info)
             if "engine_name" in self.shared["system_info"]:
                 WebDisplay.engine_name = self.shared["system_info"]["engine_name"]
-                self.shared["system_info"]["old_engine"] = self.shared["system_info"][
-                    "engine_name"
-                ]
+                self.shared["system_info"]["old_engine"] = self.shared["system_info"]["engine_name"]
             if "rspeed" in self.shared["system_info"]:
                 self.shared["system_info"]["rspeed_orig"] = self.shared["system_info"]["rspeed"]
             if "user_name" in self.shared["system_info"]:
-                self.shared["system_info"]["user_name_orig"] = self.shared["system_info"][
-                    "user_name"
-                ]
+                self.shared["system_info"]["user_name_orig"] = self.shared["system_info"]["user_name"]
             _build_headers()
             _send_headers()
 
@@ -644,9 +620,7 @@ class WebDisplay(DisplayMsg):
         elif isinstance(message, Message.ENGINE_READY):
             self._create_system_info()
             WebDisplay.engine_name = message.engine_name
-            self.shared["system_info"]["old_engine"] = self.shared["system_info"][
-                "engine_name"
-            ] = message.engine_name
+            self.shared["system_info"]["old_engine"] = self.shared["system_info"]["engine_name"] = message.engine_name
             self.shared["system_info"]["engine_elo"] = message.eng["elo"]
             if not message.has_levels:
                 if "level_text" in self.shared["game_info"]:
@@ -701,12 +675,8 @@ class WebDisplay(DisplayMsg):
                 del self.shared["game_info"]["level_text"]
                 del self.shared["game_info"]["level_name"]
             else:
-                self.shared["system_info"]["engine_name"] = self.shared["system_info"][
-                    "old_engine"
-                ]
-                self.shared["system_info"]["user_name"] = self.shared["system_info"][
-                    "user_name_orig"
-                ]
+                self.shared["system_info"]["engine_name"] = self.shared["system_info"]["old_engine"]
+                self.shared["system_info"]["user_name"] = self.shared["system_info"]["user_name_orig"]
                 if WebDisplay.engine_elo_sav != "":
                     self.shared["system_info"]["engine_elo"] = WebDisplay.engine_elo_sav
                 if WebDisplay.level_text_sav != "":
@@ -829,7 +799,7 @@ class WebDisplay(DisplayMsg):
             pass
 
     async def message_consumer(self):
-        """ Message task consumer for WebDisplay messages """
+        """Message task consumer for WebDisplay messages"""
         logger.info("msg_queue ready")
         while True:
             message = await self.msg_queue.get()

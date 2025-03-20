@@ -20,6 +20,7 @@ class EngineProvider(object):
     """
     EngineProvider is a data holder for defined engines in engines.ini, retro.ini and favorites.ini.
     """
+
     modern_engines: List[Dict[str, str]] = []
     retro_engines: List[Dict[str, str]] = []
     favorite_engines: List[Dict[str, str]] = []
@@ -27,9 +28,9 @@ class EngineProvider(object):
 
     @classmethod
     def init(cls):
-        cls.modern_engines: List[Dict[str, str]] = read_engine_ini(filename='engines.ini')
-        cls.retro_engines: List[Dict[str, str]] = read_engine_ini(filename='retro.ini')
-        cls.favorite_engines: List[Dict[str, str]] = read_engine_ini(filename='favorites.ini')
+        cls.modern_engines: List[Dict[str, str]] = read_engine_ini(filename="engines.ini")
+        cls.retro_engines: List[Dict[str, str]] = read_engine_ini(filename="retro.ini")
+        cls.favorite_engines: List[Dict[str, str]] = read_engine_ini(filename="favorites.ini")
         # set retro/favorite engines to the list of modern engines in case retro.ini or favorites.ini is empty
         if not cls.retro_engines:
             cls.retro_engines = cls.modern_engines

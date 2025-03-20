@@ -17,7 +17,7 @@
 #
 #
 # Change Log
-#-----------
+# -----------
 # August 20, 2024: Updated translations for Italian language (Andrea Gatti)
 #
 #
@@ -31,7 +31,6 @@ logger = logging.getLogger(__name__)
 
 
 class DgtTranslate(object):
-
     """Handle translations for clock texts or moves."""
 
     def __init__(self, beep_config: str, beep_level: int, language: str, picochess_version: str):
@@ -582,11 +581,11 @@ class DgtTranslate(object):
                 text_it_w = "Rimuovi il pezzo da " + msg[-2:]
                 text_it = "Svuota " + msg[-2:]
                 ittxt = Dgt.DISPLAY_TEXT(
-                     web_text=text_it_w,
-                     large_text=text_it,
-                     medium_text=text_it,
-                     small_text=text_it,
-                 )
+                    web_text=text_it_w,
+                    large_text=text_it,
+                    medium_text=text_it,
+                    small_text=text_it,
+                )
                 frtxt = entxt
                 estxt = entxt
             elif "put" in msg:
@@ -3042,22 +3041,22 @@ class DgtTranslate(object):
             estxt = entxt
         if text_id == "engine_menu_favorites":
             entxt = Dgt.DISPLAY_TEXT(
-                web_text='Special & Historical Engines',
-                large_text='Special Eng',
-                medium_text='Special',
-                small_text='specl'
+                web_text="Special & Historical Engines",
+                large_text="Special Eng",
+                medium_text="Special",
+                small_text="specl",
             )
             detxt = Dgt.DISPLAY_TEXT(
-                web_text='Spezial & historische Engines',
-                large_text='Spezial Eng',
-                medium_text='Special',
-                small_text='Spezl.'
+                web_text="Spezial & historische Engines",
+                large_text="Spezial Eng",
+                medium_text="Special",
+                small_text="Spezl.",
             )
             ittxt = Dgt.DISPLAY_TEXT(
-                web_text='Scelta motori preferiti e speciali',
-                large_text='M.Pref/Spec',
-                medium_text='Speciali',
-                small_text='Spec. '
+                web_text="Scelta motori preferiti e speciali",
+                large_text="M.Pref/Spec",
+                medium_text="Speciali",
+                small_text="Spec. ",
             )
             nltxt = Dgt.DISPLAY_TEXT(
                 web_text="Favorieten",
@@ -7734,7 +7733,7 @@ class DgtTranslate(object):
                 small_text="bat" + msg,
             )
             ittxt = Dgt.DISPLAY_TEXT(
-                web_text="Stato della batteria: "+ msg,
+                web_text="Stato della batteria: " + msg,
                 large_text="batteria" + msg,
                 medium_text="battr" + msg,
                 small_text="bat" + msg,

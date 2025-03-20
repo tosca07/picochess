@@ -22,7 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-''' Agent for Millennium chess board Chess Genius Exclusive '''
+"""Agent for Millennium chess board Chess Genius Exclusive"""
 import logging
 import time
 
@@ -33,10 +33,10 @@ logger = logging.getLogger(__name__)
 
 
 class ChessLinkAgent:
-    ''' Hardware board agent implementation '''
+    """Hardware board agent implementation"""
 
     def __init__(self, appque):
-        self.name = 'ChessLinkAgent'
+        self.name = "ChessLinkAgent"
         self.appque = appque
         self.cl_brd = cl.ChessLink(self.appque, self.name)
         self.init_position = False
@@ -49,26 +49,26 @@ class ChessLinkAgent:
             self.cl_brd.get_scan_time_ms()
             self.cl_brd.get_position()
         else:
-            logger.warning('Connection to ChessLink failed.')
+            logger.warning("Connection to ChessLink failed.")
             return
 
-        logger.debug('waiting for board position')
+        logger.debug("waiting for board position")
         start = time.time()
         warned = False
         while self.init_position is False:
             if self.cl_brd.error_condition is True:
-                logger.info('ChessLink board not available.')
+                logger.info("ChessLink board not available.")
                 return
             if time.time() - start > 2 and warned is False:
                 warned = True
-                logger.info('Searching for ChessLink board...')
+                logger.info("Searching for ChessLink board...")
             self.init_position = self.cl_brd.position_initialized()
             time.sleep(0.1)
 
         if self.init_position is True:
-            logger.debug('board position received, init ok.')
+            logger.debug("board position received, init ok.")
         else:
-            logger.error('no board position received')
+            logger.error("no board position received")
 
     def quit(self):
         self.cl_brd.quit()
@@ -79,5 +79,5 @@ class ChessLinkAgent:
     def set_led_off(self):
         return self.cl_brd.set_led_off()
 
-    def set_led(self, pos, freq=0x20, ontime1=0x0f, ontime2=0xf0):
+    def set_led(self, pos, freq=0x20, ontime1=0x0F, ontime2=0xF0):
         return self.cl_brd.set_led(pos, freq, ontime1, ontime2)

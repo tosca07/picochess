@@ -23,8 +23,8 @@ import utilities
 
 def calc_theme(theme_in: str, location_setting: str) -> str:
     theme_out = theme_in
-    if theme_in == 'auto':
-        location = utilities.get_location()[0] if location_setting == 'auto' else location_setting
+    if theme_in == "auto":
+        location = utilities.get_location()[0] if location_setting == "auto" else location_setting
         try:
             location_info = astral.geocoder.lookup(location, astral.geocoder.database())
         except KeyError:
@@ -36,7 +36,7 @@ def calc_theme(theme_in: str, location_setting: str) -> str:
                 theme_out = _theme_according_to_current_time()
         else:
             theme_out = _theme_according_to_current_time()
-    elif theme_in == 'time':
+    elif theme_in == "time":
         theme_out = _theme_according_to_current_time()
     return theme_out
 
@@ -56,25 +56,30 @@ def _theme_from_location_info(location_info) -> str:
     local_timezone = location_info.tzinfo
     local_time = datetime.datetime.now(local_timezone)
     sun_info = sun(location_info.observer, tzinfo=local_timezone)
-    return _theme_for_time(local_time, sun_info['sunrise'], sun_info['sunset'])
+    return _theme_for_time(local_time, sun_info["sunrise"], sun_info["sunset"])
 
 
 def _theme_for_time(current_time: datetime.datetime, sunrise: datetime.datetime, sunset: datetime.datetime) -> str:
     if sunrise < current_time < sunset:
-        theme = 'light'
+        theme = "light"
     else:
-        theme = 'dark'
+        theme = "dark"
     return theme
 
 
 def _location_info_from_location(location: str):
     location_info = None
-    geolocator = Nominatim(user_agent='Picochess')
+    geolocator = Nominatim(user_agent="Picochess")
     try:
         loc = geolocator.geocode(location)
     except GeopyError:
         loc = None
     if loc is not None:
-        location_info = LocationInfo(location, '', datetime.datetime.now().astimezone(datetime.timezone.utc).tzname(),
-                                     loc.latitude, loc.longitude)
+        location_info = LocationInfo(
+            location,
+            "",
+            datetime.datetime.now().astimezone(datetime.timezone.utc).tzname(),
+            loc.latitude,
+            loc.longitude,
+        )
     return location_info

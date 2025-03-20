@@ -13,16 +13,12 @@ from uci.engine_provider import EngineProvider
 class TestDgtMenu(unittest.TestCase):
     @patch("subprocess.run")
     def create_menu(self, machine_mock, _):
-        machine_mock.return_value = (
-            ".." + os.sep + "tests"
-        )  # return the tests path as the platform engine path
+        machine_mock.return_value = ".." + os.sep + "tests"  # return the tests path as the platform engine path
         EngineProvider.modern_engines = read_engine_ini(filename="engines.ini")
         EngineProvider.retro_engines = read_engine_ini(filename="retro.ini")
         EngineProvider.favorite_engines = read_engine_ini(filename="favorites.ini")
         EngineProvider.installed_engines = list(
-            EngineProvider.modern_engines
-            + EngineProvider.retro_engines
-            + EngineProvider.favorite_engines
+            EngineProvider.modern_engines + EngineProvider.retro_engines + EngineProvider.favorite_engines
         )
 
         trans = DgtTranslate("none", 0, "en", "version")
@@ -231,18 +227,14 @@ class TestDgtMenu(unittest.TestCase):
         menu.main_right()  # second retro engine
         self.assertEqual("Mep. Milano", menu.main_right().large_text)  # third retro engine
         menu.main_down()  # level selection menu
-        self.assertEqual(
-            "Level 10 - 60m game", menu.main_left().large_text
-        )  # select level for engine 'Mep. Milano',
+        self.assertEqual("Level 10 - 60m game", menu.main_left().large_text)  # select level for engine 'Mep. Milano',
         self.assertFalse(menu.main_down())
         self.assertEqual("Mep. Milano", menu.get_current_engine_name().large_text)
 
         self.assertEqual("Engine", menu.main_down().medium_text.strip())
         self.assertEqual("Retro", menu.main_down().medium_text.strip())
         self.assertEqual("Mep. Milano", menu.main_down().large_text)  # previously selected engine
-        self.assertEqual(
-            "Level 10 - 60m game", menu.main_down().large_text
-        )  # previously selected engine level
+        self.assertEqual("Level 10 - 60m game", menu.main_down().large_text)  # previously selected engine level
 
     @patch("platform.machine")
     def test_modern_engine_after_retro(self, machine_mock):

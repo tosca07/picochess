@@ -41,15 +41,11 @@ else:
 # then check if they are connected, if not remove them  #
 #########################################################
 paired_devices_cmd = "/bin/echo -e  'paired-devices  \nquit' |  bluetoothctl|grep -E 'DGT_BT_|PCS-REVII'|cut -d' ' -f2"
-paired = subprocess.run(
-    paired_devices_cmd, shell=True, check=True, stdout=subprocess.PIPE, universal_newlines=True
-)
+paired = subprocess.run(paired_devices_cmd, shell=True, check=True, stdout=subprocess.PIPE, universal_newlines=True)
 for bt_device in paired.stdout.splitlines():
     print("Found ", bt_device)
     info_cmd = "/bin/echo -e  'info " + bt_device + " \nquit' |  bluetoothctl|grep Connected"
-    connected = subprocess.run(
-        info_cmd, shell=True, check=True, stdout=subprocess.PIPE, universal_newlines=True
-    )
+    connected = subprocess.run(info_cmd, shell=True, check=True, stdout=subprocess.PIPE, universal_newlines=True)
     if connected.stdout.find("Connected: no") > 0:
         print("Device ", bt_device, " is not connected.  Removing...")
         remove_cmd = '/bin/echo -e  "remove ' + bt_device + ' \nquit"|  bluetoothctl'

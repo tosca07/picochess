@@ -24,8 +24,13 @@ import typing
 
 from eboard.move_debouncer import MoveDebouncer
 from eboard.certabo import command
-from eboard.certabo.parser import CalibrationCallback, CertaboCalibrator, CertaboPiece, \
-    CertaboBoardMessageParser, ParserCallback
+from eboard.certabo.parser import (
+    CalibrationCallback,
+    CertaboCalibrator,
+    CertaboPiece,
+    CertaboBoardMessageParser,
+    ParserCallback,
+)
 from eboard.certabo.led_control import CertaboLedControl
 from eboard.certabo.sentio import Sentio
 from eboard.certabo.usb_transport import Transport
@@ -52,7 +57,7 @@ class Protocol(ParserCallback, CalibrationCallback):
         super().__init__()
         self.piece_recognition = False
         self.name = name
-        logger.debug('Certabo starting')
+        logger.debug("Certabo starting")
         self.error_condition = False
         self.appque = appque
         self.board_mutex = threading.Lock()
@@ -67,8 +72,9 @@ class Protocol(ParserCallback, CalibrationCallback):
         self.initial_position_received = False  # initial position after calibration is complete
         self.brd_reversed = False
         self.device_in_config = False
-        self.debouncer = MoveDebouncer(350, lambda fen: self.appque.put({'cmd': 'raw_board_position', 'fen': fen,
-                                                                         'actor': self.name}))
+        self.debouncer = MoveDebouncer(
+            350, lambda fen: self.appque.put({"cmd": "raw_board_position", "fen": fen, "actor": self.name})
+        )
         self.thread_active = True
         self.event_thread = threading.Thread(target=self._event_worker_thread)
         self.event_thread.setDaemon(True)
@@ -78,7 +84,7 @@ class Protocol(ParserCallback, CalibrationCallback):
         try:
             self._read_config()
         except Exception as e:
-            logger.debug(f'No valid default configuration, starting board-scan: {e}')
+            logger.debug(f"No valid default configuration, starting board-scan: {e}")
 
         self.parser = CertaboBoardMessageParser(self, self.low_gain)
 
@@ -87,9 +93,9 @@ class Protocol(ParserCallback, CalibrationCallback):
                 self._search_board()
 
             if self.config is None or self.trans is None:
-                logger.error('Cannot connect.')
+                logger.error("Cannot connect.")
                 if self.config is None:
-                    self.config = {'low_gain': self.low_gain}
+                    self.config = {"low_gain": self.low_gain}
                     self.write_configuration()
                 self.error_condition = True
             else:
@@ -101,10 +107,10 @@ class Protocol(ParserCallback, CalibrationCallback):
             time.sleep(3)
 
     def _read_config(self):
-        with open('certabo_config.json', 'r') as f:
+        with open("certabo_config.json", "r") as f:
             self.config = json.load(f)
-            self.low_gain = self.config.get('low_gain', True)
-            if 'address' in self.config:
+            self.low_gain = self.config.get("low_gain", True)
+            if "address" in self.config:
                 logger.debug(f"Checking default configuration for board at {self.config['address']}")
                 trans = self._open_transport()
                 if trans is not None:
@@ -113,31 +119,31 @@ class Protocol(ParserCallback, CalibrationCallback):
 
     def _search_board(self):
         tr = Transport(self.trque)
-        logger.debug('created obj')
+        logger.debug("created obj")
         if tr.is_init():
-            logger.debug('Transport loaded.')
+            logger.debug("Transport loaded.")
             address = tr.search_board()
             if address is not None:
-                logger.debug(f'Found board at address {address}')
-                self.config = {'address': address, 'low_gain': self.low_gain}
+                logger.debug(f"Found board at address {address}")
+                self.config = {"address": address, "low_gain": self.low_gain}
                 self.trans = tr
                 self.write_configuration()
         else:
-            logger.warning('Failed to initialize')
+            logger.warning("Failed to initialize")
 
     def _connect(self):
-        address = self.config['address']
-        logger.debug(f'Valid board available at {address}')
-        logger.debug(f'Connecting to Certabo at {address}')
+        address = self.config["address"]
+        logger.debug(f"Valid board available at {address}")
+        logger.debug(f"Connecting to Certabo at {address}")
         self.connected = self.trans.open_mt(address)
         if self.connected:
-            logger.info(f'Connected to Certabo at {address}')
+            logger.info(f"Connected to Certabo at {address}")
             self.led_control = CertaboLedControl(self.trans)
             self.sentio = Sentio(self, self.led_control)
             self.error_condition = False
         else:
             self.trans.quit()
-            logger.error(f'Connection to Certabo at {address} FAILED.')
+            logger.error(f"Connection to Certabo at {address} FAILED.")
             self.error_condition = True
 
     def quit(self):
@@ -164,37 +170,37 @@ class Protocol(ParserCallback, CalibrationCallback):
 
     def write_configuration(self):
         try:
-            with open('certabo_config.json', 'w') as f:
+            with open("certabo_config.json", "w") as f:
                 json.dump(self.config, f, indent=4)
                 return True
         except Exception as e:
-            logger.error(f'Failed to save default configuration {self.config} to certabo_config.json: {e}')
+            logger.error(f"Failed to save default configuration {self.config} to certabo_config.json: {e}")
         return False
 
     def _event_worker_thread(self):
         """
         The event worker thread is automatically started during __init__.
         """
-        logger.debug('Certabo worker thread started.')
+        logger.debug("Certabo worker thread started.")
         while self.thread_active:
             if not self.trque.empty():
                 msg = self.trque.get()
-                token = 'agent-state: '
-                if msg[:len(token)] == token:
-                    toks = msg[len(token):]
-                    i = toks.find(' ')
+                token = "agent-state: "
+                if msg[: len(token)] == token:
+                    toks = msg[len(token) :]
+                    i = toks.find(" ")
                     if i != -1:
                         state = toks[:i]
-                        emsg = toks[i + 1:]
+                        emsg = toks[i + 1 :]
                     else:
                         state = toks
-                        emsg = ''
-                    logger.info(f'Agent state of {self.name} changed to {state}, {emsg}')
-                    if state == 'offline':
+                        emsg = ""
+                    logger.info(f"Agent state of {self.name} changed to {state}, {emsg}")
+                    if state == "offline":
                         self.error_condition = True
                     else:
                         self.error_condition = False
-                    self.appque.put({'cmd': 'agent_state', 'state': state, 'message': emsg})
+                    self.appque.put({"cmd": "agent_state", "state": state, "message": emsg})
                     continue
 
                 if not self.calibrated and self.piece_recognition:
@@ -214,7 +220,7 @@ class Protocol(ParserCallback, CalibrationCallback):
             self.sentio.occupied_squares(board)
 
     def board_update(self, short_fen: str):
-        if not self.initial_position_received and short_fen == 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR':
+        if not self.initial_position_received and short_fen == "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR":
             self.initial_position_received = True
         if self.initial_position_received:
             # only forward the fen if the initial position has been received at least once
@@ -224,7 +230,7 @@ class Protocol(ParserCallback, CalibrationCallback):
             self.last_fen = short_fen
 
     def request_promotion_dialog(self, move: str):
-        self.appque.put({'cmd': 'request_promotion_dialog', 'move': move, 'actor': self.name})
+        self.appque.put({"cmd": "request_promotion_dialog", "move": move, "actor": self.name})
 
     def reversed(self, value: bool):
         self.brd_reversed = value
@@ -258,7 +264,7 @@ class Protocol(ParserCallback, CalibrationCallback):
                 self.led_control.write_led_command(command.set_leds_calibrate())
 
     def calibration_complete(self, stones: typing.Dict[CertaboPiece, typing.Optional[str]]):
-        logger.info('Certabo calibration complete')
+        logger.info("Certabo calibration complete")
         self.parser.update_stones(stones)
         self.calibrated = True
         self.set_led_off()
@@ -275,5 +281,5 @@ class Protocol(ParserCallback, CalibrationCallback):
         if tr.is_init():
             return tr
         else:
-            logger.warning('USB transport failed to initialize')
+            logger.warning("USB transport failed to initialize")
         return None

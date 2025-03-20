@@ -6,7 +6,8 @@ from dgt.util import ClockIcons
 
 
 class EBoard(Protocol):
-    """ Protocol for e-board implementations """
+    """Protocol for e-board implementations"""
+
     is_pi: bool = False
     is_revelation: bool = True
     enable_revelation_pi: bool = True
@@ -91,11 +92,11 @@ def to_short_fen(board) -> str:
     :param board: the board to convert
     :return: a short fen representation
     """
-    fen = ''
+    fen = ""
     for row_index, row in enumerate(range(7, -1, -1)):
         blanks = 0
         for col_index, col in enumerate(range(8)):
-            if board[row * 8 + col] == ' ':
+            if board[row * 8 + col] == " ":
                 blanks += 1
                 if col_index == 7 and blanks > 0:
                     fen += str(blanks)
@@ -105,16 +106,16 @@ def to_short_fen(board) -> str:
                 blanks = 0
                 fen += board[row * 8 + col]
         if row_index != 7:
-            fen += '/'
+            fen += "/"
     return fen
 
 
 def get_upper_4_bits(b):
-    return (b & 0xf0) >> 4
+    return (b & 0xF0) >> 4
 
 
 def get_lower_4_bits(b):
-    return b & 0x0f
+    return b & 0x0F
 
 
 def check_reversed(brd, is_reversed, callback):
@@ -136,8 +137,8 @@ def _piece_count(board, board_half):
     w_count = 0
     b_count = 0
     for i in board_half:
-        if board[i] != ' ':
-            if board[i] < 'Z':
+        if board[i] != " ":
+            if board[i] < "Z":
                 w_count += 1
             else:
                 b_count += 1

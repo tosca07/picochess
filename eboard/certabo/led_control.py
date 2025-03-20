@@ -60,7 +60,7 @@ class CertaboLedControl(object):
     def write_led_command(self, cmd: bytearray):
         lock = threading.Lock()
         with lock:
-            logger.debug(f'adding LED command {cmd}')
+            logger.debug(f"adding LED command {cmd}")
             self.pending.append(cmd)
 
     def stop(self):

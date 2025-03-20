@@ -34,7 +34,6 @@ logger = logging.getLogger(__name__)
 
 
 class DgtPi(DgtIface):
-
     """Handle the DgtPi communication."""
 
     def __init__(self, dgtboard: EBoard, loop: asyncio.AbstractEventLoop):
@@ -126,9 +125,7 @@ class DgtPi(DgtIface):
                         self.l_time = l_hms[0] * 3600 + l_hms[1] * 60 + l_hms[2]
                     if self.side_running == ClockSide.RIGHT:
                         self.r_time = r_hms[0] * 3600 + r_hms[1] * 60 + r_hms[2]
-                text = Message.DGT_CLOCK_TIME(
-                    time_left=self.l_time, time_right=self.r_time, connect=True, dev="i2c"
-                )
+                text = Message.DGT_CLOCK_TIME(time_left=self.l_time, time_right=self.r_time, connect=True, dev="i2c")
                 DisplayMsg.show(text)
             await asyncio.sleep(0.1)
 
@@ -139,9 +136,7 @@ class DgtPi(DgtIface):
             self.lib.dgtpicom_stop()
             self.lib.dgtpicom_init()
 
-    def _display_on_dgt_pi(
-        self, text: str, beep=False, left_icons=ClockIcons.NONE, right_icons=ClockIcons.NONE
-    ):
+    def _display_on_dgt_pi(self, text: str, beep=False, left_icons=ClockIcons.NONE, right_icons=ClockIcons.NONE):
         if len(text) > 11:
             logger.warning("(i2c) clock message too long [%s]", text)
         logger.debug("[%s]", text)
@@ -269,9 +264,7 @@ class DgtPi(DgtIface):
             return True
         l_hms = hms_time(self.l_time)
         r_hms = hms_time(self.r_time)
-        logger.debug(
-            "(%s) clock sending start time to clock l:%s r:%s", ",".join(devs), l_hms, r_hms
-        )
+        logger.debug("(%s) clock sending start time to clock l:%s r:%s", ",".join(devs), l_hms, r_hms)
 
         l_run = r_run = 0
         if ModeInfo.get_clock_side() == "left":
@@ -309,9 +302,7 @@ class DgtPi(DgtIface):
             return False
         else:
             self.side_running = side
-            Timer(
-                0.9, self.out_settime
-            ).start()  # delay abit cause the clock needs time to update its time result
+            Timer(0.9, self.out_settime).start()  # delay abit cause the clock needs time to update its time result
             return True
 
     def out_settime(self):
@@ -331,9 +322,7 @@ class DgtPi(DgtIface):
             hms_time(self.l_time),
             hms_time(self.r_time),
         )
-        logger.debug(
-            "(%s) clock sending set time to clock l:%s r:%s [use]", ",".join(devs), l_hms, r_hms
-        )
+        logger.debug("(%s) clock sending set time to clock l:%s r:%s [use]", ",".join(devs), l_hms, r_hms)
 
         self.in_settime = True
         self.l_time = time_left
