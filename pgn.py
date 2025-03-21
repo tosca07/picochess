@@ -509,11 +509,6 @@ class PgnDisplay(DisplayMsg):
 
         self.emailer.send("Game PGN", str(pgn_game), self.file_name)
 
-        try:
-            subprocess.run(["python3", "/home/pi/drupebox/drupebox.py"])
-        except FileNotFoundError:
-            pass
-
     def _save_pgn(self, message):
         l_file_name = "games" + os.sep + message.pgn_filename
         logger.debug("Saving PGN game to [%s]", l_file_name)
@@ -523,11 +518,6 @@ class PgnDisplay(DisplayMsg):
         with open(l_file_name, "w") as file:
             exporter = chess.pgn.FileExporter(file)
             pgn_game.accept(exporter)
-
-        try:
-            subprocess.run(["python3", "/home/pi/drupebox/drupebox.py"])
-        except FileNotFoundError:
-            pass
 
         logger.debug("molli: save pgn finished")
 
@@ -573,10 +563,6 @@ class PgnDisplay(DisplayMsg):
             self.old_engine_elo = self.engine_elo
             if "engine_elo" in message.info:
                 self.engine_elo = message.info["engine_elo"]
-            try:
-                subprocess.run(["python3", "/home/pi/drupebox/drupebox.py"])
-            except FileNotFoundError:
-                pass
 
         elif isinstance(message, Message.LEVEL):
             self.level_text = message.level_text
