@@ -755,9 +755,13 @@ async def main() -> None:
         web_app = my_web_server.make_app(theme, shared)
         try:
             web_app.listen(args.web_server_port)
+        except PermissionError:
+            logger.error("Could not start web server - port %d not allowed by operating system", args.web_server_port)
+            logger.error("try: sudo setcap 'cap_net_bind_service=+ep' $(readlink -f $(which python3))")
+            sys.exit(1)  # fatal, cannot continue without web server
         except OSError:
             logger.error("Could not start web server - port %d not available", args.web_server_port)
-            logger.error("is another Picochess already running?")
+            logger.error("is another Picochess, or other web application already running?")
             sys.exit(1)  # fatal, cannot continue without web server
 
     if board_type == dgt.util.EBoard.NOEBOARD:

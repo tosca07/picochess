@@ -22,6 +22,7 @@ apt -y install libopenblas-dev ninja-build meson
 # following line are to run mame (missing on lite images)
 apt -y install libsdl2-2.0-0 libsdl2-ttf-2.0-0 qt5ct
 
+echo " ------- "
 if [ -d "/opt/picochess" ]; then
     echo "picochess already exists, updating code..."
     cd /opt
@@ -46,6 +47,7 @@ else
     sudo -u pi mkdir /opt/picochess/logs
 fi
 
+echo " ------- "
 if [ -d "/opt/picochess/venv" ]; then
     echo "venv already exists - making sure pi is owner and group"
     chown -R pi /opt/picochess/venv
@@ -63,11 +65,13 @@ else
     chown pi picochess.ini
 fi
 
+echo " ------- "
 echo "checking required python modules..."
 cd /opt/picochess
 sudo -u pi /opt/picochess/venv/bin/pip3 install --upgrade pip
 sudo -u pi /opt/picochess/venv/bin/pip3 install --upgrade -r requirements.txt
 
+echo " ------- "
 echo "setting up picochess, obooksrv and gamesdb services"
 cp etc/picochess.service /etc/systemd/system/
 ln -sf /opt/picochess/obooksrv/$(uname -m)/obooksrv /opt/picochess/obooksrv/obooksrv
@@ -79,8 +83,12 @@ systemctl enable picochess.service
 systemctl enable obooksrv.service
 systemctl enable gamesdb.service
 
+echo " ------- "
+echo "after each system update we need to rerun the cap_net rights"
 echo "giving bluetooth rights so that communication works to DGT board etc"
 setcap 'cap_net_raw,cap_net_admin+eip' /opt/picochess/venv/lib/python3.11/site-packages/bluepy/bluepy-helper
+echo "giving rights to python to use ports under 1024, like for example 80"
+setcap 'cap_net_bind_service=+ep' $(readlink -f $(which python3))
 
 echo " ------- "
 echo "Picochess installation complete. Please reboot"
