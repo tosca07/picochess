@@ -525,6 +525,10 @@ class UciEngine(object):
         """ convert time_dict to engine Limit play time """
         try:
             logger.debug("molli: timedict: %s", str(time_dict))
+            if "movestogo" in time_dict:
+                moves = int(time_dict["movestogo"])
+            else:
+                moves = None
             if "wtime" in time_dict:
                 white_t = float(time_dict["wtime"])/1000.0
             elif "movetime" in time_dict:
@@ -539,14 +543,15 @@ class UciEngine(object):
             else:
                 black_t = FLOAT_MAX_ENGINE_TIME  # fallback
                 logger.warning("engine using fallback time for black")
-            white_inc = float(time_dict["winc"])/1000.0 if "winc" in time_dict else 0
-            black_inc = float(time_dict["binc"])/1000.0 if "binc" in time_dict else 0
+            white_inc = float(time_dict["winc"])/1000.0 if "winc" in time_dict else None
+            black_inc = float(time_dict["binc"])/1000.0 if "binc" in time_dict else None
         except ValueError:
             logger.warning("wrong thinking times sent to engine, using fallback")
             white_t = black_t = FLOAT_MAX_ENGINE_TIME
             white_inc = black_inc = 0
         use_time = Limit(white_clock=white_t, black_clock=black_t,
-                            white_inc=white_inc, black_inc=black_inc)
+                            white_inc=white_inc, black_inc=black_inc,
+                            remaining_moves=moves)
         return use_time
 
     async def go(self, time_dict: dict, game: Board) -> chess.engine.PlayResult:
