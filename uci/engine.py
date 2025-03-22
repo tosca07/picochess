@@ -32,11 +32,7 @@ from chess import Board  # type: ignore
 from uci.rating import Rating, Result
 from utilities import write_picochess_ini
 
-# settings are for engine thinking limits
-FLOAT_MAX_ENGINE_TIME = 2.0  # engine max thinking time
-FLOAT_MIN_ENGINE_TIME = 0.1  # engine min thinking time
-INT_EXPECTED_GAME_LENGTH = 100  # thinking time over expected game length
-
+FLOAT_MAX_ENGINE_TIME = 1.0  # engine fallback thinking time
 FLOAT_ANALYSIS_WAIT = 0.1  # save CPU in ContinuousAnalysis
 
 UCI_ELO = "UCI_Elo"
@@ -525,50 +521,41 @@ class UciEngine(object):
         # this is especially for pgn_engine
         self.engine.send_line("stop")
 
-    def get_engine_limit(self, time_dict: dict, game: Board) -> float:
-        """a simple algorithm to get engine thinking time
-        parameter game will not change"""
-        if self.is_mame:
-            if "movetime" in time_dict:
-                t = time_dict["movetime"]
+    def get_engine_limit(self, time_dict: dict) -> Limit:
+        """ convert time_dict to engine Limit play time """
+        try:
+            logger.debug("molli: timedict: %s", str(time_dict))
+            if "wtime" in time_dict:
+                white_t = float(time_dict["wtime"])/1000.0
+            elif "movetime" in time_dict:
+                white_t = float(time_dict["movetime"])/1000.0
             else:
-                logger.debug("mame engine using fallback time")
-                t = 1000 * FLOAT_MAX_ENGINE_TIME  # fallback
-        else:
-            if game.turn == chess.WHITE:
-                if "wtime" in time_dict:
-                    t = time_dict["wtime"]
-                else:
-                    t = 1000 * FLOAT_MAX_ENGINE_TIME  # fallback
-                    logger.debug("engine using fallback time for white")
+                white_t = FLOAT_MAX_ENGINE_TIME  # fallback
+                logger.warning("engine using fallback time for white")
+            if "btime" in time_dict:
+                black_t = float(time_dict["btime"])/1000.0
+            elif "movetime" in time_dict:
+                black_t = float(time_dict["movetime"])/1000.0
             else:
-                if "btime" in time_dict:
-                    t = time_dict["btime"]
-                else:
-                    t = 1000 * FLOAT_MAX_ENGINE_TIME  # fallback
-                    logger.debug("engine using fallback time for black")
-        use_time = float(t)
-        use_time = use_time / 1000.0  # convert to seconds
-        # divide usable time over first N moves
-        max_moves_left = INT_EXPECTED_GAME_LENGTH - game.fullmove_number
-        if max_moves_left > 0:
-            use_time = use_time / max_moves_left
-        # apply upper and lower limits
-        if use_time > FLOAT_MAX_ENGINE_TIME:
-            use_time = FLOAT_MAX_ENGINE_TIME
-        elif use_time < FLOAT_MIN_ENGINE_TIME:
-            use_time = FLOAT_MIN_ENGINE_TIME
+                black_t = FLOAT_MAX_ENGINE_TIME  # fallback
+                logger.warning("engine using fallback time for black")
+            white_inc = float(time_dict["winc"])/1000.0 if "winc" in time_dict else 0
+            black_inc = float(time_dict["binc"])/1000.0 if "binc" in time_dict else 0
+        except ValueError:
+            logger.warning("wrong thinking times sent to engine, using fallback")
+            white_t = black_t = FLOAT_MAX_ENGINE_TIME
+            white_inc = black_inc = 0
+        use_time = Limit(white_clock=white_t, black_clock=black_t,
+                            white_inc=white_inc, black_inc=black_inc)
         return use_time
 
     async def go(self, time_dict: dict, game: Board) -> chess.engine.PlayResult:
         """Go engine.
         parameter game will not change, it is deep copied"""
-        logger.debug("molli: timedict: %s", str(time_dict))
-        use_time = self.get_engine_limit(time_dict, game)
         try:
             async with self.engine_lock:
                 self.idle = False  # engine is going to be busy now
-                limit: Limit = Limit(time=use_time)
+                limit: Limit = self.get_engine_limit(time_dict)
                 self.res = await self.analyser.play_move(game, limit, self.pondering)
         except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
