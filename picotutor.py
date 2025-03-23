@@ -23,6 +23,7 @@ import csv
 import logging
 from random import randint
 from typing import Tuple
+import platform
 import chess  # type: ignore
 from chess.engine import InfoDict
 import chess.engine
@@ -59,17 +60,14 @@ class PicoTutor:
         # stored in list of tuple(index, move, score, mate)
         # index = None indicates not found in InfoDict results
         self.best_history = []
-        self.best_history.append((0, chess.Move.null(), 0.00, 0))
         self.obvious_history = []
-        self.obvious_history.append((0, chess.Move.null(), 0.00, 0))
-
         self.pv_user_move = []
         self.pv_best_move = []
         self.hint_move = chess.Move.null()
         self.mate = 0
         self.best_moves = []
         self.obvious_moves = []
-        self.op = []  # list of played uci moves not needed?
+        self.op = []  # used for opening book
         self.last_inside_book_moveno = 0
         self.alt_best_moves = []
         self.comments = []
@@ -141,7 +139,8 @@ class PicoTutor:
                 self.comment_no = len(self.comments)
 
         try:
-            general_comment_file = "/opt/picochess/engines/aarch64/general_game_comments_" + i_lang + ".txt"
+            arch = platform.machine()
+            general_comment_file = "/opt/picochess/engines/" + arch + "/general_game_comments_" + i_lang + ".txt"
             with open(general_comment_file) as fp:
                 self.comments_all = fp.readlines()
         except Exception:
@@ -302,21 +301,18 @@ class PicoTutor:
         self.board = chess.Board()
 
     def _reset_int(self):
+        logger.debug("picotutor reset")
         self.stop()
         self.pos = False
         self.best_moves = []
         self.obvious_moves = []
         self.op = []
-        self.user_color = chess.WHITE
 
         self.best_info = []
         self.obvious_info = []
 
         self.best_history = []
         self.obvious_history = []
-        # whats the purpose of the following two lines?
-        self.best_history.append((0, chess.Move.null(), 0.00, 0))
-        self.obvious_history.append((0, chess.Move.null(), 0.00, 0))
 
         self.alt_best_moves = []
         self.pv_best_move = []
@@ -327,12 +323,10 @@ class PicoTutor:
         self.expl_start_position = True
 
     async def set_user_color(self, i_user_color):
-
+        logger.debug("picotutor set user color %s", i_user_color)
         self.pause()
         self.best_history = []
         self.obvious_history = []
-        self.best_history.append((0, chess.Move.null(), 0.00, 0))
-        self.obvious_history.append((0, chess.Move.null(), 0.00, 0))
         self.best_moves = []
         self.obvious_moves = []
         self.hint_move = chess.Move.null()
@@ -372,8 +366,10 @@ class PicoTutor:
         else:
             self.pause()
 
-    async def push_move(self, i_uci_move: chess.Move):
+    async def push_move(self, i_uci_move: chess.Move) -> bool:
+        logger.debug("picotutor push move %s", i_uci_move.uci())
         if i_uci_move not in self.board.legal_moves:
+            logger.debug("picotutor received illegal move %s", i_uci_move.uci())
             return False
 
         if not (self.coach_on or self.watcher_on):
@@ -395,47 +391,67 @@ class PicoTutor:
             self.board.push(i_uci_move)
             self.pause()
 
+        self.log_sync_info()  # normally commented out
+
         return True
 
-    def _update_internal_history_after_pop(self, poped_move: chess.Move) -> None:
-        try:
-            if self.best_history[-1] == poped_move:
-                self.best_history.pop()
-        except IndexError:
-            self.best_history.append((-1, chess.Move.null(), 0.00, 0))
-        try:
-            if self.obvious_history[-1] == poped_move:
-                self.obvious_history.pop()
-        except IndexError:
-            self.obvious_history.append((-1, chess.Move.null(), 0.00, 0))
+    def _update_internal_history_after_pop(self, poped_move: chess.Move) -> bool:
+        """return True if sync is ok after pop = keep history"""
+        result = True
+        if self.board.turn == self.user_color:
+            # need to pop user move
+            try:
+                pv_key, move, score, mate = self.best_history[-1]
+                if move == poped_move:
+                    self.best_history.pop()
+                else:
+                    result = False
+                    logger.debug("picotutor pop best move not in sync")
+                pv_key, move, score, mate = self.obvious_history[-1]
+                if move == poped_move:
+                    self.obvious_history.pop()
+                else:
+                    result = False
+                    logger.debug("picotutor pop obvious move not in sync")
+            except IndexError:
+                result = False
+                logger.debug("picotutor no obvious move to pop - not in sync")
+        return result
 
-    async def _update_internal_state_after_pop(self, poped_move: chess.Move) -> None:
+    async def _update_internal_state_after_pop(self, poped_move: chess.Move) -> bool:
+        """return True if sync is ok after pop = keep history"""
         try:
             self.op.pop()
         except IndexError:
             pass
 
         if not (self.coach_on or self.watcher_on):
-            return chess.Move.null()
+            return False
 
-        self._update_internal_history_after_pop(poped_move=poped_move)
-
+        result = self._update_internal_history_after_pop(poped_move=poped_move)
         if self.board.turn == self.user_color:
             # if it is user player's turn then start analyse engine
-            # otherwise it is computer opponents turn and analyze negine
+            # otherwise it is computer opponents turn and analyze engine
             # should be paused
             await self.start()
         else:
             self.pause()
+        return result
 
-    async def pop_last_move(self):
+    async def pop_last_move(self) -> chess.Move:
+        """call this on takeback event"""
         poped_move = chess.Move.null()
-        self.best_moves = []
-        self.obvious_moves = []
 
         if self.board.move_stack:
             poped_move = self.board.pop()
-            await self._update_internal_state_after_pop(poped_move)
+            logger.debug("picotutor pop move %s", poped_move.uci())
+            result = await self._update_internal_state_after_pop(poped_move)
+            if not result:
+                logger.debug("picotutor pop move not in sync - erasing history")
+                self.best_moves = []
+                self.obvious_moves = []
+
+        self.log_sync_info()  # normally commented out
 
         return poped_move
 
@@ -473,8 +489,20 @@ class PicoTutor:
     def stop(self):
         if self.engine:
             self.engine.stop()
-            self.best_info = []
-            self.obvious_info = []
+
+    def log_sync_info(self):
+        """logging help to check if picotutor and main picochess are in sync"""
+        logger.debug("picotutor op moves %s", self.op)
+        moves = self.board.move_stack
+        uci_moves = []
+        for move in moves:
+            uci_moves.append(move.uci())
+        logger.debug("picotutor board moves %s", uci_moves)
+        hist_moves = []
+        if self.best_history:
+            for pv_key, move, score, mate in self.best_history:
+                hist_moves.append(move.uci())
+        logger.debug("picotutor history moves %s", hist_moves)
 
     def log_pv_lists(self):
         """logging help for picotutor developers"""
@@ -634,7 +662,7 @@ class PicoTutor:
 
         # check precondition for calculations
         if (
-            len(self.best_history) < 2
+            len(self.best_history) < 1
             or len(self.obvious_history) < 1
             or len(self.best_moves) < 2
             or len(self.obvious_moves) < 2
@@ -647,7 +675,10 @@ class PicoTutor:
         current_pv, current_move, current_score, current_mate = self.best_history[-1]
         # current_pv can be None if no best_move had been found
 
-        before_pv, before_move, before_score, before_mate = self.best_history[-2]
+        if len(self.best_history) > 1:
+            before_pv, before_move, before_score, before_mate = self.best_history[-2]
+        else:
+            before_score = None
         # before_pv can be None if no obvious move had been found
 
         # best deep engine score/move
@@ -676,7 +707,10 @@ class PicoTutor:
         if not_in_obvious:
             logger.debug("user did not chose obvious move")
         # not_in_obvious is designed to be added to "> tests" with "or"
-        score_hist_diff = current_score - before_score  # reliable enough
+        if before_score:
+            score_hist_diff = current_score - before_score  # reliable enough
+        else:
+            score_hist_diff = 0  # needs 2 history moves to be valid
         not_in_best = current_pv is None  # user missed all top best moves
         if not_in_best:
             logger.debug("user missed all best moves")

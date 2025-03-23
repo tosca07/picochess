@@ -1990,7 +1990,7 @@ async def main() -> None:
                 self.state.game.push(move)  # this is where user move is made
                 eval_str = ""
 
-                if self.picotutor_mode() and not self.state.position_mode and not self.state.takeback_active:
+                if self.picotutor_mode() and not self.state.position_mode:
                     l_mate = ""
                     t_hint_move = chess.Move.null()
                     valid = await self.state.picotutor.push_move(move)
