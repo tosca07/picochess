@@ -367,9 +367,11 @@ class PicoTutor:
             self.pause()
 
     async def push_move(self, i_uci_move: chess.Move) -> bool:
+        """inform picotutor that a board move was made"""
         logger.debug("picotutor push move %s", i_uci_move.uci())
         if i_uci_move not in self.board.legal_moves:
             logger.debug("picotutor received illegal move %s", i_uci_move.uci())
+            # @todo take board as parameter so that we can resync in this case
             return False
 
         if not (self.coach_on or self.watcher_on):
@@ -391,8 +393,7 @@ class PicoTutor:
             self.board.push(i_uci_move)
             self.pause()
 
-        self.log_sync_info()  # normally commented out
-
+        # self.log_sync_info()  # normally commented out
         return True
 
     def _update_internal_history_after_pop(self, poped_move: chess.Move) -> bool:
@@ -439,7 +440,7 @@ class PicoTutor:
         return result
 
     async def pop_last_move(self) -> chess.Move:
-        """call this on takeback event"""
+        """ inform picotutor that move takeback has been done """
         poped_move = chess.Move.null()
 
         if self.board.move_stack:
@@ -451,8 +452,7 @@ class PicoTutor:
                 self.best_moves = []
                 self.obvious_moves = []
 
-        self.log_sync_info()  # normally commented out
-
+        self.log_sync_info() # debug only
         return poped_move
 
     def get_stack(self):
