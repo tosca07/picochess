@@ -1798,8 +1798,8 @@ class DgtMenu(object):
         text = self.dgttranslate.text(self.menu_system_theme_type.value)
         return text
 
-    def _fire_event(self, event: Event):
-        Observable.fire_sync(event)
+    async def _fire_event(self, event: Event):
+        await Observable.fire(event)
         return self.save_choices()
 
     async def _fire_dispatchdgt(self, text):
@@ -2283,7 +2283,7 @@ class DgtMenu(object):
         elif self.state == MenuState.GAME_GAMENEW_YESNO:
             if self.menu_game_new:
                 pos960 = 518
-                Observable.fire_sync(Event.NEW_GAME(pos960=pos960))
+                await Observable.fire(Event.NEW_GAME(pos960=pos960))
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okgamenew"))
             self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
 
@@ -2294,7 +2294,7 @@ class DgtMenu(object):
             write_picochess_ini("alt-move", self.menu_game_altmove)
             self.res_game_altmove = self.menu_game_altmove
             event = Event.ALTMOVES(altmoves=self.menu_game_altmove)
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okaltmove"))
 
         elif self.state == MenuState.GAME_GAMECONTLAST:
@@ -2304,59 +2304,59 @@ class DgtMenu(object):
             write_picochess_ini("continue-game", self.menu_game_contlast)
             self.res_game_contlast = self.menu_game_contlast
             event = Event.CONTLAST(contlast=self.menu_game_contlast)
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okcontlast"))
 
         elif self.state == MenuState.GAME_GAMEEND_WHITE_WINS:
             event = Event.DRAWRESIGN(result=GameResult.WIN_WHITE)
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okgameend"))
 
         elif self.state == MenuState.GAME_GAMEEND_BLACK_WINS:
             event = Event.DRAWRESIGN(result=GameResult.WIN_BLACK)
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okgameend"))
 
         elif self.state == MenuState.GAME_GAMEEND_DRAW:
             event = Event.DRAWRESIGN(result=GameResult.DRAW)
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okgameend"))
 
         elif self.state == MenuState.GAME_GAMESAVE_GAME1:
             event = Event.SAVE_GAME(pgn_filename="picochess_game_1.pgn")
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_oksavegame"))
 
         elif self.state == MenuState.GAME_GAMESAVE_GAME2:
             # raise SAVE_PGN_EVENT
             event = Event.SAVE_GAME(pgn_filename="picochess_game_2.pgn")
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_oksavegame"))
 
         elif self.state == MenuState.GAME_GAMESAVE_GAME3:
             # raise SAVE_PGN_EVENT
             event = Event.SAVE_GAME(pgn_filename="picochess_game_3.pgn")
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_oksavegame"))
 
         elif self.state == MenuState.GAME_GAMEREAD_GAMELAST:
             event = Event.READ_GAME(pgn_filename="last_game.pgn")
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okreadgame"))
 
         elif self.state == MenuState.GAME_GAMEREAD_GAME1:
             event = Event.READ_GAME(pgn_filename="picochess_game_1.pgn")
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okreadgame"))
 
         elif self.state == MenuState.GAME_GAMEREAD_GAME2:
             event = Event.READ_GAME(pgn_filename="picochess_game_2.pgn")
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okreadgame"))
 
         elif self.state == MenuState.GAME_GAMEREAD_GAME3:
             event = Event.READ_GAME(pgn_filename="picochess_game_3.pgn")
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okreadgame"))
 
         elif self.state == MenuState.PICOTUTOR:
@@ -2378,7 +2378,7 @@ class DgtMenu(object):
             write_picochess_ini("tutor-watcher", self.menu_picotutor_picowatcher)
             self.res_picotutor_picowatcher = self.menu_picotutor_picowatcher
             event = Event.PICOWATCHER(picowatcher=self.menu_picotutor_picowatcher)
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicowatcher"))
 
         elif self.state == MenuState.PICOTUTOR_PICOCOACH:
@@ -2395,7 +2395,7 @@ class DgtMenu(object):
             self.menu_picotutor_picocoach = PicoCoach.COACH_OFF
             self.res_picotutor_picocoach = PicoCoach.COACH_OFF
             event = Event.PICOCOACH(picocoach=l_coach_state)
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicocoach"))
 
         elif self.state == MenuState.PICOTUTOR_PICOCOACH_ON:
@@ -2406,7 +2406,7 @@ class DgtMenu(object):
             self.menu_picotutor_picocoach = PicoCoach.COACH_ON
             self.res_picotutor_picocoach = PicoCoach.COACH_ON
             event = Event.PICOCOACH(picocoach=l_coach_state)
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicocoach"))
 
         elif self.state == MenuState.PICOTUTOR_PICOCOACH_LIFT:
@@ -2417,7 +2417,7 @@ class DgtMenu(object):
             self.menu_picotutor_picocoach = PicoCoach.COACH_LIFT
             self.res_picotutor_picocoach = PicoCoach.COACH_LIFT
             event = Event.PICOCOACH(picocoach=l_coach_state)
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicocoach"))
 
         elif self.state == MenuState.PICOTUTOR_PICOEXPLORER:
@@ -2427,7 +2427,7 @@ class DgtMenu(object):
             write_picochess_ini("tutor-explorer", self.menu_picotutor_picoexplorer)
             self.res_picotutor_picoexplorer = self.menu_picotutor_picoexplorer
             event = Event.PICOEXPLORER(picoexplorer=self.menu_picotutor_picoexplorer)
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicoexplorer"))
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT:
@@ -2443,7 +2443,7 @@ class DgtMenu(object):
             self.res_picotutor_picocomment = PicoComment.COM_OFF
             self.menu_picotutor_picocomment = PicoComment.COM_OFF
             event = Event.PICOCOMMENT(picocomment=self.menu_picotutor_picocomment)
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicocomment"))
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ENG:
@@ -2451,7 +2451,7 @@ class DgtMenu(object):
             self.res_picotutor_picocomment = PicoComment.COM_ON_ENG
             self.menu_picotutor_picocomment = PicoComment.COM_ON_ENG
             event = Event.PICOCOMMENT(picocomment=self.menu_picotutor_picocomment)
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicocomment"))
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMMENT_ON_ALL:
@@ -2459,7 +2459,7 @@ class DgtMenu(object):
             self.res_picotutor_picocomment = PicoComment.COM_ON_ALL
             self.menu_picotutor_picocomment = PicoComment.COM_ON_ALL
             event = Event.PICOCOMMENT(picocomment=self.menu_picotutor_picocomment)
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicocomment"))
 
         elif self.state == MenuState.PICOTUTOR_PICOCOMPROB:
@@ -2501,7 +2501,7 @@ class DgtMenu(object):
                 # @todo figure out PlayMode white or black here
                 self.set_position_reverse_flipboard(self.flip_board, PlayMode.USER_WHITE)
                 event = Event.SETUP_POSITION(fen=bit_board.fen(), uci960=self.menu_position_uci960)
-                Observable.fire_sync(event)
+                await Observable.fire(event)
                 # self._reset_moves_and_score() done in "START_NEW_GAME"
                 text = self.save_choices()
             else:
@@ -2577,11 +2577,11 @@ class DgtMenu(object):
             if not text:
                 # clear old level information
                 event = Event.LEVEL(options={}, level_text=self.dgttranslate.text("N07_default", ""), level_name="")
-                Observable.fire_sync(event)
+                await Observable.fire(event)
                 eng = EngineProvider.modern_engines[self.menu_modern_engine_index]
                 eng_text = self.dgttranslate.text("B10_okengine")
                 event = Event.NEW_ENGINE(eng=eng, eng_text=eng_text, options={}, show_ok=True)
-                Observable.fire_sync(event)
+                await Observable.fire(event)
                 self.engine_restart = True
 
         elif self.state == MenuState.ENG_MODERN_NAME_LEVEL:
@@ -2593,7 +2593,7 @@ class DgtMenu(object):
                 msg = sorted(level_dict)[self.menu_modern_engine_level]
                 options = level_dict[msg]
                 event = Event.LEVEL(options={}, level_text=self.dgttranslate.text("B10_level", msg), level_name=msg)
-                Observable.fire_sync(event)
+                await Observable.fire(event)
             else:
                 options = {}
             eng_text = self.dgttranslate.text("B10_okengine")
@@ -2612,11 +2612,11 @@ class DgtMenu(object):
             if not text:
                 # clear old level information
                 event = Event.LEVEL(options={}, level_text=self.dgttranslate.text("N07_default", ""), level_name="")
-                Observable.fire_sync(event)
+                await Observable.fire(event)
                 retro_eng = EngineProvider.retro_engines[self.menu_retro_engine_index]
                 eng_text = self.dgttranslate.text("B10_okengine")
                 event = Event.NEW_ENGINE(eng=retro_eng, eng_text=eng_text, options={}, show_ok=True)
-                Observable.fire_sync(event)
+                await Observable.fire(event)
                 self.engine_restart = True
 
         elif self.state == MenuState.ENG_RETRO_NAME_LEVEL:
@@ -2626,7 +2626,7 @@ class DgtMenu(object):
                 msg = sorted(retro_level_dict)[self.menu_retro_engine_level]
                 options = retro_level_dict[msg]
                 event = Event.LEVEL(options={}, level_text=self.dgttranslate.text("B10_level", msg), level_name=msg)
-                Observable.fire_sync(event)
+                await Observable.fire(event)
             else:
                 options = {}
             eng_text = self.dgttranslate.text("B10_okengine")
@@ -2647,11 +2647,11 @@ class DgtMenu(object):
             if not text:
                 # clear old level information
                 event = Event.LEVEL(options={}, level_text=self.dgttranslate.text("N07_default", ""), level_name="")
-                Observable.fire_sync(event)
+                await Observable.fire(event)
                 retro_eng = EngineProvider.favorite_engines[self.menu_fav_engine_index]
                 eng_text = self.dgttranslate.text("B10_okengine")
                 event = Event.NEW_ENGINE(eng=retro_eng, eng_text=eng_text, options={}, show_ok=True)
-                Observable.fire_sync(event)
+                await Observable.fire(event)
                 self.engine_restart = True
 
         elif self.state == MenuState.ENG_FAV_NAME_LEVEL:
@@ -2661,7 +2661,7 @@ class DgtMenu(object):
                 msg = sorted(fav_level_dict)[self.menu_fav_engine_level]
                 options = fav_level_dict[msg]
                 event = Event.LEVEL(options={}, level_text=self.dgttranslate.text("B10_level", msg), level_name=msg)
-                Observable.fire_sync(event)
+                await Observable.fire(event)
             else:
                 options = {}
             eng_text = self.dgttranslate.text("B10_okengine")
@@ -2859,7 +2859,7 @@ class DgtMenu(object):
             else:
                 event = Event.SET_VOICE(type=Voice.BEEPER, lang="en", speaker="mute", speed=2)
 
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okbeep"))
 
         elif self.state == MenuState.SYS_LANG:
@@ -2882,7 +2882,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_LOG:
             if self.log_file:
-                Observable.fire_sync(Event.EMAIL_LOG())
+                await Observable.fire(Event.EMAIL_LOG())
                 text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_oklogfile"))
             else:
                 text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_nofunction"))
@@ -2912,7 +2912,7 @@ class DgtMenu(object):
             else:
                 write_picochess_ini("user-voice", None)
                 event = Event.SET_VOICE(type=self.menu_system_voice, lang="en", speaker="mute", speed=2)
-                Observable.fire_sync(event)
+                await Observable.fire(event)
                 text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okvoice"))
 
         elif self.state == MenuState.SYS_VOICE_USER_MUTE_LANG:
@@ -2929,7 +2929,7 @@ class DgtMenu(object):
                 speaker=skey,
                 speed=self.menu_system_voice_speedfactor,
             )
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okvoice"))
 
         elif self.state == MenuState.SYS_VOICE_COMP_MUTE:
@@ -2938,7 +2938,7 @@ class DgtMenu(object):
             else:
                 write_picochess_ini("computer-voice", None)
                 event = Event.SET_VOICE(type=self.menu_system_voice, lang="en", speaker="mute", speed=2)
-                Observable.fire_sync(event)
+                await Observable.fire(event)
                 text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okvoice"))
 
         elif self.state == MenuState.SYS_VOICE_COMP_MUTE_LANG:
@@ -2955,7 +2955,7 @@ class DgtMenu(object):
                 speaker=skey,
                 speed=self.menu_system_voice_speedfactor,
             )
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okvoice"))
 
         elif self.state == MenuState.SYS_VOICE_SPEED:
@@ -2971,7 +2971,7 @@ class DgtMenu(object):
                 speaker="mute",  # lang & speaker ignored
                 speed=self.menu_system_voice_speedfactor,
             )
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okspeed"))
 
         elif self.state == MenuState.SYS_VOICE_VOLUME:
@@ -2988,7 +2988,7 @@ class DgtMenu(object):
                 speaker="mute",  # WD00
                 speed=self.menu_system_voice_speedfactor,
             )  # WD00
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okvolume"))
 
         elif self.state == MenuState.SYS_DISP:
@@ -3028,7 +3028,7 @@ class DgtMenu(object):
             write_picochess_ini("show-engine", self.menu_system_display_enginename)
             self.res_system_display_enginename = self.menu_system_display_enginename
             event = Event.SHOW_ENGINENAME(show_enginename=self.menu_system_display_enginename)
-            Observable.fire_sync(event)
+            await Observable.fire(event)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okenginename"))
 
         elif self.state == MenuState.SYS_DISP_PONDER:

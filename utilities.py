@@ -71,10 +71,8 @@ class Observable(object):
         """Put an event on the Queue."""
         await evt_queue.put(event)
 
-    # @todo a sync fire method needed by menu.py at least for now
-    # we also need it for the out_of_time Timer
-    # Observable fire is by default async as you see above, DispatchDgt and others are still sync
-
+    # @todo fire_sync below only used by timecontrol any more?
+    # we need it until last one is async
     @staticmethod
     def fire_sync(event):
         """Put an event on the Queue."""
@@ -103,8 +101,7 @@ class DispatchDgt(object):
         """Put an event on the Queue."""
         await dispatch_queue.put(dgt)
 
-    # @todo: code below is temporary until also all dgt fires can be async
-
+    # @todo: fire_sync below is temporary until last caller is async
     @staticmethod
     def fire_sync(dgt):
         """Put an event on the Queue."""
