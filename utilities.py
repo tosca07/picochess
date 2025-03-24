@@ -144,7 +144,7 @@ class DisplayDgt(object):
         self.loop = loop  # everyone to use main loop
         dgtdisplay_devices.append(self)
 
-    async def _add_to_queue(self, message):
+    async def add_to_queue(self, message):
         """Put an event on the Queue."""
         await self.dgt_queue.put(message)
 
@@ -152,13 +152,13 @@ class DisplayDgt(object):
 
     def add_to_queue_sync(self, message):
         """Put an event on the Queue."""
-        asyncio.run_coroutine_threadsafe(self._add_to_queue(message), self.loop)
+        asyncio.run_coroutine_threadsafe(self.add_to_queue(message), self.loop)
 
     @staticmethod
-    def show(message):
+    async def show(message):
         """Send a message on each display device."""
         for display in dgtdisplay_devices:
-            display.add_to_queue_sync(copy.deepcopy(message))
+            await display.add_to_queue(copy.deepcopy(message))
 
 
 class AsyncRepeatingTimer:

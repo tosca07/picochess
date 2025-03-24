@@ -690,7 +690,7 @@ async def main() -> None:
         state.dgttranslate,
     )
 
-    dgtdispatcher = Dispatcher(state.dgtmenu)
+    dgtdispatcher = Dispatcher(state.dgtmenu, main_loop)
 
     logger.debug("node %s", args.node)
 

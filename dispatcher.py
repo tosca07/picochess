@@ -15,10 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import asyncio
 import logging
 from threading import Timer, Lock
 from typing import Dict, Set
-
+from utilities import AsyncRepeatingTimer  # Ensure AsyncRepeatingTimer is imported from the correct module
 from utilities import DisplayDgt, DispatchDgt, dispatch_queue
 from dgt.api import Dgt, DgtApi
 from dgt.menu import DgtMenu
@@ -30,7 +31,7 @@ logger = logging.getLogger(__name__)
 class Dispatcher(DispatchDgt):
     """A dispatcher taking the dispatch_queue and fill dgt_queue with the commands in time."""
 
-    def __init__(self, dgtmenu: DgtMenu):
+    def __init__(self, dgtmenu: DgtMenu, main_loop: asyncio.AbstractEventLoop):
         super(Dispatcher, self).__init__()
 
         self.dgtmenu = dgtmenu
@@ -43,6 +44,7 @@ class Dispatcher(DispatchDgt):
 
         self.display_hash: Dict[str, int] = {}  # Hash value of clock's display
         self.process_lock: Dict[str, Lock] = {}
+        self.main_loop = main_loop
 
     def register(self, device: str):
         """Register new device to send DgtApi messsages."""
@@ -65,7 +67,7 @@ class Dispatcher(DispatchDgt):
             return "ser" == dev
         return "web" == dev
 
-    def _stopped_maxtimer(self, dev: str):
+    async def _stopped_maxtimer(self, dev: str):
         self.maxtimer_running[dev] = False
         self.dgtmenu.disable_picochess_displayed(dev)
 
@@ -77,7 +79,7 @@ class Dispatcher(DispatchDgt):
             logger.debug("processing delayed (%s) tasks: %s", dev, self.tasks[dev])
         else:
             logger.debug("(%s) max timer finished - returning to time display", dev)
-            DisplayDgt.show(Dgt.DISPLAY_TIME(force=False, wait=True, devs={dev}))
+            await DisplayDgt.show(Dgt.DISPLAY_TIME(force=False, wait=True, devs={dev}))
         while self.tasks[dev]:
             logger.debug("(%s) tasks has %i members", dev, len(self.tasks[dev]))
             try:
@@ -85,7 +87,7 @@ class Dispatcher(DispatchDgt):
             except IndexError:
                 break
             with self.process_lock[dev]:
-                self._process_message(message, dev)
+                await self._process_message(message, dev)
             if self.maxtimer_running[dev]:  # run over the task list until a maxtime command was processed
                 remaining = len(self.tasks[dev])
                 if remaining:
@@ -94,7 +96,7 @@ class Dispatcher(DispatchDgt):
                     logger.debug("(%s) tasks completed", dev)
                 break
 
-    def _process_message(self, message, dev: str):
+    async def _process_message(self, message, dev: str):
         do_handle = True
         if repr(message) in (DgtApi.CLOCK_START, DgtApi.CLOCK_STOP, DgtApi.DISPLAY_TIME):
             self.display_hash[dev] = 0  # Cant know the clock display if command changing the running status
@@ -134,7 +136,9 @@ class Dispatcher(DispatchDgt):
                             logger.debug("(%s) inside update menu => board connect not displayed", dev)
                             return
                 if message.maxtime > 0.1:  # filter out "all the time" show and "eBoard error" messages
-                    self.maxtimer[dev] = Timer(message.maxtime * self.time_factor, self._stopped_maxtimer, [dev])
+                    self.maxtimer[dev] = AsyncRepeatingTimer(
+                        message.maxtime * self.time_factor, self._stopped_maxtimer, self.main_loop, False, [dev]
+                    )
                     self.maxtimer[dev].start()
                     logger.debug("(%s) showing %s for %.1f secs", dev, message, message.maxtime * self.time_factor)
                     self.maxtimer_running[dev] = True
@@ -142,15 +146,14 @@ class Dispatcher(DispatchDgt):
                 logger.debug("(%s) inside update menu => clock not started", dev)
                 return
             message.devs = {dev}  # on new system, we only have ONE device each message - force this!
-            DisplayDgt.show(message)
+            await DisplayDgt.show(message)
         else:
             logger.debug("(%s) hash ignore DgtApi: %s", dev, message)
 
     def stop_maxtimer(self, dev):
         """Stop the maxtimer."""
         if self.maxtimer_running[dev]:
-            self.maxtimer[dev].cancel()
-            self.maxtimer[dev].join()
+            self.maxtimer[dev].stop()
             self.maxtimer_running[dev] = False
             self.dgtmenu.disable_picochess_displayed(dev)
 
@@ -182,7 +185,7 @@ class Dispatcher(DispatchDgt):
                                 if repr(command) == DgtApi.CLOCK_START:  # clock might be in set mode
                                     logger.debug("processing (last) delayed clock start command")
                                     with self.process_lock[dev]:
-                                        self._process_message(command, dev)
+                                        await self._process_message(command, dev)
                                     break
                             self.tasks[dev] = []
                 else:
@@ -190,5 +193,5 @@ class Dispatcher(DispatchDgt):
             else:
                 logger.debug("(%s) max timer not running => processing command: %s", dev, message)
 
-            with self.process_lock[dev]:
-                self._process_message(message, dev)
+            # with self.process_lock[dev]:
+            await self._process_message(message, dev)
