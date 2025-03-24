@@ -20,7 +20,6 @@ from math import floor
 from pgn import ModeInfo
 import logging
 import copy
-import subprocess
 import asyncio
 import chess  # type: ignore
 from utilities import DisplayMsg, Observable, DispatchDgt, AsyncRepeatingTimer, write_picochess_ini
@@ -128,19 +127,19 @@ class DgtDisplay(DisplayMsg):
                 result_list.append(result)
         return result_list
 
-    def _exit_menu(self):
+    async def _exit_menu(self):
         if self.dgtmenu.exit_menu():
-            DispatchDgt.fire(self.dgttranslate.text("K05_exitmenu"))
+            await DispatchDgt.fire(self.dgttranslate.text("K05_exitmenu"))
             return True
         return False
 
     async def _power_off(self, dev="web"):
-        DispatchDgt.fire(self.dgttranslate.text("Y15_goodbye"))
+        await DispatchDgt.fire(self.dgttranslate.text("Y15_goodbye"))
         self.dgtmenu.set_engine_restart(True)
         await Observable.fire(Event.SHUTDOWN(dev=dev))
 
     async def _reboot(self, dev="web"):
-        DispatchDgt.fire(self.dgttranslate.text("Y15_pleasewait"))
+        await DispatchDgt.fire(self.dgttranslate.text("Y15_pleasewait"))
         self.dgtmenu.set_engine_restart(True)
         self.c_last_player = ""
         self.c_time_counter = 0
@@ -302,17 +301,17 @@ class DgtDisplay(DisplayMsg):
     def _inside_updt_menu(self):
         return self.dgtmenu.inside_updt_menu()
 
-    def _process_button0(self, dev):
+    async def _process_button0(self, dev):
         logger.debug("(%s) clock handle button 0 press", dev)
         if self._inside_main_menu():
             text = self.dgtmenu.main_up()  # button0 can exit the menu, so check
             if text:
-                DispatchDgt.fire(text)
+                await DispatchDgt.fire(text)
             else:
-                self._exit_display()
+                await self._exit_display()
         elif self._inside_updt_menu():
             self.dgtmenu.updt_up(dev)
-            self._exit_display()  # button0 always exit the menu
+            await self._exit_display()  # button0 always exits the menu
         else:
             if self.last_move:
                 side = self._get_clock_side(self.last_turn)
@@ -332,33 +331,33 @@ class DgtDisplay(DisplayMsg):
                 )
             else:
                 text = self.dgttranslate.text("B10_nomove")
-            DispatchDgt.fire(text)
-            self._exit_display()
+            await DispatchDgt.fire(text)
+            await self._exit_display()
 
-    def _process_button1(self, dev):
+    async def _process_button1(self, dev):
         logger.debug("(%s) clock handle button 1 press", dev)
         if self._inside_main_menu():
-            DispatchDgt.fire(self.dgtmenu.main_left())  # button1 cant exit the menu
+            await DispatchDgt.fire(self.dgtmenu.main_left())  # button1 cant exit the menu
         elif self._inside_updt_menu():
-            DispatchDgt.fire(self.dgtmenu.updt_left())  # button1 cant exit the menu
+            await DispatchDgt.fire(self.dgtmenu.updt_left())  # button1 cant exit the menu
         else:
             text = self._combine_depth_and_score()
             text.beep = self.dgttranslate.bl(BeepLevel.BUTTON)
             text.maxtime = 3
-            DispatchDgt.fire(text)
-            self._exit_display()
+            await DispatchDgt.fire(text)
+            await self._exit_display()
 
     async def _process_button2(self, dev):
         logger.debug("(%s) clock handle button 2 press", dev)
         if self._inside_main_menu() or self.dgtmenu.inside_picochess_time(dev):
             text = self.dgtmenu.main_middle(dev)  # button2 can exit the menu (if in "position"), so check
             if text:
-                DispatchDgt.fire(text)
+                await DispatchDgt.fire(text)
             else:
                 await Observable.fire(Event.EXIT_MENU())
         else:
             if self.dgtmenu.get_mode() in (Mode.ANALYSIS, Mode.KIBITZ, Mode.PONDER):
-                DispatchDgt.fire(self.dgttranslate.text("B00_nofunction"))
+                await DispatchDgt.fire(self.dgttranslate.text("B00_nofunction"))
             else:
                 if ModeInfo.get_pgn_mode():
                     await Observable.fire(Event.PAUSE_RESUME())
@@ -371,12 +370,12 @@ class DgtDisplay(DisplayMsg):
                     else:
                         await Observable.fire(Event.PAUSE_RESUME())
 
-    def _process_button3(self, dev):
+    async def _process_button3(self, dev):
         logger.debug("(%s) clock handle button 3 press", dev)
         if self._inside_main_menu():
-            DispatchDgt.fire(self.dgtmenu.main_right())  # button3 cant exit the menu
+            await DispatchDgt.fire(self.dgtmenu.main_right())  # button3 cant exit the menu
         elif self._inside_updt_menu():
-            DispatchDgt.fire(self.dgtmenu.updt_right())  # button3 cant exit the menu
+            await DispatchDgt.fire(self.dgtmenu.updt_right())  # button3 cant exit the menu
         else:
             if self.hint_move:
                 side = self._get_clock_side(self.hint_turn)
@@ -396,8 +395,8 @@ class DgtDisplay(DisplayMsg):
                 )
             else:
                 text = self.dgttranslate.text("B10_nomove")
-            DispatchDgt.fire(text)
-            self._exit_display()
+            await DispatchDgt.fire(text)
+            await self._exit_display()
 
     async def _process_button4(self, dev):
         logger.debug("(%s) clock handle button 4 press", dev)
@@ -405,9 +404,9 @@ class DgtDisplay(DisplayMsg):
             tag = self.dgtmenu.updt_down(dev)
             await Observable.fire(Event.UPDATE_PICO(tag=tag))
         else:
-            text = self.dgtmenu.main_down()  # button4 can exit the menu, so check
+            text = await self.dgtmenu.main_down()  # button4 can exit the menu, so check
             if text:
-                DispatchDgt.fire(text)
+                await DispatchDgt.fire(text)
             else:
                 await Observable.fire(Event.EXIT_MENU())
 
@@ -426,7 +425,7 @@ class DgtDisplay(DisplayMsg):
             self.play_turn = None
             await Observable.fire(Event.SWITCH_SIDES())
         else:
-            self._exit_menu()
+            await self._exit_menu()
             # molli: necessary for engine name display after new game
             self.play_move = chess.Move.null()
             self.play_fen = None
@@ -437,19 +436,19 @@ class DgtDisplay(DisplayMsg):
         button = int(message.button)
         if not self.dgtmenu.get_engine_restart():
             if button == 0:
-                self._process_button0(message.dev)
+                await self._process_button0(message.dev)
             elif button == 1:
-                self._process_button1(message.dev)
+                await self._process_button1(message.dev)
             elif button == 2:
                 await self._process_button2(message.dev)
             elif button == 3:
-                self._process_button3(message.dev)
+                await self._process_button3(message.dev)
             elif button == 4:
                 await self._process_button4(message.dev)
             elif button == 0x11:
-                self._reboot(message.dev)
+                await self._reboot(message.dev)
             elif button == 0x20:
-                self._power_off(message.dev)
+                await self._power_off(message.dev)
             elif button == 0x40:
                 await self._process_lever(right_side_down=True, dev=message.dev)
             elif button == -0x40:
@@ -561,7 +560,7 @@ class DgtDisplay(DisplayMsg):
                 self.dgtmenu.set_engine_level(level)
                 msg = sorted(level_dict)[level]
                 text = self.dgttranslate.text("M10_level", msg)
-                text.wait = self._exit_menu()
+                text.wait = await self._exit_menu()
                 logger.debug("map: New level %s", msg)
                 if (
                     not self.dgtmenu.remote_engine
@@ -586,7 +585,7 @@ class DgtDisplay(DisplayMsg):
                 text = book["text"]
                 text.beep = self.dgttranslate.bl(BeepLevel.MAP)
                 text.maxtime = 1
-                text.wait = self._exit_menu()
+                text.wait = await self._exit_menu()
                 await Observable.fire(Event.SET_OPENING_BOOK(book=book, book_text=text, show_ok=False))
             except IndexError:
                 pass
@@ -601,7 +600,7 @@ class DgtDisplay(DisplayMsg):
                     eng_text = eng["text"]
                     eng_text.beep = self.dgttranslate.bl(BeepLevel.MAP)
                     eng_text.maxtime = 1
-                    eng_text.wait = self._exit_menu()
+                    eng_text.wait = await self._exit_menu()
                     if level_dict:
                         len_level = len(level_dict)
                         if self.dgtmenu.get_engine_level() is None or len_level <= self.dgtmenu.get_engine_level():
@@ -634,17 +633,17 @@ class DgtDisplay(DisplayMsg):
                 except IndexError:
                     pass
             else:
-                DispatchDgt.fire(self.dgttranslate.text("Y10_erroreng"))
+                await DispatchDgt.fire(self.dgttranslate.text("Y10_erroreng"))
         elif fen in mode_map:
             logger.debug("map: Interaction mode [%s]", mode_map[fen])
             if mode_map[fen] == Mode.BRAIN and not self.dgtmenu.get_engine_has_ponder():
-                DispatchDgt.fire(self.dgttranslate.text("Y10_erroreng"))
+                await DispatchDgt.fire(self.dgttranslate.text("Y10_erroreng"))
             else:
                 self.dgtmenu.set_mode(mode_map[fen])
                 text = self.dgttranslate.text(mode_map[fen].value)
                 text.beep = self.dgttranslate.bl(BeepLevel.MAP)
                 text.maxtime = 1  # wait 1sec not forever
-                text.wait = self._exit_menu()
+                text.wait = await self._exit_menu()
                 await Observable.fire(Event.SET_INTERACTION_MODE(mode=mode_map[fen], mode_text=text, show_ok=False))
 
         elif fen in self.dgtmenu.tc_fixed_map:
@@ -652,7 +651,7 @@ class DgtDisplay(DisplayMsg):
             self.dgtmenu.set_time_mode(TimeMode.FIXED)
             self.dgtmenu.set_time_fixed(list(self.dgtmenu.tc_fixed_map.keys()).index(fen))
             text = self.dgttranslate.text("M10_tc_fixed", self.dgtmenu.tc_fixed_list[self.dgtmenu.get_time_fixed()])
-            text.wait = self._exit_menu()
+            text.wait = await self._exit_menu()
             timectrl = self.dgtmenu.tc_fixed_map[fen]  # type: TimeControl
             await Observable.fire(
                 Event.SET_TIME_CONTROL(tc_init=timectrl.get_parameters(), time_text=text, show_ok=False)
@@ -662,7 +661,7 @@ class DgtDisplay(DisplayMsg):
             self.dgtmenu.set_time_mode(TimeMode.BLITZ)
             self.dgtmenu.set_time_blitz(list(self.dgtmenu.tc_blitz_map.keys()).index(fen))
             text = self.dgttranslate.text("M10_tc_blitz", self.dgtmenu.tc_blitz_list[self.dgtmenu.get_time_blitz()])
-            text.wait = self._exit_menu()
+            text.wait = await self._exit_menu()
             timectrl = self.dgtmenu.tc_blitz_map[fen]  # type: TimeControl
             await Observable.fire(
                 Event.SET_TIME_CONTROL(tc_init=timectrl.get_parameters(), time_text=text, show_ok=False)
@@ -672,7 +671,7 @@ class DgtDisplay(DisplayMsg):
             self.dgtmenu.set_time_mode(TimeMode.FISCHER)
             self.dgtmenu.set_time_fisch(list(self.dgtmenu.tc_fisch_map.keys()).index(fen))
             text = self.dgttranslate.text("M10_tc_fisch", self.dgtmenu.tc_fisch_list[self.dgtmenu.get_time_fisch()])
-            text.wait = self._exit_menu()
+            text.wait = await self._exit_menu()
             timectrl = self.dgtmenu.tc_fisch_map[fen]  # type: TimeControl
             await Observable.fire(
                 Event.SET_TIME_CONTROL(tc_init=timectrl.get_parameters(), time_text=text, show_ok=False)
@@ -696,31 +695,32 @@ class DgtDisplay(DisplayMsg):
                         # trigger window switch
                         if ModeInfo.get_emulation_mode() and self.dgtmenu.get_engine_rdisplay():
                             cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
-                            subprocess.run(
+                            process = await asyncio.create_subprocess_shell(
                                 cmd,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,
-                                universal_newlines=True,
-                                shell=True,
+                                stdout=asyncio.subprocess.PIPE,
+                                stderr=asyncio.subprocess.PIPE,
                             )
+                            stdout, stderr = await process.communicate()
+                            if process.returncode != 0:
+                                logger.error("Command failed with error: %s", stderr.decode())
                     else:
                         self.last_pos_start = True
                     logger.debug("map: New game")
                     await Observable.fire(Event.NEW_GAME(pos960=pos960))
                 else:
                     # self._reset_moves_and_score()
-                    DispatchDgt.fire(self.dgttranslate.text("Y10_error960"))
+                    await DispatchDgt.fire(self.dgttranslate.text("Y10_error960"))
             else:
                 await Observable.fire(Event.FEN(fen=fen))
 
-    def _process_engine_ready(self, message):
+    async def _process_engine_ready(self, message):
         for index in range(0, len(self.dgtmenu.installed_engines)):
             if self.dgtmenu.installed_engines[index]["file"] == message.eng["file"]:
                 self.dgtmenu.set_engine_index(index)
         self.dgtmenu.set_engine_has_960(message.has_960)
         self.dgtmenu.set_engine_has_ponder(message.has_ponder)
         if not self.dgtmenu.get_confirm() or not message.show_ok:
-            DispatchDgt.fire(message.eng_text)
+            await DispatchDgt.fire(message.eng_text)
         self.dgtmenu.set_engine_restart(False)
 
     def _process_engine_startup(self, message):
@@ -734,18 +734,18 @@ class DgtDisplay(DisplayMsg):
                 self.dgtmenu.set_engine_has_ponder(message.has_ponder)
                 self.dgtmenu.set_engine_level(message.level_index)
 
-    def force_leds_off(self, log=False):
+    async def force_leds_off(self, log=False):
         """Clear the rev2 lights if they still on."""
         if self.leds_are_on:
             if log:
                 logger.warning("(rev) leds still on")
         self.leds_are_on = False
-        DispatchDgt.fire(Dgt.LIGHT_CLEAR(devs={"ser", "web"}))
+        await DispatchDgt.fire(Dgt.LIGHT_CLEAR(devs={"ser", "web"}))
 
-    def _process_start_new_game(self, message):
+    async def _process_start_new_game(self, message):
         self.c_time_counter = 0
         self.c_last_player = ""
-        self.force_leds_off()
+        await self.force_leds_off()
         self._reset_moves_and_score()
         self.time_control.reset()
 
@@ -753,7 +753,7 @@ class DgtDisplay(DisplayMsg):
             self.last_pos_start = True
             pos960 = message.game.chess960_pos()
             self.uci960 = pos960 is not None and pos960 != 518
-            DispatchDgt.fire(self.dgttranslate.text("C10_ucigame" if self.uci960 else "C10_newgame", str(pos960)))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_ucigame" if self.uci960 else "C10_newgame", str(pos960)))
         else:
             self.last_pos_start = True
         if self.dgtmenu.get_mode() in (
@@ -765,9 +765,9 @@ class DgtDisplay(DisplayMsg):
         ):
             self._set_clock()
 
-    def _process_computer_move(self, message):
+    async def _process_computer_move(self, message):
         self.last_pos_start = False
-        self.force_leds_off(log=True)  # can happen in case of a book move
+        await self.force_leds_off(log=True)  # can happen in case of a book move
         move = message.move
         ponder = message.ponder
         self.play_move = move
@@ -799,51 +799,51 @@ class DgtDisplay(DisplayMsg):
             capital=self.dgttranslate.capital,
             long=self.dgttranslate.notation,
         )
-        DispatchDgt.fire(disp)
+        await DispatchDgt.fire(disp)
 
-        DispatchDgt.fire(Dgt.LIGHT_SQUARES(uci_move=move.uci(), devs={"ser", "web"}))
+        await DispatchDgt.fire(Dgt.LIGHT_SQUARES(uci_move=move.uci(), devs={"ser", "web"}))
         self.leds_are_on = True
         self.c_time_counter = 0
         self.c_last_player = "C"
 
-    def _set_clock(self, side=ClockSide.NONE, devs=None):
+    async def _set_clock(self, side=ClockSide.NONE, devs=None):
         if devs is None:  # prevent W0102 error
             devs = {"ser", "i2c", "web"}
         time_left, time_right = self.time_control.get_internal_time(flip_board=self.dgtmenu.get_flip_board())
-        DispatchDgt.fire(Dgt.CLOCK_SET(time_left=time_left, time_right=time_right, devs=devs))
-        DispatchDgt.fire(Dgt.CLOCK_START(side=side, wait=True, devs=devs))
+        await DispatchDgt.fire(Dgt.CLOCK_SET(time_left=time_left, time_right=time_right, devs=devs))
+        await DispatchDgt.fire(Dgt.CLOCK_START(side=side, wait=True, devs=devs))
 
-    def _display_confirm(self, text_key):
+    async def _display_confirm(self, text_key):
         if not self.low_time and not self.dgtmenu.get_confirm():  # only display if the user has >60sec on his clock
-            DispatchDgt.fire(self.dgttranslate.text(text_key))
+            await DispatchDgt.fire(self.dgttranslate.text(text_key))
 
-    def _process_computer_move_done(self):
+    async def _process_computer_move_done(self):
         self.c_last_player = "C"
         self.c_time_counter = 0
-        self.force_leds_off()
+        await self.force_leds_off()
         self.last_move = self.play_move
         self.last_fen = self.play_fen
         self.last_turn = self.play_turn
         self.play_move = chess.Move.null()
         self.play_fen = None
         self.play_turn = None
-        self._exit_menu()
+        await self._exit_menu()
 
         if self.dgtmenu.get_time_mode() == TimeMode.FIXED:  # go back to a stopped time display and reset times
             self.time_control.reset()
             self._set_clock()
 
         if self.dgtmenu.get_mode() == Mode.TRAINING:
-            self._display_confirm("K05_okmove")
+            await self._display_confirm("K05_okmove")
             text = self._combine_depth_and_score()
             text.wait = True
-            DispatchDgt.fire(text)
+            await DispatchDgt.fire(text)
         else:
-            self._display_confirm("K05_okpico")
+            await self._display_confirm("K05_okpico")
 
-    def _process_user_move_done(self, message):
+    async def _process_user_move_done(self, message):
         self.last_pos_start = False
-        self.force_leds_off(log=True)  # can happen in case of a sliding move
+        await self.force_leds_off(log=True)  # can happen in case of a sliding move
 
         if self.c_last_player == "C" or self.c_last_player == "":
             self.c_last_player = "U"
@@ -858,30 +858,30 @@ class DgtDisplay(DisplayMsg):
         self.play_move = chess.Move.null()
         self.play_fen = None
         self.play_turn = None
-        self._exit_menu()
+        await self._exit_menu()
 
         if self.dgtmenu.get_mode() == Mode.TRAINING:
-            self._display_confirm("K05_okmove")
+            await self._display_confirm("K05_okmove")
             text = self._combine_depth_and_score()
             text.wait = True
-            DispatchDgt.fire(text)
+            await DispatchDgt.fire(text)
         else:
-            self._display_confirm("K05_okuser")
+            await self._display_confirm("K05_okuser")
 
-    def _process_review_move_done(self, message):
-        self.force_leds_off(log=True)  # can happen in case of a sliding move
+    async def _process_review_move_done(self, message):
+        await self.force_leds_off(log=True)  # can happen in case of a sliding move
         self.last_move = message.move
         self.last_fen = message.fen
         self.last_turn = message.turn
-        self._exit_menu()
-        self._display_confirm("K05_okmove")
+        await self._exit_menu()
+        await self._display_confirm("K05_okmove")
         self.c_last_player = ""
         self.c_time_counter = 0
 
-    def _process_time_control(self, message):
+    async def _process_time_control(self, message):
         wait = not self.dgtmenu.get_confirm() or not message.show_ok
         if wait:
-            DispatchDgt.fire(message.time_text)
+            await DispatchDgt.fire(message.time_text)
         self.time_control = TimeControl(**message.tc_init)
         self._set_clock()
 
@@ -895,7 +895,7 @@ class DgtDisplay(DisplayMsg):
         if message.mode in (Mode.KIBITZ, Mode.TRAINING) and not self._inside_main_menu():
             text = self._combine_depth_and_score()
             text.wait = True
-            DispatchDgt.fire(text)
+            await DispatchDgt.fire(text)
 
     async def _process_new_pv(self, message):
         self.hint_move = message.pv[0]
@@ -917,7 +917,7 @@ class DgtDisplay(DisplayMsg):
                 capital=self.dgttranslate.capital,
                 long=self.dgttranslate.notation,
             )
-            DispatchDgt.fire(disp)
+            await DispatchDgt.fire(disp)
 
     async def _process_startup_info(self, message):
         self.play_mode = message.info["play_mode"]
@@ -1010,10 +1010,10 @@ class DgtDisplay(DisplayMsg):
                 self.dgtmenu.tc_node_list.append(timectrl.get_list_text())
                 self.dgtmenu.set_time_node(index)
 
-    def _process_clock_start(self, message):
+    async def _process_clock_start(self, message):
         self.time_control = TimeControl(**message.tc_init)
         side = ClockSide.LEFT if (message.turn == chess.WHITE) != self.dgtmenu.get_flip_board() else ClockSide.RIGHT
-        self._set_clock(side=side, devs=message.devs)
+        await self._set_clock(side=side, devs=message.devs)
 
     async def _process_once_per_second(self):
         """called by AsyncRepeatingTimer"""
@@ -1044,12 +1044,12 @@ class DgtDisplay(DisplayMsg):
                     else:
                         text = self._combine_depth_and_score()
                     text.wait = True
-                    DispatchDgt.fire(text)
+                    await DispatchDgt.fire(text)
                     self.show_move_or_value = (self.show_move_or_value + 1) % (self.dgtmenu.get_ponderinterval() * 2)
                 else:
                     text = self._combine_depth_and_score_and_hint()
                     text.wait = True
-                    DispatchDgt.fire(text)
+                    await DispatchDgt.fire(text)
             elif (self.dgtmenu.get_mode() == Mode.BRAIN and self.dgtmenu.get_rolldispbrain()) or (
                 self.dgtmenu.get_mode() == Mode.NORMAL and self.dgtmenu.get_rolldispnorm()
             ):
@@ -1059,7 +1059,7 @@ class DgtDisplay(DisplayMsg):
                     if self.c_time_counter > 2 * self.dgtmenu.get_ponderinterval():
                         text = self._combine_depth_and_score()
                         text.wait = True
-                        DispatchDgt.fire(text)
+                        await DispatchDgt.fire(text)
                         self.c_time_counter = (self.c_time_counter + 1) % (self.dgtmenu.get_ponderinterval() * 3)
                     elif self.c_time_counter > self.dgtmenu.get_ponderinterval():
                         if self.hint_move:
@@ -1082,14 +1082,14 @@ class DgtDisplay(DisplayMsg):
                             text = self.dgttranslate.text("N10_nomove")
                         text.wait = True
                         self.c_time_counter = (self.c_time_counter + 1) % (self.dgtmenu.get_ponderinterval() * 3)
-                        DispatchDgt.fire(text)
+                        await DispatchDgt.fire(text)
                         if self.c_time_counter == 2 * self.dgtmenu.get_ponderinterval():
                             await asyncio.sleep(0.3)
                     else:
                         if self.c_time_counter == 0:
                             await asyncio.sleep(0.3)
                         self.c_time_counter = (self.c_time_counter + 1) % (self.dgtmenu.get_ponderinterval() * 3)
-                        self._exit_display()
+                        await self._exit_display()
                         if self.c_time_counter == self.dgtmenu.get_ponderinterval():
                             await asyncio.sleep(0.3)
 
@@ -1097,7 +1097,7 @@ class DgtDisplay(DisplayMsg):
         _, _, _, rnk_5, rnk_4, _, _, _ = self.dgtmenu.get_dgt_fen().split("/")
         return "8/8/8/" + rnk_5 + "/" + rnk_4 + "/8/8/8"
 
-    def _exit_display(self, devs=None):
+    async def _exit_display(self, devs=None):
         if devs is None:  # prevent W0102 error
             devs = {"ser", "i2c", "web"}
         if self.play_move and self.dgtmenu.get_mode() in (
@@ -1121,7 +1121,7 @@ class DgtDisplay(DisplayMsg):
                 capital=self.dgttranslate.capital,
                 long=self.dgttranslate.notation,
             )
-            DispatchDgt.fire(Dgt.LIGHT_SQUARES(uci_move=self.play_move.uci(), devs={"ser", "web"}))
+            await DispatchDgt.fire(Dgt.LIGHT_SQUARES(uci_move=self.play_move.uci(), devs={"ser", "web"}))
         else:
             text = None
             if self._inside_main_menu():
@@ -1135,7 +1135,7 @@ class DgtDisplay(DisplayMsg):
                 else:
                     text = Dgt.DISPLAY_TIME(force=True, wait=True, devs=devs)
 
-        DispatchDgt.fire(text)
+        await DispatchDgt.fire(text)
 
     async def _process_message(self, message):
         """message task consumer"""
@@ -1143,57 +1143,57 @@ class DgtDisplay(DisplayMsg):
             pass
 
         elif isinstance(message, Message.ENGINE_READY):
-            self._process_engine_ready(message)
+            await self._process_engine_ready(message)
 
         elif isinstance(message, Message.ENGINE_STARTUP):
             self._process_engine_startup(message)
 
         elif isinstance(message, Message.ENGINE_FAIL):
-            DispatchDgt.fire(self.dgttranslate.text("Y10_erroreng"))
+            await DispatchDgt.fire(self.dgttranslate.text("Y10_erroreng"))
             self.dgtmenu.set_engine_restart(False)
 
         elif isinstance(message, Message.REMOTE_FAIL):
-            DispatchDgt.fire(self.dgttranslate.text("Y10_erroreng"))
+            await DispatchDgt.fire(self.dgttranslate.text("Y10_erroreng"))
 
         elif isinstance(message, Message.COMPUTER_MOVE):
-            self._process_computer_move(message)
+            await self._process_computer_move(message)
 
         elif isinstance(message, Message.START_NEW_GAME):
             self._process_start_new_game(message)
 
         elif isinstance(message, Message.COMPUTER_MOVE_DONE):
-            self._process_computer_move_done()
+            await self._process_computer_move_done()
 
         elif isinstance(message, Message.USER_MOVE_DONE):
-            self._process_user_move_done(message)
+            await self._process_user_move_done(message)
 
         elif isinstance(message, Message.REVIEW_MOVE_DONE):
             self._process_review_move_done(message)
 
         elif isinstance(message, Message.ALTERNATIVE_MOVE):
-            self.force_leds_off()
+            await self.force_leds_off()
             self.play_mode = message.play_mode
             self.play_move = chess.Move.null()
-            DispatchDgt.fire(self.dgttranslate.text("B05_altmove"))
+            await DispatchDgt.fire(self.dgttranslate.text("B05_altmove"))
 
         elif isinstance(message, Message.LEVEL):
             if not self.dgtmenu.get_engine_restart():
-                DispatchDgt.fire(message.level_text)
+                await DispatchDgt.fire(message.level_text)
 
         elif isinstance(message, Message.TIME_CONTROL):
             self._process_time_control(message)
 
         elif isinstance(message, Message.OPENING_BOOK):
             if not self.dgtmenu.get_confirm() or not message.show_ok:
-                DispatchDgt.fire(message.book_text)
+                await DispatchDgt.fire(message.book_text)
 
         elif isinstance(message, Message.TAKE_BACK):
             self.take_back_move = chess.Move.null()
             game_copy = message.game.copy()
 
-            self.force_leds_off()
+            await self.force_leds_off()
             self._reset_moves_and_score()
-            DispatchDgt.fire(self.dgttranslate.text("C10_takeback"))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_takeback"))
 
             try:
                 self.take_back_move = game_copy.pop()
@@ -1218,12 +1218,12 @@ class DgtDisplay(DisplayMsg):
                     long=True,
                 )  # molli: for take back display use long notation
                 text.wait = True
-                DispatchDgt.fire(text)
-                self.force_leds_off()
-                DispatchDgt.fire(Dgt.LIGHT_SQUARES(uci_move=self.take_back_move.uci(), devs={"ser", "web"}))
+                await DispatchDgt.fire(text)
+                await self.force_leds_off()
+                await DispatchDgt.fire(Dgt.LIGHT_SQUARES(uci_move=self.take_back_move.uci(), devs={"ser", "web"}))
                 self.leds_are_on = True
             else:
-                DispatchDgt.fire(Dgt.DISPLAY_TIME(force=True, wait=True, devs={"ser", "i2c", "web"}))
+                await DispatchDgt.fire(Dgt.DISPLAY_TIME(force=True, wait=True, devs={"ser", "i2c", "web"}))
 
             self.c_time_counter = 0
             self.c_last_player = ""
@@ -1247,7 +1247,7 @@ class DgtDisplay(DisplayMsg):
                 text = self.dgttranslate.text(message.result.value)
                 text.beep = self.dgttranslate.bl(BeepLevel.CONFIG)
                 text.maxtime = 1
-                DispatchDgt.fire(text)
+                await DispatchDgt.fire(text)
                 await asyncio.sleep(1)
                 if self.dgtmenu.get_mode() in (Mode.PONDER, Mode.TRAINING):
                     self._reset_moves_and_score()
@@ -1260,19 +1260,19 @@ class DgtDisplay(DisplayMsg):
 
         elif isinstance(message, Message.INTERACTION_MODE):
             if not self.dgtmenu.get_confirm() or not message.show_ok:
-                DispatchDgt.fire(message.mode_text)
+                await DispatchDgt.fire(message.mode_text)
 
         elif isinstance(message, Message.PLAY_MODE):
-            self.force_leds_off()  # molli: in case of flashing take back move
+            await self.force_leds_off()  # molli: in case of flashing take back move
             self.play_mode = message.play_mode
-            DispatchDgt.fire(message.play_mode_text)
+            await DispatchDgt.fire(message.play_mode_text)
 
         elif isinstance(message, Message.NEW_SCORE):
             await self._process_new_score(message)
 
         elif isinstance(message, Message.BOOK_MOVE):
             self.score = self.dgttranslate.text("N10_score", None)
-            DispatchDgt.fire(self.dgttranslate.text("N10_bookmove"))
+            await DispatchDgt.fire(self.dgttranslate.text("N10_bookmove"))
 
         elif isinstance(message, Message.NEW_PV):
             await self._process_new_pv(message)
@@ -1285,7 +1285,7 @@ class DgtDisplay(DisplayMsg):
             self.dgtmenu.ext_ip = message.info["ext_ip"]
 
         elif isinstance(message, Message.STARTUP_INFO):
-            self.force_leds_off()
+            await self.force_leds_off()
             await self._process_startup_info(message)
 
         elif isinstance(message, Message.SEARCH_STARTED):
@@ -1295,10 +1295,10 @@ class DgtDisplay(DisplayMsg):
             logger.debug("search stopped")
 
         elif isinstance(message, Message.CLOCK_START):
-            self._process_clock_start(message)
+            await self._process_clock_start(message)
 
         elif isinstance(message, Message.CLOCK_STOP):
-            DispatchDgt.fire(Dgt.CLOCK_STOP(devs=message.devs, wait=True))
+            await DispatchDgt.fire(Dgt.CLOCK_STOP(devs=message.devs, wait=True))
 
         elif isinstance(message, Message.DGT_BUTTON):
             await self._process_button(message)
@@ -1310,15 +1310,15 @@ class DgtDisplay(DisplayMsg):
                 await self._process_fen(message.fen, message.raw)
 
         elif isinstance(message, Message.DGT_CLOCK_VERSION):
-            DispatchDgt.fire(Dgt.CLOCK_VERSION(main=message.main, sub=message.sub, devs={message.dev}))
+            await DispatchDgt.fire(Dgt.CLOCK_VERSION(main=message.main, sub=message.sub, devs={message.dev}))
             text = self.dgttranslate.text("Y21_picochess", devs={message.dev})
             text.rd = ClockIcons.DOT
-            DispatchDgt.fire(text)
+            await DispatchDgt.fire(text)
 
             if message.dev == "ser":  # send the "board connected message" to serial clock
-                DispatchDgt.fire(message.text)
-            self._set_clock(devs={message.dev})
-            self._exit_display(devs={message.dev})
+                await DispatchDgt.fire(message.text)
+            await self._set_clock(devs={message.dev})
+            await self._exit_display(devs={message.dev})
 
         elif isinstance(message, Message.DGT_CLOCK_TIME):
             time_white = message.time_left
@@ -1347,13 +1347,13 @@ class DgtDisplay(DisplayMsg):
             pass
 
         elif isinstance(message, Message.DGT_JACK_CONNECTED_ERROR):  # only working in case of 2 clocks connected!
-            DispatchDgt.fire(self.dgttranslate.text("Y00_errorjack"))
+            await DispatchDgt.fire(self.dgttranslate.text("Y00_errorjack"))
 
         elif isinstance(message, Message.DGT_EBOARD_VERSION):
             if self.dgtmenu.inside_updt_menu():
                 logger.debug("inside update menu => board channel not displayed")
             else:
-                DispatchDgt.fire(message.text)
+                await DispatchDgt.fire(message.text)
                 self._exit_display(devs={"i2c", "web"})  # ser is done, when clock found
 
         elif isinstance(message, Message.DGT_NO_EBOARD_ERROR):
@@ -1361,7 +1361,7 @@ class DgtDisplay(DisplayMsg):
                 pass  # avoid filling logbook with DGT search
                 # logger.debug("inside menu => board error not displayed")
             else:
-                DispatchDgt.fire(message.text)
+                await DispatchDgt.fire(message.text)
 
         elif isinstance(message, Message.DGT_NO_CLOCK_ERROR):
             pass
@@ -1381,18 +1381,18 @@ class DgtDisplay(DisplayMsg):
             self.hint_move = chess.Move.null()
             self.hint_fen = None
             self.hint_turn = None
-            self.force_leds_off()
+            await self.force_leds_off()
             logger.debug("user ignored move %s", message.move)
 
         elif isinstance(message, Message.EXIT_MENU):
-            self._exit_display()
+            await self._exit_display()
 
         elif isinstance(message, Message.WRONG_FEN):
-            DispatchDgt.fire(self.dgttranslate.text("C10_setpieces"))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_setpieces"))
             await asyncio.sleep(1)
 
         elif isinstance(message, Message.UPDATE_PICO):
-            DispatchDgt.fire(self.dgttranslate.text("Y00_update"))
+            await DispatchDgt.fire(self.dgttranslate.text("Y00_update"))
 
         elif isinstance(message, Message.BATTERY):
             if message.percent == 0x7F:
@@ -1407,77 +1407,77 @@ class DgtDisplay(DisplayMsg):
             self.dgtmenu.inside_room = message.inside
 
         elif isinstance(message, Message.RESTORE_GAME):
-            DispatchDgt.fire(self.dgttranslate.text("C10_restoregame"))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_restoregame"))
 
         elif isinstance(message, Message.ENGINE_NAME):
-            DispatchDgt.fire(self.dgttranslate.text("K20_enginename", message.engine_name))
+            await DispatchDgt.fire(self.dgttranslate.text("K20_enginename", message.engine_name))
             await asyncio.sleep(1.5)
 
         elif isinstance(message, Message.SHOW_TEXT):
             string_part = ""
             if "K20_" in str(message.text_string):
-                DispatchDgt.fire(self.dgttranslate.text(message.text_string))
+                await DispatchDgt.fire(self.dgttranslate.text(message.text_string))
             elif message.text_string == "NO_ARTWORK":
-                DispatchDgt.fire(self.dgttranslate.text("K20_no_artwork"))
+                await DispatchDgt.fire(self.dgttranslate.text("K20_no_artwork"))
                 await asyncio.sleep(2)
             elif message.text_string == "NEW_POSITION":
-                DispatchDgt.fire(self.dgttranslate.text("K20_newposition"))
+                await DispatchDgt.fire(self.dgttranslate.text("K20_newposition"))
                 await asyncio.sleep(1.5)
             elif message.text_string == "NEW_POSITION_SCAN":
                 await asyncio.sleep(0.5)
             else:
                 for string_part in self._convert_pico_string(message.text_string):
-                    DispatchDgt.fire(self.dgttranslate.text("K20_default", string_part))
+                    await DispatchDgt.fire(self.dgttranslate.text("K20_default", string_part))
                     await asyncio.sleep(1.5)
 
         elif isinstance(message, Message.SEEKING):
-            DispatchDgt.fire(self.dgttranslate.text("C10_seeking"))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_seeking"))
 
         elif isinstance(message, Message.ENGINE_SETUP):
-            DispatchDgt.fire(self.dgttranslate.text("C20_enginesetup"))
+            await DispatchDgt.fire(self.dgttranslate.text("C20_enginesetup"))
 
         elif isinstance(message, Message.MOVE_RETRY):
-            DispatchDgt.fire(self.dgttranslate.text("C10_moveretry"))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_moveretry"))
 
         elif isinstance(message, Message.MOVE_WRONG):
-            DispatchDgt.fire(self.dgttranslate.text("C10_movewrong"))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_movewrong"))
 
         elif isinstance(message, Message.SET_PLAYMODE):
-            self.force_leds_off()  # molli: in case of flashing take back move
+            await self.force_leds_off()  # molli: in case of flashing take back move
             self.play_mode = message.play_mode
 
         elif isinstance(message, Message.ONLINE_NAMES):
             logger.debug("molli: user online name %s", message.own_user)
             logger.debug("molli: opponent online name %s", message.opp_user)
-            DispatchDgt.fire(self.dgttranslate.text("C10_onlineuser", message.opp_user))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_onlineuser", message.opp_user))
 
         elif isinstance(message, Message.ONLINE_LOGIN):
-            DispatchDgt.fire(self.dgttranslate.text("C10_login"))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_login"))
 
         elif isinstance(message, Message.ONLINE_FAILED):
-            DispatchDgt.fire(self.dgttranslate.text("C10_serverfailed"))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_serverfailed"))
 
         elif isinstance(message, Message.ONLINE_USER_FAILED):
-            DispatchDgt.fire(self.dgttranslate.text("C10_userfailed"))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_userfailed"))
 
         elif isinstance(message, Message.ONLINE_NO_OPPONENT):
-            DispatchDgt.fire(self.dgttranslate.text("C10_noopponent"))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_noopponent"))
 
         elif isinstance(message, Message.LOST_ON_TIME):
-            DispatchDgt.fire(self.dgttranslate.text("C10_gameresult_time"))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_gameresult_time"))
 
         elif isinstance(message, Message.SET_NOBOOK):
             self.dgtmenu.set_book(message.book_index)  # molli for emulation, online & pgn modes
 
         elif isinstance(message, Message.PICOTUTOR_MSG):
-            DispatchDgt.fire(self.dgttranslate.text("C10_picotutor_msg", message.eval_str))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_picotutor_msg", message.eval_str))
             if message.eval_str == "POSOK" or message.eval_str == "ANALYSIS" and self.play_move == chess.Move.null():
-                self.force_leds_off()  # molli: sometime if you move the pieces too quickly a LED may still flash on the rev2
+                await self.force_leds_off()  # molli: sometime if you move the pieces too quickly a LED may still flash on the rev2
 
         elif isinstance(message, Message.POSITION_FAIL):
-            self.force_leds_off()
-            DispatchDgt.fire(self.dgttranslate.text("C10_position_fail", message.fen_result))
-            DispatchDgt.fire(Dgt.LIGHT_SQUARE(square=message.fen_result[-2:], devs={"ser", "web"}))
+            await self.force_leds_off()
+            await DispatchDgt.fire(self.dgttranslate.text("C10_position_fail", message.fen_result))
+            await DispatchDgt.fire(Dgt.LIGHT_SQUARE(square=message.fen_result[-2:], devs={"ser", "web"}))
             self.leds_are_on = True
             await asyncio.sleep(3)
 
@@ -1509,21 +1509,21 @@ class DgtDisplay(DisplayMsg):
             pass
 
         elif isinstance(message, Message.READ_GAME):
-            DispatchDgt.fire(self.dgttranslate.text("C10_game_read_menu"))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_game_read_menu"))
 
         elif isinstance(message, Message.TIMECONTROL_CHECK):
             msg_str = "TC"
-            DispatchDgt.fire(self.dgttranslate.text("C10_timecontrol_check", msg_str))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_timecontrol_check", msg_str))
             await asyncio.sleep(2.5)
             msg_str = "M" + str(message.movestogo) + "mv/" + str(message.time1)
-            DispatchDgt.fire(self.dgttranslate.text("C10_timecontrol_check", msg_str))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_timecontrol_check", msg_str))
             await asyncio.sleep(3.5)
             msg_str = "A" + str(message.time2) + "min"
-            DispatchDgt.fire(self.dgttranslate.text("C10_timecontrol_check", msg_str))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_timecontrol_check", msg_str))
             await asyncio.sleep(3.5)
 
         elif isinstance(message, Message.PGN_GAME_END):
-            DispatchDgt.fire(self.dgttranslate.text("C10_pgngame_end", message.result))
+            await DispatchDgt.fire(self.dgttranslate.text("C10_pgngame_end", message.result))
 
             if "1-0" in message.result:
                 text = self.dgttranslate.text("C10_gameresult_white")
@@ -1540,10 +1540,10 @@ class DgtDisplay(DisplayMsg):
             text.beep = self.dgttranslate.bl(BeepLevel.CONFIG)
             text.maxtime = 0.5
 
-            DispatchDgt.fire(text)
+            await DispatchDgt.fire(text)
 
         elif isinstance(message, Message.PROMOTION_DONE):
-            DispatchDgt.fire(Dgt.PROMOTION_DONE(uci_move=message.move.uci(), devs={"ser"}))
+            await DispatchDgt.fire(Dgt.PROMOTION_DONE(uci_move=message.move.uci(), devs={"ser"}))
 
         else:  # Default
             pass

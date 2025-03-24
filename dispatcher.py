@@ -17,7 +17,6 @@
 
 import logging
 from threading import Timer, Lock
-from copy import deepcopy
 from typing import Dict, Set
 
 from utilities import DisplayDgt, DispatchDgt, dispatch_queue
@@ -162,9 +161,9 @@ class Dispatcher(DispatchDgt):
             # Check if we have something to display
             msg = await dispatch_queue.get()
             logger.debug("received command from dispatch_queue: %s devs: %s", msg, ",".join(msg.devs))
-            self.process_dispatch_message(msg)
+            await self.process_dispatch_message(msg)
 
-    def process_dispatch_message(self, message):
+    async def process_dispatch_message(self, message):
         """Process the dispatch message"""
         for dev in message.devs & self.devices:
             if self.maxtimer_running[dev]:

@@ -21,7 +21,6 @@ import platform
 import urllib.request
 import socket
 import json
-import time
 import copy
 import configparser
 import subprocess
@@ -94,15 +93,22 @@ class DispatchDgt(object):
         main_loop = loop
 
     @staticmethod
+    async def fire(dgt):
+        """Put an event on the Queue."""
+        await DispatchDgt._add_to_queue(dgt)
+        logger.debug("put in dispatch_queue done")
+
+    @staticmethod
     async def _add_to_queue(dgt):
         """Put an event on the Queue."""
         await dispatch_queue.put(dgt)
 
-    # @todo: code above and below is temporary until also this fire can be async
+    # @todo: code below is temporary until also all dgt fires can be async
 
     @staticmethod
-    def fire(dgt):
+    def fire_sync(dgt):
         """Put an event on the Queue."""
+        global main_loop
         asyncio.run_coroutine_threadsafe(DispatchDgt._add_to_queue(copy.deepcopy(dgt)), main_loop)
 
 
@@ -281,7 +287,7 @@ def update_picochess(dgtpi: bool, auto_reboot: bool, dgttranslate: DgtTranslate)
         # Check if update is needed - need to make sure, we get english answers
         output = do_popen([git, "status", "-uno"], force_en_env=True)
         if "up-to-date" not in output and "Your branch is ahead of" not in output:
-            DispatchDgt.fire(dgttranslate.text("Y25_update"))
+            DispatchDgt.fire_sync(dgttranslate.text("Y25_update"))
             # Update
             logging.debug("updating picochess")
             do_popen([git, "pull", "origin", branch])
