@@ -220,7 +220,7 @@ class PicochessState:
         self.artwork_in_use = False
         self.delay_fen_error = 4
 
-    def start_clock(self) -> None:
+    async def start_clock(self) -> None:
         """Start the clock."""
         if self.interaction_mode in (
             Mode.NORMAL,
@@ -234,13 +234,15 @@ class PicochessState:
             if self.interaction_mode == Mode.TRAINING:
                 pass
             else:
-                DisplayMsg.show(Message.CLOCK_START(turn=self.game.turn, tc_init=tc_init, devs={"ser", "i2c", "web"}))
+                await DisplayMsg.show(
+                    Message.CLOCK_START(turn=self.game.turn, tc_init=tc_init, devs={"ser", "i2c", "web"})
+                )
                 # removed sync sleep
                 # @todo give some time to clock to really do it. Check this solution!
         else:
             logger.warning("wrong function call [start]! mode: %s", self.interaction_mode)
 
-    def stop_clock(self) -> None:
+    async def stop_clock(self) -> None:
         """Stop the clock."""
         if self.interaction_mode in (
             Mode.NORMAL,
@@ -253,7 +255,7 @@ class PicochessState:
             if self.interaction_mode == Mode.TRAINING:
                 pass
             else:
-                DisplayMsg.show(Message.CLOCK_STOP(devs={"ser", "i2c", "web"}))
+                await DisplayMsg.show(Message.CLOCK_STOP(devs={"ser", "i2c", "web"}))
                 # removed sync sleep
                 # @todo give some time to clock to really do it. Check this solution!
         else:
@@ -319,7 +321,7 @@ class PicochessState:
         self.time_control = TimeControl(**tc_init)
         text = self.dgttranslate.text("N00_oktime")
         msg = Message.TIME_CONTROL(time_text=text, show_ok=True, tc_init=tc_init)
-        DisplayMsg.show(msg)
+        await DisplayMsg.show(msg)
         self.stop_fen_timer()
 
     def check_game_state(self):
@@ -427,7 +429,7 @@ class PicochessState:
         return timec, textc
 
 
-async def check_ssh(host, username, password) -> bool:
+def check_ssh(host, username, password) -> bool:
     try:
         s = paramiko.SSHClient()
         s.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -438,7 +440,7 @@ async def check_ssh(host, username, password) -> bool:
     return True
 
 
-async def log_pgn(state: PicochessState):
+def log_pgn(state: PicochessState):
     logger.debug("molli pgn: pgn_book_test: %s", str(state.pgn_book_test))
     logger.debug("molli pgn: game turn: %s", state.game.turn)
     logger.debug("molli pgn: max_guess_white: %s", state.max_guess)
@@ -448,7 +450,7 @@ async def log_pgn(state: PicochessState):
     logger.debug("molli pgn: no_guess_black: %s", state.no_guess_black)
 
 
-async def read_pgn_info():
+def read_pgn_info():
     info = {}
     arch = platform.machine()
     pgn_info_path = "/opt/picochess/engines/" + arch + "/extra/pgn_game_info.txt"
@@ -470,7 +472,7 @@ async def read_pgn_info():
         return "Game Error", "", "", "*", "", ""
 
 
-async def read_online_result():
+def read_online_result():
     result_line = ""
     winner = ""
 
@@ -497,7 +499,7 @@ async def read_online_result():
     return (str(result_line), str(winner))
 
 
-async def read_online_user_info() -> Tuple[str, str, str, str, int, int]:
+def read_online_user_info() -> Tuple[str, str, str, str, int, int]:
     own_user = "unknown"
     opp_user = "unknown"
     login = "failed"
@@ -532,7 +534,7 @@ async def read_online_user_info() -> Tuple[str, str, str, str, int, int]:
     return login, own_color, own_user, opp_user, game_time, fischer_inc
 
 
-async def compare_fen(fen_board_external="", fen_board_internal="") -> str:
+def compare_fen(fen_board_external="", fen_board_internal="") -> str:
     # <Piece Placement> ::= <rank8>'/'<rank7>'/'<rank6>'/'<rank5>'/'<rank4>'/'<rank3>'/'<rank2>'/'<rank1>
     # <ranki>       ::= [<digit17>]<piece> {[<digit17>]<piece>} [<digit17>] | '8'
     # <piece>       ::= <white Piece> | <black Piece>
@@ -565,7 +567,7 @@ async def compare_fen(fen_board_external="", fen_board_internal="") -> str:
     return put_field
 
 
-async def compute_legal_fens(game_copy: chess.Board):
+def compute_legal_fens(game_copy: chess.Board):
     """
     Compute a list of legal FENs for the given game.
 
@@ -607,7 +609,7 @@ async def main() -> None:
             location = state.set_location
 
         info = {"location": location, "ext_ip": ext_ip, "int_ip": int_ip, "version": version}
-        DisplayMsg.show(Message.IP_INFO(info=info))
+        await DisplayMsg.show(Message.IP_INFO(info=info))
 
     config = Configuration()
     args, unknown = config._args, config.unknown
@@ -895,13 +897,13 @@ async def main() -> None:
             if not self.engine.loaded_ok():
                 logger.error("engine %s not started", self.state.engine_file)
                 await asyncio.sleep(3)
-                DisplayMsg.show(Message.ENGINE_FAIL())
+                await DisplayMsg.show(Message.ENGINE_FAIL())
                 await asyncio.sleep(2)
                 sys.exit(-1)
 
             # Startup - internal
             self.state.game = chess.Board()  # Create the current game
-            self.state.legal_fens = await compute_legal_fens(self.state.game.copy())  # Compute the legal FENs
+            self.state.legal_fens = compute_legal_fens(self.state.game.copy())  # Compute the legal FENs
             self.state.flag_startup = True
 
             if self.args.pgn_elo and self.args.pgn_elo.isnumeric() and self.args.rating_deviation:
@@ -955,8 +957,8 @@ async def main() -> None:
                 "rspeed": round(float(args.rspeed), 2),
             }
 
-            DisplayMsg.show(Message.SYSTEM_INFO(info=sys_info))
-            DisplayMsg.show(
+            await DisplayMsg.show(Message.SYSTEM_INFO(info=sys_info))
+            await DisplayMsg.show(
                 Message.STARTUP_INFO(
                     info={
                         "interaction_mode": self.state.interaction_mode,
@@ -972,7 +974,7 @@ async def main() -> None:
             )
 
             # engines setup
-            DisplayMsg.show(
+            await DisplayMsg.show(
                 Message.ENGINE_STARTUP(
                     installed_engines=EngineProvider.installed_engines,
                     file=self.state.engine_file,
@@ -981,8 +983,8 @@ async def main() -> None:
                     has_ponder=self.engine.has_ponder(),
                 )
             )
-            DisplayMsg.show(Message.ENGINE_SETUP())
-            self.update_elo_display()
+            await DisplayMsg.show(Message.ENGINE_SETUP())
+            await self.update_elo_display()
 
             # set timecontrol restore data set for normal engines after leaving emulation mode
             pico_time = self.args.def_timectrl
@@ -1006,7 +1008,7 @@ async def main() -> None:
                 ModeInfo.set_online_mode(mode=False)
                 self.engine.newgame(self.state.game.copy())
 
-            DisplayMsg.show(Message.PICOCOMMENT(picocomment="ok"))
+            await DisplayMsg.show(Message.PICOCOMMENT(picocomment="ok"))
 
             self.state.comment_file = self.get_comment_file()
             tutor_engine = self.args.tutor_engine
@@ -1040,7 +1042,7 @@ async def main() -> None:
 
             if self.state.dgtmenu.get_enginename():
                 msg = Message.ENGINE_NAME(engine_name=self.state.engine_text)
-                DisplayMsg.show(msg)
+                await DisplayMsg.show(msg)
 
         async def think(
             self,
@@ -1052,9 +1054,9 @@ async def main() -> None:
 
             If a move is found in the opening book, fire an event in a few seconds.
             """
-            DisplayMsg.show(msg)
+            await DisplayMsg.show(msg)
             if not self.online_mode() or self.state.game.fullmove_number > 1:
-                self.state.start_clock()
+                await self.state.start_clock()
             book_res = self.state.searchmoves.book(self.bookreader, self.state.game.copy())
             if (book_res and not self.emulation_mode() and not self.online_mode() and not self.pgn_mode()) or (
                 book_res and (self.pgn_mode() and self.state.pgn_book_test)
@@ -1101,7 +1103,7 @@ async def main() -> None:
         async def stop_search_and_clock(self, ponder_hit=False):
             """Depending on the interaction mode stop search and clock."""
             if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
-                self.state.stop_clock()
+                await self.state.stop_clock()
                 if self.engine.is_waiting():
                     logger.debug("engine already waiting")
                 else:
@@ -1110,7 +1112,7 @@ async def main() -> None:
                     else:
                         await self.stop_search()
             elif self.state.interaction_mode in (Mode.REMOTE, Mode.OBSERVE):
-                self.state.stop_clock()
+                await self.state.stop_clock()
                 await self.stop_search()
             elif self.state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.PONDER):
                 await self.stop_search()
@@ -1133,13 +1135,13 @@ async def main() -> None:
                 (self.state.game.turn == chess.WHITE and self.state.play_mode == PlayMode.USER_WHITE)
                 or (self.state.game.turn == chess.BLACK and self.state.play_mode == PlayMode.USER_BLACK)
             ) and not (self.state.game.is_checkmate() or self.state.game.is_stalemate()):
-                self.state.stop_clock()
+                await self.state.stop_clock()
                 await asyncio.sleep(0.5)
                 self.state.stop_fen_timer()
                 await asyncio.sleep(0.5)
                 eval_str = "ANALYSIS"
                 msg = Message.PICOTUTOR_MSG(eval_str=eval_str)
-                DisplayMsg.show(msg)
+                await DisplayMsg.show(msg)
                 await asyncio.sleep(2)
 
                 (
@@ -1152,7 +1154,7 @@ async def main() -> None:
 
                 tutor_str = "POS" + str(t_best_score)
                 msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, score=t_best_score)
-                DisplayMsg.show(msg)
+                await DisplayMsg.show(msg)
                 await asyncio.sleep(5)
 
                 if t_best_mate:
@@ -1163,19 +1165,19 @@ async def main() -> None:
                         game_tutor.push(t_best_move)  # for picotalker (last move spoken)
                         tutor_str = "BEST" + san_move
                         msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=game_tutor.copy())
-                        DisplayMsg.show(msg)
+                        await DisplayMsg.show(msg)
                         await asyncio.sleep(5)
                 else:
                     l_mate = 0
                 if l_mate > 0:
                     eval_str = "PICMATE_" + str(abs(l_mate))
                     msg = Message.PICOTUTOR_MSG(eval_str=eval_str)
-                    DisplayMsg.show(msg)
+                    await DisplayMsg.show(msg)
                     await asyncio.sleep(5)
                 elif l_mate < 0:
                     eval_str = "USRMATE_" + str(abs(l_mate))
                     msg = Message.PICOTUTOR_MSG(eval_str=eval_str)
-                    DisplayMsg.show(msg)
+                    await DisplayMsg.show(msg)
                     await asyncio.sleep(5)
                 else:
                     l_max = 0
@@ -1188,11 +1190,11 @@ async def main() -> None:
 
                             tutor_str = "BEST" + san_move
                             msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=game_tutor.copy())
-                            DisplayMsg.show(msg)
+                            await DisplayMsg.show(msg)
                             await asyncio.sleep(5)
                         else:
                             break
-                self.state.start_clock()
+                await self.state.start_clock()
 
         def calc_engine_mame_par(self):
             return get_engine_mame_par(self.state.dgtmenu.get_engine_rspeed(), self.state.dgtmenu.get_engine_rsound())
@@ -1280,7 +1282,7 @@ async def main() -> None:
         async def set_wait_state(self, msg: Message, start_search=True):
             """Enter engine waiting (normal mode) and maybe (by parameter) start pondering."""
             if not self.state.done_computer_fen:
-                self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                self.state.legal_fens = compute_legal_fens(self.state.game.copy())
                 self.state.last_legal_fens = []
             if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN):  # @todo handle Mode.REMOTE too and TRAINING?
                 if self.state.done_computer_fen:
@@ -1296,7 +1298,7 @@ async def main() -> None:
                         text = self.state.play_mode.value  # type: str
                         if self.picotutor_mode():
                             await self.state.picotutor.set_user_color(self.state.get_user_color())
-                        DisplayMsg.show(
+                        await DisplayMsg.show(
                             Message.PLAY_MODE(
                                 play_mode=self.state.play_mode, play_mode_text=self.state.dgttranslate.text(text)
                             )
@@ -1314,22 +1316,22 @@ async def main() -> None:
                     Mode.OBSERVE,
                     Mode.REMOTE,
                 ):
-                    DisplayMsg.show(msg)
+                    await DisplayMsg.show(msg)
                     await self.analyse()
                     return
             if not self.state.reset_auto:
                 if self.state.automatic_takeback:
                     await self.stop_search_and_clock()
                     self.state.reset_auto = True
-                DisplayMsg.show(msg)
+                await DisplayMsg.show(msg)
             else:
-                DisplayMsg.show(msg)  # molli: fix for web display refresh
+                await DisplayMsg.show(msg)  # molli: fix for web display refresh
                 if self.state.automatic_takeback and self.state.takeback_active:
                     if self.state.play_mode == PlayMode.USER_WHITE:
                         text_pl = "K20_playmode_white_user"
                     else:
                         text_pl = "K20_playmode_black_user"
-                    DisplayMsg.show(Message.SHOW_TEXT(text_string=text_pl))
+                    await DisplayMsg.show(Message.SHOW_TEXT(text_string=text_pl))
                 self.state.automatic_takeback = False
                 self.state.takeback_active = False
                 self.state.reset_auto = False
@@ -1358,7 +1360,7 @@ async def main() -> None:
                 await self.set_wait_state(Message.TAKE_BACK(game=self.state.game.copy()))
 
                 if self.pgn_mode():  # molli pgn
-                    await log_pgn(self.state)
+                    log_pgn(self.state)
                     if self.state.max_guess_white > 0:
                         if self.state.game.turn == chess.WHITE:
                             if self.state.no_guess_white > self.state.max_guess_white:
@@ -1373,7 +1375,7 @@ async def main() -> None:
                     await Observable.fire(Event.NEW_GAME(pos960=pos960))
 
         async def get_next_pgn_move(self):
-            await log_pgn(self.state)
+            log_pgn(self.state)
             await asyncio.sleep(0.5)
 
             if self.state.max_guess_black > 0:
@@ -1392,7 +1394,7 @@ async def main() -> None:
                 self.state.done_move = self.state.pb_move = chess.Move.null()
 
             msg = Message.SET_PLAYMODE(play_mode=self.state.play_mode)
-            DisplayMsg.show(msg)
+            await DisplayMsg.show(msg)
             msg = Message.COMPUTER_MOVE_DONE()
 
             if self.state.time_control.mode == TimeMode.FIXED:
@@ -1406,14 +1408,14 @@ async def main() -> None:
                 self.state.time_control.reset_start_time()
                 await self.think(msg)
             else:
-                DisplayMsg.show(msg)
-                self.state.start_clock()
-                self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                await DisplayMsg.show(msg)
+                await self.state.start_clock()
+                self.state.legal_fens = compute_legal_fens(self.state.game.copy())
 
         async def switch_online(self):
             color = ""
             if self.online_mode():
-                login, own_color, own_user, opp_user, game_time, fischer_inc = await read_online_user_info()
+                login, own_color, own_user, opp_user, game_time, fischer_inc = read_online_user_info()
                 logger.debug("molli own_color in switch_online [%s]", own_color)
                 logger.debug("molli self.own_user in switch_online [%s]", own_user)
                 logger.debug("molli self.opp_user in switch_online [%s]", opp_user)
@@ -1467,7 +1469,7 @@ async def main() -> None:
             """Process given fen like doMove, undoMove, takebackPosition, handleSliding."""
             handled_fen = True
             self.state.error_fen = None
-            legal_fens_pico = await compute_legal_fens(self.state.game.copy())
+            legal_fens_pico = compute_legal_fens(self.state.game.copy())
 
             # Check for same position
             if fen == self.state.game.board_fen():
@@ -1491,12 +1493,12 @@ async def main() -> None:
                         # position finally alright!
                         tutor_str = "POSOK"
                         msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=self.state.game.copy())
-                        DisplayMsg.show(msg)
+                        await DisplayMsg.show(msg)
                         self.state.delay_fen_error = 4
                         await asyncio.sleep(1)
                         if not self.state.done_computer_fen:
-                            self.state.start_clock()
-                    DisplayMsg.show(Message.EXIT_MENU())
+                            await self.state.start_clock()
+                    await DisplayMsg.show(Message.EXIT_MENU())
                 elif self.emulation_mode() and self.state.dgtmenu.get_engine_rdisplay() and self.state.artwork_in_use:
                     # switch windows/tasks
                     cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
@@ -1582,7 +1584,7 @@ async def main() -> None:
                 if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING):
                     self.state.legal_fens = []
                 else:
-                    self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                    self.state.legal_fens = compute_legal_fens(self.state.game.copy())
 
             # allow playing/correcting moves for pico's side in TRAINING mode:
             elif fen in legal_fens_pico and self.state.interaction_mode == Mode.TRAINING:
@@ -1593,13 +1595,13 @@ async def main() -> None:
                     if fen == self.state.done_computer_fen:
                         pass
                     else:
-                        DisplayMsg.show(Message.WRONG_FEN())  # display set pieces/pico's move
+                        await DisplayMsg.show(Message.WRONG_FEN())  # display set pieces/pico's move
                         await asyncio.sleep(3)  # display set pieces again and accept new players move as pico's move
-                        DisplayMsg.show(
+                        await DisplayMsg.show(
                             Message.ALTERNATIVE_MOVE(game=self.state.game.copy(), play_mode=self.state.play_mode)
                         )
                         await asyncio.sleep(2)
-                        DisplayMsg.show(
+                        await DisplayMsg.show(
                             Message.COMPUTER_MOVE(move=move, ponder=False, game=self.state.game.copy(), wait=False)
                         )
                         await asyncio.sleep(2)
@@ -1610,7 +1612,7 @@ async def main() -> None:
                 if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING):
                     self.state.legal_fens = []
                 else:
-                    self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                    self.state.legal_fens = compute_legal_fens(self.state.game.copy())
 
             # standard legal move
             elif fen in self.state.legal_fens:
@@ -1623,7 +1625,7 @@ async def main() -> None:
                 if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE):
                     self.state.legal_fens = []
                 else:
-                    self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                    self.state.legal_fens = compute_legal_fens(self.state.game.copy())
 
             # molli: allow direct play of an alternative move for pico
             elif (
@@ -1644,21 +1646,23 @@ async def main() -> None:
                 self.state.best_move_posted = False
                 self.state.best_move_displayed = None
                 if computer_move:
-                    DisplayMsg.show(
+                    await DisplayMsg.show(
                         Message.COMPUTER_MOVE(move=computer_move, ponder=False, game=self.state.game.copy(), wait=False)
                     )
                     await asyncio.sleep(3)
-                DisplayMsg.show(Message.ALTERNATIVE_MOVE(game=self.state.game.copy(), play_mode=self.state.play_mode))
+                await DisplayMsg.show(
+                    Message.ALTERNATIVE_MOVE(game=self.state.game.copy(), play_mode=self.state.play_mode)
+                )
                 await asyncio.sleep(3)
                 if self.state.done_move:
-                    DisplayMsg.show(
+                    await DisplayMsg.show(
                         Message.COMPUTER_MOVE(
                             move=self.state.done_move, ponder=False, game=self.state.game.copy(), wait=False
                         )
                     )
                     await asyncio.sleep(1.5)
 
-                DisplayMsg.show(Message.COMPUTER_MOVE_DONE())
+                await DisplayMsg.show(Message.COMPUTER_MOVE_DONE())
                 logger.info("user did a move for pico")
                 self.state.game.push(self.state.done_move)
                 self.state.done_computer_fen = None
@@ -1680,7 +1684,7 @@ async def main() -> None:
                         await self.stop_search_and_clock()
                         self.state.stop_fen_timer()
                     await self.stop_search_and_clock()
-                    DisplayMsg.show(game_end)
+                    await DisplayMsg.show(game_end)
                 else:
                     self.state.searchmoves.reset()
                     self.state.time_control.add_time(not self.state.game.turn)
@@ -1698,11 +1702,11 @@ async def main() -> None:
                             time1=self.state.time_control.game_time,
                             time2=self.state.time_control.game_time2,
                         )
-                        DisplayMsg.show(msg)
+                        await DisplayMsg.show(msg)
 
-                    self.state.start_clock()
+                    await self.state.start_clock()
 
-                self.state.legal_fens = await compute_legal_fens(
+                self.state.legal_fens = compute_legal_fens(
                     self.state.game.copy()
                 )  # calc. new legal moves based on alt. move
                 self.state.last_legal_fens = []
@@ -1718,7 +1722,7 @@ async def main() -> None:
                 ), (
                     "wrong mode: %s" % self.state.interaction_mode
                 )
-                DisplayMsg.show(Message.COMPUTER_MOVE_DONE())
+                await DisplayMsg.show(Message.COMPUTER_MOVE_DONE())
 
                 self.state.best_move_posted = False
                 self.state.game.push(self.state.done_move)
@@ -1745,7 +1749,7 @@ async def main() -> None:
                         self.state.stop_fen_timer()
                     await self.stop_search_and_clock()
                     if not self.pgn_mode():
-                        DisplayMsg.show(game_end)
+                        await DisplayMsg.show(game_end)
                 else:
                     self.state.searchmoves.reset()
 
@@ -1764,18 +1768,18 @@ async def main() -> None:
                             time1=self.state.time_control.game_time,
                             time2=self.state.time_control.game_time2,
                         )
-                        DisplayMsg.show(msg)
+                        await DisplayMsg.show(msg)
 
                     if not self.online_mode() or self.state.game.fullmove_number > 1:
-                        self.state.start_clock()
+                        await self.state.start_clock()
                     else:
-                        DisplayMsg.show(Message.EXIT_MENU())  # show clock
+                        await DisplayMsg.show(Message.EXIT_MENU())  # show clock
                         end_time_cmove_done = 0
 
-                    self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                    self.state.legal_fens = compute_legal_fens(self.state.game.copy())
 
                     if self.pgn_mode():
-                        await log_pgn(self.state)
+                        log_pgn(self.state)
                         if self.state.game.turn == chess.WHITE:
                             if self.state.max_guess_white > 0:
                                 if self.state.no_guess_white > self.state.max_guess_white:
@@ -1802,7 +1806,7 @@ async def main() -> None:
                     op_eco, op_name, op_moves, op_in_book = self.state.picotutor.get_opening()
                     if op_in_book and op_name:
                         ModeInfo.set_opening(self.state.book_in_use, str(op_name), op_eco)
-                        DisplayMsg.show(Message.SHOW_TEXT(text_string=op_name))
+                        await DisplayMsg.show(Message.SHOW_TEXT(text_string=op_name))
 
             # molli: Premove/fast move: Player has done the computer move and his own move in rapid sequence
             elif (
@@ -1832,11 +1836,11 @@ async def main() -> None:
                         time1=self.state.time_control.game_time,
                         time2=self.state.time_control.game_time2,
                     )
-                    DisplayMsg.show(msg)
+                    await DisplayMsg.show(msg)
 
                 self.state.last_legal_fens = []
                 self.state.legal_fens_after_cmove = []
-                self.state.legal_fens = await compute_legal_fens(
+                self.state.legal_fens = compute_legal_fens(
                     self.state.game.copy()
                 )  # molli new legal fance based on cmove
 
@@ -1849,7 +1853,7 @@ async def main() -> None:
                 if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.REMOTE, Mode.TRAINING):
                     self.state.legal_fens = []
                 else:
-                    self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                    self.state.legal_fens = compute_legal_fens(self.state.game.copy())
 
             # Check if this is a previous legal position and allow user to restart from this position
             else:
@@ -1890,7 +1894,7 @@ async def main() -> None:
                             break
 
                     if self.pgn_mode():  # molli pgn
-                        await log_pgn(self.state)
+                        log_pgn(self.state)
                         if self.state.max_guess_white > 0:
                             if self.state.game.turn == chess.WHITE:
                                 if self.state.no_guess_white > self.state.max_guess_white:
@@ -1909,11 +1913,11 @@ async def main() -> None:
                 if self.state.position_mode and self.state.delay_fen_error == 1:
                     tutor_str = "POSOK"
                     msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=self.state.game.copy())
-                    DisplayMsg.show(msg)
+                    await DisplayMsg.show(msg)
                     await asyncio.sleep(1)
                     if not self.state.done_computer_fen:
-                        self.state.start_clock()
-                    DisplayMsg.show(Message.EXIT_MENU())
+                        await self.state.start_clock()
+                    await DisplayMsg.show(Message.EXIT_MENU())
                 self.state.position_mode = False
             else:
                 if fen == chess.STARTING_BOARD_FEN:
@@ -1922,9 +1926,9 @@ async def main() -> None:
                     if self.state.position_mode and self.state.delay_fen_error == 1:
                         tutor_str = "POSOK"
                         msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=self.state.game.copy())
-                        DisplayMsg.show(msg)
+                        await DisplayMsg.show(msg)
                         if not self.state.done_computer_fen:
-                            self.state.start_clock()
+                            await self.state.start_clock()
                     self.state.position_mode = False
                     await Observable.fire(Event.NEW_GAME(pos960=pos960))
                 else:
@@ -1974,7 +1978,7 @@ async def main() -> None:
                             time1=self.state.time_control.game_time,
                             time2=self.state.time_control.game_time2,
                         )
-                        DisplayMsg.show(msg)
+                        await DisplayMsg.show(msg)
                     if self.online_mode():
                         # molli for online pseudo time sync
                         if self.state.online_decrement > 0:
@@ -2010,7 +2014,7 @@ async def main() -> None:
                             eval_str = ""  # no error message
                         if eval_str != "" and self.state.last_move != move:  # molli takeback_mame
                             msg = Message.PICOTUTOR_MSG(eval_str=eval_str)
-                            DisplayMsg.show(msg)
+                            await DisplayMsg.show(msg)
                             if "??" in eval_str:
                                 await asyncio.sleep(3)
                             else:
@@ -2022,13 +2026,13 @@ async def main() -> None:
                         if n_mate < 0:
                             msg_str = "USRMATE_" + str(abs(n_mate))
                             msg = Message.PICOTUTOR_MSG(eval_str=msg_str)
-                            DisplayMsg.show(msg)
+                            await DisplayMsg.show(msg)
                             await asyncio.sleep(1.5)
                         elif n_mate > 1:
                             n_mate = n_mate - 1
                             msg_str = "PICMATE_" + str(abs(n_mate))
                             msg = Message.PICOTUTOR_MSG(eval_str=msg_str)
-                            DisplayMsg.show(msg)
+                            await DisplayMsg.show(msg)
                             await asyncio.sleep(1.5)
                         # get additional info in case of blunder
                         if eval_str == "??" and self.state.last_move != move:
@@ -2053,7 +2057,7 @@ async def main() -> None:
 
                                 tutor_str = "THREAT" + san_move
                                 msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=game_tutor.copy())
-                                DisplayMsg.show(msg)
+                                await DisplayMsg.show(msg)
                                 await asyncio.sleep(5)
 
                             if t_hint_move != chess.Move.null():
@@ -2062,7 +2066,7 @@ async def main() -> None:
                                 game_tutor.push(t_hint_move)
                                 tutor_str = "HINT" + san_move
                                 msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=game_tutor.copy())
-                                DisplayMsg.show(msg)
+                                await DisplayMsg.show(msg)
                                 await asyncio.sleep(5)
 
                     if self.state.game.fullmove_number < 1:
@@ -2081,12 +2085,12 @@ async def main() -> None:
                         elif self.emulation_mode():
                             logger.info("molli: starting mame_endgame()")
                             self.mame_endgame()
-                            DisplayMsg.show(msg)
-                            DisplayMsg.show(game_end)
+                            await DisplayMsg.show(msg)
+                            await DisplayMsg.show(game_end)
                             self.state.legal_fens_after_cmove = []  # molli
                         else:
-                            DisplayMsg.show(msg)
-                            DisplayMsg.show(game_end)
+                            await DisplayMsg.show(msg)
+                            await DisplayMsg.show(game_end)
                             self.state.legal_fens_after_cmove = []  # molli
                     else:
                         if self.state.interaction_mode in (Mode.NORMAL, Mode.TRAINING):
@@ -2114,28 +2118,28 @@ async def main() -> None:
                 elif self.state.interaction_mode == Mode.REMOTE:
                     msg = Message.USER_MOVE_DONE(move=move, fen=fen, turn=turn, game=self.state.game.copy())
                     game_end = self.state.check_game_state()
-                    DisplayMsg.show(msg)
+                    await DisplayMsg.show(msg)
                     if game_end:
-                        DisplayMsg.show(game_end)
+                        await DisplayMsg.show(game_end)
                     else:
                         await self.observe()
                 elif self.state.interaction_mode == Mode.OBSERVE:
                     msg = Message.REVIEW_MOVE_DONE(move=move, fen=fen, turn=turn, game=self.state.game.copy())
                     game_end = self.state.check_game_state()
                     if game_end:
-                        DisplayMsg.show(msg)
-                        DisplayMsg.show(game_end)
+                        await DisplayMsg.show(msg)
+                        await DisplayMsg.show(game_end)
                     else:
-                        DisplayMsg.show(msg)
+                        await DisplayMsg.show(msg)
                         await self.observe()
                 else:  # self.state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.PONDER):
                     msg = Message.REVIEW_MOVE_DONE(move=move, fen=fen, turn=turn, game=self.state.game.copy())
                     game_end = self.state.check_game_state()
                     if game_end:
-                        DisplayMsg.show(msg)
-                        DisplayMsg.show(game_end)
+                        await DisplayMsg.show(msg)
+                        await DisplayMsg.show(game_end)
                     else:
-                        DisplayMsg.show(msg)
+                        await DisplayMsg.show(msg)
                         await self.analyse()
 
                 if (
@@ -2150,7 +2154,7 @@ async def main() -> None:
                         opening_eco, opening_name, _, opening_in_book = self.state.picotutor.get_opening()
                         if opening_in_book and opening_name:
                             ModeInfo.set_opening(self.state.book_in_use, str(opening_name), opening_eco)
-                            DisplayMsg.show(Message.SHOW_TEXT(text_string=opening_name))
+                            await DisplayMsg.show(Message.SHOW_TEXT(text_string=opening_name))
                             await asyncio.sleep(0.7)
 
                     if self.state.dgtmenu.get_picocomment() != PicoComment.COM_OFF and not game_end:
@@ -2160,14 +2164,14 @@ async def main() -> None:
                             com_factor=self.state.dgtmenu.get_comment_factor(),
                         )
                         if game_comment:
-                            DisplayMsg.show(Message.SHOW_TEXT(text_string=game_comment))
+                            await DisplayMsg.show(Message.SHOW_TEXT(text_string=game_comment))
                             await asyncio.sleep(0.7)
                 self.state.takeback_active = False
 
         async def observe(self) -> chess.engine.InfoDict | None:
             """Start a new ponder search on the current game."""
             info = await self.analyse()
-            self.state.start_clock()
+            await self.state.start_clock()
             return info
 
         async def update_elo(self, result):
@@ -2177,10 +2181,10 @@ async def main() -> None:
                     determine_result(result, self.state.play_mode, self.state.game.turn == chess.WHITE),
                 )
 
-        def update_elo_display(self):
-            DisplayMsg.show(Message.SYSTEM_INFO(info={"rspeed": self.state.dgtmenu.get_engine_rspeed()}))
+        async def update_elo_display(self):
+            await DisplayMsg.show(Message.SYSTEM_INFO(info={"rspeed": self.state.dgtmenu.get_engine_rspeed()}))
             if self.engine.is_adaptive:
-                DisplayMsg.show(
+                await DisplayMsg.show(
                     Message.SYSTEM_INFO(
                         info={"user_elo": int(self.state.rating.rating), "engine_elo": self.engine.engine_rating}
                     )
@@ -2189,7 +2193,7 @@ async def main() -> None:
                 user_elo = self.args.pgn_elo
                 if self.state.rating is not None:
                     user_elo = str(int(self.state.rating.rating))
-                DisplayMsg.show(
+                await DisplayMsg.show(
                     Message.SYSTEM_INFO(info={"user_elo": user_elo, "engine_elo": self.engine.engine_rating})
                 )
 
@@ -2313,7 +2317,7 @@ async def main() -> None:
                 ):
                     # molli: read the pgn of last game and restore correct game status and times
                     self.state.flag_startup = False
-                    DisplayMsg.show(Message.RESTORE_GAME())
+                    await DisplayMsg.show(Message.RESTORE_GAME())
                     await asyncio.sleep(2)
 
                     l_pgn_file_name = "last_game.pgn"
@@ -2343,10 +2347,10 @@ async def main() -> None:
                             self.state.done_move = self.state.pb_move = chess.Move.null()
                             self.state.searchmoves.reset()
                             self.state.game_declared = False
-                            self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                            self.state.legal_fens = compute_legal_fens(self.state.game.copy())
                             self.state.legal_fens_after_cmove = []
                             self.state.last_legal_fens = []
-                            DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION"))
+                            await DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION"))
                             await self.set_wait_state(
                                 Message.START_NEW_GAME(game=self.state.game.copy(), newgame=False)
                             )
@@ -2364,10 +2368,10 @@ async def main() -> None:
                                 self.state.done_move = self.state.pb_move = chess.Move.null()
                                 self.state.searchmoves.reset()
                                 self.state.game_declared = False
-                                self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                                self.state.legal_fens = compute_legal_fens(self.state.game.copy())
                                 self.state.legal_fens_after_cmove = []
                                 self.state.last_legal_fens = []
-                                DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION"))
+                                await DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION"))
                                 await self.set_wait_state(
                                     Message.START_NEW_GAME(game=self.state.game.copy(), newgame=False)
                                 )
@@ -2375,15 +2379,15 @@ async def main() -> None:
                                 await self.analyse()
                             else:
                                 logger.info("wrong fen %s for 4 secs", self.state.error_fen)
-                                DisplayMsg.show(Message.WRONG_FEN())
+                                await DisplayMsg.show(Message.WRONG_FEN())
                 else:
                     logger.info("wrong fen %s for 4 secs", self.state.error_fen)
                     if self.online_mode():
                         # show computer opponents move again
                         if self.state.seeking_flag:
-                            DisplayMsg.show(Message.SEEKING())
+                            await DisplayMsg.show(Message.SEEKING())
                         elif self.state.best_move_displayed:
-                            DisplayMsg.show(
+                            await DisplayMsg.show(
                                 Message.COMPUTER_MOVE(
                                     move=self.state.done_move,
                                     ponder=False,
@@ -2394,7 +2398,7 @@ async def main() -> None:
                     fen_res = ""
                     internal_fen = self.state.game.board_fen()
                     external_fen = self.state.error_fen
-                    fen_res = await compare_fen(external_fen, internal_fen)
+                    fen_res = compare_fen(external_fen, internal_fen)
 
                     if external_fen == self.state.last_error_fen:
                         if (
@@ -2420,7 +2424,7 @@ async def main() -> None:
                             self.state.position_mode = True
                             self.state.coach_triggered = False
                         if external_fen != chess.STARTING_BOARD_FEN:
-                            DisplayMsg.show(Message.WRONG_FEN())
+                            await DisplayMsg.show(Message.WRONG_FEN())
                             await asyncio.sleep(2)
                         self.state.delay_fen_error = 4
                         # molli: Picochess correction messages
@@ -2428,12 +2432,12 @@ async def main() -> None:
                     elif self.state.position_mode and fen_res:
                         self.state.delay_fen_error = 1
                         if not self.online_mode():
-                            self.state.stop_clock()
+                            await self.state.stop_clock()
                         msg = Message.POSITION_FAIL(fen_result=fen_res)
-                        DisplayMsg.show(msg)
+                        await DisplayMsg.show(msg)
                         await asyncio.sleep(1)
                     else:
-                        DisplayMsg.show(Message.EXIT_MENU())
+                        await DisplayMsg.show(Message.EXIT_MENU())
                         self.state.delay_fen_error = 4
 
                     if (
@@ -2443,7 +2447,7 @@ async def main() -> None:
                     ):
                         if self.state.dgtmenu.get_enginename():
                             msg = Message.ENGINE_NAME(engine_name=self.state.engine_text)
-                            DisplayMsg.show(msg)
+                            await DisplayMsg.show(msg)
 
                         if self.pgn_mode():
                             pgn_white = ""
@@ -2455,25 +2459,25 @@ async def main() -> None:
                                 pgn_result,
                                 pgn_white,
                                 pgn_black,
-                            ) = await read_pgn_info()
+                            ) = read_pgn_info()
 
                             if pgn_white:
-                                DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_white))
+                                await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_white))
                             if pgn_black:
-                                DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_black))
+                                await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_black))
 
                             if pgn_result:
-                                DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_result))
+                                await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_result))
 
                             if "mate in" in pgn_problem or "Mate in" in pgn_problem:
                                 await self.set_fen_from_pgn(pgn_fen)
-                                DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_problem))
+                                await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_problem))
                             else:
-                                DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_game_name))
+                                await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_game_name))
 
                     else:
                         if self.state.done_computer_fen and not self.state.position_mode:
-                            DisplayMsg.show(Message.EXIT_MENU())
+                            await DisplayMsg.show(Message.EXIT_MENU())
                     self.state.fen_error_occured = True  # to be reset in fen_handling
             self.state.flag_startup = False
             self.state.newgame_happened = False
@@ -2505,21 +2509,21 @@ async def main() -> None:
             l_move = chess.Move.null()
 
             if l_game_pgn.headers["Event"]:
-                DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers["Event"])))
+                await DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers["Event"])))
 
             if l_game_pgn.headers["White"]:
-                DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers["White"])))
+                await DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers["White"])))
 
-            DisplayMsg.show(Message.SHOW_TEXT(text_string="versus"))
+            await DisplayMsg.show(Message.SHOW_TEXT(text_string="versus"))
 
             if l_game_pgn.headers["Black"]:
-                DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers["Black"])))
+                await DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers["Black"])))
 
             if l_game_pgn.headers["Result"]:
-                DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers["Result"])))
+                await DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers["Result"])))
 
             await asyncio.sleep(2)
-            DisplayMsg.show(Message.READ_GAME)
+            await DisplayMsg.show(Message.READ_GAME)
             await asyncio.sleep(2)
 
             for l_move in l_game_pgn.main_line():
@@ -2586,13 +2590,13 @@ async def main() -> None:
             self.state.time_control.reset()
 
             await Observable.fire(Event.SET_TIME_CONTROL(tc_init=tc_init, time_text=text, show_ok=False))
-            self.state.stop_clock()
-            DisplayMsg.show(Message.EXIT_MENU())
+            await self.state.stop_clock()
+            await DisplayMsg.show(Message.EXIT_MENU())
 
             self.state.searchmoves.reset()
             self.state.game_declared = False
 
-            self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+            self.state.legal_fens = compute_legal_fens(self.state.game.copy())
             self.state.legal_fens_after_cmove = []
             self.state.last_legal_fens = []
             await self.stop_search_and_clock()
@@ -2603,7 +2607,7 @@ async def main() -> None:
                 self.state.play_mode = PlayMode.USER_WHITE if turn == chess.WHITE else PlayMode.USER_BLACK
                 self.state.legal_fens = []
                 self.state.legal_fens_after_cmove = []
-                DisplayMsg.show(game_end)
+                await DisplayMsg.show(game_end)
             else:
                 self.state.play_mode = PlayMode.USER_WHITE if turn == chess.WHITE else PlayMode.USER_BLACK
                 text = self.state.play_mode.value
@@ -2611,7 +2615,7 @@ async def main() -> None:
                     play_mode=self.state.play_mode,
                     play_mode_text=self.state.dgttranslate.text(text),
                 )
-                DisplayMsg.show(msg)
+                await DisplayMsg.show(msg)
                 await asyncio.sleep(1)
 
             self.state.take_back_locked = True  # important otherwise problems for setting up the position
@@ -2630,7 +2634,7 @@ async def main() -> None:
                 pico_node = 0
                 pico_tctrl_str = ""
 
-                self.state.stop_clock()
+                await self.state.stop_clock()
                 self.state.time_control.stop_internal(log=False)
 
                 uci_options = self.engine.get_pgn_options()
@@ -2710,12 +2714,12 @@ async def main() -> None:
             tc_init["depth"] = 0
             tc_init["node"] = 0
 
-            self.state.stop_clock()
+            await self.state.stop_clock()
             text = self.state.dgttranslate.text("N00_oktime")
             self.state.time_control.reset()
             await Observable.fire(Event.SET_TIME_CONTROL(tc_init=tc_init, time_text=text, show_ok=True))
-            self.state.stop_clock()
-            DisplayMsg.show(Message.EXIT_MENU())
+            await self.state.stop_clock()
+            await DisplayMsg.show(Message.EXIT_MENU())
 
         def engine_mode(self):
             """call when engine mode is changed"""
@@ -2783,13 +2787,13 @@ async def main() -> None:
                     game_copy = self.state.game.copy()
                     game_copy.push(move)
                     fen = game_copy.board_fen()
-                    DisplayMsg.show(Message.DGT_FEN(fen=fen, raw=False))
+                    await DisplayMsg.show(Message.DGT_FEN(fen=fen, raw=False))
 
             elif isinstance(event, Event.LEVEL):
                 if event.options:
                     await self.engine.startup(event.options, self.state.rating)
                 self.state.new_engine_level = event.level_name
-                DisplayMsg.show(
+                await DisplayMsg.show(
                     Message.LEVEL(
                         level_text=event.level_text,
                         level_name=event.level_name,
@@ -2817,18 +2821,18 @@ async def main() -> None:
                         self.state.artwork_in_use = True
                         engine_file_to_load = engine_file_art  # load mame
                     else:
-                        DisplayMsg.show(Message.SHOW_TEXT(text_string="NO_ARTWORK"))
+                        await DisplayMsg.show(Message.SHOW_TEXT(text_string="NO_ARTWORK"))
 
                 help_str = engine_file_to_load.rsplit(os.sep, 1)[1]
                 remote_file = self.engine_remote_home + os.sep + help_str
 
                 flag_eng = False
-                flag_eng = await check_ssh(
+                flag_eng = check_ssh(
                     self.args.engine_remote_server, self.args.engine_remote_user, self.args.engine_remote_pass
                 )
 
                 logger.debug("molli check_ssh:%s", flag_eng)
-                DisplayMsg.show(Message.ENGINE_SETUP())
+                await DisplayMsg.show(Message.ENGINE_SETUP())
 
                 if self.remote_engine_mode():
                     if flag_eng:
@@ -2852,9 +2856,9 @@ async def main() -> None:
                                 )
                     else:
                         engine_fallback = True
-                        DisplayMsg.show(Message.ONLINE_FAILED())
+                        await DisplayMsg.show(Message.ONLINE_FAILED())
                         await asyncio.sleep(2)
-                        DisplayMsg.show(Message.REMOTE_FAIL())
+                        await DisplayMsg.show(Message.REMOTE_FAIL())
                         await asyncio.sleep(2)
 
                 await self.engine.quit()
@@ -2914,7 +2918,7 @@ async def main() -> None:
                     if not self.engine.loaded_ok():
                         # Help - old engine failed to restart. There is no engine
                         logger.error("no engines started")
-                        DisplayMsg.show(Message.ENGINE_FAIL())
+                        await DisplayMsg.show(Message.ENGINE_FAIL())
                         await asyncio.sleep(3)
                         sys.exit(-1)
                 # All done - rock'n'roll
@@ -2943,7 +2947,7 @@ async def main() -> None:
                     self.engine.newgame(self.state.game.copy())
                     if not self.engine.loaded_ok():
                         logger.error("no engines started")
-                        DisplayMsg.show(Message.ENGINE_FAIL())
+                        await DisplayMsg.show(Message.ENGINE_FAIL())
                         await asyncio.sleep(3)
                         sys.exit(-1)
 
@@ -2955,19 +2959,20 @@ async def main() -> None:
                 ):
                     # switch to fullscreen
                     cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
-                    subprocess.run(
+                    process = await asyncio.create_subprocess_shell(
                         cmd,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        universal_newlines=True,
-                        shell=True,
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE,
                     )
+                    stdout, stderr = await process.communicate()
+                    if process.returncode != 0:
+                        logger.error("Command failed with return code %s: %s", process.returncode, stderr.decode())
 
                 await self.engine.startup(event.options, self.state.rating)
 
                 if self.online_mode():
-                    self.state.stop_clock()
-                    DisplayMsg.show(Message.ONLINE_LOGIN())
+                    await self.state.stop_clock()
+                    await DisplayMsg.show(Message.ONLINE_LOGIN())
                     # check if login successful (correct server & correct user)
                     (
                         self.login,
@@ -2976,12 +2981,12 @@ async def main() -> None:
                         self.self.opp_user,
                         self.game_time,
                         self.fischer_inc,
-                    ) = await read_online_user_info()
+                    ) = read_online_user_info()
                     logger.debug("molli online login: %s", self.login)
 
                     if "ok" not in self.login:
                         # server connection failed: check settings!
-                        DisplayMsg.show(Message.ONLINE_FAILED())
+                        await DisplayMsg.show(Message.ONLINE_FAILED())
                         await asyncio.sleep(3)
                         engine_fallback = True
                         event.options = dict()
@@ -3008,7 +3013,7 @@ async def main() -> None:
                         if not self.engine.loaded_ok():
                             # Help - old engine failed to restart. There is no engine
                             logger.error("no engines started")
-                            DisplayMsg.show(Message.ENGINE_FAIL())
+                            await DisplayMsg.show(Message.ENGINE_FAIL())
                             await asyncio.sleep(3)
                             sys.exit(-1)
                         await self.engine.startup(event.options, self.state.rating)
@@ -3026,13 +3031,13 @@ async def main() -> None:
                     self.state.done_move = self.state.pb_move = chess.Move.null()
                     self.state.searchmoves.reset()
                     self.state.game_declared = False
-                    self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                    self.state.legal_fens = compute_legal_fens(self.state.game.copy())
                     self.state.last_legal_fens = []
                     self.state.legal_fens_after_cmove = []
                     self.is_out_of_time_already = False
                     real_new_game = game_fen != chess.STARTING_BOARD_FEN
                     msg = Message.START_NEW_GAME(game=self.state.game.copy(), newgame=real_new_game)
-                    DisplayMsg.show(msg)
+                    await DisplayMsg.show(msg)
                 else:
                     self.engine.newgame(self.state.game.copy())
 
@@ -3051,7 +3056,7 @@ async def main() -> None:
                         level_text.beep = False
                     else:
                         level_text = None
-                    DisplayMsg.show(
+                    await DisplayMsg.show(
                         Message.LEVEL(
                             level_text=level_text,
                             level_name=self.state.old_engine_level,
@@ -3079,7 +3084,7 @@ async def main() -> None:
                     Mode.BRAIN,
                     Mode.TRAINING,
                 ):  # engine isnt started/searching => stop the clock
-                    self.state.stop_clock()
+                    await self.state.stop_clock()
                 self.state.engine_text = state.dgtmenu.get_current_engine_name()
                 self.state.dgtmenu.exit_menu()
 
@@ -3118,13 +3123,13 @@ async def main() -> None:
                         and not self.emulation_mode()
                         and not self.pgn_mode()
                     ):
-                        self.state.stop_clock()
+                        await self.state.stop_clock()
                         text = self.state.dgttranslate.text("N00_oktime")
                         await Observable.fire(
                             Event.SET_TIME_CONTROL(tc_init=self.state.tc_init_last, time_text=text, show_ok=True)
                         )
-                        self.state.stop_clock()
-                        DisplayMsg.show(Message.EXIT_MENU())
+                        await self.state.stop_clock()
+                        await DisplayMsg.show(Message.EXIT_MENU())
                     self.state.flag_last_engine_pgn = False
                     self.state.flag_last_engine_emu = False
                     self.state.tc_init_last = None
@@ -3144,7 +3149,7 @@ async def main() -> None:
                         pgn_result,
                         pgn_white,
                         pgn_black,
-                    ) = await read_pgn_info()
+                    ) = read_pgn_info()
                     if "mate in" in pgn_problem or "Mate in" in pgn_problem or pgn_fen != "":
                         await self.set_fen_from_pgn(pgn_fen)
                         self.state.play_mode = (
@@ -3154,7 +3159,7 @@ async def main() -> None:
                             play_mode=self.state.play_mode,
                             play_mode_text=self.state.dgttranslate.text(self.state.play_mode.value),
                         )
-                        DisplayMsg.show(msg)
+                        await DisplayMsg.show(msg)
                         await asyncio.sleep(1)
 
                 if self.online_mode():
@@ -3177,7 +3182,7 @@ async def main() -> None:
                 else:
                     ModeInfo.set_pgn_mode(mode=False)
 
-                self.update_elo_display()
+                await self.update_elo_display()
 
             elif isinstance(event, Event.SETUP_POSITION):
                 logger.debug("setting up custom fen: %s", event.fen)
@@ -3187,7 +3192,7 @@ async def main() -> None:
                 if self.state.game.move_stack:
                     if not (self.state.game.is_game_over() or self.state.game_declared):
                         result = GameResult.ABORT
-                        DisplayMsg.show(
+                        await DisplayMsg.show(
                             Message.GAME_ENDS(
                                 tc_init=self.state.time_control.get_parameters(),
                                 result=result,
@@ -3202,7 +3207,7 @@ async def main() -> None:
                     self.engine.option("UCI_Chess960", uci960)
                     await self.engine.send()
 
-                DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION_SCAN"))
+                await DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION_SCAN"))
                 self.engine.newgame(self.state.game.copy())
                 self.state.done_computer_fen = None
                 self.state.done_move = self.state.pb_move = chess.Move.null()
@@ -3226,19 +3231,20 @@ async def main() -> None:
                     if self.state.dgtmenu.get_engine_rdisplay() and self.state.artwork_in_use:
                         # switch windows/tasks
                         cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt"
-                        subprocess.run(
+                        process = await asyncio.create_subprocess_shell(
                             cmd,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            universal_newlines=True,
-                            shell=True,
+                            stdout=asyncio.subprocess.PIPE,
+                            stderr=asyncio.subprocess.PIPE,
                         )
-                    DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION"))
+                        stdout, stderr = await process.communicate()
+                        if process.returncode != 0:
+                            logger.error("Command failed with return code %s: %s", process.returncode, stderr.decode())
+                    await DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION"))
                     self.engine.is_ready()
                 self.state.position_mode = False
                 tutor_str = "POSOK"
                 msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, game=self.state.game.copy())
-                DisplayMsg.show(msg)
+                await DisplayMsg.show(msg)
                 await asyncio.sleep(1)
 
             elif isinstance(event, Event.NEW_GAME):
@@ -3268,7 +3274,7 @@ async def main() -> None:
                             if self.state.is_not_user_turn():
                                 # clock must be stopped BEFORE the "book_move"
                                 # event cause SetNRun resets the clock display
-                                self.state.stop_clock()
+                                await self.state.stop_clock()
                                 self.state.best_move_posted = True
                                 # @todo 8/8/R6P/1R6/7k/2B2K1p/8/8 and sliding Ra6 over a5 to a4
                                 # handle this in correct way!!
@@ -3277,7 +3283,7 @@ async def main() -> None:
                                 self.state.legal_fens_after_cmove = []
 
                         result = GameResult.ABORT
-                        DisplayMsg.show(
+                        await DisplayMsg.show(
                             Message.GAME_ENDS(
                                 tc_init=self.state.time_control.get_parameters(),
                                 result=result,
@@ -3299,7 +3305,7 @@ async def main() -> None:
                             play_mode=self.state.play_mode,
                             play_mode_text=self.state.dgttranslate.text(str(self.state.play_mode.value)),
                         )
-                        DisplayMsg.show(msg)
+                        await DisplayMsg.show(msg)
                     await self.stop_search_and_clock()
 
                     # see setup_position
@@ -3311,7 +3317,7 @@ async def main() -> None:
                         self.engine.stop()
 
                     if self.online_mode():
-                        DisplayMsg.show(Message.SEEKING())
+                        await DisplayMsg.show(Message.SEEKING())
                         self.engine.stop()
                         self.state.seeking_flag = True
                         self.state.stop_fen_timer()
@@ -3329,7 +3335,7 @@ async def main() -> None:
                     self.state.best_move_posted = False
                     self.state.searchmoves.reset()
                     self.state.game_declared = False
-                    self.update_elo_display()
+                    await self.update_elo_display()
 
                     if self.online_mode():
                         await asyncio.sleep(0.5)
@@ -3340,22 +3346,22 @@ async def main() -> None:
                             self.opp_user,
                             self.game_time,
                             self.fischer_inc,
-                        ) = await read_online_user_info()
+                        ) = read_online_user_info()
                         if "no_user" in self.own_user and not self.login == "ok":
                             # user login failed check login settings!!!
-                            DisplayMsg.show(Message.ONLINE_USER_FAILED())
+                            await DisplayMsg.show(Message.ONLINE_USER_FAILED())
                             await asyncio.sleep(3)
                         elif "no_player" in self.opp_user:
                             # no opponent found start new game or engine again!!!
-                            DisplayMsg.show(Message.ONLINE_NO_OPPONENT())
+                            await DisplayMsg.show(Message.ONLINE_NO_OPPONENT())
                             await asyncio.sleep(3)
                         else:
-                            DisplayMsg.show(Message.ONLINE_NAMES(own_user=self.own_user, opp_user=self.opp_user))
+                            await DisplayMsg.show(Message.ONLINE_NAMES(own_user=self.own_user, opp_user=self.opp_user))
                             await asyncio.sleep(3)
                         self.state.seeking_flag = False
                         self.state.best_move_displayed = None
 
-                    self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                    self.state.legal_fens = compute_legal_fens(self.state.game.copy())
                     self.state.last_legal_fens = []
                     self.state.legal_fens_after_cmove = []
                     self.is_out_of_time_already = False
@@ -3371,7 +3377,7 @@ async def main() -> None:
                             pgn_result,
                             pgn_white,
                             pgn_black,
-                        ) = await read_pgn_info()
+                        ) = read_pgn_info()
                         if "mate in" in pgn_problem or "Mate in" in pgn_problem or pgn_fen != "":
                             await self.set_fen_from_pgn(pgn_fen)
                     await self.set_wait_state(Message.START_NEW_GAME(game=self.state.game.copy(), newgame=newgame))
@@ -3388,7 +3394,7 @@ async def main() -> None:
                     if self.online_mode():
                         logger.debug("starting a new game with code: %s", event.pos960)
                         uci960 = event.pos960 != 518
-                        self.state.stop_clock()
+                        await self.state.stop_clock()
 
                         self.state.game.turn = chess.WHITE
 
@@ -3401,7 +3407,7 @@ async def main() -> None:
                                 play_mode=self.state.play_mode,
                                 play_mode_text=self.state.dgttranslate.text(str(self.state.play_mode.value)),
                             )
-                            DisplayMsg.show(msg)
+                            await DisplayMsg.show(msg)
 
                         # see setup_position
                         await self.stop_search_and_clock()
@@ -3414,7 +3420,7 @@ async def main() -> None:
                         self.state.time_control.reset()
                         self.state.searchmoves.reset()
 
-                        DisplayMsg.show(Message.SEEKING())
+                        await DisplayMsg.show(Message.SEEKING())
                         self.engine.stop()
                         self.state.seeking_flag = True
 
@@ -3427,17 +3433,17 @@ async def main() -> None:
                             self.opp_user,
                             self.game_time,
                             self.fischer_inc,
-                        ) = await read_online_user_info()
+                        ) = read_online_user_info()
                         if "no_user" in self.own_user:
                             # user login failed check login settings!!!
-                            DisplayMsg.show(Message.ONLINE_USER_FAILED())
+                            await DisplayMsg.show(Message.ONLINE_USER_FAILED())
                             await asyncio.sleep(3)
                         elif "no_player" in self.opp_user:
                             # no opponent found start new game & search!!!
-                            DisplayMsg.show(Message.ONLINE_NO_OPPONENT())
+                            await DisplayMsg.show(Message.ONLINE_NO_OPPONENT())
                             await asyncio.sleep(3)
                         else:
-                            DisplayMsg.show(Message.ONLINE_NAMES(own_user=self.own_user, opp_user=self.opp_user))
+                            await DisplayMsg.show(Message.ONLINE_NAMES(own_user=self.own_user, opp_user=self.opp_user))
                             await asyncio.sleep(1)
                         self.state.seeking_flag = False
                         self.state.best_move_displayed = None
@@ -3445,7 +3451,7 @@ async def main() -> None:
                         self.state.automatic_takeback = False
                         self.state.done_computer_fen = None
                         self.state.done_move = self.state.pb_move = chess.Move.null()
-                        self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                        self.state.legal_fens = compute_legal_fens(self.state.game.copy())
                         self.state.last_legal_fens = []
                         self.state.legal_fens_after_cmove = []
                         self.is_out_of_time_already = False
@@ -3468,16 +3474,18 @@ async def main() -> None:
                                 pgn_result,
                                 pgn_white,
                                 pgn_black,
-                            ) = await read_pgn_info()
+                            ) = read_pgn_info()
                             if "mate in" in pgn_problem or "Mate in" in pgn_problem or pgn_fen != "":
                                 await self.set_fen_from_pgn(pgn_fen)
                                 await self.set_wait_state(
                                     Message.START_NEW_GAME(game=self.state.game.copy(), newgame=newgame),
                                 )
                             else:
-                                DisplayMsg.show(Message.START_NEW_GAME(game=self.state.game.copy(), newgame=newgame))
+                                await DisplayMsg.show(
+                                    Message.START_NEW_GAME(game=self.state.game.copy(), newgame=newgame)
+                                )
                         else:
-                            DisplayMsg.show(Message.START_NEW_GAME(game=self.state.game.copy(), newgame=newgame))
+                            await DisplayMsg.show(Message.START_NEW_GAME(game=self.state.game.copy(), newgame=newgame))
 
                 if self.picotutor_mode():
                     self.state.picotutor.reset()
@@ -3491,7 +3499,7 @@ async def main() -> None:
                     if self.state.dgtmenu.get_enginename():
                         await asyncio.sleep(0.7)  # give time for ABORT message
                         msg = Message.ENGINE_NAME(engine_name=self.state.engine_text)
-                        DisplayMsg.show(msg)
+                        await DisplayMsg.show(msg)
                     if self.pgn_mode():
                         pgn_white = ""
                         pgn_black = ""
@@ -3503,31 +3511,31 @@ async def main() -> None:
                             pgn_result,
                             pgn_white,
                             pgn_black,
-                        ) = await read_pgn_info()
+                        ) = read_pgn_info()
 
                         if not pgn_white:
                             pgn_white = "????"
-                        DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_white))
+                        await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_white))
 
-                        DisplayMsg.show(Message.SHOW_TEXT(text_string="versus"))
+                        await DisplayMsg.show(Message.SHOW_TEXT(text_string="versus"))
 
                         if not pgn_black:
                             pgn_black = "????"
-                        DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_black))
+                        await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_black))
 
                         if pgn_result:
-                            DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_result))
+                            await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_result))
                         if "mate in" in pgn_problem or "Mate in" in pgn_problem:
-                            DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_problem))
+                            await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_problem))
                         else:
-                            DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_game_name))
+                            await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_game_name))
 
                         # reset pgn guess counters
                         if last_move_no > 1:
                             self.state.no_guess_black = 1
                             self.state.no_guess_white = 1
                         else:
-                            await log_pgn(self.state)
+                            log_pgn(self.state)
                             if self.state.max_guess_white > 0:
                                 if self.state.no_guess_white > self.state.max_guess_white:
                                     self.state.last_legal_fens = []
@@ -3538,13 +3546,13 @@ async def main() -> None:
                     self.engine.pause_pgn_audio()  # @todo this does not do anything
                 else:
                     if self.engine.is_thinking():
-                        self.state.stop_clock()
+                        await self.state.stop_clock()
                         self.engine.stop()
                     elif not self.state.done_computer_fen:
                         if self.state.time_control.internal_running():
-                            self.state.stop_clock()
+                            await self.state.stop_clock()
                         else:
-                            self.state.start_clock()
+                            await self.state.start_clock()
                     else:
                         logger.debug("best move displayed, dont start/stop clock")
 
@@ -3575,7 +3583,7 @@ async def main() -> None:
 
             elif isinstance(event, Event.SWITCH_SIDES):
                 self.state.flag_startup = False
-                DisplayMsg.show(Message.EXIT_MENU())
+                await DisplayMsg.show(Message.EXIT_MENU())
 
                 if self.state.interaction_mode == Mode.PONDER:
                     # molli: allow switching sides in flexble ponder mode
@@ -3597,7 +3605,7 @@ async def main() -> None:
                         self.state.time_control.reset()
                         self.state.searchmoves.reset()
                         self.state.game_declared = False
-                        self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                        self.state.legal_fens = compute_legal_fens(self.state.game.copy())
                         self.state.legal_fens_after_cmove = []
                         self.state.last_legal_fens = []
                         await self.analyse()
@@ -3608,11 +3616,11 @@ async def main() -> None:
                             play_mode=self.state.play_mode,
                             play_mode_text=self.state.dgttranslate.text(self.state.play_mode.value),
                         )
-                        DisplayMsg.show(msg)
+                        await DisplayMsg.show(msg)
                     else:
                         logger.debug("illegal fen %s", fen)
-                        DisplayMsg.show(Message.WRONG_FEN())
-                        DisplayMsg.show(Message.EXIT_MENU())
+                        await DisplayMsg.show(Message.WRONG_FEN())
+                        await DisplayMsg.show(Message.EXIT_MENU())
 
                 elif self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
                     if not self.engine.is_waiting():
@@ -3668,12 +3676,12 @@ async def main() -> None:
                         self.state.time_control.reset_start_time()
                         await self.think(msg)
                     else:
-                        DisplayMsg.show(msg)
-                        self.state.start_clock()
-                        self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                        await DisplayMsg.show(msg)
+                        await self.state.start_clock()
+                        self.state.legal_fens = compute_legal_fens(self.state.game.copy())
 
                     if self.state.best_move_displayed:
-                        DisplayMsg.show(Message.SWITCH_SIDES(game=self.state.game.copy(), move=move))
+                        await DisplayMsg.show(Message.SWITCH_SIDES(game=self.state.game.copy(), move=move))
 
                 elif self.state.interaction_mode == Mode.REMOTE:
                     if not self.engine.is_waiting():
@@ -3703,7 +3711,7 @@ async def main() -> None:
                     self.state.legal_fens = []
                     game_end = self.state.check_game_state()
                     if game_end:
-                        DisplayMsg.show(msg)
+                        await DisplayMsg.show(msg)
                     else:
                         cond1 = self.state.game.turn == chess.WHITE and self.state.play_mode == PlayMode.USER_BLACK
                         cond2 = self.state.game.turn == chess.BLACK and self.state.play_mode == PlayMode.USER_WHITE
@@ -3711,12 +3719,12 @@ async def main() -> None:
                             self.state.time_control.reset_start_time()
                             await self.think(msg)
                         else:
-                            DisplayMsg.show(msg)
-                            self.state.start_clock()
-                            self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                            await DisplayMsg.show(msg)
+                            await self.state.start_clock()
+                            self.state.legal_fens = compute_legal_fens(self.state.game.copy())
 
                     if self.state.best_move_displayed:
-                        DisplayMsg.show(Message.SWITCH_SIDES(game=self.state.game.copy(), move=move))
+                        await DisplayMsg.show(Message.SWITCH_SIDES(game=self.state.game.copy(), move=move))
 
             elif isinstance(event, Event.DRAWRESIGN):
                 if not self.state.game_declared:  # in case user leaves kings in place while moving other pieces
@@ -3727,7 +3735,7 @@ async def main() -> None:
                     elif event.result in (GameResult.WIN_WHITE, GameResult.WIN_BLACK):
                         l_result = "1-0" if event.result == GameResult.WIN_WHITE else "0-1"
                     ModeInfo.set_game_ending(result=l_result)
-                    DisplayMsg.show(
+                    await DisplayMsg.show(
                         Message.GAME_ENDS(
                             tc_init=self.state.time_control.get_parameters(),
                             result=event.result,
@@ -3748,7 +3756,7 @@ async def main() -> None:
                 else:
                     if self.state.interaction_mode == Mode.REMOTE and self.state.is_not_user_turn():
                         await self.stop_search_and_clock()
-                        DisplayMsg.show(
+                        await DisplayMsg.show(
                             Message.COMPUTER_MOVE(
                                 move=event.move,
                                 ponder=chess.Move.null(),
@@ -3761,7 +3769,7 @@ async def main() -> None:
                         self.state.done_computer_fen = game_copy.board_fen()
                         self.state.done_move = event.move
                         self.state.pb_move = chess.Move.null()
-                        self.state.legal_fens_after_cmove = await compute_legal_fens(game_copy)
+                        self.state.legal_fens_after_cmove = compute_legal_fens(game_copy)
                     else:
                         logger.warning(
                             "wrong function call [remote]! mode: %s turn: %s",
@@ -3778,7 +3786,7 @@ async def main() -> None:
                 if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
                     if self.state.is_not_user_turn():
                         # clock must be stopped BEFORE the "book_move" event cause SetNRun resets the clock display
-                        self.state.stop_clock()
+                        await self.state.stop_clock()
                         self.state.best_move_posted = True
                         # @todo 8/8/R6P/1R6/7k/2B2K1p/8/8 and sliding Ra6 over a5 to a4 - handle this in correct way!!
                         if self.state.game.is_game_over() and not self.online_mode():
@@ -3797,7 +3805,7 @@ async def main() -> None:
                                 winner = ""
                                 result_str = ""
                                 await asyncio.sleep(0.5)
-                                result_str, winner = await read_online_result()
+                                result_str, winner = read_online_result()
                                 logger.debug("molli result_str:%s", result_str)
                                 logger.debug("molli winner:%s", winner)
                                 gameresult_tmp: Optional[GameResult] = None
@@ -3866,9 +3874,9 @@ async def main() -> None:
                                     self.state.game.is_game_over() and gameresult_tmp == GameResult.ABORT
                                 ):
                                     if gameresult_tmp == GameResult.OUT_OF_TIME:
-                                        DisplayMsg.show(Message.LOST_ON_TIME())
+                                        await DisplayMsg.show(Message.LOST_ON_TIME())
                                         await asyncio.sleep(2)
-                                        DisplayMsg.show(
+                                        await DisplayMsg.show(
                                             Message.GAME_ENDS(
                                                 tc_init=self.state.time_control.get_parameters(),
                                                 result=gameresult_tmp2,
@@ -3877,7 +3885,7 @@ async def main() -> None:
                                             )
                                         )
                                     else:
-                                        DisplayMsg.show(
+                                        await DisplayMsg.show(
                                             Message.GAME_ENDS(
                                                 tc_init=self.state.time_control.get_parameters(),
                                                 result=gameresult_tmp,
@@ -3886,7 +3894,7 @@ async def main() -> None:
                                             )
                                         )
                                         await asyncio.sleep(2)
-                                        DisplayMsg.show(
+                                        await DisplayMsg.show(
                                             Message.GAME_ENDS(
                                                 tc_init=self.state.time_control.get_parameters(),
                                                 result=gameresult_tmp2,
@@ -3896,7 +3904,7 @@ async def main() -> None:
                                         )
                                 else:
                                     if gameresult_tmp == GameResult.ABORT and gameresult_tmp2:
-                                        DisplayMsg.show(
+                                        await DisplayMsg.show(
                                             Message.GAME_ENDS(
                                                 tc_init=self.state.time_control.get_parameters(),
                                                 result=gameresult_tmp2,
@@ -3905,7 +3913,7 @@ async def main() -> None:
                                             )
                                         )
                                     else:
-                                        DisplayMsg.show(
+                                        await DisplayMsg.show(
                                             Message.GAME_ENDS(
                                                 tc_init=self.state.time_control.get_parameters(),
                                                 result=gameresult_tmp,
@@ -3917,7 +3925,7 @@ async def main() -> None:
                                 if self.pgn_mode():
                                     # molli: check if last move of pgn game file
                                     await self.stop_search_and_clock()
-                                    await log_pgn(self.state)
+                                    log_pgn(self.state)
                                     if self.state.flag_pgn_game_over:
                                         logger.debug("molli pgn: PGN END")
                                         (
@@ -3927,33 +3935,33 @@ async def main() -> None:
                                             pgn_result,
                                             pgn_white,
                                             pgn_black,
-                                        ) = await read_pgn_info()
-                                        DisplayMsg.show(Message.PGN_GAME_END(result=pgn_result))
+                                        ) = read_pgn_info()
+                                        await DisplayMsg.show(Message.PGN_GAME_END(result=pgn_result))
                                     elif self.state.pgn_book_test:
                                         l_game_copy = self.state.game.copy()
                                         l_game_copy.pop()
                                         l_found = self.state.searchmoves.check_book(self.bookreader, l_game_copy)
 
                                         if not l_found:
-                                            DisplayMsg.show(Message.PGN_GAME_END(result="*"))
+                                            await DisplayMsg.show(Message.PGN_GAME_END(result="*"))
                                         else:
                                             logger.debug("molli pgn: Wrong Move! Try Again!")
                                             # increase pgn guess counters
                                             if self.state.max_guess_black > 0 and self.state.game.turn == chess.WHITE:
                                                 self.state.no_guess_black = self.state.no_guess_black + 1
                                                 if self.state.no_guess_black > self.state.max_guess_black:
-                                                    DisplayMsg.show(Message.MOVE_WRONG())
+                                                    await DisplayMsg.show(Message.MOVE_WRONG())
                                                 else:
-                                                    DisplayMsg.show(Message.MOVE_RETRY())
+                                                    await DisplayMsg.show(Message.MOVE_RETRY())
                                             elif self.state.max_guess_white > 0 and self.state.game.turn == chess.BLACK:
                                                 self.state.no_guess_white = self.state.no_guess_white + 1
                                                 if self.state.no_guess_white > self.state.max_guess_white:
-                                                    DisplayMsg.show(Message.MOVE_WRONG())
+                                                    await DisplayMsg.show(Message.MOVE_WRONG())
                                                 else:
-                                                    DisplayMsg.show(Message.MOVE_RETRY())
+                                                    await DisplayMsg.show(Message.MOVE_RETRY())
                                             else:
                                                 # user move wrong in pgn display mode only
-                                                DisplayMsg.show(Message.MOVE_RETRY())
+                                                await DisplayMsg.show(Message.MOVE_RETRY())
                                             if self.board_type == dgt.util.EBoard.NOEBOARD:
                                                 await Observable.fire(Event.TAKE_BACK(take_back="PGN_TAKEBACK"))
                                             else:
@@ -3968,18 +3976,18 @@ async def main() -> None:
                                         if self.state.max_guess_black > 0 and self.state.game.turn == chess.WHITE:
                                             self.state.no_guess_black = self.state.no_guess_black + 1
                                             if self.state.no_guess_black > self.state.max_guess_black:
-                                                DisplayMsg.show(Message.MOVE_WRONG())
+                                                await DisplayMsg.show(Message.MOVE_WRONG())
                                             else:
-                                                DisplayMsg.show(Message.MOVE_RETRY())
+                                                await DisplayMsg.show(Message.MOVE_RETRY())
                                         elif self.state.max_guess_white > 0 and self.state.game.turn == chess.BLACK:
                                             self.state.no_guess_white = self.state.no_guess_white + 1
                                             if self.state.no_guess_white > self.state.max_guess_white:
-                                                DisplayMsg.show(Message.MOVE_WRONG())
+                                                await DisplayMsg.show(Message.MOVE_WRONG())
                                             else:
-                                                DisplayMsg.show(Message.MOVE_RETRY())
+                                                await DisplayMsg.show(Message.MOVE_RETRY())
                                         else:
                                             # user move wrong in pgn display mode only
-                                            DisplayMsg.show(Message.MOVE_RETRY())
+                                            await DisplayMsg.show(Message.MOVE_RETRY())
 
                                         if self.board_type == dgt.util.EBoard.NOEBOARD:
                                             await Observable.fire(Event.TAKE_BACK(take_back="PGN_TAKEBACK"))
@@ -3990,7 +3998,7 @@ async def main() -> None:
                                                 Message.TAKE_BACK(game=self.state.game.copy())
                                             )  # automatic takeback mode
                                 else:
-                                    DisplayMsg.show(
+                                    await DisplayMsg.show(
                                         Message.GAME_ENDS(
                                             tc_init=self.state.time_control.get_parameters(),
                                             result=GameResult.ABORT,
@@ -4003,13 +4011,13 @@ async def main() -> None:
                         else:
                             # normal computer move
                             if event.inbook:
-                                DisplayMsg.show(Message.BOOK_MOVE())
+                                await DisplayMsg.show(Message.BOOK_MOVE())
                             self.state.searchmoves.exclude(event.move)
 
                             if self.online_mode() or self.emulation_mode():
                                 self.state.start_time_cmove_done = time.time()  # time should alraedy run for the player
-                            DisplayMsg.show(Message.EXIT_MENU())
-                            DisplayMsg.show(
+                            await DisplayMsg.show(Message.EXIT_MENU())
+                            await DisplayMsg.show(
                                 Message.COMPUTER_MOVE(
                                     move=event.move,
                                     ponder=event.ponder,
@@ -4044,7 +4052,7 @@ async def main() -> None:
                             self.state.pb_move = (
                                 event.ponder if event.ponder and not event.inbook else chess.Move.null()
                             )
-                            self.state.legal_fens_after_cmove = await compute_legal_fens(game_copy)
+                            self.state.legal_fens_after_cmove = compute_legal_fens(game_copy)
 
                             if self.pgn_mode():
                                 # molli pgn: reset pgn guess counters
@@ -4066,7 +4074,7 @@ async def main() -> None:
                                 )
 
                                 await asyncio.sleep(0.5)
-                                DisplayMsg.show(Message.COMPUTER_MOVE_DONE())
+                                await DisplayMsg.show(Message.COMPUTER_MOVE_DONE())
 
                                 self.state.best_move_posted = False
                                 self.state.game.push(self.state.done_move)  # computer move without human assistance
@@ -4093,7 +4101,7 @@ async def main() -> None:
                                         self.state.stop_fen_timer()
                                     await self.stop_search_and_clock()
                                     if not self.pgn_mode():
-                                        DisplayMsg.show(game_end)
+                                        await DisplayMsg.show(game_end)
                                 else:
                                     self.state.searchmoves.reset()
 
@@ -4113,18 +4121,18 @@ async def main() -> None:
                                             time1=self.state.time_control.game_time,
                                             time2=self.state.time_control.game_time2,
                                         )
-                                        DisplayMsg.show(msg)
+                                        await DisplayMsg.show(msg)
 
                                     if not self.online_mode() or self.state.game.fullmove_number > 1:
-                                        self.state.start_clock()
+                                        await self.state.start_clock()
                                     else:
-                                        DisplayMsg.show(Message.EXIT_MENU())  # show clock
+                                        await DisplayMsg.show(Message.EXIT_MENU())  # show clock
                                         end_time_cmove_done = 0
 
-                                    self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                                    self.state.legal_fens = compute_legal_fens(self.state.game.copy())
 
                                     if self.pgn_mode():
-                                        await log_pgn(self.state)
+                                        log_pgn(self.state)
                                         if self.state.game.turn == chess.WHITE:
                                             if self.state.max_guess_white > 0:
                                                 if self.state.no_guess_white > self.state.max_guess_white:
@@ -4157,7 +4165,7 @@ async def main() -> None:
                                     if op_in_book and op_name:
                                         logger.debug("opening book set to %s", op_name)
                                         ModeInfo.set_opening(self.state.book_in_use, str(op_name), op_eco)
-                                        DisplayMsg.show(Message.SHOW_TEXT(text_string=op_name))
+                                        await DisplayMsg.show(Message.SHOW_TEXT(text_string=op_name))
                             # molli end noeboard/Web-Play
                     else:
                         logger.warning(
@@ -4178,7 +4186,7 @@ async def main() -> None:
                     # at the same time as an user move
                     if self.state.game.is_legal(event.pv[0]):
                         # only pv received from event
-                        DisplayMsg.show(
+                        await DisplayMsg.show(
                             Message.NEW_PV(pv=event.pv, mode=self.state.interaction_mode, game=self.state.game.copy())
                         )
                     else:
@@ -4197,7 +4205,7 @@ async def main() -> None:
                         self.state.flag_pgn_game_over = False
 
                     # only score and mate received from event
-                    DisplayMsg.show(
+                    await DisplayMsg.show(
                         Message.NEW_SCORE(
                             score=event.score,
                             mate=event.mate,
@@ -4212,13 +4220,13 @@ async def main() -> None:
                         self.state.flag_pgn_game_over = True
                     else:
                         self.state.flag_pgn_game_over = False
-                    DisplayMsg.show(Message.NEW_DEPTH(depth=event.depth))
+                    await DisplayMsg.show(Message.NEW_DEPTH(depth=event.depth))
 
             elif isinstance(event, Event.START_SEARCH):
-                DisplayMsg.show(Message.SEARCH_STARTED())
+                await DisplayMsg.show(Message.SEARCH_STARTED())
 
             elif isinstance(event, Event.STOP_SEARCH):
-                DisplayMsg.show(Message.SEARCH_STOPPED())
+                await DisplayMsg.show(Message.SEARCH_STOPPED())
 
             elif isinstance(event, Event.SET_INTERACTION_MODE):
                 if (
@@ -4228,7 +4236,7 @@ async def main() -> None:
                     logger.warning("mode cant be changed to a pondering mode as long as a move is displayed")
                     mode_text = self.state.dgttranslate.text("Y10_errormode")
                     msg = Message.INTERACTION_MODE(mode=self.state.interaction_mode, mode_text=mode_text, show_ok=False)
-                    DisplayMsg.show(msg)
+                    await DisplayMsg.show(msg)
                 else:
                     if event.mode == Mode.PONDER:
                         self.state.newgame_happened = False
@@ -4242,17 +4250,17 @@ async def main() -> None:
                 write_picochess_ini("book", event.book["file"])
                 logger.debug("changing opening book [%s]", event.book["file"])
                 self.bookreader = chess.polyglot.open_reader(event.book["file"])
-                DisplayMsg.show(Message.OPENING_BOOK(book_text=event.book_text, show_ok=event.show_ok))
+                await DisplayMsg.show(Message.OPENING_BOOK(book_text=event.book_text, show_ok=event.show_ok))
                 self.state.book_in_use = event.book["file"]
                 self.state.stop_fen_timer()
 
             elif isinstance(event, Event.SHOW_ENGINENAME):
-                DisplayMsg.show(Message.SHOW_ENGINENAME(show_enginename=event.show_enginename))
+                await DisplayMsg.show(Message.SHOW_ENGINENAME(show_enginename=event.show_enginename))
 
             elif isinstance(event, Event.SAVE_GAME):
                 if event.pgn_filename:
-                    self.state.stop_clock()
-                    DisplayMsg.show(
+                    await self.state.stop_clock()
+                    await DisplayMsg.show(
                         Message.SAVE_GAME(
                             tc_init=self.state.time_control.get_parameters(),
                             play_mode=self.state.play_mode,
@@ -4263,14 +4271,14 @@ async def main() -> None:
 
             elif isinstance(event, Event.READ_GAME):
                 if event.pgn_filename:
-                    DisplayMsg.show(Message.READ_GAME(pgn_filename=event.pgn_filename))
+                    await DisplayMsg.show(Message.READ_GAME(pgn_filename=event.pgn_filename))
                     await self.read_pgn_file(event.pgn_filename)
 
             elif isinstance(event, Event.CONTLAST):
-                DisplayMsg.show(Message.CONTLAST(contlast=event.contlast))
+                await DisplayMsg.show(Message.CONTLAST(contlast=event.contlast))
 
             elif isinstance(event, Event.ALTMOVES):
-                DisplayMsg.show(Message.ALTMOVES(altmoves=event.altmoves))
+                await DisplayMsg.show(Message.ALTMOVES(altmoves=event.altmoves))
 
             elif isinstance(event, Event.PICOWATCHER):
                 self.state.picotutor.set_status(
@@ -4293,7 +4301,7 @@ async def main() -> None:
                 else:
                     self.state.flag_picotutor = False
 
-                DisplayMsg.show(Message.PICOWATCHER(picowatcher=event.picowatcher))
+                await DisplayMsg.show(Message.PICOWATCHER(picowatcher=event.picowatcher))
 
             elif isinstance(event, Event.PICOCOACH):
                 self.state.picotutor.set_status(
@@ -4318,11 +4326,11 @@ async def main() -> None:
                     self.state.flag_picotutor = False
 
                 if self.state.dgtmenu.get_picocoach() == PicoCoach.COACH_OFF:
-                    DisplayMsg.show(Message.PICOCOACH(picocoach=False))
+                    await DisplayMsg.show(Message.PICOCOACH(picocoach=False))
                 elif self.state.dgtmenu.get_picocoach() == PicoCoach.COACH_ON and event.picocoach != 2:
-                    DisplayMsg.show(Message.PICOCOACH(picocoach=True))
+                    await DisplayMsg.show(Message.PICOCOACH(picocoach=True))
                 elif self.state.dgtmenu.get_picocoach() == PicoCoach.COACH_LIFT and event.picocoach != 2:
-                    DisplayMsg.show(Message.PICOCOACH(picocoach=True))
+                    await DisplayMsg.show(Message.PICOCOACH(picocoach=True))
 
                 if self.state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF and event.picocoach == 2:
                     # call pico coach in case it was already set to on
@@ -4345,7 +4353,7 @@ async def main() -> None:
                     else:
                         self.state.flag_picotutor = False
 
-                DisplayMsg.show(Message.PICOEXPLORER(picoexplorer=event.picoexplorer))
+                await DisplayMsg.show(Message.PICOEXPLORER(picoexplorer=event.picoexplorer))
 
             elif isinstance(event, Event.RSPEED):
                 if self.emulation_mode():
@@ -4359,7 +4367,7 @@ async def main() -> None:
                             self.state.artwork_in_use = True
                             engine_file_to_load = engine_file_art  # load mame
                     old_options = self.engine.get_pgn_options()
-                    DisplayMsg.show(Message.ENGINE_SETUP())
+                    await DisplayMsg.show(Message.ENGINE_SETUP())
                     await self.engine.quit()
                     self.engine = UciEngine(
                         file=engine_file_to_load,
@@ -4380,32 +4388,33 @@ async def main() -> None:
                     ):
                         # switch to fullscreen
                         cmd = "xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
-                        subprocess.run(
+                        process = await asyncio.create_subprocess_shell(
                             cmd,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            universal_newlines=True,
-                            shell=True,
+                            stdout=asyncio.subprocess.PIPE,
+                            stderr=asyncio.subprocess.PIPE,
                         )
+                        stdout, stderr = await process.communicate()
+                        if process.returncode != 0:
+                            logger.error("Command failed with return code %s: %s", process.returncode, stderr.decode())
                     game_fen = self.state.game.board_fen()
                     self.state.game = chess.Board()
                     self.state.game.turn = chess.WHITE
                     self.state.play_mode = PlayMode.USER_WHITE
                     if game_fen != chess.STARTING_BOARD_FEN:
                         msg = Message.START_NEW_GAME(game=self.state.game.copy(), newgame=True)
-                        DisplayMsg.show(msg)
+                        await DisplayMsg.show(msg)
                     self.engine.newgame(self.state.game.copy())
                     self.state.done_computer_fen = None
                     self.state.done_move = self.state.pb_move = chess.Move.null()
                     self.state.searchmoves.reset()
                     self.state.game_declared = False
-                    self.state.legal_fens = await compute_legal_fens(self.state.game.copy())
+                    self.state.legal_fens = compute_legal_fens(self.state.game.copy())
                     self.state.last_legal_fens = []
                     self.state.legal_fens_after_cmove = []
                     self.is_out_of_time_already = False
                     self.engine_mode()
-                    DisplayMsg.show(Message.RSPEED(rspeed=event.rspeed))
-                    self.update_elo_display()
+                    await DisplayMsg.show(Message.RSPEED(rspeed=event.rspeed))
+                    await self.update_elo_display()
 
             elif isinstance(event, Event.TAKE_BACK):
                 if self.state.game.move_stack and (
@@ -4421,9 +4430,9 @@ async def main() -> None:
             elif isinstance(event, Event.PICOCOMMENT):
                 if event.picocomment == "comment-factor":
                     self.pico_talker.set_comment_factor(comment_factor=self.state.dgtmenu.get_comment_factor())
-                    DisplayMsg.show(Message.PICOCOMMENT(picocomment="ok"))
+                    await DisplayMsg.show(Message.PICOCOMMENT(picocomment="ok"))
                 else:
-                    DisplayMsg.show(Message.PICOCOMMENT(picocomment=event.picocomment))
+                    await DisplayMsg.show(Message.PICOCOMMENT(picocomment=event.picocomment))
 
             elif isinstance(event, Event.SET_TIME_CONTROL):
                 self.state.time_control.stop_internal(log=False)
@@ -4466,7 +4475,7 @@ async def main() -> None:
                         write_picochess_ini("node", "{:d}".format(0))
 
                 text = Message.TIME_CONTROL(time_text=event.time_text, show_ok=event.show_ok, tc_init=tc_init)
-                DisplayMsg.show(text)
+                await DisplayMsg.show(text)
                 self.state.stop_fen_timer()
 
             elif isinstance(event, Event.CLOCK_TIME):
@@ -4501,7 +4510,7 @@ async def main() -> None:
                     if self.state.interaction_mode == Mode.TRAINING or self.state.position_mode:
                         pass
                     else:
-                        DisplayMsg.show(
+                        await DisplayMsg.show(
                             Message.CLOCK_TIME(
                                 time_white=event.time_white,
                                 time_black=event.time_black,
@@ -4515,9 +4524,9 @@ async def main() -> None:
                 if (
                     not self.is_out_of_time_already and not self.online_mode()
                 ):  # molli in online mode the server decides
-                    self.state.stop_clock()
+                    await self.state.stop_clock()
                     result = GameResult.OUT_OF_TIME
-                    DisplayMsg.show(
+                    await DisplayMsg.show(
                         Message.GAME_ENDS(
                             tc_init=self.state.time_control.get_parameters(),
                             result=result,
@@ -4530,7 +4539,7 @@ async def main() -> None:
 
             elif isinstance(event, Event.SHUTDOWN):
                 await self.stop_search()
-                self.state.stop_clock()
+                await self.state.stop_clock()
                 await self.engine.quit()
 
                 try:
@@ -4546,7 +4555,7 @@ async def main() -> None:
                     pass
 
                 result = GameResult.ABORT
-                DisplayMsg.show(
+                await DisplayMsg.show(
                     Message.GAME_ENDS(
                         tc_init=self.state.time_control.get_parameters(),
                         result=result,
@@ -4554,16 +4563,16 @@ async def main() -> None:
                         game=self.state.game.copy(),
                     )
                 )
-                DisplayMsg.show(Message.SYSTEM_SHUTDOWN())
+                await DisplayMsg.show(Message.SYSTEM_SHUTDOWN())
                 await asyncio.sleep(5)  # molli allow more time for commentary chat
                 shutdown(self.args.dgtpi, dev=event.dev)  # @todo make independant of remote eng
 
             elif isinstance(event, Event.REBOOT):
                 await self.stop_search()
-                self.state.stop_clock()
+                await self.state.stop_clock()
                 await self.engine.quit()
                 result = GameResult.ABORT
-                DisplayMsg.show(
+                await DisplayMsg.show(
                     Message.GAME_ENDS(
                         tc_init=self.state.time_control.get_parameters(),
                         result=result,
@@ -4571,7 +4580,7 @@ async def main() -> None:
                         game=self.state.game.copy(),
                     )
                 )
-                DisplayMsg.show(Message.SYSTEM_REBOOT())
+                await DisplayMsg.show(Message.SYSTEM_REBOOT())
                 await asyncio.sleep(5)  # molli allow more time for commentary chat
                 reboot(
                     self.args.dgtpi and self.uci_local_shell.get() is None, dev=event.dev
@@ -4579,10 +4588,10 @@ async def main() -> None:
 
             elif isinstance(event, Event.EXIT):
                 await self.stop_search()
-                self.state.stop_clock()
+                await self.state.stop_clock()
                 await self.engine.quit()
                 result = GameResult.ABORT
-                DisplayMsg.show(
+                await DisplayMsg.show(
                     Message.GAME_ENDS(
                         tc_init=self.state.time_control.get_parameters(),
                         result=result,
@@ -4590,7 +4599,7 @@ async def main() -> None:
                         game=self.state.game.copy(),
                     )
                 )
-                #  DisplayMsg.show(Message.SYSTEM_EXIT())
+                #  await DisplayMsg.show(Message.SYSTEM_EXIT())
                 await asyncio.sleep(5)  # molli allow more time for commentary chat
                 exit(self.args.dgtpi, dev=event.dev)  # @todo make independant of remote eng
 
@@ -4609,29 +4618,29 @@ async def main() -> None:
                 email_logger.send("Picochess LOG", body, "/opt/picochess/logs/{}".format(self.args.log_file))
 
             elif isinstance(event, Event.SET_VOICE):
-                DisplayMsg.show(
+                await DisplayMsg.show(
                     Message.SET_VOICE(type=event.type, lang=event.lang, speaker=event.speaker, speed=event.speed)
                 )
 
             elif isinstance(event, Event.KEYBOARD_BUTTON):
-                DisplayMsg.show(Message.DGT_BUTTON(button=event.button, dev=event.dev))
+                await DisplayMsg.show(Message.DGT_BUTTON(button=event.button, dev=event.dev))
 
             elif isinstance(event, Event.KEYBOARD_FEN):
-                DisplayMsg.show(Message.DGT_FEN(fen=event.fen, raw=False))
+                await DisplayMsg.show(Message.DGT_FEN(fen=event.fen, raw=False))
 
             elif isinstance(event, Event.EXIT_MENU):
-                DisplayMsg.show(Message.EXIT_MENU())
+                await DisplayMsg.show(Message.EXIT_MENU())
 
             elif isinstance(event, Event.UPDATE_PICO):
-                DisplayMsg.show(Message.UPDATE_PICO())
+                await DisplayMsg.show(Message.UPDATE_PICO())
                 checkout_tag(event.tag)
-                DisplayMsg.show(Message.EXIT_MENU())
+                await DisplayMsg.show(Message.EXIT_MENU())
 
             elif isinstance(event, Event.REMOTE_ROOM):
-                DisplayMsg.show(Message.REMOTE_ROOM(inside=event.inside))
+                await DisplayMsg.show(Message.REMOTE_ROOM(inside=event.inside))
 
             elif isinstance(event, Event.PROMOTION):
-                DisplayMsg.show(Message.PROMOTION_DONE(move=event.move))
+                await DisplayMsg.show(Message.PROMOTION_DONE(move=event.move))
 
             else:  # Default
                 logger.warning("event not handled : [%s]", event)

@@ -52,7 +52,7 @@ class DgtDisplay(DisplayMsg):
         self.play_move = self.hint_move = self.last_move = self.take_back_move = chess.Move.null()
         self.play_fen = self.hint_fen = self.last_fen = None
         self.play_turn = self.hint_turn = self.last_turn = None
-        self.score: Dgt.DISPLAY_TEXT = self.dgttranslate.text("N10_score", None)
+        self.score = self.dgttranslate.text("N10_score", None)
         self.depth = 0
         self.node = 0
         self.uci960 = False
@@ -181,7 +181,7 @@ class DgtDisplay(DisplayMsg):
                 if length == "l":
                     return "{:9.2f}".format(int(score_val) / 100).replace(".", "")
 
-    def _combine_depth_and_score(self) -> Dgt.DISPLAY_TEXT:
+    def _combine_depth_and_score(self):
         score = copy.copy(self.score)
         text_depth = self.dgttranslate.text("B10_analysis_depth")
         text_score = self.dgttranslate.text("B10_analysis_score")
@@ -251,7 +251,7 @@ class DgtDisplay(DisplayMsg):
         else:
             return text
 
-    def _combine_depth_and_score_and_hint(self) -> Dgt.DISPLAY_TEXT:
+    def _combine_depth_and_score_and_hint(self):
         score = copy.copy(self.score)
         text_depth = self.dgttranslate.text("B10_analysis_depth")
         text_score = self.dgttranslate.text("B10_analysis_score")
@@ -265,21 +265,6 @@ class DgtDisplay(DisplayMsg):
 
         if self.hint_move:
             bit_board = chess.Board(self.hint_fen)
-            side = self._get_clock_side(self.hint_turn)
-            beep = self.dgttranslate.bl(BeepLevel.NO)
-            text = Dgt.DISPLAY_MOVE(
-                move=self.hint_move,
-                fen=self.hint_fen,
-                side=side,
-                wait=True,
-                maxtime=1,
-                beep=beep,
-                devs={"ser", "i2c", "web"},
-                uci960=self.uci960,
-                lang=self.dgttranslate.language,
-                capital=self.dgttranslate.capital,
-                long=self.dgttranslate.notation,
-            )
             move_text = bit_board.san(self.hint_move)
         else:
             move_text = " - "
@@ -1139,10 +1124,8 @@ class DgtDisplay(DisplayMsg):
 
     async def _process_message(self, message):
         """message task consumer"""
-        if False:  # switch-case
-            pass
-
-        elif isinstance(message, Message.ENGINE_READY):
+        # switch-case
+        if isinstance(message, Message.ENGINE_READY):
             await self._process_engine_ready(message)
 
         elif isinstance(message, Message.ENGINE_STARTUP):
@@ -1159,7 +1142,7 @@ class DgtDisplay(DisplayMsg):
             await self._process_computer_move(message)
 
         elif isinstance(message, Message.START_NEW_GAME):
-            self._process_start_new_game(message)
+            await self._process_start_new_game(message)
 
         elif isinstance(message, Message.COMPUTER_MOVE_DONE):
             await self._process_computer_move_done()
@@ -1369,10 +1352,14 @@ class DgtDisplay(DisplayMsg):
         elif isinstance(message, Message.SWITCH_SIDES):
             self.c_time_counter = 0
 
+            # this code had double == in assignments in Pico 2.0
+            # so for 6 years this code maybe had no meaning
+            # playmode message probably set it correct anyway
+            # now in 4.0.6 it actually switches side in this code
             if self.play_mode == PlayMode.USER_WHITE:
-                self.play_mode == PlayMode.USER_BLACK
+                self.play_mode = PlayMode.USER_BLACK
             else:
-                self.play_mode == PlayMode.USER_WHITE
+                self.play_mode = PlayMode.USER_WHITE
 
             self.play_move = chess.Move.null()
             self.play_fen = None
@@ -1472,7 +1459,8 @@ class DgtDisplay(DisplayMsg):
         elif isinstance(message, Message.PICOTUTOR_MSG):
             await DispatchDgt.fire(self.dgttranslate.text("C10_picotutor_msg", message.eval_str))
             if message.eval_str == "POSOK" or message.eval_str == "ANALYSIS" and self.play_move == chess.Move.null():
-                await self.force_leds_off()  # molli: sometime if you move the pieces too quickly a LED may still flash on the rev2
+                # molli: sometime if you move the pieces too quickly a LED may still flash on the rev2
+                await self.force_leds_off()
 
         elif isinstance(message, Message.POSITION_FAIL):
             await self.force_leds_off()

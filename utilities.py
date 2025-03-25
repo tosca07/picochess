@@ -71,8 +71,7 @@ class Observable(object):
         """Put an event on the Queue."""
         await evt_queue.put(event)
 
-    # @todo fire_sync below only used by timecontrol any more?
-    # we need it until last one is async
+    # @todo minimize use of fire_sync, when not needed, global main_loop can be removed
     @staticmethod
     def fire_sync(event):
         """Put an event on the Queue."""
@@ -101,7 +100,7 @@ class DispatchDgt(object):
         """Put an event on the Queue."""
         await dispatch_queue.put(dgt)
 
-    # @todo: fire_sync below is temporary until last caller is async
+    # @todo minimize use of fire_sync, when not needed, global main_loop can be removed
     @staticmethod
     def fire_sync(dgt):
         """Put an event on the Queue."""
@@ -129,7 +128,14 @@ class DisplayMsg(object):
         asyncio.run_coroutine_threadsafe(self._add_to_queue(message), self.loop)
 
     @staticmethod
-    def show(message):
+    async def show(message):
+        """Send a message on each display device."""
+        for display in msgdisplay_devices:
+            await display._add_to_queue(copy.deepcopy(message))
+
+    # @todo: code below is temporary until all show() can be async
+    @staticmethod
+    def show_sync(message):
         """Send a message on each display device."""
         for display in msgdisplay_devices:
             display.add_to_queue_sync(copy.deepcopy(message))
