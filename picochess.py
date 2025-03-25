@@ -2526,7 +2526,7 @@ async def main() -> None:
             await DisplayMsg.show(Message.READ_GAME)
             await asyncio.sleep(2)
 
-            for l_move in l_game_pgn.main_line():
+            for l_move in l_game_pgn.mainline_moves():
                 self.state.game.push(l_move)
 
             # take back last move in order to send it with user_move for web publishing
