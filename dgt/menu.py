@@ -1806,10 +1806,10 @@ class DgtMenu(object):
         await DispatchDgt.fire(text)
         return self.save_choices()
 
-    def _fire_timectrl(self, timectrl: TimeControl):
+    async def _fire_timectrl(self, timectrl: TimeControl):
         time_text = self.dgttranslate.text("B10_oktime")
         event = Event.SET_TIME_CONTROL(tc_init=timectrl.get_parameters(), time_text=time_text, show_ok=True)
-        return self._fire_event(event)
+        return await self._fire_event(event)
 
     def exit_menu(self):
         """Exit the menu."""
@@ -2229,7 +2229,7 @@ class DgtMenu(object):
             else:
                 mode_text = self.dgttranslate.text("B10_okmode")
                 event = Event.SET_INTERACTION_MODE(mode=self.menu_mode, mode_text=mode_text, show_ok=True)
-                text = self._fire_event(event)
+                text = await self._fire_event(event)
 
         elif self.state == MenuState.GAME:
             if self.menu_game == Game.NEW:
@@ -2277,7 +2277,7 @@ class DgtMenu(object):
             text = self.enter_game_new_yesno_menu()
 
         elif self.state == MenuState.GAME_GAMETAKEBACK:
-            self._fire_event(Event.TAKE_BACK(take_back="TAKEBACK"))
+            await self._fire_event(Event.TAKE_BACK(take_back="TAKEBACK"))
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_oktakeback"))
 
         elif self.state == MenuState.GAME_GAMENEW_YESNO:
@@ -2285,7 +2285,7 @@ class DgtMenu(object):
                 pos960 = 518
                 await Observable.fire(Event.NEW_GAME(pos960=pos960))
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okgamenew"))
-            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+            await self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
 
         elif self.state == MenuState.GAME_GAMEALTMOVE:
             text = self.enter_game_altmove_onoff_menu()
@@ -2470,7 +2470,7 @@ class DgtMenu(object):
             write_picochess_ini("comment-factor", self.menu_picotutor_picocomment_prob_list)
             self.res_picotutor_picocomment_prob = int(self.menu_picotutor_picocomment_prob_list)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okpicocomment"))
-            self._fire_event(Event.PICOCOMMENT(picocomment="comment-factor"))
+            await self._fire_event(Event.PICOCOMMENT(picocomment="comment-factor"))
 
         elif self.state == MenuState.POS:
             text = self.enter_pos_color_menu()
@@ -2528,37 +2528,37 @@ class DgtMenu(object):
             text = self.enter_time_blitz_ctrl_menu()
 
         elif self.state == MenuState.TIME_BLITZ_CTRL:
-            text = self._fire_timectrl(self.tc_blitz_map[list(self.tc_blitz_map)[self.menu_time_blitz]])
+            text = await self._fire_timectrl(self.tc_blitz_map[list(self.tc_blitz_map)[self.menu_time_blitz]])
 
         elif self.state == MenuState.TIME_FISCH:
             text = self.enter_time_fisch_ctrl_menu()
 
         elif self.state == MenuState.TIME_FISCH_CTRL:
-            text = self._fire_timectrl(self.tc_fisch_map[list(self.tc_fisch_map)[self.menu_time_fisch]])
+            text = await self._fire_timectrl(self.tc_fisch_map[list(self.tc_fisch_map)[self.menu_time_fisch]])
 
         elif self.state == MenuState.TIME_FIXED:
             text = self.enter_time_fixed_ctrl_menu()
 
         elif self.state == MenuState.TIME_FIXED_CTRL:
-            text = self._fire_timectrl(self.tc_fixed_map[list(self.tc_fixed_map)[self.menu_time_fixed]])
+            text = await self._fire_timectrl(self.tc_fixed_map[list(self.tc_fixed_map)[self.menu_time_fixed]])
 
         elif self.state == MenuState.TIME_TOURN:
             text = self.enter_time_tourn_ctrl_menu()
 
         elif self.state == MenuState.TIME_TOURN_CTRL:
-            text = self._fire_timectrl(self.tc_tournaments[self.menu_time_tourn])
+            text = await self._fire_timectrl(self.tc_tournaments[self.menu_time_tourn])
 
         elif self.state == MenuState.TIME_DEPTH:
             text = self.enter_time_depth_ctrl_menu()
 
         elif self.state == MenuState.TIME_DEPTH_CTRL:
-            text = self._fire_timectrl(self.tc_depths[self.menu_time_depth])
+            text = await self._fire_timectrl(self.tc_depths[self.menu_time_depth])
 
         elif self.state == MenuState.TIME_NODE:
             text = self.enter_time_node_ctrl_menu()
 
         elif self.state == MenuState.TIME_NODE_CTRL:
-            text = self._fire_timectrl(self.tc_nodes[self.menu_time_node])
+            text = await self._fire_timectrl(self.tc_nodes[self.menu_time_node])
 
         elif self.state == MenuState.BOOK:
             text = self.enter_book_name_menu()
@@ -2566,7 +2566,7 @@ class DgtMenu(object):
         elif self.state == MenuState.BOOK_NAME:
             book_text = self.dgttranslate.text("B10_okbook")
             event = Event.SET_OPENING_BOOK(book=self.all_books[self.menu_book], book_text=book_text, show_ok=True)
-            text = self._fire_event(event)
+            text = await self._fire_event(event)
 
         elif self.state == MenuState.ENG_MODERN:
             text = self.enter_eng_modern_name_menu()
@@ -2598,7 +2598,7 @@ class DgtMenu(object):
                 options = {}
             eng_text = self.dgttranslate.text("B10_okengine")
             event = Event.NEW_ENGINE(eng=eng, eng_text=eng_text, options=options, show_ok=True)
-            text = self._fire_event(event)
+            text = await self._fire_event(event)
             self.engine_restart = True
             self.res_engine_index = self.menu_engine_index = self.menu_modern_engine_index
             self.res_engine_level = self.menu_modern_engine_level
@@ -2631,7 +2631,7 @@ class DgtMenu(object):
                 options = {}
             eng_text = self.dgttranslate.text("B10_okengine")
             event = Event.NEW_ENGINE(eng=retro_eng, eng_text=eng_text, options=options, show_ok=True)
-            text = self._fire_event(event)
+            text = await self._fire_event(event)
             self.engine_restart = True
             self.res_engine_index = self.menu_engine_index = (
                 len(EngineProvider.modern_engines) + self.menu_retro_engine_index
@@ -2666,7 +2666,7 @@ class DgtMenu(object):
                 options = {}
             eng_text = self.dgttranslate.text("B10_okengine")
             event = Event.NEW_ENGINE(eng=fav_eng, eng_text=eng_text, options=options, show_ok=True)
-            text = self._fire_event(event)
+            text = await self._fire_event(event)
             self.engine_restart = True
 
         elif self.state == MenuState.RETROSETTINGS:
@@ -2687,7 +2687,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.RETROSETTINGS_RETROINFO_SHOW:
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okrinfo"))
-            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+            await self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
 
         elif self.state == MenuState.RETROSETTINGS_RETROSOUND:
             self.menu_engine_retrosettings = EngineRetroSettings.RETROSOUND
@@ -2699,9 +2699,9 @@ class DgtMenu(object):
                 self.res_engine_retrosound = self.engine_retrosound
                 write_picochess_ini("rsound", self.engine_retrosound)
                 # trigger rspeed event for rsound change (does just an engine restart)
-                self._fire_event(Event.RSPEED(rspeed=self.retrospeed_factor))
+                await self._fire_event(Event.RSPEED(rspeed=self.retrospeed_factor))
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okrsound"))
-            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+            await self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
 
         elif self.state == MenuState.RETROSETTINGS_RETROWINDOW:
             self.menu_engine_retrosettings = EngineRetroSettings.RETROWINDOW
@@ -2718,7 +2718,7 @@ class DgtMenu(object):
                         shell=True,
                     )
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_ok"))
-            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+            await self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
 
         elif self.state == MenuState.RETROSETTINGS_RETRODISPLAY:
             self.menu_engine_retrosettings = EngineRetroSettings.RETRODISPLAY
@@ -2736,10 +2736,10 @@ class DgtMenu(object):
                 self.res_engine_retrodisplay = self.engine_retrodisplay
                 write_picochess_ini("rdisplay", self.engine_retrodisplay)
                 # trigger rspped event for rsound change (does just an engine restart)
-                self._fire_event(Event.RSPEED(rspeed=self.retrospeed_factor))
+                await self._fire_event(Event.RSPEED(rspeed=self.retrospeed_factor))
 
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okrdisplay"))
-            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+            await self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
 
         elif self.state == MenuState.RETROSETTINGS_RETROSPEED:
             self.menu_engine_retrosettings = EngineRetroSettings.RETROSPEED
@@ -2756,9 +2756,9 @@ class DgtMenu(object):
                 self.res_engine_retrospeed = self.retrospeed_factor
             if tmp_speed != self.res_engine_retrospeed:
                 write_picochess_ini("rspeed", self.retrospeed_factor)
-                self._fire_event(Event.RSPEED(rspeed=self.retrospeed_factor))
+                await self._fire_event(Event.RSPEED(rspeed=self.retrospeed_factor))
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okrspeed"))
-            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+            await self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
 
         elif self.state == MenuState.ENGINE:
             if self.menu_engine == EngineTop.MODERN_ENGINE:
@@ -2800,15 +2800,15 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_POWER_SHUT_DOWN:
             text = self.dgttranslate.text("B10_power_shut_down_menu")
-            self._fire_event(Event.SHUTDOWN(dev="menu"))
+            await self._fire_event(Event.SHUTDOWN(dev="menu"))
 
         elif self.state == MenuState.SYS_POWER_RESTART:
             text = self.dgttranslate.text("B10_power_restart_menu")
-            self._fire_event(Event.REBOOT(dev="menu"))
+            await self._fire_event(Event.REBOOT(dev="menu"))
 
         elif self.state == MenuState.SYS_POWER_EXIT:
             text = self.dgttranslate.text("B10_power_exit_menu")
-            self._fire_event(Event.EXIT(dev="menu"))
+            await self._fire_event(Event.EXIT(dev="menu"))
 
         elif self.state == MenuState.SYS_INFO:
             if self.menu_system_info == Info.VERSION:
@@ -2877,7 +2877,7 @@ class DgtMenu(object):
             language = langs[self.menu_system_language]
             self.dgttranslate.set_language(language)
             write_picochess_ini("language", language)
-            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+            await self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_oklang"))
 
         elif self.state == MenuState.SYS_LOG:
@@ -2886,7 +2886,7 @@ class DgtMenu(object):
                 text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_oklogfile"))
             else:
                 text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_nofunction"))
-            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+            await self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
 
         elif self.state == MenuState.SYS_VOICE:
             if self.menu_system_voice == Voice.USER:
@@ -3012,7 +3012,7 @@ class DgtMenu(object):
             ModeInfo.set_clock_side(self.menu_system_display_clockside)
             write_picochess_ini("clockside", self.menu_system_display_clockside)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okclockside"))
-            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+            await self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
 
         elif self.state == MenuState.SYS_DISP_CONFIRM:
             text = self.enter_sys_disp_confirm_yesno_menu()
@@ -3036,7 +3036,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_DISP_PONDER_INTERVAL:
             write_picochess_ini("ponder-interval", self.menu_system_display_ponderinterval)
-            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+            await self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okponder"))
 
         elif self.state == MenuState.SYS_DISP_CAPITAL:
@@ -3044,7 +3044,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_DISP_CAPTIAL_YESNO:
             write_picochess_ini("enable-capital-letters", self.menu_system_display_capital)
-            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+            await self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okcapital"))
 
         elif self.state == MenuState.SYS_DISP_NOTATION:
@@ -3052,7 +3052,7 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_DISP_NOTATION_MOVE:
             write_picochess_ini("disable-short-notation", self.menu_system_display_notation)
-            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+            await self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_oknotation"))
 
         elif self.state == MenuState.SYS_EBOARD:
@@ -3066,17 +3066,17 @@ class DgtMenu(object):
                     return False
                 write_picochess_ini("board-type", eboard_type)
                 text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okeboard"))
-                self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+                await self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
                 if eboard_type != self.current_board_type:
                     # only reboot if e-board type is different from the current e-board type
-                    self._fire_event(Event.REBOOT(dev="menu"))
+                    await self._fire_event(Event.REBOOT(dev="menu"))
             else:
                 write_picochess_ini("board-type", eboard_type)
                 text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_okeboard"))
-                self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+                await self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
                 if eboard_type != self.current_board_type:
                     # only reboot if e-board type is different from the current e-board type
-                    self._fire_event(Event.REBOOT(dev="menu"))
+                    await self._fire_event(Event.REBOOT(dev="menu"))
 
         elif self.state == MenuState.SYS_THEME:
             text = self.enter_sys_theme_type_menu()
@@ -3091,10 +3091,10 @@ class DgtMenu(object):
             theme_type = themes[self.menu_system_theme_type]
             write_picochess_ini("theme", theme_type)
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_oktheme"))
-            self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
+            await self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
             if theme_type != self.theme_type:
                 # only reboot if theme type is different from the current theme type
-                self._fire_event(Event.REBOOT(dev="menu"))
+                await self._fire_event(Event.REBOOT(dev="menu"))
 
         else:  # Default
             pass
