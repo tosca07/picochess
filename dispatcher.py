@@ -43,7 +43,7 @@ class Dispatcher(DispatchDgt):
         self.tasks: Dict[str, list] = {}  # delayed task array
 
         self.display_hash: Dict[str, int] = {}  # Hash value of clock's display
-        self.process_lock: Dict[str, Lock] = {}
+        # self.process_lock: Dict[str, Lock] = {}
         self.main_loop = main_loop
 
     def register(self, device: str):
@@ -52,7 +52,7 @@ class Dispatcher(DispatchDgt):
         self.devices.add(device)
         self.maxtimer_running[device] = False
         self.clock_connected[device] = False
-        self.process_lock[device] = Lock()
+        # self.process_lock[device] = Lock()
         self.tasks[device] = []
         self.display_hash[device] = 0
 
@@ -86,8 +86,8 @@ class Dispatcher(DispatchDgt):
                 message = self.tasks[dev].pop(0)
             except IndexError:
                 break
-            with self.process_lock[dev]:
-                await self._process_message(message, dev)
+            # with self.process_lock[dev]:
+            await self._process_message(message, dev)
             if self.maxtimer_running[dev]:  # run over the task list until a maxtime command was processed
                 remaining = len(self.tasks[dev])
                 if remaining:
@@ -184,8 +184,8 @@ class Dispatcher(DispatchDgt):
                                 command = self.tasks[dev].pop()
                                 if repr(command) == DgtApi.CLOCK_START:  # clock might be in set mode
                                     logger.debug("processing (last) delayed clock start command")
-                                    with self.process_lock[dev]:
-                                        await self._process_message(command, dev)
+                                    # with self.process_lock[dev]:
+                                    await self._process_message(command, dev)
                                     break
                             self.tasks[dev] = []
                 else:
