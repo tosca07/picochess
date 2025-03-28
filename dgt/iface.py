@@ -16,14 +16,14 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import asyncio
 
 from chess import Board  # type: ignore
 from utilities import DisplayDgt
 from dgt.util import ClockSide
 from dgt.api import Dgt
-from eboard.eboard import EBoard
 from dgt.board import Rev2Info
-import asyncio
+from eboard.eboard import EBoard
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ class DgtIface(DisplayDgt):
         """Override this function."""
         raise NotImplementedError()
 
-    def start_clock(self, side, devs):
+    async def start_clock(self, side, devs):
         """Override this function."""
         raise NotImplementedError()
 
@@ -77,7 +77,7 @@ class DgtIface(DisplayDgt):
         """Override this function."""
         raise NotImplementedError()
 
-    def stop_clock(self, devs):
+    async def stop_clock(self, devs):
         """Override this function."""
         raise NotImplementedError()
 
@@ -148,9 +148,8 @@ class DgtIface(DisplayDgt):
         logger.debug("(%s) handle DgtApi: %s started", ",".join(message.devs), message)
         self.case_res = True
 
-        if False:  # switch-case
-            pass
-        elif isinstance(message, Dgt.DISPLAY_MOVE):
+        # switch-case
+        if isinstance(message, Dgt.DISPLAY_MOVE):
             self.case_res = self.display_move_on_clock(message)
         elif isinstance(message, Dgt.DISPLAY_TEXT):
             self.case_res = self.display_text_on_clock(message)
@@ -165,10 +164,10 @@ class DgtIface(DisplayDgt):
         elif isinstance(message, Dgt.CLOCK_SET):
             self.case_res = self.set_clock(message.time_left, message.time_right, message.devs)
         elif isinstance(message, Dgt.CLOCK_START):
-            self.case_res = self.start_clock(message.side, message.devs)
+            self.case_res = await self.start_clock(message.side, message.devs)
         elif isinstance(message, Dgt.CLOCK_STOP):
             if self.side_running != ClockSide.NONE:
-                self.case_res = self.stop_clock(message.devs)
+                self.case_res = await self.stop_clock(message.devs)
             else:
                 logger.debug("(%s) clock is already stopped", ",".join(message.devs))
         elif isinstance(message, Dgt.CLOCK_VERSION):
@@ -181,7 +180,7 @@ class DgtIface(DisplayDgt):
         elif isinstance(message, Dgt.PROMOTION_DONE):
             self.promotion_done(message.uci_move)
         else:  # switch-default
-            await asyncio.sleep(0.05)  # fake wait to make this a coroutine
+            pass
         logger.debug("(%s) handle DgtApi: %s ended", ",".join(message.devs), message)
         return self.case_res
 

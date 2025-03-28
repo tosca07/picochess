@@ -18,13 +18,13 @@
 import asyncio
 import logging
 import time
-from threading import Lock, Timer, Thread
+from threading import Lock
 from ctypes import cdll, c_byte, create_string_buffer, pointer
 
-from utilities import DisplayMsg, hms_time
-from dgt.api import Dgt, Message
-from dgt.util import ClockIcons, ClockSide
+from utilities import DisplayMsg, hms_time, AsyncRepeatingTimer
 from eboard.eboard import EBoard
+from dgt.api import Message
+from dgt.util import ClockIcons, ClockSide
 from dgt.iface import DgtIface
 from dgt.board import Rev2Info
 from pgn import ModeInfo
@@ -159,7 +159,7 @@ class DgtPi(DgtIface):
         else:
             return True
 
-    def display_text_on_clock(self, message: Dgt.DISPLAY_TEXT):
+    def display_text_on_clock(self, message):
         """Display a text on the dgtpi."""
         text = message.large_text
         if text is None:
@@ -215,7 +215,7 @@ class DgtPi(DgtIface):
         """Handle this by hw.py."""
         return True
 
-    def stop_clock(self, devs: set):
+    async def stop_clock(self, devs: set):
         """Stop the dgtpi."""
         if self.get_name() not in devs:
             logger.debug("ignored stopClock - devs: %s", devs)
@@ -257,7 +257,7 @@ class DgtPi(DgtIface):
             self.side_running = side
             return True
 
-    def start_clock(self, side: ClockSide, devs: set):
+    async def start_clock(self, side: ClockSide, devs: set):
         """Start the dgtpi."""
         if self.get_name() not in devs:
             logger.debug("ignored startClock - devs: %s", devs)
@@ -302,7 +302,9 @@ class DgtPi(DgtIface):
             return False
         else:
             self.side_running = side
-            Timer(0.9, self.out_settime).start()  # delay abit cause the clock needs time to update its time result
+            AsyncRepeatingTimer(
+                0.9, self.out_settime, self.loop, False
+            ).start()  # delay abit cause the clock needs time to update its time result
             return True
 
     def out_settime(self):

@@ -43,7 +43,6 @@ logger = logging.getLogger(__name__)
 
 evt_queue: asyncio.Queue = asyncio.Queue()
 dispatch_queue: asyncio.Queue = asyncio.Queue()
-main_loop: asyncio.AbstractEventLoop
 
 msgdisplay_devices = []
 dgtdisplay_devices = []
@@ -56,26 +55,14 @@ class Observable(object):
         super(Observable, self).__init__()
 
     @staticmethod
-    def set_main_loop(loop: asyncio.AbstractEventLoop):
-        global main_loop
-        main_loop = loop
-
-    @staticmethod
     async def fire(event):
         """Put an event on the Queue."""
-        await Observable._add_to_queue(event)
-        logger.debug("put in evt_queue done")
+        await Observable._add_to_queue(copy.deepcopy(event))
 
     @staticmethod
     async def _add_to_queue(event):
         """Put an event on the Queue."""
         await evt_queue.put(event)
-
-    # @todo minimize use of fire_sync, when not needed, global main_loop can be removed
-    @staticmethod
-    def fire_sync(event):
-        """Put an event on the Queue."""
-        asyncio.run_coroutine_threadsafe(Observable._add_to_queue(copy.deepcopy(event)), main_loop)
 
 
 class DispatchDgt(object):
@@ -85,27 +72,14 @@ class DispatchDgt(object):
         super(DispatchDgt, self).__init__()
 
     @staticmethod
-    def set_main_loop(loop: asyncio.AbstractEventLoop):
-        global main_loop
-        main_loop = loop
-
-    @staticmethod
     async def fire(dgt):
         """Put an event on the Queue."""
-        await DispatchDgt._add_to_queue(dgt)
-        logger.debug("put in dispatch_queue done")
+        await DispatchDgt._add_to_queue(copy.deepcopy(dgt))
 
     @staticmethod
     async def _add_to_queue(dgt):
         """Put an event on the Queue."""
         await dispatch_queue.put(dgt)
-
-    # @todo minimize use of fire_sync, when not needed, global main_loop can be removed
-    @staticmethod
-    def fire_sync(dgt):
-        """Put an event on the Queue."""
-        global main_loop
-        asyncio.run_coroutine_threadsafe(DispatchDgt._add_to_queue(copy.deepcopy(dgt)), main_loop)
 
 
 class DisplayMsg(object):
@@ -117,28 +91,15 @@ class DisplayMsg(object):
         self.loop = loop  # everyone to use main loop
         msgdisplay_devices.append(self)
 
-    async def _add_to_queue(self, message):
+    async def add_to_queue(self, message):
         """Put an event on the Queue."""
         await self.msg_queue.put(message)
-
-    # @todo: code below is temporary until also this show can be async
-
-    def add_to_queue_sync(self, message):
-        """Put an event on the Queue."""
-        asyncio.run_coroutine_threadsafe(self._add_to_queue(message), self.loop)
 
     @staticmethod
     async def show(message):
         """Send a message on each display device."""
         for display in msgdisplay_devices:
-            await display._add_to_queue(copy.deepcopy(message))
-
-    # @todo: code below is temporary until all show() can be async
-    @staticmethod
-    def show_sync(message):
-        """Send a message on each display device."""
-        for display in msgdisplay_devices:
-            display.add_to_queue_sync(copy.deepcopy(message))
+            await display.add_to_queue(copy.deepcopy(message))
 
 
 class DisplayDgt(object):
@@ -153,12 +114,6 @@ class DisplayDgt(object):
     async def add_to_queue(self, message):
         """Put an event on the Queue."""
         await self.dgt_queue.put(message)
-
-    # @todo: code below is temporary until also this show can be async
-
-    def add_to_queue_sync(self, message):
-        """Put an event on the Queue."""
-        asyncio.run_coroutine_threadsafe(self.add_to_queue(message), self.loop)
 
     @staticmethod
     async def show(message):
@@ -210,7 +165,7 @@ class AsyncRepeatingTimer:
                 self._task.cancel()
                 self._task = None
         else:
-            logging.info("repeated timer already stopped - strange!")
+            logging.debug("repeated timer already stopped - strange!")
 
 
 def get_opening_books():
@@ -279,7 +234,7 @@ def checkout_tag(tag):
     do_popen(["pip3", "install", "-r", "requirements.txt"])
 
 
-def update_picochess(dgtpi: bool, auto_reboot: bool, dgttranslate: DgtTranslate):
+async def update_picochess(dgtpi: bool, auto_reboot: bool, dgttranslate: DgtTranslate):
     """Update picochess from git."""
     git = git_name()
 
@@ -290,7 +245,7 @@ def update_picochess(dgtpi: bool, auto_reboot: bool, dgttranslate: DgtTranslate)
         # Check if update is needed - need to make sure, we get english answers
         output = do_popen([git, "status", "-uno"], force_en_env=True)
         if "up-to-date" not in output and "Your branch is ahead of" not in output:
-            DispatchDgt.fire_sync(dgttranslate.text("Y25_update"))
+            DispatchDgt.fire(dgttranslate.text("Y25_update"))
             # Update
             logging.debug("updating picochess")
             do_popen([git, "pull", "origin", branch])

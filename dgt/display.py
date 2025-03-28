@@ -17,16 +17,16 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from math import floor
-from pgn import ModeInfo
 import logging
 import copy
 import asyncio
 import chess  # type: ignore
+from pgn import ModeInfo
 from utilities import DisplayMsg, Observable, DispatchDgt, AsyncRepeatingTimer, write_picochess_ini
+from timecontrol import TimeControl
 from dgt.menu import DgtMenu
 from dgt.util import ClockSide, ClockIcons, BeepLevel, Mode, GameResult, TimeMode, PlayMode
 from dgt.api import Dgt, Event, Message
-from timecontrol import TimeControl
 from dgt.board import Rev2Info
 from dgt.translate import DgtTranslate
 
@@ -748,7 +748,7 @@ class DgtDisplay(DisplayMsg):
             Mode.REMOTE,
             Mode.TRAINING,
         ):
-            self._set_clock()
+            await self._set_clock()
 
     async def _process_computer_move(self, message):
         self.last_pos_start = False
@@ -816,7 +816,7 @@ class DgtDisplay(DisplayMsg):
 
         if self.dgtmenu.get_time_mode() == TimeMode.FIXED:  # go back to a stopped time display and reset times
             self.time_control.reset()
-            self._set_clock()
+            await self._set_clock()
 
         if self.dgtmenu.get_mode() == Mode.TRAINING:
             await self._display_confirm("K05_okmove")
@@ -868,7 +868,7 @@ class DgtDisplay(DisplayMsg):
         if wait:
             await DispatchDgt.fire(message.time_text)
         self.time_control = TimeControl(**message.tc_init)
-        self._set_clock()
+        await self._set_clock()
 
     async def _process_new_score(self, message):
         if not message.mate:
@@ -1171,8 +1171,8 @@ class DgtDisplay(DisplayMsg):
                 await DispatchDgt.fire(message.book_text)
 
         elif isinstance(message, Message.TAKE_BACK):
-            self.take_back_move = chess.Move.null()
-            game_copy = message.game.copy()
+            self.take_back_move: chess.Move = chess.Move.null()
+            game_copy: chess.Board = message.game.copy()
 
             await self.force_leds_off()
             self._reset_moves_and_score()
@@ -1180,7 +1180,7 @@ class DgtDisplay(DisplayMsg):
 
             try:
                 self.take_back_move = game_copy.pop()
-            except Exception:
+            except IndexError:
                 self.take_back_move = chess.Move.null()
 
             if self.take_back_move != chess.Move.null():
@@ -1542,6 +1542,10 @@ class DgtDisplay(DisplayMsg):
         while True:
             # Check if we have something to display
             message = await self.msg_queue.get()
-            if not isinstance(message, Message.DGT_SERIAL_NR):
+            if (
+                not isinstance(message, Message.DGT_SERIAL_NR)
+                and not isinstance(message, Message.DGT_CLOCK_TIME)
+                and not isinstance(message, Message.CLOCK_TIME)
+            ):
                 logger.debug("received message from msg_queue: %s", message)
             await self._process_message(message)

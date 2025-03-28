@@ -64,10 +64,9 @@ from utilities import (
     version,
     evt_queue,
     write_picochess_ini,
-    hms_time,
     get_engine_mame_par,
 )
-from utilities import AsyncRepeatingTimer, DispatchDgt
+from utilities import AsyncRepeatingTimer
 from pgn import Emailer, PgnDisplay, ModeInfo
 from server import WebDisplay, WebServer, WebVr
 from picotalker import PicoTalkerDisplay
@@ -158,7 +157,7 @@ class AlternativeMover:
 class PicochessState:
     """Class to keep track of state in Picochess."""
 
-    def __init__(self):
+    def __init__(self, loop: asyncio.AbstractEventLoop):
         self.automatic_takeback = False
         self.best_move_displayed = None
         self.best_move_posted = False
@@ -219,6 +218,7 @@ class PicochessState:
         self.last_error_fen = ""
         self.artwork_in_use = False
         self.delay_fen_error = 4
+        self.main_loop = loop
 
     async def start_clock(self) -> None:
         """Start the clock."""
@@ -229,7 +229,7 @@ class PicochessState:
             Mode.REMOTE,
             Mode.TRAINING,
         ):
-            self.time_control.start_internal(self.game.turn)
+            self.time_control.start_internal(self.game.turn, self.main_loop)
             tc_init = self.time_control.get_parameters()
             if self.interaction_mode == Mode.TRAINING:
                 pass
@@ -288,14 +288,14 @@ class PicochessState:
         condition2 = self.play_mode == PlayMode.USER_BLACK and self.game.turn == chess.WHITE
         return condition1 or condition2
 
-    async def set_online_tctrl(self, game_time, fischer_inc, main_loop: asyncio.AbstractEventLoop) -> None:
+    async def set_online_tctrl(self, game_time, fischer_inc) -> None:
         l_game_time = 0
         l_fischer_inc = 0
 
         logger.debug("molli online set_online_tctrl input %s %s", game_time, fischer_inc)
         l_game_time = int(game_time)
         l_fischer_inc = int(fischer_inc)
-        self.stop_clock()
+        await self.stop_clock()
         self.time_control.stop_internal(log=False)
 
         self.time_control = TimeControl()
@@ -312,7 +312,6 @@ class PicochessState:
 
         tc_init["blitz2"] = 0
         tc_init["moves_to_go"] = 0
-        tc_init["loop"] = main_loop  # needed by timer in TimeControl
 
         lt_white = l_game_time * 60 + l_fischer_inc
         lt_black = l_game_time * 60 + l_fischer_inc
@@ -587,12 +586,8 @@ async def main() -> None:
     # Use asyncio's event loop as the Tornado IOLoop
     AsyncIOMainLoop().install()
     main_loop = asyncio.get_event_loop()
-    # the following calls could be done with one but in the future
-    # main loop is hopefully not global in utilities.py
-    # use main loop everywhere...
-    DispatchDgt.set_main_loop(main_loop)
-    Observable.set_main_loop(main_loop)
-    state = PicochessState()
+
+    state = PicochessState(main_loop)
     own_user = ""
     opp_user = ""
     game_time = 0
@@ -750,6 +745,7 @@ async def main() -> None:
         my_web_display = WebDisplay(shared, main_loop)
         asyncio.create_task(my_web_display.message_consumer())
         my_web_vr = WebVr(shared, dgtboard, main_loop)
+        await my_web_vr.initialize()
         asyncio.create_task(my_web_vr.dgt_consumer())
         logger.info("message queues ready - starting web server")
         dgtdispatcher.register("web")
@@ -803,7 +799,7 @@ async def main() -> None:
 
     # Update
     if args.enable_update:
-        update_picochess(args.dgtpi, args.enable_update_reboot, state.dgttranslate)
+        await update_picochess(args.dgtpi, args.enable_update_reboot, state.dgttranslate)
 
     #################################################
 
@@ -1432,7 +1428,7 @@ async def main() -> None:
                     color = own_color
 
                 logger.debug("molli switch_online start timecontrol")
-                self.state.set_online_tctrl(game_time, fischer_inc, self.loop)
+                self.state.set_online_tctrl(game_time, fischer_inc)
                 self.state.time_control.reset_start_time()
 
                 logger.debug("molli switch_online new_color: %s", color)
@@ -2769,7 +2765,6 @@ async def main() -> None:
             logger.info("evt_queue ready")
             while True:
                 event = await evt_queue.get()
-                logger.debug("evt_queue incoming message")
                 await self.process_main_events(event)
 
         async def process_main_events(self, event):
@@ -4482,12 +4477,13 @@ async def main() -> None:
                 if self.dgtdispatcher.is_prio_device(
                     event.dev, event.connect
                 ):  # transfer only the most prio clock's time
-                    logger.debug(
-                        "setting tc clock time - prio: %s w:%s b:%s",
-                        event.dev,
-                        hms_time(event.time_white),
-                        hms_time(event.time_black),
-                    )
+                    # avoid debugs for every second
+                    #                    logger.debug(
+                    #                        "setting tc clock time - prio: %s w:%s b:%s",
+                    #                        event.dev,
+                    #                        hms_time(event.time_white),
+                    #                        hms_time(event.time_black),
+                    #                    )
 
                     if self.state.time_control.mode != TimeMode.FIXED and (
                         event.time_white == self.state.time_control.game_time
@@ -4498,7 +4494,7 @@ async def main() -> None:
                         moves_to_go = self.state.time_control.moves_to_go_orig - self.state.game.fullmove_number + 1
                         if moves_to_go < 0:
                             moves_to_go = 0
-                        logger.debug("setting tc clock times")
+                        # logger.debug("setting tc clock times")
                         self.state.time_control.set_clock_times(
                             white_time=event.time_white,
                             black_time=event.time_black,

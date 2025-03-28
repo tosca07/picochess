@@ -242,13 +242,16 @@ class WebVr(DgtIface):
         # virtual_timer is a web clock updater, loop is started in parent
         self.virtual_timer = AsyncRepeatingTimer(1, self._runclock, self.loop)
         self.enable_dgtpi = dgtboard.is_pi
-        sub = 2 if dgtboard.is_pi else 0
-        DisplayMsg.show_sync(Message.DGT_CLOCK_VERSION(main=2, sub=sub, dev="web", text=None))
         self.clock_show_time = True
 
         # keep the last time to find out errorous DGT_MSG_BWTIME messages (error: current time > last time)
         self.r_time = 3600 * 10  # max value cause 10h cant be reached by clock
         self.l_time = 3600 * 10  # max value cause 10h cant be reached by clock
+
+    async def initialize(self):
+        """async inits moved here"""
+        sub = 2 if self.dgtboard.is_pi else 0
+        await DisplayMsg.show(Message.DGT_CLOCK_VERSION(main=2, sub=sub, dev="web", text=None))
 
     def _create_clock_text(self):
         if "clock_text" not in self.shared:
@@ -358,7 +361,7 @@ class WebVr(DgtIface):
             logger.debug("(web) clock isnt running - no need for endText")
         return True
 
-    def stop_clock(self, devs: set):
+    async def stop_clock(self, devs: set):
         """Stop the time on the web clock."""
         if self.get_name() not in devs:
             logger.debug("ignored stopClock - devs: %s", devs)
@@ -371,7 +374,7 @@ class WebVr(DgtIface):
         self.side_running = side
         return True
 
-    def start_clock(self, side: ClockSide, devs: set):
+    async def start_clock(self, side: ClockSide, devs: set):
         """Start the time on the web clock."""
         if self.get_name() not in devs:
             logger.debug("ignored startClock - devs: %s", devs)

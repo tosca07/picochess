@@ -17,14 +17,12 @@
 
 import asyncio
 import time
-import threading
 import logging
 import copy
 from math import ceil
-from dgt.board import Rev2Info
-
-from utilities import Observable, hms_time, AsyncRepeatingTimer
 import chess  # type: ignore
+from utilities import Observable, hms_time, AsyncRepeatingTimer
+from dgt.board import Rev2Info
 from dgt.api import Event
 from dgt.util import TimeMode
 
@@ -46,7 +44,6 @@ class TimeControl(object):
         depth=0,
         node=0,
         internal_time=None,
-        loop=None,
     ):
         super(TimeControl, self).__init__()
         self.mode = mode
@@ -59,7 +56,6 @@ class TimeControl(object):
         self.depth = depth
         self.node = node
         self.internal_time = internal_time
-        self.loop = loop  # asyncio loop from main
 
         if depth > 0:
             self.mode = TimeMode.FIXED
@@ -150,7 +146,7 @@ class TimeControl(object):
         return "errtm"
 
     def reset(self):
-        # Reset the clock's times for both players."""
+        """Reset the clock's times for both players."""
         if self.mode == TimeMode.BLITZ:
             self.clock_time[chess.WHITE] = self.clock_time[chess.BLACK] = self.game_time * 60
 
@@ -182,7 +178,7 @@ class TimeControl(object):
 
     def set_clock_times(self, white_time: int, black_time: int, moves_to_go: int = 0):
         """Set the times send from the clock."""
-        logger.debug("set clock times w:%s b:%s", hms_time(white_time), hms_time(black_time))
+        # logger.debug("set clock times w:%s b:%s", hms_time(white_time), hms_time(black_time))
         self.clock_time[chess.WHITE] = white_time
         self.clock_time[chess.BLACK] = black_time
         self.moves_to_go = moves_to_go
@@ -191,7 +187,7 @@ class TimeControl(object):
         """Set the start time to the current time."""
         self.start_time = time.time()
 
-    def _out_of_time(self, time_start):
+    async def _out_of_time(self):
         """Fire an OUT_OF_TIME event."""
         self.run_color = None
         if self.mode == TimeMode.FIXED:
@@ -200,9 +196,9 @@ class TimeControl(object):
             pass  # molli: simulated median move time => no out of time / game end event
         elif self.active_color is not None:
             display_color = "WHITE" if self.active_color == chess.WHITE else "BLACK"
-            txt = "current clock time (before subtracting) is %f and color is %s, out of time event started from %f"
-            logger.debug(txt, self.internal_time[self.active_color], display_color, time_start)
-            Observable.fire_sync(Event.OUT_OF_TIME(color=self.active_color))
+            txt = "current clock time (before subtracting) is %f and color is %s"
+            logger.debug(txt, self.internal_time[self.active_color], display_color)
+            await Observable.fire(Event.OUT_OF_TIME(color=self.active_color))
 
     def add_time(self, color):
         """Add the increment value to the color given."""
@@ -252,7 +248,7 @@ class TimeControl(object):
             w_hms, b_hms = self._log_time()
             logger.debug("molli: game2 after internal time w:%s - b:%s", w_hms, b_hms)
 
-    def start_internal(self, color, log=True):
+    def start_internal(self, color: chess.Color, loop: asyncio.AbstractEventLoop, log: bool = True):
         """Start the internal clock."""
         if not self.internal_running():
             if self.mode in (TimeMode.BLITZ, TimeMode.FISCHER):
@@ -306,8 +302,11 @@ class TimeControl(object):
 
             # Only start thread if not already started for same color, and the player has not already lost on time
             if self.internal_time[color] > 0 and self.active_color is not None and self.run_color != self.active_color:
-                self.timer = threading.Timer(
-                    copy.copy(self.internal_time[color]), self._out_of_time, [copy.copy(self.internal_time[color])]
+                self.timer = AsyncRepeatingTimer(
+                    self.internal_time[color],
+                    self._out_of_time,
+                    loop=loop,
+                    repeating=False,
                 )
                 self.timer.start()
                 logger.debug(
@@ -323,8 +322,7 @@ class TimeControl(object):
                 logger.debug("old internal time w:%s b:%s", w_hms, b_hms)
 
             if self.timer:
-                self.timer.cancel()
-                self.timer.join()
+                self.timer.stop()
             else:
                 logger.warning("time=%s", self.internal_time)
             used_time = ceil((time.time() - self.start_time) * 10) / 10

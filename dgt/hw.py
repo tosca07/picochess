@@ -17,12 +17,11 @@
 
 import asyncio
 import logging
-from threading import Lock, Thread
+from threading import Lock
 from utilities import hms_time
 from dgt.iface import DgtIface
 from dgt.util import ClockIcons, ClockSide
 from eboard.eboard import EBoard
-from dgt.api import Dgt
 
 from pgn import ModeInfo
 
@@ -70,7 +69,7 @@ class DgtHw(DgtIface):
                 logger.warning("SetText() returned error %i", res)
             return res
 
-    def display_text_on_clock(self, message: Dgt.DISPLAY_TEXT):
+    def display_text_on_clock(self, message):
         """Display a text on the dgtxl/3k/rev2."""
         is_new_rev2 = self.dgtboard.is_revelation and self.dgtboard.enable_revelation_pi
         if is_new_rev2:
@@ -91,7 +90,7 @@ class DgtHw(DgtIface):
                 right_icons = message.rd if hasattr(message, "rd") else ClockIcons.NONE
                 return self._display_on_dgt_xl(text, message.beep, left_icons, right_icons)
 
-    def display_move_on_clock(self, message: Dgt.DISPLAY_MOVE):
+    def display_move_on_clock(self, message):
         """Display a move on the dgtxl/3k/rev2."""
         is_new_rev2 = self.dgtboard.is_revelation and self.dgtboard.enable_revelation_pi
         if self.enable_dgt3000 or is_new_rev2:
@@ -184,7 +183,7 @@ class DgtHw(DgtIface):
         self.dgtboard.clear_light_on_revelation()
         return True
 
-    def stop_clock(self, devs: set):
+    async def stop_clock(self, devs: set):
         """Stop the dgtxl/3k."""
         if self.get_name() not in devs:
             logger.debug("ignored stopClock - devs: %s", devs)
@@ -227,7 +226,7 @@ class DgtHw(DgtIface):
             self.dgtboard.in_settime = False  # @todo should be set on ACK (see: DgtBoard) not here
             return res
 
-    def start_clock(self, side: ClockSide, devs: set):
+    async def start_clock(self, side: ClockSide, devs: set):
         """Start the dgtxl/3k."""
         if self.get_name() not in devs:
             logger.debug("ignored startClock - devs: %s", devs)
