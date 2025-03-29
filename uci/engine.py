@@ -577,7 +577,7 @@ class UciEngine(object):
             logger.error("Engine terminated while trying to make a move")  # @todo find out, why this can happen!
         finally:
             if result_queue.empty():
-                result_queue.put(None)  # no result
+                await result_queue.put(None)  # no result
             self.idle = True  # engine idle again
             # not firing BEST_MOVE here because caller picochess fires it
 
