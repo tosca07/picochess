@@ -24,7 +24,6 @@ from collections import OrderedDict
 from typing import Dict, List, Set
 from pgn import ModeInfo
 import chess  # type: ignore
-import trio
 from timecontrol import TimeControl
 from utilities import Observable, DispatchDgt, get_tags, version, write_picochess_ini
 from dgt.util import (
@@ -2710,11 +2709,11 @@ class DgtMenu(object):
                 cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt; sleep 0.2; xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
                 if self.get_engine_rdisplay():
                     write_picochess_ini("rwindow", self.res_engine_rwindow)
-                    await trio.run_process(
+                    subprocess.run(
                         cmd,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
-                        check=True,
+                        universal_newlines=True,
                         shell=True,
                     )
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_ok"))
