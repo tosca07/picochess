@@ -37,7 +37,7 @@ from configobj import ConfigObj, ConfigObjError, DuplicateError  # type: ignore
 from typing import Optional
 
 # picochess version
-version = "4.0.5"
+version = "4.0.6"
 
 logger = logging.getLogger(__name__)
 
