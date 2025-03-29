@@ -565,7 +565,9 @@ class PicoTalkerDisplay(DisplayMsg):
             ):
                 logger.debug("received message from msg_queue: %s", message)
             await asyncio.sleep(0.05)  # reduce priority for talker
-            await self.process_picotalker_messages(message)
+            asyncio.create_task(self.process_picotalker_messages(message))
+            await asyncio.sleep(0.05)  # give other tasks a chance to run
+            self.msg_queue.task_done()
 
     async def process_picotalker_messages(self, message):
         """process Picotalker messages"""

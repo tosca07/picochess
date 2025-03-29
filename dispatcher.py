@@ -164,7 +164,9 @@ class Dispatcher(DispatchDgt):
             # Check if we have something to display
             msg = await dispatch_queue.get()
             logger.debug("received command from dispatch_queue: %s devs: %s", msg, ",".join(msg.devs))
-            await self.process_dispatch_message(msg)
+            asyncio.create_task(self.process_dispatch_message(msg))
+            await asyncio.sleep(0.1)  # give other tasks a chance to run
+            dispatch_queue.task_done()
 
     async def process_dispatch_message(self, message):
         """Process the dispatch message"""

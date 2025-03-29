@@ -1071,8 +1071,8 @@ async def main() -> None:
                     engine_res = await self.engine.go(
                         time_dict=uci_dict, game=self.state.game, result_queue=result_queue
                     )
-                    while result_queue.empty():
-                        await asyncio.sleep(0.05)  # waiting for computer move
+                    # while result_queue.empty():
+                    #    await asyncio.sleep(0.05)  # waiting for computer move
                     engine_res = await result_queue.get()  # on engine error queue has None
                     if engine_res:
                         logger.debug("engine moved %s", engine_res.move.uci)
@@ -2771,7 +2771,9 @@ async def main() -> None:
             logger.info("evt_queue ready")
             while True:
                 event = await evt_queue.get()
-                await self.process_main_events(event)
+                asyncio.create_task(self.process_main_events(event))
+                await asyncio.sleep(0.05)  # give other tasks a chance to run
+                evt_queue.task_done()
 
         async def process_main_events(self, event):
             """Consume event from evt_queue"""
