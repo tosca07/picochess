@@ -168,7 +168,8 @@ class ContinuousAnalysis:
                 # @todo we could update the current game here
                 # so that analysis on user turn would start immediately
         except chess.engine.EngineTerminatedError:
-            logger.error("Engine terminated")
+            logger.error("Engine terminated while trying to make a move")  # @todo find out, why this can happen!
+            await result_queue.put(None)  # no result
         finally:
             self.pause_event.set()  # Resume analysis
         return result
@@ -568,16 +569,10 @@ class UciEngine(object):
     async def go(self, time_dict: dict, game: Board, result_queue: asyncio.Queue):
         """Go engine.
         parameter game will not change, it is deep copied"""
-        try:
-            async with self.engine_lock:
-                self.idle = False  # engine is going to be busy now
-                limit: Limit = self.get_engine_limit(time_dict)
-                await self.analyser.play_move(game, limit=limit, ponder=self.pondering, result_queue=result_queue)
-        except chess.engine.EngineTerminatedError:
-            logger.error("Engine terminated while trying to make a move")  # @todo find out, why this can happen!
-        finally:
-            if result_queue.empty():
-                await result_queue.put(None)  # no result
+        async with self.engine_lock:
+            self.idle = False  # engine is going to be busy now
+            limit: Limit = self.get_engine_limit(time_dict)
+            await self.analyser.play_move(game, limit=limit, ponder=self.pondering, result_queue=result_queue)
             self.idle = True  # engine idle again
             # not firing BEST_MOVE here because caller picochess fires it
 
