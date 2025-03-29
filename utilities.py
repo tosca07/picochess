@@ -63,6 +63,7 @@ class Observable(object):
     async def _add_to_queue(event):
         """Put an event on the Queue."""
         await evt_queue.put(event)
+        logger.debug("added event to queue %s", event)
 
 
 class DispatchDgt(object):
@@ -80,6 +81,7 @@ class DispatchDgt(object):
     async def _add_to_queue(dgt):
         """Put an event on the Queue."""
         await dispatch_queue.put(dgt)
+        logger.debug("added dgt to queue %s", dgt)
 
 
 class DisplayMsg(object):
@@ -94,6 +96,7 @@ class DisplayMsg(object):
     async def add_to_queue(self, message):
         """Put an event on the Queue."""
         await self.msg_queue.put(message)
+        logger.debug("added message to queue %s", message)
 
     @staticmethod
     async def show(message):

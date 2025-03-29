@@ -147,15 +147,32 @@ class ContinuousAnalysis:
         if not self.engine:
             logger.error("%s ContinuousAnalysis initialised without engine", self.whoami)
 
-    async def play_move(self, game: Board, limit: Limit, pondering: bool) -> chess.engine.PlayResult:
+    async def _engine_move_task(self, game: Board, limit: Limit, ponder: bool, queue):
+        """async task to ask the engine for a move - to avoid blocking result is put in queue"""
+        result = await self.engine.play(copy.deepcopy(game), limit=limit, ponder=ponder)
+        await queue.put(result)
+
+    # def start_async_loop(self, game: Board, limit: Limit, ponder: bool, queue: asyncio.Queue):
+    #    """internal function to start the async loop that makes the move"""
+    #    asyncio.run(self.make_move(game, limit, ponder, queue))
+
+    async def play_move(self, game: Board, limit: Limit, ponder: bool) -> chess.engine.PlayResult:
         """Plays the best move and updates the board."""
         result = None
         self.pause_event.clear()  # Pause analysis
         try:
             async with self.lock:
-                result = await self.engine.play(copy.deepcopy(game), limit=limit, ponder=pondering)
-            # @todo we could update the current game here
-            # so that analysis on user turn would start immediately
+                result_queue = asyncio.Queue()  # engines move result
+                self.loop.create_task(
+                    self._engine_move_task(copy.deepcopy(game), limit=limit, ponder=ponder, queue=result_queue)
+                )
+                while result_queue.empty():
+                    logger.debug("waiting for computer move")
+                    await asyncio.sleep(0.05)
+                result = await result_queue.get()
+                assert result_queue.empty()
+                # @todo we could update the current game here
+                # so that analysis on user turn would start immediately
         except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")
         finally:
@@ -522,7 +539,7 @@ class UciEngine(object):
         self.engine.send_line("stop")
 
     def get_engine_limit(self, time_dict: dict) -> Limit:
-        """ convert time_dict to engine Limit play time """
+        """convert time_dict to engine Limit for engine thinking"""
         try:
             logger.debug("molli: timedict: %s", str(time_dict))
             if "movestogo" in time_dict:
@@ -530,28 +547,28 @@ class UciEngine(object):
             else:
                 moves = None
             if "wtime" in time_dict:
-                white_t = float(time_dict["wtime"])/1000.0
+                white_t = float(time_dict["wtime"]) / 1000.0
             elif "movetime" in time_dict:
-                white_t = float(time_dict["movetime"])/1000.0
+                white_t = float(time_dict["movetime"]) / 1000.0
             else:
                 white_t = FLOAT_MAX_ENGINE_TIME  # fallback
                 logger.warning("engine using fallback time for white")
             if "btime" in time_dict:
-                black_t = float(time_dict["btime"])/1000.0
+                black_t = float(time_dict["btime"]) / 1000.0
             elif "movetime" in time_dict:
-                black_t = float(time_dict["movetime"])/1000.0
+                black_t = float(time_dict["movetime"]) / 1000.0
             else:
                 black_t = FLOAT_MAX_ENGINE_TIME  # fallback
                 logger.warning("engine using fallback time for black")
-            white_inc = float(time_dict["winc"])/1000.0 if "winc" in time_dict else None
-            black_inc = float(time_dict["binc"])/1000.0 if "binc" in time_dict else None
+            white_inc = float(time_dict["winc"]) / 1000.0 if "winc" in time_dict else None
+            black_inc = float(time_dict["binc"]) / 1000.0 if "binc" in time_dict else None
         except ValueError:
             logger.warning("wrong thinking times sent to engine, using fallback")
             white_t = black_t = FLOAT_MAX_ENGINE_TIME
             white_inc = black_inc = 0
-        use_time = Limit(white_clock=white_t, black_clock=black_t,
-                            white_inc=white_inc, black_inc=black_inc,
-                            remaining_moves=moves)
+        use_time = Limit(
+            white_clock=white_t, black_clock=black_t, white_inc=white_inc, black_inc=black_inc, remaining_moves=moves
+        )
         return use_time
 
     async def go(self, time_dict: dict, game: Board) -> chess.engine.PlayResult:

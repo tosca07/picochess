@@ -419,6 +419,7 @@ class DgtDisplay(DisplayMsg):
 
     async def _process_button(self, message):
         button = int(message.button)
+        logger.debug("DGT button: %d processed", button)
         if not self.dgtmenu.get_engine_restart():
             if button == 0:
                 await self._process_button0(message.dev)
