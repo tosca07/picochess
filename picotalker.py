@@ -558,6 +558,12 @@ class PicoTalkerDisplay(DisplayMsg):
         while True:
             # Check if we have something to say
             message = await self.msg_queue.get()
+            if (
+                not isinstance(message, Message.DGT_SERIAL_NR)
+                and not isinstance(message, Message.DGT_CLOCK_TIME)
+                and not isinstance(message, Message.CLOCK_TIME)
+            ):
+                logger.debug("received message from msg_queue: %s", message)
             await asyncio.sleep(0.05)  # reduce priority for talker
             await self.process_picotalker_messages(message)
 

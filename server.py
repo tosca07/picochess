@@ -808,4 +808,10 @@ class WebDisplay(DisplayMsg):
         logger.info("msg_queue ready")
         while True:
             message = await self.msg_queue.get()
+            if (
+                not isinstance(message, Message.DGT_SERIAL_NR)
+                and not isinstance(message, Message.DGT_CLOCK_TIME)
+                and not isinstance(message, Message.CLOCK_TIME)
+            ):
+                logger.debug("received message from msg_queue: %s", message)
             await self.task(message)

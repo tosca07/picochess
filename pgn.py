@@ -652,5 +652,11 @@ class PgnDisplay(DisplayMsg):
         while True:
             # Check if we have something to display
             message = await self.msg_queue.get()
+            if (
+                not isinstance(message, Message.DGT_SERIAL_NR)
+                and not isinstance(message, Message.DGT_CLOCK_TIME)
+                and not isinstance(message, Message.CLOCK_TIME)
+            ):
+                logger.debug("received message from msg_queue: %s", message)
             await asyncio.sleep(0.1)  # reduce priority for PGN
             await self._process_message(message)
