@@ -65,7 +65,7 @@ class ChessnutBoard(EBoard):
                 pass
             bwait = waitchars[wait_counter]
             text = self._display_text("no Chessnut e-Board" + bwait, "Chessnut" + bwait, "Chesnut" + bwait, bwait)
-            DisplayMsg.show(Message.DGT_NO_EBOARD_ERROR(text=text))
+            DisplayMsg.show_sync(Message.DGT_NO_EBOARD_ERROR(text=text))
             wait_counter = (wait_counter + 1) % len(waitchars)
             time.sleep(1.0)
 
@@ -101,20 +101,20 @@ class ChessnutBoard(EBoard):
         else:
             self.agent.realtime_mode()
             text = Dgt.DISPLAY_TIME(force=True, wait=True, devs={"ser", "i2c", "web"})
-        DisplayMsg.show(Message.DGT_NO_EBOARD_ERROR(text=text))
+        DisplayMsg.show_sync(Message.DGT_NO_EBOARD_ERROR(text=text))
 
     def _process_board_position(self, result):
         fen = result["fen"].split(" ")[0]
-        DisplayMsg.show(Message.DGT_FEN(fen=fen, raw=True))
+        DisplayMsg.show_sync(Message.DGT_FEN(fen=fen, raw=True))
 
     def _process_battery_state(self, result):
         if Battery.LOW.name in result["message"] or Battery.EXHAUSTED.name in result["message"]:
             text = self._display_text("Battery " + result["message"], "Batt." + result["message"], "batt low", "batlow")
-            DisplayMsg.show(Message.DGT_NO_EBOARD_ERROR(text=text))
+            DisplayMsg.show_sync(Message.DGT_NO_EBOARD_ERROR(text=text))
         else:
             battery_str = result["message"].split()[1]
             if battery_str.isnumeric():
-                DisplayMsg.show(Message.BATTERY(percent=int(battery_str)))
+                DisplayMsg.show_sync(Message.BATTERY(percent=int(battery_str)))
 
     def _connect(self):
         logger.info("connecting to board")

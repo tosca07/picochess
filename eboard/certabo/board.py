@@ -65,7 +65,7 @@ class CertaboBoard(EBoard):
                 pass
             bwait = waitchars[wait_counter]
             text = self._display_text("no Certabo e-Board" + bwait, "Certabo" + bwait, "Certabo" + bwait, bwait)
-            DisplayMsg.show(Message.DGT_NO_EBOARD_ERROR(text=text))
+            DisplayMsg.show_sync(Message.DGT_NO_EBOARD_ERROR(text=text))
             wait_counter = (wait_counter + 1) % len(waitchars)
             time.sleep(1.0)
 
@@ -84,12 +84,12 @@ class CertaboBoard(EBoard):
                             text = self._display_text(result["message"], result["message"], "no/", "Board")
                         else:
                             text = Dgt.DISPLAY_TIME(force=True, wait=True, devs={"ser", "i2c", "web"})
-                        DisplayMsg.show(Message.DGT_NO_EBOARD_ERROR(text=text))
+                        DisplayMsg.show_sync(Message.DGT_NO_EBOARD_ERROR(text=text))
                     elif "cmd" in result and result["cmd"] == "raw_board_position" and "fen" in result:
                         fen = result["fen"].split(" ")[0]
-                        DisplayMsg.show(Message.DGT_FEN(fen=fen, raw=True))
+                        DisplayMsg.show_sync(Message.DGT_FEN(fen=fen, raw=True))
                     elif "cmd" in result and result["cmd"] == "request_promotion_dialog" and "move" in result:
-                        DisplayMsg.show(Message.PROMOTION_DIALOG(move=result["move"]))
+                        DisplayMsg.show_sync(Message.PROMOTION_DIALOG(move=result["move"]))
                 except queue.Empty:
                     pass
 

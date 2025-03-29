@@ -97,12 +97,22 @@ class DisplayMsg(object):
         """Put an event on the Queue."""
         await self.msg_queue.put(message)
 
+    def add_to_queue_sync(self, message):
+        """Put an event on the Queue."""
+        asyncio.run_coroutine_threadsafe(self.add_to_queue(message), self.loop)
+
     @staticmethod
     async def show(message):
         """Send a message on each display device."""
         for display in msgdisplay_devices:
             await display.add_to_queue(copy.deepcopy(message))
         logger.debug("added message to %d queues %s", len(msgdisplay_devices), message)
+
+    @staticmethod
+    def show_sync(message):
+        """Send a message on each display device."""
+        for display in msgdisplay_devices:
+            display.add_to_queue_sync(copy.deepcopy(message))
 
 
 class DisplayDgt(object):
