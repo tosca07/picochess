@@ -1071,8 +1071,6 @@ async def main() -> None:
                     engine_res = await self.engine.go(
                         time_dict=uci_dict, game=self.state.game, result_queue=result_queue
                     )
-                    # while result_queue.empty():
-                    #    await asyncio.sleep(0.05)  # waiting for computer move
                     engine_res = await result_queue.get()  # on engine error queue has None
                     if engine_res:
                         logger.debug("engine moved %s", engine_res.move.uci)

@@ -147,19 +147,14 @@ class ContinuousAnalysis:
         if not self.engine:
             logger.error("%s ContinuousAnalysis initialised without engine", self.whoami)
 
-    async def _engine_move_task(self, game: Board, limit: Limit, ponder: bool, result_queue: asyncio.Queue):
+    async def _engine_move_task(self, game: Board, limit: Limit, ponder: bool, result_queue: asyncio.Queue) -> None:
         """async task to ask the engine for a move - to avoid blocking result is put in queue"""
         result = await self.engine.play(copy.deepcopy(game), limit=limit, ponder=ponder)
         await result_queue.put(result)
 
-    # def start_async_loop(self, game: Board, limit: Limit, ponder: bool, queue: asyncio.Queue):
-    #    """internal function to start the async loop that makes the move"""
-    #    asyncio.run(self.make_move(game, limit, ponder, queue))
-
-    async def play_move(self, game: Board, limit: Limit, ponder: bool, result_queue: asyncio.Queue):
+    async def play_move(self, game: Board, limit: Limit, ponder: bool, result_queue: asyncio.Queue) -> None:
         """Plays the best move and return played move result in the queue"""
-        result = None
-        self.pause_event.clear()  # Pause analysis
+        self.pause_event.clear()  # Pause analysis to prevent chess library from crashing
         try:
             async with self.lock:
                 self.loop.create_task(
@@ -172,7 +167,6 @@ class ContinuousAnalysis:
             await result_queue.put(None)  # no result
         finally:
             self.pause_event.set()  # Resume analysis
-        return result
 
     async def _watching_analyse(self):
         """Internal function for continuous analysis in the background."""
@@ -566,7 +560,7 @@ class UciEngine(object):
         )
         return use_time
 
-    async def go(self, time_dict: dict, game: Board, result_queue: asyncio.Queue):
+    async def go(self, time_dict: dict, game: Board, result_queue: asyncio.Queue) -> None:
         """Go engine.
         parameter game will not change, it is deep copied"""
         async with self.engine_lock:
