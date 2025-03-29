@@ -147,30 +147,24 @@ class ContinuousAnalysis:
         if not self.engine:
             logger.error("%s ContinuousAnalysis initialised without engine", self.whoami)
 
-    async def _engine_move_task(self, game: Board, limit: Limit, ponder: bool, queue):
+    async def _engine_move_task(self, game: Board, limit: Limit, ponder: bool, result_queue: asyncio.Queue):
         """async task to ask the engine for a move - to avoid blocking result is put in queue"""
         result = await self.engine.play(copy.deepcopy(game), limit=limit, ponder=ponder)
-        await queue.put(result)
+        await result_queue.put(result)
 
     # def start_async_loop(self, game: Board, limit: Limit, ponder: bool, queue: asyncio.Queue):
     #    """internal function to start the async loop that makes the move"""
     #    asyncio.run(self.make_move(game, limit, ponder, queue))
 
-    async def play_move(self, game: Board, limit: Limit, ponder: bool) -> chess.engine.PlayResult:
-        """Plays the best move and updates the board."""
+    async def play_move(self, game: Board, limit: Limit, ponder: bool, result_queue: asyncio.Queue):
+        """Plays the best move and return played move result in the queue"""
         result = None
         self.pause_event.clear()  # Pause analysis
         try:
             async with self.lock:
-                result_queue = asyncio.Queue()  # engines move result
                 self.loop.create_task(
-                    self._engine_move_task(copy.deepcopy(game), limit=limit, ponder=ponder, queue=result_queue)
+                    self._engine_move_task(copy.deepcopy(game), limit=limit, ponder=ponder, result_queue=result_queue)
                 )
-                while result_queue.empty():
-                    # logger.debug("waiting for computer move")
-                    await asyncio.sleep(0.05)
-                result = await result_queue.get()
-                assert result_queue.empty()
                 # @todo we could update the current game here
                 # so that analysis on user turn would start immediately
         except chess.engine.EngineTerminatedError:
@@ -571,25 +565,21 @@ class UciEngine(object):
         )
         return use_time
 
-    async def go(self, time_dict: dict, game: Board) -> chess.engine.PlayResult:
+    async def go(self, time_dict: dict, game: Board, result_queue: asyncio.Queue):
         """Go engine.
         parameter game will not change, it is deep copied"""
         try:
             async with self.engine_lock:
                 self.idle = False  # engine is going to be busy now
                 limit: Limit = self.get_engine_limit(time_dict)
-                self.res = await self.analyser.play_move(game, limit, self.pondering)
+                await self.analyser.play_move(game, limit=limit, ponder=self.pondering, result_queue=result_queue)
         except chess.engine.EngineTerminatedError:
-            logger.error("Engine terminated")  # @todo find out, why this can happen!
-            self.res = None
+            logger.error("Engine terminated while trying to make a move")  # @todo find out, why this can happen!
         finally:
+            if result_queue.empty():
+                result_queue.put(None)  # no result
             self.idle = True  # engine idle again
-        if self.res:
-            logger.debug("res: %s", self.res)
             # not firing BEST_MOVE here because caller picochess fires it
-        else:
-            logger.error("engine terminated while trying to make a move")
-        return self.res
 
     async def start_analysis(
         self, game: chess.Board, normal_deep_kwargs: dict | None = None, first_low_kwargs: dict | None = None

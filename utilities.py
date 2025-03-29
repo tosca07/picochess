@@ -96,13 +96,13 @@ class DisplayMsg(object):
     async def add_to_queue(self, message):
         """Put an event on the Queue."""
         await self.msg_queue.put(message)
-        logger.debug("added message to queue %s", message)
 
     @staticmethod
     async def show(message):
         """Send a message on each display device."""
         for display in msgdisplay_devices:
             await display.add_to_queue(copy.deepcopy(message))
+        logger.debug("added message to %d queues %s", len(msgdisplay_devices), message)
 
 
 class DisplayDgt(object):
