@@ -1535,7 +1535,7 @@ class DgtDisplay(DisplayMsg):
             await DispatchDgt.fire(Dgt.PROMOTION_DONE(uci_move=message.move.uci(), devs={"ser"}))
 
         else:  # Default
-            pass
+            await asyncio.sleep(0.05)  # balancing message queues
 
     async def message_consumer(self):
         """DgtDisplay message consumer"""

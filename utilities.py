@@ -117,6 +117,7 @@ class DisplayDgt(object):
     async def add_to_queue(self, message):
         """Put an event on the Queue."""
         await self.dgt_queue.put(message)
+        logger.debug("added message to dgt queue %s", message)
 
     @staticmethod
     async def show(message):

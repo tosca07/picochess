@@ -558,10 +558,10 @@ class PicoTalkerDisplay(DisplayMsg):
         while True:
             # Check if we have something to say
             message = await self.msg_queue.get()
-            await asyncio.sleep(0.15)  # give other tasks a priority
-            self.process_picotalker_messages(message)
+            await asyncio.sleep(0.05)  # reduce priority for talker
+            await self.process_picotalker_messages(message)
 
-    def process_picotalker_messages(self, message):
+    async def process_picotalker_messages(self, message):
         """process Picotalker messages"""
         previous_move = chess.Move.null()  # Ignore repeated broadcasts of a move
         last_pos_dir = ""
@@ -1019,7 +1019,7 @@ class PicoTalkerDisplay(DisplayMsg):
             if self.sample_beeper and self.sample_beeper_level > 1:
                 self.talk(["button_click.ogg"], self.BEEPER)
         else:  # Default
-            pass
+            await asyncio.sleep(0.1)  # balancing message queues
 
     @staticmethod
     def say_last_move(game: chess.Board):

@@ -521,7 +521,7 @@ class PgnDisplay(DisplayMsg):
 
         logger.debug("molli: save pgn finished")
 
-    def _process_message(self, message):
+    async def _process_message(self, message):
         if False:  # switch-case
             pass
 
@@ -643,11 +643,14 @@ class PgnDisplay(DisplayMsg):
                 # self._save_pgn(message)
                 self._save_and_email_pgn(message)
 
+        else:
+            await asyncio.sleep(0.05)  # balancing message queues
+
     async def message_consumer(self):
         """PGN message consumer"""
         logger.info("msg_queue ready")
         while True:
             # Check if we have something to display
             message = await self.msg_queue.get()
-            await asyncio.sleep(0.2)  # give other tasks a priority
-            self._process_message(message)
+            await asyncio.sleep(0.1)  # reduce priority for PGN
+            await self._process_message(message)

@@ -536,7 +536,7 @@ class WebDisplay(DisplayMsg):
 
         pgn_game.headers["Time"] = self.starttime
 
-    def task(self, message):
+    async def task(self, message):
         """Message task consumer for WebDisplay messages"""
 
         def _oldstyle_fen(game: chess.Board):
@@ -801,11 +801,11 @@ class WebDisplay(DisplayMsg):
                 _build_headers()
                 _send_headers()
         else:  # Default
-            pass
+            await asyncio.sleep(0.05)  # balancing message queues
 
     async def message_consumer(self):
         """Message task consumer for WebDisplay messages"""
         logger.info("msg_queue ready")
         while True:
             message = await self.msg_queue.get()
-            self.task(message)
+            await self.task(message)

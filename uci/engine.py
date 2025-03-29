@@ -167,7 +167,7 @@ class ContinuousAnalysis:
                     self._engine_move_task(copy.deepcopy(game), limit=limit, ponder=ponder, queue=result_queue)
                 )
                 while result_queue.empty():
-                    logger.debug("waiting for computer move")
+                    # logger.debug("waiting for computer move")
                     await asyncio.sleep(0.05)
                 result = await result_queue.get()
                 assert result_queue.empty()

@@ -4639,9 +4639,8 @@ async def main() -> None:
                 await DisplayMsg.show(Message.PROMOTION_DONE(move=event.move))
 
             else:  # Default
-                logger.warning("event not handled : [%s]", event)
-
-            # evt_queue.task_done()
+                logger.info("event not handled : [%s]", event)
+                await asyncio.sleep(0.05)  # balance message queues
 
     my_main = MainLoop(
         own_user,
