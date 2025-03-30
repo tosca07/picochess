@@ -8,7 +8,7 @@ NUM_THREADS = 1  # number of parallel threads (should not be higher)
 # but not so high that depth on PI 4 is as low as 5 or LOW_DEPTH
 VALID_ROOT_MOVES = 50  # number of multipv best moves
 # why would we ever want a long list of obvious moves
-LOW_ROOT_MOVES = 10  # number of obvious multipv root moves
+LOW_ROOT_MOVES = 50  # number of obvious multipv root moves
 
 VERY_BAD_MOVE_TH = 150  # difference user to best move ??
 BAD_MOVE_TH = 50  # difference user to best move ?
