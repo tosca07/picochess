@@ -593,7 +593,7 @@ class PicoTutor:
             m = score_val.pov(user_color).mate()
             mate = 0 if m is None else m
             if score_val.is_mate():
-                score = score_val.pov(user_color).score(mate_score=999)
+                score = score_val.pov(user_color).score(mate_score=99999)
             else:
                 score = score_val.pov(user_color).score()
             return (move, score, mate)
@@ -605,7 +605,7 @@ class PicoTutor:
         """fill in best_moves from InfoDict list
         it assumes best_moves is emptied before called
         :return the best score"""
-        best_score = -999
+        best_score = -99999
         pv_key = 0  # index in InfoDict list
         while pv_key < len(info_list):
             info: InfoDict = info_list[pv_key]
@@ -753,7 +753,7 @@ class PicoTutor:
 
         # very good moves
         if best_deep_diff <= c.VERY_GOOD_MOVE_TH and (deep_low_diff > c.VERY_GOOD_IMPROVE_TH or not_in_obvious):
-            if (best_score == 999 and (best_mate == current_mate)) and legal_no <= 2:
+            if (best_score == 99999 and (best_mate == current_mate)) and legal_no <= 2:
                 pass
             else:
                 eval_string2 = "!!"
@@ -822,8 +822,8 @@ class PicoTutor:
             pv_best_move = []
 
         if mate > 0:
-            score = 999
+            score = 99999
         elif mate < 0:
-            score = -999
+            score = -99999
 
         return best_move, score, mate, pv_best_move, self.alt_best_moves
