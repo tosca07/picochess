@@ -3,27 +3,27 @@
 LOW_DEPTH = 5  # for 'obvious moves' calculation
 LOW_TIME = 0.2  # time limit for 'obvious moves' and first analysis
 DEEP_DEPTH = 17  # limit picotutor deep analysis
-NUM_THREADS = 1  # number of parallel threads (should not be higher)
+NUM_THREADS = 2  # number of parallel threads (old had 2 engines with 1 thread each)
 # VALID_ROOT_MOVES must be high enough to find also some bad moves
 # but not so high that depth on PI 4 is as low as 5 or LOW_DEPTH
 VALID_ROOT_MOVES = 50  # number of multipv best moves
 # why would we ever want a long list of obvious moves
 LOW_ROOT_MOVES = 50  # number of obvious multipv root moves
 
-VERY_BAD_MOVE_TH = 150  # difference user to best move ??
-BAD_MOVE_TH = 50  # difference user to best move ?
-DUBIOUS_TH = 20  # difference user to best move ?!
+VERY_BAD_MOVE_TH = 250  # difference user to best move ??
+BAD_MOVE_TH = 150  # difference user to best move ?
+DUBIOUS_TH = 30  # difference user to best move ?!
 
 VERY_GOOD_MOVE_TH = 0  # difference user to best move
-GOOD_MOVE_TH = 10  # difference user to best move
-INTERESTING_TH = 10  # difference user to best move !?
+GOOD_MOVE_TH = 30  # difference user to best move
+INTERESTING_TH = 30  # difference user to best move !?
 
-POS_INCREASE = 20  # for history diffs and ?!
-POS_DECREASE = -20  # for history diffs and !?
+POS_INCREASE = 50  # for history diffs and ?!
+POS_DECREASE = -50  # for history diffs and !?
 
-VERY_GOOD_IMPROVE_TH = 150  # for low_deep_diff
-GOOD_IMPROVE_TH = 50  # for low_deep_diff
-UNCLEAR_DIFF = 100  # for low_deep_diff unclear position & move
+VERY_GOOD_IMPROVE_TH = 350  # for low_deep_diff
+GOOD_IMPROVE_TH = 250  # for low_deep_diff
+UNCLEAR_DIFF = 70  # for low_deep_diff unclear position & move
 
 """
 http://www2.eng.cam.ac.uk/~tpl/chess/annotation.html

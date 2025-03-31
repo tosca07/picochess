@@ -440,7 +440,7 @@ class PicoTutor:
         return result
 
     async def pop_last_move(self) -> chess.Move:
-        """ inform picotutor that move takeback has been done """
+        """inform picotutor that move takeback has been done"""
         poped_move = chess.Move.null()
 
         if self.board.move_stack:
@@ -452,7 +452,7 @@ class PicoTutor:
                 self.best_moves = []
                 self.obvious_moves = []
 
-        self.log_sync_info() # debug only
+        self.log_sync_info()  # debug only
         return poped_move
 
     def get_stack(self):
@@ -635,7 +635,7 @@ class PicoTutor:
                 for pv_key, move, score, mate in self.best_moves:
                     if move:
                         diff = abs(best_score - score)
-                        if diff <= 0.2:
+                        if diff <= 20:
                             self.alt_best_moves.append(move)
         if self.obvious_info:
             PicoTutor._eval_pv_list(self.user_color, self.obvious_info, self.obvious_moves)
@@ -661,6 +661,7 @@ class PicoTutor:
         best_move = chess.Move.null()
 
         # check precondition for calculations
+        # more than one best and obvious move have to be found
         if (
             len(self.best_history) < 1
             or len(self.obvious_history) < 1
