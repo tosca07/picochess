@@ -553,7 +553,6 @@ class PicoTutor:
             self.obvious_history.append(t)
         else:
             logger.debug("did not find user move %s in obvious moves", user_move.uci())
-            # @todo should we put pv_key -1 here instead?
             pv_key = None  # so that we know its not found
             score = mate = 0
             if self.obvious_moves:
@@ -691,38 +690,43 @@ class PicoTutor:
         # last evaluation = for current user move
         # low_pv can be None if no if user move found in obvious_moves
 
-        best_deep_diff = best_score - current_score
-        logger.debug("lost centipawns %d for move %s", best_deep_diff, current_move.uci())
-        # optimisations end of 2024 - no 200 wide multipv searches
-        # not_in_obvious is compensating when low_pv is not reliable
+        # optimisations in Picochess 4 - 200 wide multipv searches reduced to 5 to 50 ish
+        # approximation_in_use is True when user misses either obvious or best history
         # user move might be missing in obvious history - can happen!
         #  --> low_score is lowest seen score, low_pv is None
-        # obvious list is shorter --> low_score is not fully reliable
-        # user move might also be missing in best history - not so likely
+        # user move might also be missing in best history
         #  --> current_score is lowest seen score, current_pv is None
-        # best list is longer --> current_score and before_score reliable enough
-        # not_in_best can be used to determine dubious or bad move
+        logger.debug("current evaluation score %d", current_score)
+        best_deep_diff = best_score - current_score
         deep_low_diff = current_score - low_score
-        logger.debug("evaluation deep_low_diff = %d", deep_low_diff)
-        not_in_obvious = low_pv is None and len(self.obvious_moves) > 3
-        if not_in_obvious:
-            logger.debug("user did not chose obvious move")
-        # not_in_obvious is designed to be added to "> tests" with "or"
-        if before_score:
-            score_hist_diff = current_score - before_score  # reliable enough
+        approximations_in_use = current_pv is None or low_pv is None
+        if approximations_in_use:
+            logger.debug("approximations in use - only evaluating ? and ??")
+            logger.debug("current_pv=%s low_pv=%s", current_pv, low_pv)
+            logger.debug("approximated lost more than centipawns %d for move %s", best_deep_diff, current_move.uci())
         else:
-            score_hist_diff = 0  # needs 2 history moves to be valid
-        not_in_best = current_pv is None  # user missed all top best moves
-        if not_in_best:
-            logger.debug("user missed all best moves")
+            logger.debug("best_deep_diff lost centipawns %d for move %s", best_deep_diff, current_move.uci())
+            logger.debug("evaluation deep_low_diff = %d", deep_low_diff)
+        if before_score:
+            score_hist_diff = current_score - before_score
+            history_in_use = True
+            logger.debug("evaluation score_hist_diff = %d", score_hist_diff)
+        else:
+            score_hist_diff = 0  # missing history before score
+            history_in_use = False
+            logger.debug("history before move not available - not evaluating !? and ?!")
 
         # count legal moves in current position (for this we have to undo the user move)
-        board_copy = self.board.copy()
-        board_copy.pop()
-        legal_no = board_copy.legal_moves.count()
-        logger.debug("number of legal moves %d", legal_no)
+        legal_no = 0
+        try:
+            board_copy = self.board.copy()
+            board_copy.pop()
+            legal_no = board_copy.legal_moves.count()
+            logger.debug("number of legal moves %d", legal_no)
+        except IndexError:
+            pass  # board_copy.pop() failed, legal_no = 0
         if legal_no < 2:
-            # there is no point evaluating the only legal move?
+            # there is no point evaluating the only legal or no pop()?
             eval_string = ""
             return eval_string, self.mate
 
@@ -740,11 +744,14 @@ class PicoTutor:
             eval_string = "?"
 
         # Dubious
+        # Dont score if approximations in use
         elif (
-            best_deep_diff > c.DUBIOUS_TH
-            and (abs(deep_low_diff) > c.UNCLEAR_DIFF or not_in_obvious)
+            not approximations_in_use
+            and history_in_use
+            and best_deep_diff > c.DUBIOUS_TH
+            and (abs(deep_low_diff) > c.UNCLEAR_DIFF)
             and (score_hist_diff > c.POS_INCREASE)
-        ) or (not_in_best and len(self.best_moves) > 4):
+        ):
             eval_string = "?!"
 
         ###############################################################
@@ -752,26 +759,26 @@ class PicoTutor:
         ##############################################################
         eval_string2 = ""
 
-        # very good moves
-        if best_deep_diff <= c.VERY_GOOD_MOVE_TH and (deep_low_diff > c.VERY_GOOD_IMPROVE_TH or not_in_obvious):
-            if (best_score == 99999 and (best_mate == current_mate)) and legal_no <= 2:
-                pass
-            else:
-                eval_string2 = "!!"
+        if not approximations_in_use:
+            # very good moves
+            if best_deep_diff <= c.VERY_GOOD_MOVE_TH and (deep_low_diff > c.VERY_GOOD_IMPROVE_TH):
+                if (best_score == 99999 and (best_mate == current_mate)) and legal_no <= 2:
+                    pass
+                else:
+                    eval_string2 = "!!"
 
-        # good move
-        elif (
-            best_deep_diff <= c.GOOD_MOVE_TH and (deep_low_diff > c.GOOD_IMPROVE_TH or not_in_obvious) and legal_no > 1
-        ):
-            eval_string2 = "!"
+            # good move
+            elif best_deep_diff <= c.GOOD_MOVE_TH and (deep_low_diff > c.GOOD_IMPROVE_TH) and legal_no > 1:
+                eval_string2 = "!"
 
-        # interesting move
-        elif (
-            best_deep_diff < c.INTERESTING_TH
-            and (abs(deep_low_diff) > c.UNCLEAR_DIFF or not_in_obvious)
-            and (score_hist_diff < c.POS_DECREASE)
-        ):
-            eval_string2 = "!?"
+            # interesting move
+            elif (
+                history_in_use
+                and best_deep_diff < c.INTERESTING_TH
+                and (abs(deep_low_diff) > c.UNCLEAR_DIFF)
+                and (score_hist_diff < c.POS_DECREASE)
+            ):
+                eval_string2 = "!?"
 
         if eval_string2 != "":
             if eval_string == "":
