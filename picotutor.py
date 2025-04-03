@@ -358,6 +358,8 @@ class PicoTutor:
 
         self.pos = True
 
+        # below code probably have no effect...
+        # caller must call set_color to start analysis
         if self.board.turn == self.user_color:
             # if it is user player's turn then start analyse engine
             # otherwise it is computer opponents turn and anaylze negine
@@ -724,7 +726,8 @@ class PicoTutor:
             legal_no = board_copy.legal_moves.count()
             logger.debug("number of legal moves %d", legal_no)
         except IndexError:
-            pass  # board_copy.pop() failed, legal_no = 0
+            # board_copy.pop() failed, legal_no = 0
+            logger.debug("strange - no user move to pop")
         if legal_no < 2:
             # there is no point evaluating the only legal or no pop()?
             eval_string = ""
@@ -736,7 +739,7 @@ class PicoTutor:
         eval_string = ""
 
         # Blunder ??
-        if best_deep_diff > c.VERY_BAD_MOVE_TH and legal_no:
+        if best_deep_diff > c.VERY_BAD_MOVE_TH:
             eval_string = "??"
 
         # Mistake ?

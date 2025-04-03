@@ -2550,6 +2550,14 @@ async def main() -> None:
             self.state.done_move = self.state.pb_move = chess.Move.null()
             self.state.play_mode = PlayMode.USER_WHITE if turn == chess.WHITE else PlayMode.USER_BLACK
 
+            # game state should be done now, start picotutor
+            if self.picotutor_mode():
+                await self.state.picotutor.set_position(self.state.game.fen(), i_turn=self.state.game.turn)
+                if self.state.play_mode == PlayMode.USER_BLACK:
+                    await self.state.picotutor.set_user_color(chess.BLACK)
+                else:
+                    await self.state.picotutor.set_user_color(chess.WHITE)
+
             l_pico_depth = 0
             try:
                 if "PicoDepth" in l_game_pgn.headers and l_game_pgn.headers["PicoDepth"]:
@@ -2573,12 +2581,16 @@ async def main() -> None:
             try:
                 if "PicoRemTimeW" in l_game_pgn.headers and l_game_pgn.headers["PicoRemTimeW"]:
                     lt_white = int(l_game_pgn.headers["PicoRemTimeW"])
+                else:
+                    lt_white = 0
             except ValueError:
                 lt_white = 0
 
             try:
                 if "PicoRemTimeB" in l_game_pgn.headers and l_game_pgn.headers["PicoRemTimeB"]:
                     lt_black = int(l_game_pgn.headers["PicoRemTimeB"])
+                else:
+                    lt_black = 0
             except ValueError:
                 lt_black = 0
 
