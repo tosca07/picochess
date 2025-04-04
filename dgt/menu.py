@@ -3771,8 +3771,7 @@ class DgtMenu(object):
         elif self.state == MenuState.GAME_GAMEREAD_GAMELAST:
             self.state = MenuState.GAME_GAMEREAD_GAME1
             self.menu_game_read = GameReadLoop.next(self.menu_game_read)
-            self.menu_engine_retrosettings = EngineRetroSettingsLoop.next(self.menu_engine_retrosettings)
-            text = self.dgttranslate.text(self.menu_engine_retrosettings.value)
+            text = self.dgttranslate.text(self.menu_game_read.value)
 
         elif self.state == MenuState.GAME_GAMEREAD_GAME1:
             self.state = MenuState.GAME_GAMEREAD_GAME2
