@@ -2805,7 +2805,6 @@ async def main() -> None:
             while True:
                 event = await evt_queue.get()
                 asyncio.create_task(self.process_main_events(event))
-                await asyncio.sleep(0.05)  # give other tasks a chance to run
                 evt_queue.task_done()
 
         async def process_main_events(self, event):

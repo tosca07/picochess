@@ -1550,5 +1550,4 @@ class DgtDisplay(DisplayMsg):
             ):
                 logger.debug("received message from msg_queue: %s", message)
             asyncio.create_task(self._process_message(message))
-            await asyncio.sleep(0.05)  # give other tasks a chance to run
             self.msg_queue.task_done()
