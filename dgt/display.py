@@ -1152,7 +1152,7 @@ class DgtDisplay(DisplayMsg):
             await self._process_user_move_done(message)
 
         elif isinstance(message, Message.REVIEW_MOVE_DONE):
-            self._process_review_move_done(message)
+            await self._process_review_move_done(message)
 
         elif isinstance(message, Message.ALTERNATIVE_MOVE):
             await self.force_leds_off()
