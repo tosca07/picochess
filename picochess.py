@@ -2526,8 +2526,21 @@ async def main() -> None:
             await DisplayMsg.show(Message.READ_GAME)
             await asyncio.sleep(2)
 
+            # check if we should stop loading pgn game "in the middle"
+            # this feature can be used to "jump to" a certain position in pgn
+            # PicoStop value shall be given in half moves
+            try:
+                if "PicoStop" in l_game_pgn.headers and l_game_pgn.headers["PicoStop"]:
+                    l_stop_at_halfmove = int(l_game_pgn.headers["PicoStop"])
+                else:
+                    l_stop_at_halfmove = None
+            except ValueError:
+                l_stop_at_halfmove = None
+
             for l_move in l_game_pgn.mainline_moves():
                 self.state.game.push(l_move)
+                if l_stop_at_halfmove and len(self.state.game.move_stack) >= l_stop_at_halfmove:
+                    break  # stop loading pgn game moves as instructed by PicoStop
 
             # take back last move in order to send it with user_move for web publishing
             if l_move:
@@ -2537,12 +2550,16 @@ async def main() -> None:
 
             # switch temporarly picotutor off
             self.state.flag_picotutor = False
+            # Pico 4 - avoid wait for a computer move - temp switch to ANALYSIS
+            old_interaction_mode = self.state.interaction_mode
+            self.state.interaction_mode = Mode.ANALYSIS
 
             if l_move:
                 # publish current position to webserver
                 await self.user_move(l_move, sliding=True)
 
             self.state.flag_picotutor = True
+            self.state.interaction_mode = old_interaction_mode
 
             await self.stop_search_and_clock()
             turn = self.state.game.turn
@@ -2582,17 +2599,17 @@ async def main() -> None:
                 if "PicoRemTimeW" in l_game_pgn.headers and l_game_pgn.headers["PicoRemTimeW"]:
                     lt_white = int(l_game_pgn.headers["PicoRemTimeW"])
                 else:
-                    lt_white = 0
+                    lt_white = 5 * 60  # default to 5min blitz
             except ValueError:
-                lt_white = 0
+                lt_white = 5 * 60  # default to 5min blitz
 
             try:
                 if "PicoRemTimeB" in l_game_pgn.headers and l_game_pgn.headers["PicoRemTimeB"]:
                     lt_black = int(l_game_pgn.headers["PicoRemTimeB"])
                 else:
-                    lt_black = 0
+                    lt_black = 5 * 60  # default to 5min blitz
             except ValueError:
-                lt_black = 0
+                lt_black = 5 * 60  # default to 5min blitz
 
             tc_init = self.state.time_control.get_parameters()
             self.state.tc_init_last = self.state.time_control.get_parameters()

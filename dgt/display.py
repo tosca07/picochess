@@ -1165,7 +1165,7 @@ class DgtDisplay(DisplayMsg):
                 await DispatchDgt.fire(message.level_text)
 
         elif isinstance(message, Message.TIME_CONTROL):
-            self._process_time_control(message)
+            await self._process_time_control(message)
 
         elif isinstance(message, Message.OPENING_BOOK):
             if not self.dgtmenu.get_confirm() or not message.show_ok:
