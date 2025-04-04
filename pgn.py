@@ -19,12 +19,8 @@ import base64
 import datetime
 import logging
 import os
-import dgt.util
 import mimetypes
-import requests
-import chess  # type: ignore
-import chess.pgn  # type: ignore
-import subprocess
+import asyncio
 
 from email import encoders
 from email.mime.multipart import MIMEMultipart
@@ -33,11 +29,19 @@ from email.mime.base import MIMEBase
 from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
 from typing import Optional
+from smtplib import SMTP_SSL as SMTP
+from smtplib import SMTP
+from ssl import create_default_context
+
+import requests
+import chess  # type: ignore
+import chess.pgn  # type: ignore
+import dgt.util
+
 from timecontrol import TimeControl
 from utilities import DisplayMsg
 from dgt.api import Dgt, Message
 from dgt.util import PlayMode, Mode, TimeMode
-import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -220,15 +224,11 @@ class Emailer(object):
         if self.smtp_encryption:
             # lib with ssl encryption
             logger.debug("SMTP Mail delivery: Import SSL SMTP Lib")
-            from smtplib import SMTP_SSL as SMTP
         elif self.smtp_starttls:
             logger.debug("SMTP Mail delivery: Import SSL SMTP Lib (with STARTTLS)")
-            from smtplib import SMTP
-            from ssl import create_default_context
         else:
             # lib without encryption (SMTP-port 21)
             logger.debug("SMTP Mail delivery: Import standard SMTP Lib (no SSL encryption)")
-            from smtplib import SMTP
         conn = False
         try:
             outer = MIMEMultipart()
@@ -623,6 +623,7 @@ class PgnDisplay(DisplayMsg):
 
         elif isinstance(message, Message.GAME_ENDS):
             if message.game.move_stack and not ModeInfo.get_pgn_mode() and self.mode != Mode.PONDER:
+                # we do not have pgn_filename in GAME_ENDS as we have in SAVE_GAME message
                 self._save_and_email_pgn(message)
 
         elif isinstance(message, Message.START_NEW_GAME):
@@ -640,8 +641,9 @@ class PgnDisplay(DisplayMsg):
         elif isinstance(message, Message.SAVE_GAME):
             logger.debug("molli: save game message pgn dispatch")
             if message.game.move_stack:
-                # self._save_pgn(message)
-                self._save_and_email_pgn(message)
+                self._save_pgn(message)  # needs pgn_filename from SAVE_GAME message
+                # if we _save_and_email_pgn() here the side effect is that
+                # it stores unfinished games in games.pgn
 
         else:
             await asyncio.sleep(0.05)  # balancing message queues
