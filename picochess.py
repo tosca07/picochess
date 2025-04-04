@@ -2575,49 +2575,56 @@ async def main() -> None:
                 else:
                     await self.state.picotutor.set_user_color(chess.WHITE)
 
+            self.state.tc_init_last = self.state.time_control.get_parameters()
+            self.state.time_control.reset()  # fallback is same as ini setting
+            # if we find settings from the file we use them to override fallback
             l_pico_depth = 0
             try:
                 if "PicoDepth" in l_game_pgn.headers and l_game_pgn.headers["PicoDepth"]:
                     l_pico_depth = int(l_game_pgn.headers["PicoDepth"])
+                else:
+                    l_pico_depth = 0
             except ValueError:
-                pass
+                l_pico_depth = 0
 
             l_pico_node = 0
             try:
                 if "PicoNode" in l_game_pgn.headers and l_game_pgn.headers["PicoNode"]:
                     l_pico_node = int(l_game_pgn.headers["PicoNode"])
+                else:
+                    l_pico_node = 0
             except ValueError:
-                pass
+                l_pico_node = 0
 
+            # override time control if its found in pgn file
             if "PicoTimeControl" in l_game_pgn.headers and l_game_pgn.headers["PicoTimeControl"]:
                 l_pico_tc = str(l_game_pgn.headers["PicoTimeControl"])
                 self.state.time_control, time_text = await self.state.transfer_time(
                     l_pico_tc.split(), depth=l_pico_depth, node=l_pico_node
                 )
 
+            # override remaining thinking time
             try:
                 if "PicoRemTimeW" in l_game_pgn.headers and l_game_pgn.headers["PicoRemTimeW"]:
                     lt_white = int(l_game_pgn.headers["PicoRemTimeW"])
                 else:
-                    lt_white = 5 * 60  # default to 5min blitz
+                    lt_white = None
             except ValueError:
-                lt_white = 5 * 60  # default to 5min blitz
+                lt_white = None
 
             try:
                 if "PicoRemTimeB" in l_game_pgn.headers and l_game_pgn.headers["PicoRemTimeB"]:
                     lt_black = int(l_game_pgn.headers["PicoRemTimeB"])
                 else:
-                    lt_black = 5 * 60  # default to 5min blitz
+                    lt_black = None
             except ValueError:
-                lt_black = 5 * 60  # default to 5min blitz
+                lt_black = None
 
+            # send TIME_CONTROL event based on info collected above
             tc_init = self.state.time_control.get_parameters()
-            self.state.tc_init_last = self.state.time_control.get_parameters()
-
-            tc_init["internal_time"] = {chess.WHITE: lt_white, chess.BLACK: lt_black}
+            if lt_white and lt_black:
+                tc_init["internal_time"] = {chess.WHITE: lt_white, chess.BLACK: lt_black}
             text = self.state.dgttranslate.text("N00_oktime")
-            self.state.time_control.reset()
-
             await Observable.fire(Event.SET_TIME_CONTROL(tc_init=tc_init, time_text=text, show_ok=False))
             await self.state.stop_clock()
             await DisplayMsg.show(Message.EXIT_MENU())
@@ -2629,7 +2636,6 @@ async def main() -> None:
             self.state.legal_fens_after_cmove = []
             self.state.last_legal_fens = []
             await self.stop_search_and_clock()
-            # self.engine.position(copy.deepcopy(self.state.game))
 
             game_end = self.state.check_game_state()
             if game_end:
