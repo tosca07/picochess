@@ -144,13 +144,20 @@ class ContinuousAnalysis:
         self.pause_event = asyncio.Event()
         self.pause_event.set()  # Start unpaused
         self.engine = engine
+        self._idle = True  # start with Engine marked as idle
         if not self.engine:
             logger.error("%s ContinuousAnalysis initialised without engine", self.whoami)
 
     async def _engine_move_task(self, game: Board, limit: Limit, ponder: bool, result_queue: asyncio.Queue) -> None:
         """async task to ask the engine for a move - to avoid blocking result is put in queue"""
+        self._idle = False  # engine is going to be busy now
         result = await self.engine.play(copy.deepcopy(game), limit=limit, ponder=ponder)
         await result_queue.put(result)
+        self._idle = True  # engine idle again
+
+    def is_idle(self) -> bool:
+        """return True if engine is not thinking about a move"""
+        return self._idle
 
     async def play_move(self, game: Board, limit: Limit, ponder: bool, result_queue: asyncio.Queue) -> None:
         """Plays the best move and return played move result in the queue"""
@@ -378,8 +385,7 @@ class UciEngine(object):
     #   in PicoTutor the PicoTutor engine is not playing
     #   its just watching
     # PLAYING = user plays against computer
-    # - self.idle is False only when engine is playing it's best move
-    # - self.res will remember latest play result (maybe never needed)
+    # - self.res is no longer used
     # - self.pondering indicates if engine is to ponder
     #   without pondering analysis will be "static" one-timer
 
@@ -394,7 +400,6 @@ class UciEngine(object):
         """initialise engine with file and mame_par info"""
         super(UciEngine, self).__init__()
         logger.info("mame parameters=%s", mame_par)
-        self.idle = True
         self.pondering = False  # normal mode no pondering
         self.loop = loop  # main loop everywhere
         self.analyser: ContinuousAnalysis | None = None
@@ -521,6 +526,12 @@ class UciEngine(object):
         if self.analyser.is_running() is not None:
             self.analyser.stop()
 
+    def force_move(self):
+        """Force engine to move"""
+        if self.engine:
+            logger.debug("forcing engine to make a move")
+            self.engine.send_line("stop")
+
     def pause_pgn_audio(self):
         """Stop engine."""
         logger.info("pause audio old")
@@ -564,11 +575,8 @@ class UciEngine(object):
         """Go engine.
         parameter game will not change, it is deep copied"""
         async with self.engine_lock:
-            self.idle = False  # engine is going to be busy now
             limit: Limit = self.get_engine_limit(time_dict)
             await self.analyser.play_move(game, limit=limit, ponder=self.pondering, result_queue=result_queue)
-            self.idle = True  # engine idle again
-            # not firing BEST_MOVE here because caller picochess fires it
 
     async def start_analysis(
         self, game: chess.Board, normal_deep_kwargs: dict | None = None, first_low_kwargs: dict | None = None
@@ -614,31 +622,27 @@ class UciEngine(object):
             logger.debug("caller has forgot to start analysis")
         return result
 
+    # this function was taken out of use after introduction
+    # of the new analyser ContinuousAnalysis
     async def playmode_analyse(
         self,
         game: Board,
         limit: chess.engine.Limit,
     ) -> chess.engine.InfoDict | None:
         """Get analysis update from playing engine
-        parameter game will not change, it is deep copied"""
-        if self.idle is False:
-            # protect engine against calls if its not idle
-            return None
+        might block if engine is thinking to protect chess library"""
         try:
             async with self.engine_lock:
-                self.idle = False  # engine is going to be busy now
                 info = await self.engine.analyse(copy.deepcopy(game), limit)
         except chess.engine.EngineTerminatedError:
             logger.error("Engine terminated")  # @todo find out, why this can happen!
             info = None
-        finally:
-            self.idle = True  # engine idle again
         return info
 
     def is_thinking(self):
         """Engine thinking."""
         # @ todo check if self.pondering should be removed
-        return not self.idle and not self.pondering
+        return not self.analyser.is_idle()
 
     def is_pondering(self):
         """Engine pondering."""
@@ -649,7 +653,7 @@ class UciEngine(object):
 
     def is_waiting(self):
         """Engine waiting."""
-        return self.idle
+        return self.analyser.is_idle()
 
     def is_ready(self):
         """Engine waiting."""

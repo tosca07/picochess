@@ -3581,8 +3581,7 @@ async def main() -> None:
                     self.engine.pause_pgn_audio()  # @todo this does not do anything
                 else:
                     if self.engine.is_thinking():
-                        await self.state.stop_clock()
-                        self.engine.stop()
+                        self.engine.force_move()
                     elif not self.state.done_computer_fen:
                         if self.state.time_control.internal_running():
                             await self.state.stop_clock()
