@@ -1065,11 +1065,13 @@ async def main() -> None:
                 uci_dict = state.time_control.uci()
                 if searchlist:
                     # molli: otherwise might lead to problems with internal books
-                    uci_dict["searchmoves"] = self.state.searchmoves.all(self.state.game)
+                    root_moves = self.state.searchmoves.all(self.state.game)
+                else:
+                    root_moves = None
                 try:
                     result_queue = asyncio.Queue()  # engines move result
                     engine_res = await self.engine.go(
-                        time_dict=uci_dict, game=self.state.game, result_queue=result_queue
+                        time_dict=uci_dict, game=self.state.game, result_queue=result_queue, root_moves=root_moves
                     )
                     engine_res = await result_queue.get()  # on engine error queue has None
                     if engine_res:

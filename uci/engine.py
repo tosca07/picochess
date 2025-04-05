@@ -18,7 +18,7 @@
 
 import asyncio
 import os
-from typing import Optional
+from typing import Optional, Iterable
 import logging
 import configparser
 import copy
@@ -148,10 +148,17 @@ class ContinuousAnalysis:
         if not self.engine:
             logger.error("%s ContinuousAnalysis initialised without engine", self.whoami)
 
-    async def _engine_move_task(self, game: Board, limit: Limit, ponder: bool, result_queue: asyncio.Queue) -> None:
+    async def _engine_move_task(
+        self,
+        game: Board,
+        limit: Limit,
+        ponder: bool,
+        result_queue: asyncio.Queue,
+        root_moves: Optional[Iterable[chess.Move]],
+    ) -> None:
         """async task to ask the engine for a move - to avoid blocking result is put in queue"""
         self._idle = False  # engine is going to be busy now
-        result = await self.engine.play(copy.deepcopy(game), limit=limit, ponder=ponder)
+        result = await self.engine.play(copy.deepcopy(game), limit=limit, ponder=ponder, root_moves=root_moves)
         await result_queue.put(result)
         self._idle = True  # engine idle again
 
@@ -159,13 +166,26 @@ class ContinuousAnalysis:
         """return True if engine is not thinking about a move"""
         return self._idle
 
-    async def play_move(self, game: Board, limit: Limit, ponder: bool, result_queue: asyncio.Queue) -> None:
+    async def play_move(
+        self,
+        game: Board,
+        limit: Limit,
+        ponder: bool,
+        result_queue: asyncio.Queue,
+        root_moves: Optional[Iterable[chess.Move]],
+    ) -> None:
         """Plays the best move and return played move result in the queue"""
         self.pause_event.clear()  # Pause analysis to prevent chess library from crashing
         try:
             async with self.lock:
                 self.loop.create_task(
-                    self._engine_move_task(copy.deepcopy(game), limit=limit, ponder=ponder, result_queue=result_queue)
+                    self._engine_move_task(
+                        copy.deepcopy(game),
+                        limit=limit,
+                        ponder=ponder,
+                        result_queue=result_queue,
+                        root_moves=root_moves,
+                    )
                 )
                 # @todo we could update the current game here
                 # so that analysis on user turn would start immediately
@@ -571,12 +591,16 @@ class UciEngine(object):
         )
         return use_time
 
-    async def go(self, time_dict: dict, game: Board, result_queue: asyncio.Queue) -> None:
+    async def go(
+        self, time_dict: dict, game: Board, result_queue: asyncio.Queue, root_moves: Optional[Iterable[chess.Move]]
+    ) -> None:
         """Go engine.
         parameter game will not change, it is deep copied"""
         async with self.engine_lock:
             limit: Limit = self.get_engine_limit(time_dict)
-            await self.analyser.play_move(game, limit=limit, ponder=self.pondering, result_queue=result_queue)
+            await self.analyser.play_move(
+                game, limit=limit, ponder=self.pondering, result_queue=result_queue, root_moves=root_moves
+            )
 
     async def start_analysis(
         self, game: chess.Board, normal_deep_kwargs: dict | None = None, first_low_kwargs: dict | None = None
