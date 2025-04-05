@@ -522,6 +522,7 @@ class PgnDisplay(DisplayMsg):
         logger.debug("molli: save pgn finished")
 
     async def _process_message(self, message):
+        await asyncio.sleep(0.1)  # reduce priority for PGN
         if False:  # switch-case
             pass
 
@@ -660,6 +661,5 @@ class PgnDisplay(DisplayMsg):
                 and not isinstance(message, Message.CLOCK_TIME)
             ):
                 logger.debug("received message from msg_queue: %s", message)
-            await asyncio.sleep(0.1)  # reduce priority for PGN
             asyncio.create_task(self._process_message(message))
             self.msg_queue.task_done()

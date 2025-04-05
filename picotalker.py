@@ -564,12 +564,12 @@ class PicoTalkerDisplay(DisplayMsg):
                 and not isinstance(message, Message.CLOCK_TIME)
             ):
                 logger.debug("received message from msg_queue: %s", message)
-            await asyncio.sleep(0.05)  # reduce priority for talker
             asyncio.create_task(self.process_picotalker_messages(message))
             self.msg_queue.task_done()
 
     async def process_picotalker_messages(self, message):
         """process Picotalker messages"""
+        await asyncio.sleep(0.05)  # reduce priority for talker
         previous_move = chess.Move.null()  # Ignore repeated broadcasts of a move
         last_pos_dir = ""
         if isinstance(message, Message.ENGINE_FAIL):
