@@ -27,6 +27,7 @@ import platform
 import chess  # type: ignore
 from chess.engine import InfoDict
 import chess.engine
+import chess.pgn
 from uci.engine import UciShell, UciEngine
 from dgt.util import PicoComment, PicoCoach
 
@@ -35,6 +36,23 @@ import picotutor_constants as c
 
 logger = logging.getLogger(__name__)
 
+symbol_to_nag = {
+    "!": chess.pgn.NAG_GOOD_MOVE,         # $1
+    "?": chess.pgn.NAG_MISTAKE,           # $2
+    "!!": chess.pgn.NAG_BRILLIANT_MOVE,   # $3
+    "??": chess.pgn.NAG_BLUNDER,          # $4
+    "!?": chess.pgn.NAG_SPECULATIVE_MOVE, # $5
+    "?!": chess.pgn.NAG_DUBIOUS_MOVE,     # $6
+}
+
+nag_to_symbol = {
+    chess.pgn.NAG_GOOD_MOVE: "!",
+    chess.pgn.NAG_MISTAKE: "?",
+    chess.pgn.NAG_BRILLIANT_MOVE: "!!",
+    chess.pgn.NAG_BLUNDER: "??",
+    chess.pgn.NAG_SPECULATIVE_MOVE: "!?",
+    chess.pgn.NAG_DUBIOUS_MOVE: "?!",
+}
 
 class PicoTutor:
     def __init__(
@@ -655,13 +673,13 @@ class PicoTutor:
         return result
 
     def get_user_move_eval(self) -> tuple:
-        """return eval str and moves to mate"""
-        if not (self.coach_on or self.watcher_on):
-            return
+        """return (eval sts, moves to mate"""
         eval_string = ""
         best_mate = 0
         best_score = 0
         best_move = chess.Move.null()
+        if not (self.coach_on or self.watcher_on):
+            return eval_string, self.mate
 
         # check precondition for calculations
         # more than one best and obvious move have to be found
@@ -794,12 +812,12 @@ class PicoTutor:
             # key=(fullmove_number, turn, move)
             try:
                 # board_before_usermove is where we have popped the user move above
-                user_move = board_before_usermove.san(current_move)
-                e_key = (self.board.fullmove_number, board_before_usermove.turn, user_move)
-                # values for evaluated_moves are "eval", "lcp", "deep_low_diff", "bestmove"
+                e_key = (board_before_usermove.fullmove_number, board_before_usermove.turn, current_move)
                 e_value = {}
                 e_value["best_move"] = board_before_usermove.san(best_move)
                 e_value["eval_string"] = eval_string  # pico eval string
+                e_value["eval_nag"] = symbol_to_nag.get(eval_string, chess.pgn.NAG_NULL)
+                e_value["user_move"] = board_before_usermove.san(current_move)
                 if current_pv:
                     # we know the best and user move correct scores (not approximated)
                     e_value["eval_score"] = current_score # eval score
@@ -807,6 +825,9 @@ class PicoTutor:
                     if low_pv:
                         # we know the score for min-ply obvious low (not approximated)
                         e_value["deep_low_diff"] = deep_low_diff # Cambridge delta S
+                    if before_score:
+                        # we know the score for previous move (not approximated)
+                        e_value["score_hist_diff"] = score_hist_diff
                 self.evaluated_moves[e_key] = e_value  # sometimes overwritten after takeback
                 self.log_eval_moves() # debug only
             except Exception:
@@ -826,17 +847,21 @@ class PicoTutor:
         """debugging help to check list of evaluated moves"""
         logger.debug("picotutor evaluated moves:")
         for key, value in self.evaluated_moves.items():
-            # key=(fullmove_number, turn, move)
-            move_nr_str = str(key[0]) # 2. d4! or 2. - exd4!
-            filler_str = ". - " if key[1] == chess.BLACK else ". "
-            move_str = key[2] # user move in key
-            best_move_str = value.get("best_move", "")
-            eval_str = value.get("eval_string", "")
-            # Follow Stockfish standard evaluation in pawns
-            eval_score = " eval " + str(value.get("eval_score") / 100.0) if "eval_score" in value else ""
-            lcp_str = " lcp " + str(value.get("lcp")) if "lcp" in value else ""
-            # diff_str = " ds " + str(value.get("deep_low_diff")) if "deep_low_diff" in value else ""
-            logger.debug("%s%s%s%s {best was %s%s%s}", move_nr_str, filler_str, move_str, eval_str, best_move_str, eval_score, lcp_str)
+            try:
+                # key=(fullmove_number, turn, chess.Move)
+                move_nr_str = str(key[0]) # 2. d4! or 2. - exd4!
+                filler_str = ". - " if key[1] == chess.BLACK else ". "
+                move_str = value.get("user_move", "")
+                best_move_str = value.get("best_move", "")
+                eval_str = nag_to_symbol.get(value.get("eval_nag"))
+                # Follow Stockfish standard evaluation in pawns
+                eval_score = " eval " + str(value.get("eval_score") / 100.0) if "eval_score" in value else ""
+                lcp_str = " lcp " + str(value.get("lcp")) if "lcp" in value else ""
+                diff_str = " ds " + str(value.get("deep_low_diff")) if "deep_low_diff" in value else ""
+                hist_str = " hist " + str(value.get("score_hist_diff")) if "score_hist_diff" in value else ""
+                logger.debug("%s%s%s%s {best was %s%s%s%s%s}", move_nr_str, filler_str, move_str, eval_str, best_move_str, eval_score, lcp_str, diff_str, hist_str)
+            except Exception:
+                pass  # dont care, just dont let this debug crash picotutor
 
     def get_user_move_info(self):
         if not (self.coach_on or self.watcher_on):
