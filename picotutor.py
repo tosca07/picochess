@@ -87,6 +87,7 @@ class PicoTutor:
         self.coach_analyser = i_coach_analyser
         self.loop = loop  # main loop everywhere
         self.deep_limit_depth = i_depth  # override picotutor value
+        self.evaluated_moves = {} # key=(fullmove_number, turn, move) value={}
 
         try:
             with open("chess-eco_pos.txt") as fp:
@@ -313,6 +314,7 @@ class PicoTutor:
 
         self.best_history = []
         self.obvious_history = []
+        self.evaluated_moves = {}
 
         self.alt_best_moves = []
         self.pv_best_move = []
@@ -641,7 +643,7 @@ class PicoTutor:
         if self.obvious_info:
             PicoTutor._eval_pv_list(self.user_color, self.obvious_info, self.obvious_moves)
             self.obvious_moves.sort(key=self.sort_score, reverse=True)
-        self.log_pv_lists()
+        self.log_pv_lists() # debug only
 
     async def get_analysis(self) -> dict:
         """get best move info if exists - during user thinking"""
@@ -721,12 +723,12 @@ class PicoTutor:
         # count legal moves in current position (for this we have to undo the user move)
         legal_no = 0
         try:
-            board_copy = self.board.copy()
-            board_copy.pop()
-            legal_no = board_copy.legal_moves.count()
+            board_before_usermove: chess.Board = self.board.copy()
+            board_before_usermove.pop()
+            legal_no = board_before_usermove.legal_moves.count()
             logger.debug("number of legal moves %d", legal_no)
         except IndexError:
-            # board_copy.pop() failed, legal_no = 0
+            # board_before_usermove.pop() failed, legal_no = 0
             logger.debug("strange - no user move to pop")
         if legal_no < 2:
             # there is no point evaluating the only legal or no pop()?
@@ -787,6 +789,30 @@ class PicoTutor:
             if eval_string == "":
                 eval_string = eval_string2
 
+        if eval_string != "":
+            # we have an evaluation... remember it for later pgn generation
+            # key=(fullmove_number, turn, move)
+            try:
+                # board_before_usermove is where we have popped the user move above
+                user_move = board_before_usermove.san(current_move)
+                e_key = (self.board.fullmove_number, board_before_usermove.turn, user_move)
+                # values for evaluated_moves are "eval", "lcp", "deep_low_diff", "bestmove"
+                e_value = {}
+                e_value["best_move"] = board_before_usermove.san(best_move)
+                e_value["eval_string"] = eval_string  # pico eval string
+                if current_pv:
+                    # we know the best and user move correct scores (not approximated)
+                    e_value["eval_score"] = current_score # eval score
+                    e_value["lcp"] = best_deep_diff  # lcp = lost centipawns
+                    if low_pv:
+                        # we know the score for min-ply obvious low (not approximated)
+                        e_value["deep_low_diff"] = deep_low_diff # Cambridge delta S
+                self.evaluated_moves[e_key] = e_value  # sometimes overwritten after takeback
+                self.log_eval_moves() # debug only
+            except Exception:
+                logger.warning("failed to store evaluation of move %s", current_move)
+
+
         # information return in addition:
         # threat move / bestmove/ pv line of user and best pv line so picochess can comment on that as well
         # or call a pico talker method with that information
@@ -795,6 +821,22 @@ class PicoTutor:
 
         logger.debug("evaluation %s", eval_string)
         return eval_string, self.mate
+
+    def log_eval_moves(self):
+        """debugging help to check list of evaluated moves"""
+        logger.debug("picotutor evaluated moves:")
+        for key, value in self.evaluated_moves.items():
+            # key=(fullmove_number, turn, move)
+            move_nr_str = str(key[0]) # 2. d4! or 2. - exd4!
+            filler_str = ". - " if key[1] == chess.BLACK else ". "
+            move_str = key[2] # user move in key
+            best_move_str = value.get("best_move", "")
+            eval_str = value.get("eval_string", "")
+            # Follow Stockfish standard evaluation in pawns
+            eval_score = " eval " + str(value.get("eval_score") / 100.0) if "eval_score" in value else ""
+            lcp_str = " lcp " + str(value.get("lcp")) if "lcp" in value else ""
+            # diff_str = " ds " + str(value.get("deep_low_diff")) if "deep_low_diff" in value else ""
+            logger.debug("%s%s%s%s {best was %s%s%s}", move_nr_str, filler_str, move_str, eval_str, best_move_str, eval_score, lcp_str)
 
     def get_user_move_info(self):
         if not (self.coach_on or self.watcher_on):
