@@ -843,6 +843,10 @@ class PicoTutor:
         logger.debug("evaluation %s", eval_string)
         return eval_string, self.mate
 
+    def get_eval_moves(self) -> dict:
+        """return a dict of all evaluated moves"""
+        return self.evaluated_moves
+
     def log_eval_moves(self):
         """debugging help to check list of evaluated moves"""
         logger.debug("picotutor evaluated moves:")

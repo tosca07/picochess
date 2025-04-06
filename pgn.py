@@ -42,6 +42,7 @@ from timecontrol import TimeControl
 from utilities import DisplayMsg
 from dgt.api import Dgt, Message
 from dgt.util import PlayMode, Mode, TimeMode
+from picotutor import PicoTutor
 
 logger = logging.getLogger(__name__)
 
@@ -350,8 +351,13 @@ class PgnDisplay(DisplayMsg):
         self.mode = ""
         self.startime = datetime.datetime.now().strftime("%H:%M:%S")
         self.last_saved_game = None
+        self.picotutor: PicoTutor | None = None
 
-    def _generate_pgn_from_message(self, message):
+    def set_picotutor(self, picotutor: PicoTutor):
+        """Assign a reference to the picotutor object."""
+        self.picotutor = picotutor
+
+    def _generate_pgn_from_message(self, message) -> chess.pgn.Game:
         pgn_game = chess.pgn.Game().from_board(message.game)
 
         # Headers
@@ -482,7 +488,7 @@ class PgnDisplay(DisplayMsg):
 
     def _save_and_email_pgn(self, message):
         logger.debug("Saving game to [%s]", self.file_name)
-        pgn_game = self._generate_pgn_from_message(message)
+        pgn_game: chess.pgn.Game = self._generate_pgn_from_message(message)
         pgn_game_last = pgn_game
 
         # If we already saved the exact same game, do not
@@ -496,6 +502,26 @@ class PgnDisplay(DisplayMsg):
             logger.debug("Current game is the same as last saved gamed, skipping")
             return
         self.last_saved_game = pgn_game
+
+        # add picotutor stored evaluations before saving game
+        for node in list(pgn_game.mainline())[1:]:
+            move = node.move
+            # create a key (fullmove_number, turn, move)
+            fullmove_number = (node.ply() + 1) // 2
+            # we need previous turn to match
+            # change this match to half moves instead
+            turn = chess.WHITE if node.turn() is chess.BLACK else chess.WHITE
+            key = (fullmove_number, turn, move)
+            # see if we have an evaluation in picotutor
+            if self.picotutor:
+                eval_moves = self.picotutor.get_eval_moves()
+                if key in eval_moves:
+                    nag = eval_moves[key]["eval_nag"]
+                    node.nags.add(nag)
+                    logger.debug("Adding picotutor NAG %s to move %s", nag, move)
+                    comment = eval_moves[key]["eval_string"]
+                    node.comment = comment
+                    logger.debug("Adding picotutor evaluation comment %s to move %s", comment, move)
 
         # Save to last game file
         with open(self.last_file_name, "w") as last_file:

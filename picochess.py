@@ -1029,6 +1029,7 @@ async def main() -> None:
                 self.state.dgtmenu.get_picocomment(),
             )
             await self.state.picotutor.open_engine()
+            my_pgn_display.set_picotutor(self.state.picotutor)  # needed for comments in pgn
 
             ModeInfo.set_game_ending(result="*")
 
