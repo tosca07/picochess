@@ -36,24 +36,6 @@ import picotutor_constants as c
 
 logger = logging.getLogger(__name__)
 
-symbol_to_nag = {
-    "!": chess.pgn.NAG_GOOD_MOVE,         # $1
-    "?": chess.pgn.NAG_MISTAKE,           # $2
-    "!!": chess.pgn.NAG_BRILLIANT_MOVE,   # $3
-    "??": chess.pgn.NAG_BLUNDER,          # $4
-    "!?": chess.pgn.NAG_SPECULATIVE_MOVE, # $5
-    "?!": chess.pgn.NAG_DUBIOUS_MOVE,     # $6
-}
-
-nag_to_symbol = {
-    chess.pgn.NAG_GOOD_MOVE: "!",
-    chess.pgn.NAG_MISTAKE: "?",
-    chess.pgn.NAG_BRILLIANT_MOVE: "!!",
-    chess.pgn.NAG_BLUNDER: "??",
-    chess.pgn.NAG_SPECULATIVE_MOVE: "!?",
-    chess.pgn.NAG_DUBIOUS_MOVE: "?!",
-}
-
 class PicoTutor:
     def __init__(
         self,
@@ -696,6 +678,7 @@ class PicoTutor:
         # last evaluation = for current user move
         current_pv, current_move, current_score, current_mate = self.best_history[-1]
         # current_pv can be None if no best_move had been found
+        # but current_move is always the user move
 
         if len(self.best_history) > 1:
             before_pv, before_move, before_score, before_mate = self.best_history[-2]
@@ -807,32 +790,33 @@ class PicoTutor:
             if eval_string == "":
                 eval_string = eval_string2
 
-        if eval_string != "":
-            # we have an evaluation... remember it for later pgn generation
-            # key=(fullmove_number, turn, move)
+        # remember this evaluation for later pgn generation in PgnDisplay
+        # key to find evaluation later =(ply halfmove number: int, move: chess.Move)
+        # not always unique if we have takeback sequence with other moves
+        # should work since we evaluate all moves and remove if no evaluation
+        e_key = (self.board.ply(), current_move) # halfmove key AFTER the move 1 = 1.e4
+        if eval_string == "":
+            # due to takeback remove any possible previous evaluation
+            self.evaluated_moves.pop(e_key, None)  # None prevents KeyError
+        else:
+            e_value = {}
+            e_value["eval_nag"] = PicoTutor.symbol_to_nag(eval_string)
+            if current_pv:  # user move identified, not approximated
+                e_value["eval_score"] = current_score # eval score
+                e_value["lcp"] = best_deep_diff  # lcp = lost centipawns
+                if low_pv:  # low also identified, needs both current AND low
+                    e_value["deep_low_diff"] = deep_low_diff # Cambridge delta S
+                if before_score:  # not approximated, need both current AND history
+                    e_value["score_hist_diff"] = score_hist_diff
             try:
                 # board_before_usermove is where we have popped the user move above
-                e_key = (board_before_usermove.fullmove_number, board_before_usermove.turn, current_move)
-                e_value = {}
                 e_value["best_move"] = board_before_usermove.san(best_move)
-                e_value["eval_string"] = eval_string  # pico eval string
-                e_value["eval_nag"] = symbol_to_nag.get(eval_string, chess.pgn.NAG_NULL)
                 e_value["user_move"] = board_before_usermove.san(current_move)
-                if current_pv:
-                    # we know the best and user move correct scores (not approximated)
-                    e_value["eval_score"] = current_score # eval score
-                    e_value["lcp"] = best_deep_diff  # lcp = lost centipawns
-                    if low_pv:
-                        # we know the score for min-ply obvious low (not approximated)
-                        e_value["deep_low_diff"] = deep_low_diff # Cambridge delta S
-                    if before_score:
-                        # we know the score for previous move (not approximated)
-                        e_value["score_hist_diff"] = score_hist_diff
+            except Exception:
+                logger.warning("picotutor failed to convert to san for %s", current_move)
+            finally:
                 self.evaluated_moves[e_key] = e_value  # sometimes overwritten after takeback
                 self.log_eval_moves() # debug only
-            except Exception:
-                logger.warning("failed to store evaluation of move %s", current_move)
-
 
         # information return in addition:
         # threat move / bestmove/ pv line of user and best pv line so picochess can comment on that as well
@@ -843,6 +827,67 @@ class PicoTutor:
         logger.debug("evaluation %s", eval_string)
         return eval_string, self.mate
 
+    @staticmethod
+    def symbol_to_nag(eval_string: str) -> int:
+        """convert an evaluation string like ! to NAG format like NAG_GOOD_MOVE"""
+        symbol_to_nag = {
+            "!": chess.pgn.NAG_GOOD_MOVE,         # $1
+            "?": chess.pgn.NAG_MISTAKE,           # $2
+            "!!": chess.pgn.NAG_BRILLIANT_MOVE,   # $3
+            "??": chess.pgn.NAG_BLUNDER,          # $4
+            "!?": chess.pgn.NAG_SPECULATIVE_MOVE, # $5
+            "?!": chess.pgn.NAG_DUBIOUS_MOVE,     # $6
+        }
+        # empty or unrecognized str becomes NAG_NULL
+        return symbol_to_nag.get(eval_string, chess.pgn.NAG_NULL)
+
+    @staticmethod
+    def nag_to_symbol(nag: int) -> str:
+        """convert NAG format like NAG_GOOD_MOVE to an evaluation string like !"""
+        nag_to_symbol = {
+            chess.pgn.NAG_GOOD_MOVE: "!",
+            chess.pgn.NAG_MISTAKE: "?",
+            chess.pgn.NAG_BRILLIANT_MOVE: "!!",
+            chess.pgn.NAG_BLUNDER: "??",
+            chess.pgn.NAG_SPECULATIVE_MOVE: "!?",
+            chess.pgn.NAG_DUBIOUS_MOVE: "?!",
+            chess.pgn.NAG_NULL: "",
+        }
+        # NAG_NULL or unrecognized NAG becomes empty str
+        return nag_to_symbol.get(nag, "")
+
+    @staticmethod
+    def halfmove_to_fullmove(halfmove_nr: int) -> Tuple:
+        """convert halfmove_nr after a move to a fullmove_nr and turn
+        1. e4 = halfmove 1 = fullmove 0, 1.-e5 = halfmove 2 = fullmove 1"""
+        assert halfmove_nr >= 0
+        fullmove_nr = halfmove_nr // 2 # increment at BLACK even halfmoves
+        # for halfmove 0 turn will be WHITE and return fullmove 0
+        # cannot know if we have had pos setup so no BLACK and fullmove 0
+        # BLACK has even halfnumbers = next turn is WHITE
+        turn = chess.WHITE if halfmove_nr % 2 == 0 else chess.BLACK
+        return fullmove_nr, turn
+
+    @staticmethod
+    def printable_fullmove(fullmove_nr: int, turn: chess.Color) -> int:
+        """return fullmove to use when printing moves
+        1. e4 = = fullmove 0 --> 1, 1.-e5 = fullmove 1 --> 1"""
+        assert fullmove_nr >= 0
+        # for fullmove 0 and turn WHITE return value will be zero = unprintable
+        return fullmove_nr + 1 if turn == chess.BLACK else fullmove_nr
+
+    @staticmethod
+    def fullmove_to_halfmove(fullmove_nr: int, turn: chess.Color) -> int:
+        """ convert from fullmove and colour to halfmove after a move
+        1. e4 = halfmove 1 = fullmove 0, 1.-e5 = halfmove 2 = fullmove 1"""
+        assert fullmove_nr >= 0
+        # for fullmove 0 and turn WHITE return value will be 0 = no move done
+        # for fullmove 0 and turn BLACK White has moved once, or position setup
+        halfmove_nr = fullmove_nr * 2 # BLACKs are even numbers
+        if turn == chess.BLACK: # WHITE has moved, add 1 halfmove
+            halfmove_nr = halfmove_nr + 1
+        return halfmove_nr
+
     def get_eval_moves(self) -> dict:
         """return a dict of all evaluated moves"""
         return self.evaluated_moves
@@ -850,21 +895,23 @@ class PicoTutor:
     def log_eval_moves(self):
         """debugging help to check list of evaluated moves"""
         logger.debug("picotutor evaluated moves:")
-        for key, value in self.evaluated_moves.items():
+        for (halfmove_nr, user_move), value in self.evaluated_moves.items():
             try:
-                # key=(fullmove_number, turn, chess.Move)
-                move_nr_str = str(key[0]) # 2. d4! or 2. - exd4!
-                filler_str = ". - " if key[1] == chess.BLACK else ". "
+                # example 2. d4! (fullmove 1) or 2. - exd4! (fullmove 2)
+                # example 2. d4! (halfmove 3) or 2. - exd4! (halfmove 4)
+                fullmove_nr, turn = PicoTutor.halfmove_to_fullmove(halfmove_nr)
+                move_nr_str = str(PicoTutor.printable_fullmove(fullmove_nr, turn))
+                filler_str = ". - " if turn == chess.WHITE else ". "
                 move_str = value.get("user_move", "")
                 best_move_str = value.get("best_move", "")
-                eval_str = nag_to_symbol.get(value.get("eval_nag"))
-                # Follow Stockfish standard evaluation in pawns
+                eval_str = PicoTutor.nag_to_symbol(value.get("eval_nag"))
                 eval_score = " eval " + str(value.get("eval_score") / 100.0) if "eval_score" in value else ""
                 lcp_str = " lcp " + str(value.get("lcp")) if "lcp" in value else ""
                 diff_str = " ds " + str(value.get("deep_low_diff")) if "deep_low_diff" in value else ""
                 hist_str = " hist " + str(value.get("score_hist_diff")) if "score_hist_diff" in value else ""
                 logger.debug("%s%s%s%s {best was %s%s%s%s%s}", move_nr_str, filler_str, move_str, eval_str, best_move_str, eval_score, lcp_str, diff_str, hist_str)
             except Exception:
+                logger.debug("failed to log full list of evaluated moves in picotutor")
                 pass  # dont care, just dont let this debug crash picotutor
 
     def get_user_move_info(self):

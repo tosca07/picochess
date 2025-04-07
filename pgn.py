@@ -486,6 +486,37 @@ class PgnDisplay(DisplayMsg):
 
         return pgn_game
 
+    def get_node_at_halfmove_nr(self, game: chess.Board, halfmove_nr: int) -> Optional[chess.pgn.GameNode]:
+        """get the node halfmove_nr (ply) in the game tree - 0 is like 1. e4"""
+        nodes = list(game.mainline())
+        if halfmove_nr - 1 < len(nodes):
+            return nodes[halfmove_nr - 1] # first halfmove index zero
+        else:
+            return None
+        
+    def add_picotutor_evaluation(self, game: chess.Board):
+        """add picotutor evaluations to the game"""
+        # see if we have an evaluation in picotutor
+        if self.picotutor:
+            eval_moves = self.picotutor.get_eval_moves()
+            for (halfmove_nr, user_move), value in eval_moves.items():
+                # key=(ply halfmove number, move)
+                node = self.get_node_at_halfmove_nr(game, halfmove_nr)
+                if node: # game has this ply node
+                    pgn_move = node.move
+                    if pgn_move == user_move: # takeback could cause mismatch?
+                        nag = value["eval_nag"] # $N symbol for !!, ! etc
+                        node.nags.add(nag)
+                        comment = PicoTutor.nag_to_symbol(nag) # back to !!, ! etc
+                        if(
+                            nag in (chess.pgn.NAG_BLUNDER, chess.pgn.NAG_MISTAKE, chess.pgn.NAG_DUBIOUS_MOVE)
+                            and "best_move" in value
+                        ):
+                            comment += " best " + value["best_move"]
+                        node.comment = comment
+                    else:
+                        logger.debug("strange, move %s-%s picotutor eval mismatch", pgn_move.uci(), user_move.uci())
+
     def _save_and_email_pgn(self, message):
         logger.debug("Saving game to [%s]", self.file_name)
         pgn_game: chess.pgn.Game = self._generate_pgn_from_message(message)
@@ -504,24 +535,7 @@ class PgnDisplay(DisplayMsg):
         self.last_saved_game = pgn_game
 
         # add picotutor stored evaluations before saving game
-        for node in list(pgn_game.mainline())[1:]:
-            move = node.move
-            # create a key (fullmove_number, turn, move)
-            fullmove_number = (node.ply() + 1) // 2
-            # we need previous turn to match
-            # change this match to half moves instead
-            turn = chess.WHITE if node.turn() is chess.BLACK else chess.WHITE
-            key = (fullmove_number, turn, move)
-            # see if we have an evaluation in picotutor
-            if self.picotutor:
-                eval_moves = self.picotutor.get_eval_moves()
-                if key in eval_moves:
-                    nag = eval_moves[key]["eval_nag"]
-                    node.nags.add(nag)
-                    logger.debug("Adding picotutor NAG %s to move %s", nag, move)
-                    comment = eval_moves[key]["eval_string"]
-                    node.comment = comment
-                    logger.debug("Adding picotutor evaluation comment %s to move %s", comment, move)
+        self.add_picotutor_evaluation(pgn_game)
 
         # Save to last game file
         with open(self.last_file_name, "w") as last_file:
@@ -540,6 +554,9 @@ class PgnDisplay(DisplayMsg):
         logger.debug("Saving PGN game to [%s]", l_file_name)
 
         pgn_game = self._generate_pgn_from_message(message)
+
+        # add picotutor stored evaluations before saving game
+        self.add_picotutor_evaluation(pgn_game)
 
         with open(l_file_name, "w") as file:
             exporter = chess.pgn.FileExporter(file)
