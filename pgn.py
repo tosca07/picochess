@@ -499,20 +499,22 @@ class PgnDisplay(DisplayMsg):
         # see if we have an evaluation in picotutor
         if self.picotutor:
             eval_moves = self.picotutor.get_eval_moves()
-            for (halfmove_nr, user_move), value in eval_moves.items():
+            for (halfmove_nr, user_move, turn), value in eval_moves.items():
                 # key=(ply halfmove number, move)
                 node = self.get_node_at_halfmove_nr(game, halfmove_nr)
                 if node: # game has this ply node
                     pgn_move = node.move
-                    if pgn_move == user_move: # takeback could cause mismatch?
-                        nag = value["eval_nag"] # $N symbol for !!, ! etc
+                    if pgn_move == user_move and node.turn() == turn: # checksum
+                        nag = value["nag"] # $N symbol for !!, ! etc
                         node.nags.add(nag)
                         comment = PicoTutor.nag_to_symbol(nag) # back to !!, ! etc
                         if(
                             nag in (chess.pgn.NAG_BLUNDER, chess.pgn.NAG_MISTAKE, chess.pgn.NAG_DUBIOUS_MOVE)
-                            and "best_move" in value
                         ):
-                            comment += " best " + value["best_move"]
+                            if "best_move" in value:
+                                comment += " Best: " + value["best_move"]
+                            if "LCP" in value:
+                                comment += " CPL: " + str(value["LCP"])
                         node.comment = comment
                     else:
                         logger.debug("strange, move %s-%s picotutor eval mismatch", pgn_move.uci(), user_move.uci())

@@ -98,7 +98,7 @@ class PicoTutor:
         try:
             with open("opening_name_fen.txt") as fp:
                 self.book_fen_data = fp.readlines()
-        except Exception:
+        except FileNotFoundError:
             self.book_fen_data = []
 
         self._setup_comments(i_lang, i_comment_file)
@@ -133,7 +133,7 @@ class PicoTutor:
             try:
                 with open(i_comment_file) as fp:
                     self.comments = fp.readlines()
-            except Exception:
+            except OSError:
                 self.comments = []
 
             if self.comments:
@@ -144,7 +144,7 @@ class PicoTutor:
             general_comment_file = "/opt/picochess/engines/" + arch + "/general_game_comments_" + i_lang + ".txt"
             with open(general_comment_file) as fp:
                 self.comments_all = fp.readlines()
-        except Exception:
+        except (OSError, IOError):
             self.comments_all = []
 
         if self.comments_all:
@@ -214,7 +214,7 @@ class PicoTutor:
         if i_comment_file:
             try:
                 self.comments = open(i_comment_file).readlines()
-            except Exception:
+            except OSError:
                 self.comments = []
 
             if self.comments:
@@ -794,16 +794,16 @@ class PicoTutor:
         # key to find evaluation later =(ply halfmove number: int, move: chess.Move)
         # not always unique if we have takeback sequence with other moves
         # should work since we evaluate all moves and remove if no evaluation
-        e_key = (self.board.ply(), current_move) # halfmove key AFTER the move 1 = 1.e4
+        e_key = (self.board.ply(), current_move, self.board.turn) # halfmove key AFTER the move
         if eval_string == "":
             # due to takeback remove any possible previous evaluation
             self.evaluated_moves.pop(e_key, None)  # None prevents KeyError
         else:
-            e_value = {}
-            e_value["eval_nag"] = PicoTutor.symbol_to_nag(eval_string)
+            e_value = {}  # clear possible old value
+            e_value["nag"] = PicoTutor.symbol_to_nag(eval_string)
             if current_pv:  # user move identified, not approximated
-                e_value["eval_score"] = current_score # eval score
-                e_value["lcp"] = best_deep_diff  # lcp = lost centipawns
+                e_value["score"] = current_score # eval score
+                e_value["LCP"] = best_deep_diff  # lost centipawns
                 if low_pv:  # low also identified, needs both current AND low
                     e_value["deep_low_diff"] = deep_low_diff # Cambridge delta S
                 if before_score:  # not approximated, need both current AND history
@@ -812,7 +812,7 @@ class PicoTutor:
                 # board_before_usermove is where we have popped the user move above
                 e_value["best_move"] = board_before_usermove.san(best_move)
                 e_value["user_move"] = board_before_usermove.san(current_move)
-            except Exception:
+            except (KeyError, ValueError, AttributeError):
                 logger.warning("picotutor failed to convert to san for %s", current_move)
             finally:
                 self.evaluated_moves[e_key] = e_value  # sometimes overwritten after takeback
@@ -856,17 +856,55 @@ class PicoTutor:
         # NAG_NULL or unrecognized NAG becomes empty str
         return nag_to_symbol.get(nag, "")
 
+    # Logic on halfmoves and fullmoves and move identification is
+    # that we consider things AFTER the move has been done
+    # fullmove, halfmove (ply), turn, all AFTER...
+    # Example: After Bb5 we have 5 halfs, and 2 full, Black turn
+    # Halfmove | Turn   | Fullmove | SAN
+    # -------- | ------ | -------- | -----
+    #    0     | White  |    0     | —
+    #    1     | Black  |    0     | e4
+    #    2     | White  |    1     | e5
+    #    3     | Black  |    1     | Nf3
+    #    4     | White  |    2     | Nc6
+    #    5     | Black  |    2     | Bb5
+    #    6     | White  |    3     | a6
+    #    7     | Black  |    3     | Ba4
+    #
+    # SPECIAL: Black starts from a position setup, for example
+    # assume 1.e4 was done but we dont know the move, just the position
+    # Halfmove | Turn   | Fullmove | SAN
+    # -------- | ------ | -------- | -----
+    #    0     | Black  |    0     | e5
+    #    1     | White  |    1     | Nf3
+    #    2     | Black  |    1     | Nc6
+    #    3     | White  |    2     | Bb5
+    #    4     | Black  |    2     | a6
+    #    5     | White  |    3     | Ba4
+    #    6     | Black  |    3     | Nf6
+    #    7     | White  |    4     | —
+
+
+
     @staticmethod
-    def halfmove_to_fullmove(halfmove_nr: int) -> Tuple:
+    def halfmove_to_fullmove(halfmove_nr: int, known_turn: chess.Color = None) -> Tuple:
         """convert halfmove_nr after a move to a fullmove_nr and turn
-        1. e4 = halfmove 1 = fullmove 0, 1.-e5 = halfmove 2 = fullmove 1"""
+        1. e4 = halfmove 1 = fullmove 0, 1.-e5 = halfmove 2 = fullmove 1
+        To support setup position with a black first move we need known_turn
+        if known_turn not given its assumed that White made the first move
+        and in this case the first_move_black will always return False"""
         assert halfmove_nr >= 0
-        fullmove_nr = halfmove_nr // 2 # increment at BLACK even halfmoves
-        # for halfmove 0 turn will be WHITE and return fullmove 0
-        # cannot know if we have had pos setup so no BLACK and fullmove 0
-        # BLACK has even halfnumbers = next turn is WHITE
+        ply = halfmove_nr
+        # BLACK has even halfnumbers = next turn is WHITE (see table above)
         turn = chess.WHITE if halfmove_nr % 2 == 0 else chess.BLACK
-        return fullmove_nr, turn
+        if known_turn is not None and known_turn != turn:
+            ply = ply + 1  # add missing whites first move before converting
+            turn = known_turn  # return known turn as it differs
+            first_move_black = True # inform caller that Black move first
+        else:
+            first_move_black = False # normal situation with White move first
+        fullmove_nr = ply // 2  # simplest, see table above
+        return fullmove_nr, turn, first_move_black
 
     @staticmethod
     def printable_fullmove(fullmove_nr: int, turn: chess.Color) -> int:
@@ -877,15 +915,19 @@ class PicoTutor:
         return fullmove_nr + 1 if turn == chess.BLACK else fullmove_nr
 
     @staticmethod
-    def fullmove_to_halfmove(fullmove_nr: int, turn: chess.Color) -> int:
+    def fullmove_to_halfmove(fullmove_nr: int, turn: chess.Color, first_move_black: bool = None) -> int:
         """ convert from fullmove and colour to halfmove after a move
-        1. e4 = halfmove 1 = fullmove 0, 1.-e5 = halfmove 2 = fullmove 1"""
+        1. e4 = halfmove 1 = fullmove 0, 1.-e5 = halfmove 2 = fullmove 1
+        To support setup position with black first move we need to know first_move_black
+        By default its assumed that White made the first move unless first_move_black=True"""
         assert fullmove_nr >= 0
         # for fullmove 0 and turn WHITE return value will be 0 = no move done
         # for fullmove 0 and turn BLACK White has moved once, or position setup
-        halfmove_nr = fullmove_nr * 2 # BLACKs are even numbers
-        if turn == chess.BLACK: # WHITE has moved, add 1 halfmove
-            halfmove_nr = halfmove_nr + 1
+        halfmove_nr = fullmove_nr * 2
+        if turn == chess.BLACK:
+            halfmove_nr = halfmove_nr + 1 # add one halfmove after WHITE move
+        if first_move_black is not None and first_move_black is True and halfmove_nr > 0:
+            halfmove_nr = halfmove_nr - 1 # reduce with missing first WHITE move
         return halfmove_nr
 
     def get_eval_moves(self) -> dict:
@@ -895,22 +937,24 @@ class PicoTutor:
     def log_eval_moves(self):
         """debugging help to check list of evaluated moves"""
         logger.debug("picotutor evaluated moves:")
-        for (halfmove_nr, user_move), value in self.evaluated_moves.items():
+        for (halfmove_nr, user_move, known_turn), value in self.evaluated_moves.items():
             try:
                 # example 2. d4! (fullmove 1) or 2. - exd4! (fullmove 2)
                 # example 2. d4! (halfmove 3) or 2. - exd4! (halfmove 4)
-                fullmove_nr, turn = PicoTutor.halfmove_to_fullmove(halfmove_nr)
+                fullmove_nr, turn, first_move_black = PicoTutor.halfmove_to_fullmove(halfmove_nr, known_turn)
+                if first_move_black:
+                    logger.debug("picotutor eval move comes from setup position where Black had first move")
                 move_nr_str = str(PicoTutor.printable_fullmove(fullmove_nr, turn))
                 filler_str = ". - " if turn == chess.WHITE else ". "
                 move_str = value.get("user_move", "")
                 best_move_str = value.get("best_move", "")
-                eval_str = PicoTutor.nag_to_symbol(value.get("eval_nag"))
-                eval_score = " eval " + str(value.get("eval_score") / 100.0) if "eval_score" in value else ""
-                lcp_str = " lcp " + str(value.get("lcp")) if "lcp" in value else ""
+                eval_str = PicoTutor.nag_to_symbol(value.get("nag"))
+                eval_score = " eval " + str(value.get("score") / 100.0) if "score" in value else ""
+                lcp_str = " lcp " + str(value.get("LCP")) if "LCP" in value else ""
                 diff_str = " ds " + str(value.get("deep_low_diff")) if "deep_low_diff" in value else ""
                 hist_str = " hist " + str(value.get("score_hist_diff")) if "score_hist_diff" in value else ""
                 logger.debug("%s%s%s%s {best was %s%s%s%s%s}", move_nr_str, filler_str, move_str, eval_str, best_move_str, eval_score, lcp_str, diff_str, hist_str)
-            except Exception:
+            except (KeyError, ValueError, AttributeError):
                 logger.debug("failed to log full list of evaluated moves in picotutor")
                 pass  # dont care, just dont let this debug crash picotutor
 
