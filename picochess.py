@@ -4462,7 +4462,15 @@ async def main() -> None:
                         or (self.emulation_mode() and not self.state.automatic_takeback)
                     )
                 ):
-                    await self.takeback()
+                    if self.engine.is_thinking():
+                        # Pico4 if engine is thinking force a move first
+                        # this avoids confusing the picotutor
+                        self.engine.force_move()
+                        # @todo we can takeback the forced move here
+                        # but then we also need to takeback user move
+                        # and we need to figure out what to do with the clock
+                    else:
+                        await self.takeback()
 
             elif isinstance(event, Event.PICOCOMMENT):
                 if event.picocomment == "comment-factor":
