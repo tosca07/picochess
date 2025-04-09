@@ -364,7 +364,7 @@ class PicoTutor:
         # caller must call set_color to start analysis
         if self.board.turn == self.user_color:
             # if it is user player's turn then start analyse engine
-            # otherwise it is computer opponents turn and anaylze negine
+            # otherwise it is computer opponents turn and analysis engine
             # should be paused
             await self.start()
         else:
@@ -381,20 +381,19 @@ class PicoTutor:
         if not (self.coach_on or self.watcher_on):
             return True
 
-        if self.board.turn != self.user_color:
-            # if it is going to be user's turn start analyse engine
-            # after the move has been pushed - and its users turn
+        self.op.append(self.board.san(i_uci_move)) # for opening matching
+        self.board.push(i_uci_move)
+        if self.board.turn == self.user_color:
+            # if it is user player's turn then start analyse engine
             # otherwise it is computer opponents turn and analysis engine
             # should be paused
-            self.op.append(self.board.san(i_uci_move))
-            self.board.push(i_uci_move)
             await self.start()
         else:
-            await self.eval_legal_moves()  # take snapshot of current evaluation
-            self.eval_user_move(i_uci_move)  # determine & save evaluation of user move
-            # push the move after evaluation
-            self.op.append(self.board.san(i_uci_move))
-            self.board.push(i_uci_move)
+            try:
+                await self.eval_legal_moves()  # take snapshot of current evaluation
+                self.eval_user_move(i_uci_move)  # determine & save evaluation of user move
+            except IndexError:
+                logger.debug("program internal error - no move pushed before evaluation attempt")
             self.pause()
 
         # self.log_sync_info()  # normally commented out
@@ -436,7 +435,7 @@ class PicoTutor:
         result = self._update_internal_history_after_pop(poped_move=poped_move)
         if self.board.turn == self.user_color:
             # if it is user player's turn then start analyse engine
-            # otherwise it is computer opponents turn and analyze engine
+            # otherwise it is computer opponents turn and analysis engine
             # should be paused
             await self.start()
         else:
@@ -528,8 +527,9 @@ class PicoTutor:
                     logger.debug("%s score %d mate in %d depth %d", move.uci(), score, mate, info["depth"])
 
     def eval_user_move(self, user_move: chess.Move):
-        """add user move to best and obvious history
-        update the pv_best_move selection"""
+        """add user move to self.best_history and self.obvious_history
+        update self.pv_user_move and self.pv_best_move
+        throws IndexError if self.best_info and self.obvious_info is not prepared"""
         if not (self.coach_on or self.watcher_on):
             return
         # t tuple(pv_key, move, score, mate)
@@ -620,14 +620,17 @@ class PicoTutor:
         return best_score
 
     async def eval_legal_moves(self):
-        """Update analysis information from engine"""
+        """Update analysis information from engine
+         throws IndexError if no move pushed before this"""
         if not (self.coach_on or self.watcher_on):
             return
         self.best_moves = []
         self.obvious_moves = []
         self.alt_best_moves = []
         # eval_pv_list below will build new lists
-        result = await self.engine.get_analysis(self.board)
+        board_before_usermove: chess.Board = self.board.copy()
+        board_before_usermove.pop()  # we ask for analysis done before user move
+        result = await self.engine.get_analysis(board_before_usermove)
         self.obvious_info: list[chess.engine.InfoDict] = result.get("low")
         self.best_info: list[chess.engine.InfoDict] = result.get("best")
         if self.best_info:
@@ -722,7 +725,6 @@ class PicoTutor:
             logger.debug("history before move not available - not evaluating !? and ?!")
 
         # count legal moves in current position (for this we have to undo the user move)
-        legal_no = 0
         try:
             board_before_usermove: chess.Board = self.board.copy()
             board_before_usermove.pop()
@@ -730,7 +732,8 @@ class PicoTutor:
             logger.debug("number of legal moves %d", legal_no)
         except IndexError:
             # board_before_usermove.pop() failed, legal_no = 0
-            logger.debug("strange - no user move to pop")
+            legal_no = 0
+            logger.debug("program internal error - no move pushed before evaluation attempt")
         if legal_no < 2:
             # there is no point evaluating the only legal or no pop()?
             eval_string = ""
@@ -948,12 +951,12 @@ class PicoTutor:
                 filler_str = ". - " if turn == chess.WHITE else ". "
                 move_str = value.get("user_move", "")
                 best_move_str = value.get("best_move", "")
-                eval_str = PicoTutor.nag_to_symbol(value.get("nag"))
-                eval_score = " eval " + str(value.get("score") / 100.0) if "score" in value else ""
-                lcp_str = " lcp " + str(value.get("LCP")) if "LCP" in value else ""
-                diff_str = " ds " + str(value.get("deep_low_diff")) if "deep_low_diff" in value else ""
-                hist_str = " hist " + str(value.get("score_hist_diff")) if "score_hist_diff" in value else ""
-                logger.debug("%s%s%s%s {best was %s%s%s%s%s}", move_nr_str, filler_str, move_str, eval_str, best_move_str, eval_score, lcp_str, diff_str, hist_str)
+                nag_str = PicoTutor.nag_to_symbol(value.get("nag"))
+                eval_score = " Score: " + str(value.get("score")) if "score" in value else ""
+                lcp_str = " LCP: " + str(value.get("LCP")) if "LCP" in value else ""
+                diff_str = " DS: " + str(value.get("deep_low_diff")) if "deep_low_diff" in value else ""
+                hist_str = " hist: " + str(value.get("score_hist_diff")) if "score_hist_diff" in value else ""
+                logger.debug("%s%s%s%s {best was %s%s%s%s%s}", move_nr_str, filler_str, move_str, nag_str, best_move_str, eval_score, lcp_str, diff_str, hist_str)
             except (KeyError, ValueError, AttributeError):
                 logger.debug("failed to log full list of evaluated moves in picotutor")
                 pass  # dont care, just dont let this debug crash picotutor
@@ -972,10 +975,9 @@ class PicoTutor:
         mate = 0
         score = 0
 
-        self.eval_legal_moves()  # take snapshot of current evaluation
-
         try:
             best_move = self.best_info[0]["pv"][0]
+            self.eval_legal_moves()  # take snapshot of current evaluation
         except IndexError:
             best_move = ""
 

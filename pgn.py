@@ -508,6 +508,8 @@ class PgnDisplay(DisplayMsg):
                         nag = value["nag"] # $N symbol for !!, ! etc
                         node.nags.add(nag)
                         comment = PicoTutor.nag_to_symbol(nag) # back to !!, ! etc
+                        if "score" in value:
+                            comment += " Score: " + str(value["score"])
                         if(
                             nag in (chess.pgn.NAG_BLUNDER, chess.pgn.NAG_MISTAKE, chess.pgn.NAG_DUBIOUS_MOVE)
                         ):
