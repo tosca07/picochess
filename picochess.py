@@ -219,6 +219,7 @@ class PicochessState:
         self.artwork_in_use = False
         self.delay_fen_error = 4
         self.main_loop = loop
+        self.ignore_next_engine_move = False  # True only after takeback during think
 
     async def start_clock(self) -> None:
         """Start the clock."""
@@ -1077,11 +1078,15 @@ async def main() -> None:
                     engine_res = await result_queue.get()  # on engine error queue has None
                     if engine_res:
                         logger.debug("engine moved %s", engine_res.move.uci)
-                        await Observable.fire(
-                            Event.BEST_MOVE(move=engine_res.move, ponder=engine_res.ponder, inbook=False)
-                        )
-                        # webplay: Event.BEST_MOVE pushes the move on display
-                        # dgt board: BEST_MOVE 1) informs 2) user moves, 3) dgt event to process_fen() push
+                        if self.state.ignore_next_engine_move:
+                            self.state.ignore_next_engine_move = False  # make sure we handle next move
+                            logger.debug("ignored engine move - forced move due to takeback during engine think")
+                        else:
+                            await Observable.fire(
+                                Event.BEST_MOVE(move=engine_res.move, ponder=engine_res.ponder, inbook=False)
+                            )
+                            # webplay: Event.BEST_MOVE pushes the move on display
+                            # dgt board: BEST_MOVE 1) informs 2) user moves, 3) dgt event to process_fen() push
                     else:
                         logger.error("fatal no move received from engine")
                         #  this code is most likely never reached, exception below is more likely
@@ -1093,7 +1098,9 @@ async def main() -> None:
                         logger.error("fatal - engine failed to make a move %s", e)
                     #  @todo do we need to check for pgn_mode or other?
                     await Observable.fire(Event.BEST_MOVE(move=None, ponder=None, inbook=False))
+            # set state variables wait for computer move
             self.state.automatic_takeback = False
+            self.state.ignore_next_engine_move = False  # dont ignore engine move we now request
 
         async def stop_search(self):
             """Stop current search."""
@@ -1110,6 +1117,7 @@ async def main() -> None:
                 if self.engine.is_waiting():
                     logger.debug("engine already waiting")
                 else:
+                    # @ todo check and simplify this logic
                     if ponder_hit:
                         pass  # we send the self.engine.hit() lateron!
                     else:
@@ -1962,6 +1970,9 @@ async def main() -> None:
                     logger.warning("sliding detected, turn ponderhit off")
                     ponder_hit = False
 
+                #
+                # Clock logic after user move
+                #
                 await self.stop_search_and_clock(ponder_hit=ponder_hit)
                 if (
                     self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.OBSERVE, Mode.REMOTE, Mode.TRAINING)
@@ -1987,16 +1998,25 @@ async def main() -> None:
                         if self.state.online_decrement > 0:
                             self.state.time_control.sub_online_time(self.state.game.turn, self.state.online_decrement)
 
+                #
+                # Remember game_before user move for picotutor thread
+                # And for sending USER_MOVE_DONE below
+                #
                 game_before = self.state.game.copy()
-
+                self.state.game.push(move)  # this is where user move is made
+                logger.debug("user did a move for user")
+                #
+                # Set and reset information after user move
+                #
                 self.state.done_computer_fen = None
                 self.state.done_move = chess.Move.null()
-                fen = self.state.game.fen()
-                turn = self.state.game.turn
-                logger.debug("user did a move for user")
-                self.state.game.push(move)  # this is where user move is made
-                eval_str = ""
+                self.state.searchmoves.reset()  # empty list of excluded engine rootmoves
+                self.state.ignore_next_engine_move = False  # real user move has been made
 
+                #
+                # Picotutor check
+                #
+                eval_str = ""
                 if self.picotutor_mode() and not self.state.position_mode:
                     l_mate = ""
                     t_hint_move = chess.Move.null()
@@ -2075,9 +2095,11 @@ async def main() -> None:
                     if self.state.game.fullmove_number < 1:
                         ModeInfo.reset_opening()
 
-                self.state.searchmoves.reset()
+                #
+                # Start engine think
+                #
                 if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
-                    msg = Message.USER_MOVE_DONE(move=move, fen=fen, turn=turn, game=self.state.game.copy())
+                    msg = Message.USER_MOVE_DONE(move=move, fen=game_before.fen(), turn=game_before.turn, game=self.state.game.copy())
                     game_end = self.state.check_game_state()
                     if game_end:
                         await self.update_elo(game_end.result)
@@ -2145,6 +2167,10 @@ async def main() -> None:
                         await DisplayMsg.show(msg)
                         await self.analyse()
 
+                #
+                # More picotutor logic (eval above)
+                # @todo check this one also
+                #
                 if (
                     self.picotutor_mode()
                     and not self.state.position_mode
@@ -4463,14 +4489,11 @@ async def main() -> None:
                     )
                 ):
                     if self.engine.is_thinking():
-                        # Pico4 if engine is thinking force a move first
-                        # this avoids confusing the picotutor
+                        # Pico4 if engine thinking force a move to keep picotutor in sync
+                        self.state.ignore_next_engine_move = True
                         self.engine.force_move()
-                        # @todo we can takeback the forced move here
-                        # but then we also need to takeback user move
-                        # and we need to figure out what to do with the clock
-                    else:
-                        await self.takeback()
+                        await asyncio.sleep(0.5)  # wait for forced move to be handled
+                    await self.takeback()
 
             elif isinstance(event, Event.PICOCOMMENT):
                 if event.picocomment == "comment-factor":
