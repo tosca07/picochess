@@ -1099,6 +1099,7 @@ async def main() -> None:
                     #  @todo do we need to check for pgn_mode or other?
                     await Observable.fire(Event.BEST_MOVE(move=None, ponder=None, inbook=False))
             # set state variables wait for computer move
+            # @todo: should we add set self.state.done_computer_fen = None
             self.state.automatic_takeback = False
             self.state.ignore_next_engine_move = False  # dont ignore engine move we now request
 
@@ -1368,6 +1369,8 @@ async def main() -> None:
                 self.state.done_move = self.state.pb_move = chess.Move.null()
                 self.state.searchmoves.reset()
                 self.state.takeback_active = True
+                # it seems call to set_wait_state assumes its always user move
+                # so after engine move takeback user needs to press lever
                 await self.set_wait_state(Message.TAKE_BACK(game=self.state.game.copy()))
 
                 if self.pgn_mode():  # molli pgn
@@ -3611,6 +3614,15 @@ async def main() -> None:
                 else:
                     if self.engine.is_thinking():
                         self.engine.force_move()
+                    elif self.is_engine_playing_moves() and self.state.is_not_user_turn():
+                        # engine is supposed to think - could be after takeback
+                        # use same logic as ALTERNATIVE_MOVE below - send searchlist=True
+                        if not self.state.check_game_state():
+                            # picotuter should be in sync as takeback already was done
+                            await self.think(
+                                Message.ALTERNATIVE_MOVE(game=self.state.game.copy(), play_mode=self.state.play_mode),
+                                searchlist=True,
+                            )
                     elif not self.state.done_computer_fen:
                         if self.state.time_control.internal_running():
                             await self.state.stop_clock()
@@ -3623,11 +3635,8 @@ async def main() -> None:
                 if self.state.done_computer_fen and not self.emulation_mode():
                     self.state.done_computer_fen = None
                     self.state.done_move = chess.Move.null()
-                    if self.state.interaction_mode in (
-                        Mode.NORMAL,
-                        Mode.BRAIN,
-                        Mode.TRAINING,
-                    ):  # @todo handle Mode.REMOTE too
+                    if self.is_engine_playing_moves():
+                    # @todo handle Mode.REMOTE too
                         if self.state.time_control.mode == TimeMode.FIXED:
                             self.state.time_control.reset()
                         # set computer to move - in case the user just changed the engine
