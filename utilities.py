@@ -63,7 +63,7 @@ class Observable(object):
     async def _add_to_queue(event):
         """Put an event on the Queue."""
         await evt_queue.put(event)
-        logger.debug("added event to queue %s", event)
+        #  logger.debug("added event to queue %s", event)
 
 
 class DispatchDgt(object):
@@ -106,7 +106,7 @@ class DisplayMsg(object):
         """Send a message on each display device."""
         for display in msgdisplay_devices:
             await display.add_to_queue(copy.deepcopy(message))
-        logger.debug("added message to %d queues %s", len(msgdisplay_devices), message)
+        # logger.debug("added message to %d queues %s", len(msgdisplay_devices), message)
 
     @staticmethod
     def show_sync(message):
@@ -127,7 +127,7 @@ class DisplayDgt(object):
     async def add_to_queue(self, message):
         """Put an event on the Queue."""
         await self.dgt_queue.put(message)
-        logger.debug("added message to dgt queue %s", message)
+        # logger.debug("added message to dgt queue %s", message)
 
     @staticmethod
     async def show(message):

@@ -2841,7 +2841,10 @@ async def main() -> None:
 
         async def process_main_events(self, event):
             """Consume event from evt_queue"""
-            logger.debug("received event from evt_queue: %s", event)
+            if (
+                not isinstance(event, Event.CLOCK_TIME)
+            ):
+                logger.debug("received event from evt_queue: %s", event)
             if isinstance(event, Event.FEN):
                 await self.process_fen(event.fen, self.state)
 

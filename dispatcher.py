@@ -58,7 +58,7 @@ class Dispatcher(DispatchDgt):
 
     def is_prio_device(self, dev, connect):
         """Return the most prio registered device."""
-        logger.debug("(%s) clock connected: %s", dev, connect)
+        #  logger.debug("(%s) clock connected: %s", dev, connect)
         if not connect:
             return False
         if "i2c" in self.devices:
