@@ -585,7 +585,9 @@ class PicoTutor:
             logger.debug("%d best:", len(self.best_info[self.board.turn]))
             for info in self.best_info[self.board.turn]:
                 if "pv" in info and "score" in info and "depth" in info:
-                    move, score, mate = PicoTutor._get_score(self.user_color, info)
+                    # score_turn must be as BEFORE the move - so opposite
+                    score_turn = chess.WHITE if self.board.turn == chess.BLACK else chess.BLACK
+                    move, score, mate = PicoTutor._get_score(score_turn, info)
                     logger.debug("%s score %d mate in %d depth %d", move.uci(), score, mate, info["depth"])
                 if not long_version:
                     break
@@ -593,7 +595,9 @@ class PicoTutor:
             logger.debug("%d obvious:", len(self.obvious_info[self.board.turn]))
             for info in self.obvious_info[self.board.turn]:
                 if "pv" in info and "score" in info and "depth" in info:
-                    move, score, mate = PicoTutor._get_score(self.user_color, info)
+                    # score_turn must be as BEFORE the move - so opposite
+                    score_turn = chess.WHITE if self.board.turn == chess.BLACK else chess.BLACK
+                    move, score, mate = PicoTutor._get_score(score_turn, info)
                     logger.debug("%s score %d mate in %d depth %d", move.uci(), score, mate, info["depth"])
                 if not long_version:
                     break
@@ -659,24 +663,24 @@ class PicoTutor:
         return tupel[2]
 
     @staticmethod
-    def _get_score(user_color: chess.Color, info: chess.engine.InfoDict) -> tuple:
+    def _get_score(turn: chess.Color, info: chess.engine.InfoDict) -> tuple:
         """return tuple (move, score, mate) extracted from info"""
         move = info["pv"][0] if "pv" in info else chess.Move.null()
         score = mate = 0
         if "score" in info:
             score_val = info["score"]
-            m = score_val.pov(user_color).mate()
+            m = score_val.pov(turn).mate()
             mate = 0 if m is None else m
             if score_val.is_mate():
-                score = score_val.pov(user_color).score(mate_score=99999)
+                score = score_val.pov(turn).score(mate_score=99999)
             else:
-                score = score_val.pov(user_color).score()
+                score = score_val.pov(turn).score()
             return (move, score, mate)
         return (move, score, mate)
 
     # @todo re-design this method?
     @staticmethod
-    def _eval_pv_list(user_color: chess.Color, info_list: list[InfoDict], moves) -> int | None:
+    def _eval_pv_list(turn: chess.Color, info_list: list[InfoDict], moves) -> int | None:
         """fill in best_moves or obvious_moves (param moves) from InfoDict list
         it assumes best_moves is emptied before called
         :return the best score"""
@@ -684,7 +688,9 @@ class PicoTutor:
         pv_key = 0  # index in InfoDict list
         while pv_key < len(info_list):
             info: InfoDict = info_list[pv_key]
-            move, score, mate = PicoTutor._get_score(user_color, info)
+            # score_turn must be as BEFORE the move - so opposite
+            score_turn = chess.WHITE if turn == chess.BLACK else chess.BLACK
+            move, score, mate = PicoTutor._get_score(score_turn, info)
             # put an score: int here for sorting best moves
             moves.append((pv_key, move, score, mate))
             best_score = max(best_score, score)
@@ -711,7 +717,7 @@ class PicoTutor:
         self.obvious_info[self.board.turn] = result.get("low")
         self.best_info[self.board.turn] = result.get("best")
         if self.best_info[self.board.turn]:
-            best_score = PicoTutor._eval_pv_list(self.user_color, self.best_info[self.board.turn], self.best_moves[self.board.turn])
+            best_score = PicoTutor._eval_pv_list(self.board.turn, self.best_info[self.board.turn], self.best_moves[self.board.turn])
             if self.best_moves[self.board.turn]:
                 # self.best_moves[self.board.turn].sort(key=self.sort_score, reverse=True)
                 # collect possible good alternative moves
@@ -721,7 +727,7 @@ class PicoTutor:
                         if diff <= 20:
                             self.alt_best_moves[self.board.turn].append(move)
         if self.obvious_info[self.board.turn]:
-            PicoTutor._eval_pv_list(self.user_color, self.obvious_info[self.board.turn], self.obvious_moves[self.board.turn])
+            PicoTutor._eval_pv_list(self.board.turn, self.obvious_info[self.board.turn], self.obvious_moves[self.board.turn])
             # self.obvious_moves[self.board.turn].sort(key=self.sort_score, reverse=True)
         self.log_pv_lists(long_version=True) # debug only
 
