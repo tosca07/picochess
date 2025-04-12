@@ -2144,7 +2144,7 @@ async def main() -> None:
 
                     self.state.last_move = move
                 elif self.state.interaction_mode == Mode.REMOTE:
-                    msg = Message.USER_MOVE_DONE(move=move, fen=fen, turn=turn, game=self.state.game.copy())
+                    msg = Message.USER_MOVE_DONE(move=move, fen=game_before.fen(), turn=game_before.turn, game=self.state.game.copy())
                     game_end = self.state.check_game_state()
                     await DisplayMsg.show(msg)
                     if game_end:
@@ -2152,7 +2152,7 @@ async def main() -> None:
                     else:
                         await self.observe()
                 elif self.state.interaction_mode == Mode.OBSERVE:
-                    msg = Message.REVIEW_MOVE_DONE(move=move, fen=fen, turn=turn, game=self.state.game.copy())
+                    msg = Message.REVIEW_MOVE_DONE(move=move, fen=game_before.fen(), turn=game_before.turn, game=self.state.game.copy())
                     game_end = self.state.check_game_state()
                     if game_end:
                         await DisplayMsg.show(msg)
@@ -2161,7 +2161,7 @@ async def main() -> None:
                         await DisplayMsg.show(msg)
                         await self.observe()
                 else:  # self.state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.PONDER):
-                    msg = Message.REVIEW_MOVE_DONE(move=move, fen=fen, turn=turn, game=self.state.game.copy())
+                    msg = Message.REVIEW_MOVE_DONE(move=move, fen=game_before.fen(), turn=game_before.turn, game=self.state.game.copy())
                     game_end = self.state.check_game_state()
                     if game_end:
                         await DisplayMsg.show(msg)
