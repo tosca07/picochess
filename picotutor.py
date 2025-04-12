@@ -49,44 +49,56 @@ class PicoTutor:
         loop=None,
         i_depth=None,
     ):
-        self.user_color = i_player_color
-        self.engine_path = i_engine_path
+        self.user_color: chess.Color = i_player_color
+        self.engine_path: str = i_engine_path
 
-        self.engine = None  # or UciEngine
-        self.best_info: list[InfoDict] = []  # best = deep
-        self.obvious_info: list[InfoDict] = []  # obvious = low = shallow
-
-        # history contain user made moves from above best or obvious
-        # stored in list of tuple(index, move, score, mate)
-        # index = None indicates not found in InfoDict results
-        self.best_history = []
-        self.obvious_history = []
-        self.pv_user_move = []
-        self.pv_best_move = []
-        self.hint_move = chess.Move.null()
-        self.mate = 0
-        self.best_moves = []
-        self.obvious_moves = []
+        self.engine: UciEngine | None = None # Pico4 uses UciEngine, not direct chess api
+        # snapshot list of best = deep/max-ply, and obvious = shallow/low-ply
+        # lists of InfoDict per color - filled in eval_legal_moves()
+        self.best_info = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        self.obvious_info = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        # snapshot of best_moves and obvious_moves are filled in _eval_pv_list()
+        # information comes from InfoDict snapshot lists above: best_info and obvious_info
+        # "almost" complete 5-50 list of tuple(pv_key, move, score, mate)
+        self.best_moves = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        self.obvious_moves = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        # history list of user move selected from best_moves and obvious_moves above
+        # tuple(pv_key, move, score, mate) copy for selected user move
+        # pv_key is the index to the snapshot best_info and obvious_info
+        # index = None indicates was not found in InfoDict results
+        # index not None has no value in history as its an index to a snapshot above
+        self.best_history = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        self.obvious_history = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        # pv_user_move and pv_best_move are the pv array from InfoDict analysis
+        self.pv_user_move = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        self.pv_best_move = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        self.hint_move = {color: chess.Move.null() for color in [chess.WHITE, chess.BLACK]}
         self.op = []  # used for opening book
         self.last_inside_book_moveno = 0
-        self.alt_best_moves = []
+        # alt_best_moves are filled in eval_legal_moves()
+        self.alt_best_moves = {color: [] for color in [chess.WHITE, chess.BLACK]}
         self.comments = []
         self.comment_no = 0
         self.comments_all = []
         self.comment_all_no = 0
         self.lang = i_lang
         self.expl_start_position = True
-        self.pos = False  # do we need this in the new PicoTutor?
         self.watcher_on = False
         self.coach_on = False
         self.explorer_on = False
         self.comments_on = False
         self.mame_par = ""  # @todo create this info?
+        # one of the challenges is to keep this board in sync
+        # with the state.game board in picochess.py main
         self.board = chess.Board()
         self.ucishell = i_ucishell
+        # user ini file coach-analyser value, if set PicoTutor is used
+        # as PV and Score analyser instead of the engine you are playing
         self.coach_analyser = i_coach_analyser
         self.loop = loop  # main loop everywhere
         self.deep_limit_depth = i_depth  # override picotutor value
+        # evaluated moves keeps a memory of all non zero evaluation strings
+        # it can then be used to print comments in the PGN file
         self.evaluated_moves = {} # key=(fullmove_number, turn, move) value={}
 
         try:
@@ -303,38 +315,44 @@ class PicoTutor:
     def _reset_int(self):
         logger.debug("picotutor reset")
         self.stop()
-        self.pos = False
-        self.best_moves = []
-        self.obvious_moves = []
         self.op = []
+        self.expl_start_position = True
+        # @todo minimize situations where you have to delete history
+        # by checking through calls to set_position in main picochess?
+        self._reset_color_coded_vars()
 
-        self.best_info = []
-        self.obvious_info = []
-
-        self.best_history = []
-        self.obvious_history = []
+    def _reset_color_coded_vars(self):
+        """ reset and forget all color coded variables - needs to be done on newgame """
+        # snapshot list of best = deep/max-ply, and obvious = shallow/low-ply
+        # lists of InfoDict per color - filled in eval_legal_moves()
+        self.best_info = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        self.obvious_info = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        # snapshot of best_moves and obvious_moves are filled in _eval_pv_list()
+        # information comes from InfoDict snapshot lists above: best_info and obvious_info
+        # "almost" complete 5-50 list of tuple(pv_key, move, score, mate)
+        self.best_moves = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        self.obvious_moves = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        # history list of user move selected from best_moves and obvious_moves above
+        # tuple(pv_key, move, score, mate) copy for selected user move
+        # pv_key is the index to the snapshot best_info and obvious_info
+        # index = None indicates was not found in InfoDict results
+        # index not None has no value in history as its an index to a snapshot above
+        self.best_history = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        self.obvious_history = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        # pv_user_move and pv_best_move are the pv array from InfoDict analysis
+        # these could be changed to local variables in eval_user_moves
+        self.pv_user_move = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        self.pv_best_move = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        self.hint_move = {color: chess.Move.null() for color in [chess.WHITE, chess.BLACK]}
+        # alt_best_moves are filled in eval_legal_moves()
+        self.alt_best_moves = {color: [] for color in [chess.WHITE, chess.BLACK]}
         self.evaluated_moves = {}
 
-        self.alt_best_moves = []
-        self.pv_best_move = []
-        self.pv_user_move = []
-
-        self.hint_move = chess.Move.null()
-        self.mate = 0
-        self.expl_start_position = True
 
     async def set_user_color(self, i_user_color):
         logger.debug("picotutor set user color %s", i_user_color)
         self.pause()
-        self.best_history = []
-        self.obvious_history = []
-        self.best_moves = []
-        self.obvious_moves = []
-        self.hint_move = chess.Move.null()
-        self.mate = 0
-        self.pv_best_move = []
-        self.pv_user_move = []
-        # no need to reset self.evaluated_moves
+        # no need to reset_color_coded_vars
 
         self.user_color = i_user_color
         if self.user_color == self.board.turn and self.board.fullmove_number > 1:
@@ -359,8 +377,6 @@ class PicoTutor:
         if not (self.coach_on or self.watcher_on):
             return
 
-        self.pos = True
-
         # below code probably have no effect...
         # caller must call set_color to start analysis
         if self.board.turn == self.user_color:
@@ -383,7 +399,7 @@ class PicoTutor:
 
         self.op.append(self.board.san(i_uci_move)) # for opening matching
         c_move_str = self.board.san(i_uci_move)
-        self.board.push(i_uci_move)
+        self.board.push(i_uci_move)  # this keeps board in sync with picochess main
         c_filler_str = PicoTutor.printable_move_filler(self.board.ply(), self.board.turn)
         logger.debug("picotutor push move %s%s", c_filler_str, c_move_str)
         if self.board.turn == self.user_color:
@@ -408,15 +424,15 @@ class PicoTutor:
         if self.board.turn == self.user_color:
             # need to pop user move
             try:
-                pv_key, move, score, mate = self.best_history[-1]
+                pv_key, move, score, mate = self.best_history[self.board.turn][-1]
                 if move == poped_move:
-                    self.best_history.pop()
+                    self.best_history[self.board.turn].pop()
                 else:
                     result = False
                     logger.debug("picotutor pop best move not in sync")
-                pv_key, move, score, mate = self.obvious_history[-1]
+                pv_key, move, score, mate = self.obvious_history[self.board.turn][-1]
                 if move == poped_move:
-                    self.obvious_history.pop()
+                    self.obvious_history[self.board.turn].pop()
                 else:
                     result = False
                     logger.debug("picotutor pop obvious move not in sync")
@@ -455,8 +471,8 @@ class PicoTutor:
             result = await self._update_internal_state_after_pop(poped_move)
             if not result:
                 logger.debug("picotutor pop move not in sync - erasing history")
-                self.best_moves = []
-                self.obvious_moves = []
+                self.best_moves = {color: [] for color in [chess.WHITE, chess.BLACK]}
+                self.obvious_moves = {color: [] for color in [chess.WHITE, chess.BLACK]}
 
         self.log_sync_info()  # debug only
         return poped_move
@@ -505,8 +521,8 @@ class PicoTutor:
             uci_moves.append(move.uci())
         logger.debug("picotutor board moves %s", uci_moves)
         hist_moves = []
-        if self.best_history:
-            for pv_key, move, score, mate in self.best_history:
+        if self.best_history[self.board.turn]:
+            for pv_key, move, score, mate in self.best_history[self.board.turn]:
                 hist_moves.append(move.uci())
         logger.debug("picotutor history moves %s", hist_moves)
         self.log_eval_moves()
@@ -518,17 +534,17 @@ class PicoTutor:
             logger.debug("PicoTutor White to move")
         else:
             logger.debug("PicoTutor Black to move")
-        if self.best_info:
-            logger.debug("%d best:", len(self.best_info))
-            for info in self.best_info:
+        if self.best_info[self.board.turn]:
+            logger.debug("%d best:", len(self.best_info[self.board.turn]))
+            for info in self.best_info[self.board.turn]:
                 if "pv" in info and "score" in info and "depth" in info:
                     move, score, mate = PicoTutor._get_score(self.user_color, info)
                     logger.debug("%s score %d mate in %d depth %d", move.uci(), score, mate, info["depth"])
                 if not long_version:
                     break
-        if self.obvious_info:
-            logger.debug("%d obvious:", len(self.obvious_info))
-            for info in self.obvious_info:
+        if self.obvious_info[self.board.turn]:
+            logger.debug("%d obvious:", len(self.obvious_info[self.board.turn]))
+            for info in self.obvious_info[self.board.turn]:
                 if "pv" in info and "score" in info and "depth" in info:
                     move, score, mate = PicoTutor._get_score(self.user_color, info)
                     logger.debug("%s score %d mate in %d depth %d", move.uci(), score, mate, info["depth"])
@@ -546,37 +562,37 @@ class PicoTutor:
         # add score to history list
         if t:
             pv_key = t[0]
-            self.best_history.append(t)
-            self.pv_best_move = self.best_info[0]["pv"]
-            self.pv_user_move = self.best_info[pv_key]["pv"]
+            self.best_history[self.board.turn].append(t)
+            self.pv_best_move = self.best_info[self.board.turn][0]["pv"]
+            self.pv_user_move[self.board.turn] = self.best_info[self.board.turn][pv_key]["pv"]
         else:
             logger.debug("did not find user move %s in best moves", user_move.uci())
             pv_key = None  # so that we know its not found
             score = mate = 0
-            if self.best_moves:
+            if self.best_moves[self.board.turn]:
                 # user move is <= lowest score seen, last on list
-                pv_extra_key, extra_move, score, mate = self.best_moves[-1]
-            self.best_history.append((pv_key, user_move, score, mate))
-            self.pv_best_move = []
-            self.pv_user_move = []
+                pv_extra_key, extra_move, score, mate = self.best_moves[self.board.turn][-1]
+            self.best_history[self.board.turn].append((pv_key, user_move, score, mate))
+            self.pv_user_move = {color: [] for color in [chess.WHITE, chess.BLACK]}
+            self.pv_best_move = {color: [] for color in [chess.WHITE, chess.BLACK]}
         t = self.in_obvious_moves(user_move)
         # add score to history list
         if t:
             # pv_key = t[0]
-            self.obvious_history.append(t)
+            self.obvious_history[self.board.turn].append(t)
         else:
             logger.debug("did not find user move %s in obvious moves", user_move.uci())
             pv_key = None  # so that we know its not found
             score = mate = 0
-            if self.obvious_moves:
+            if self.obvious_moves[self.board.turn]:
                 # user move is <= lowest score seen, last on list
-                pv_extra_key, extra_move, score, mate = self.obvious_moves[-1]
-            self.obvious_history.append((pv_key, user_move, score, mate))
+                pv_extra_key, extra_move, score, mate = self.obvious_moves[self.board.turn][-1]
+            self.obvious_history[self.board.turn].append((pv_key, user_move, score, mate))
 
     def in_best_moves(self, user_move: chess.Move) -> tuple:
         """find move in obvious moves
         return None or tuple(pv_key, move, score, mate)"""
-        for t in self.best_moves:
+        for t in self.best_moves[self.board.turn]:
             # tuple index 1 is move
             if t[1] == user_move:
                 return t
@@ -585,7 +601,7 @@ class PicoTutor:
     def in_obvious_moves(self, user_move: chess.Move) -> tuple:
         """find move in obvious moves
         return None or tuple(pv_key, move, score)"""
-        for t in self.obvious_moves:
+        for t in self.obvious_moves[self.board.turn]:
             # tuple index 1 is move
             if t[1] == user_move:
                 return t
@@ -613,8 +629,8 @@ class PicoTutor:
 
     # @todo re-design this method?
     @staticmethod
-    def _eval_pv_list(user_color: chess.Color, info_list: list[InfoDict], best_moves) -> int | None:
-        """fill in best_moves from InfoDict list
+    def _eval_pv_list(user_color: chess.Color, info_list: list[InfoDict], moves) -> int | None:
+        """fill in best_moves or obvious_moves (param moves) from InfoDict list
         it assumes best_moves is emptied before called
         :return the best score"""
         best_score = -99999
@@ -623,19 +639,18 @@ class PicoTutor:
             info: InfoDict = info_list[pv_key]
             move, score, mate = PicoTutor._get_score(user_color, info)
             # put an score: int here for sorting best moves
-            best_moves.append((pv_key, move, score, mate))
+            moves.append((pv_key, move, score, mate))
             best_score = max(best_score, score)
             pv_key = pv_key + 1
         return best_score
 
     async def eval_legal_moves(self):
-        """Update analysis information from engine
-         throws IndexError if no move pushed before this"""
+        """ Update analysis information from engine analysis snapshot """
         if not (self.coach_on or self.watcher_on):
             return
-        self.best_moves = []
-        self.obvious_moves = []
-        self.alt_best_moves = []
+        self.best_moves = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        self.obvious_moves = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        self.alt_best_moves = {color: [] for color in [chess.WHITE, chess.BLACK]}
         # eval_pv_list below will build new lists
         board_before_usermove: chess.Board = self.board.copy()
         try:
@@ -645,22 +660,22 @@ class PicoTutor:
             logger.debug("can not evaluate empty board 1st move")
             return
         result = await self.engine.get_analysis(board_before_usermove)
-        self.obvious_info: list[chess.engine.InfoDict] = result.get("low")
-        self.best_info: list[chess.engine.InfoDict] = result.get("best")
-        if self.best_info:
-            best_score = PicoTutor._eval_pv_list(self.user_color, self.best_info, self.best_moves)
-            if self.best_moves:
-                self.best_moves.sort(key=self.sort_score, reverse=True)
+        self.obvious_info[self.board.turn] = result.get("low")
+        self.best_info[self.board.turn] = result.get("best")
+        if self.best_info[self.board.turn]:
+            best_score = PicoTutor._eval_pv_list(self.user_color, self.best_info[self.board.turn], self.best_moves[self.board.turn])
+            if self.best_moves[self.board.turn]:
+                self.best_moves[self.board.turn].sort(key=self.sort_score, reverse=True)
                 # collect possible good alternative moves
-                for pv_key, move, score, mate in self.best_moves:
+                for pv_key, move, score, mate in self.best_moves[self.board.turn]:
                     if move:
                         diff = abs(best_score - score)
                         if diff <= 20:
-                            self.alt_best_moves.append(move)
-        if self.obvious_info:
-            PicoTutor._eval_pv_list(self.user_color, self.obvious_info, self.obvious_moves)
-            self.obvious_moves.sort(key=self.sort_score, reverse=True)
-        self.log_pv_lists() # debug only
+                            self.alt_best_moves[self.board.turn].append(move)
+        if self.obvious_info[self.board.turn]:
+            PicoTutor._eval_pv_list(self.user_color, self.obvious_info[self.board.turn], self.obvious_moves[self.board.turn])
+            self.obvious_moves[self.board.turn].sort(key=self.sort_score, reverse=True)
+        self.log_pv_lists(long_version=True) # debug only
 
     async def get_analysis(self) -> dict:
         """get best move info if exists - during user thinking"""
@@ -678,37 +693,37 @@ class PicoTutor:
         best_score = 0
         best_move = chess.Move.null()
         if not (self.coach_on or self.watcher_on):
-            return eval_string, self.mate
+            return eval_string, 0
 
         # check precondition for calculations
         # more than one best and obvious move have to be found
         if (
-            len(self.best_history) < 1
-            or len(self.obvious_history) < 1
-            or len(self.best_moves) < 2
-            or len(self.obvious_moves) < 2
+            len(self.best_history[self.board.turn]) < 1
+            or len(self.obvious_history[self.board.turn]) < 1
+            or len(self.best_moves[self.board.turn]) < 2
+            or len(self.obvious_moves[self.board.turn]) < 2
         ):
             eval_string = ""
-            return eval_string, self.mate
+            return eval_string, 0
 
         # user move score and previoues score
         # last evaluation = for current user move
-        current_pv, current_move, current_score, current_mate = self.best_history[-1]
+        current_pv, current_move, current_score, current_mate = self.best_history[self.board.turn][-1]
         # current_pv can be None if no best_move had been found
         # but current_move is always the user move
 
-        if len(self.best_history) > 1:
-            before_pv, before_move, before_score, before_mate = self.best_history[-2]
+        if len(self.best_history[self.board.turn]) > 1:
+            before_pv, before_move, before_score, before_mate = self.best_history[self.board.turn][-2]
         else:
             before_score = None
         # before_pv can be None if no obvious move had been found
 
         # best deep engine score/move
-        best_pv, best_move, best_score, best_mate = self.best_moves[0]
+        best_pv, best_move, best_score, best_mate = self.best_moves[self.board.turn][0]
         # tupel (pv,move,score,mate)
 
         # calculate diffs based on low depth search for obvious moves
-        low_pv, low_move, low_score, low_mate = self.obvious_history[-1]
+        low_pv, low_move, low_score, low_mate = self.obvious_history[self.board.turn][-1]
         # last evaluation = for current user move
         # low_pv can be None if no if user move found in obvious_moves
 
@@ -753,7 +768,7 @@ class PicoTutor:
         if legal_no < 2:
             # there is no point evaluating the only legal or no pop()?
             eval_string = ""
-            return eval_string, self.mate
+            return eval_string, 0
 
         ###############################################################
         # 1. bad moves
@@ -841,11 +856,10 @@ class PicoTutor:
         # information return in addition:
         # threat move / bestmove/ pv line of user and best pv line so picochess can comment on that as well
         # or call a pico talker method with that information
-        self.mate = current_mate
-        self.hint_move = best_move
+        self.hint_move[self.board.turn] = best_move
 
         logger.debug("evaluation %s", eval_string)
-        return eval_string, self.mate
+        return eval_string, current_mate
 
     @staticmethod
     def symbol_to_nag(eval_string: str) -> int:
@@ -992,10 +1006,11 @@ class PicoTutor:
                 # dont care, just dont let this debug crash picotutor
 
     def get_user_move_info(self):
+        """ return the hint move and the analysed InfoDict pv array of user chosen move"""
         if not (self.coach_on or self.watcher_on):
             return
         # not sending self.pv_best_move as its not used?
-        return self.hint_move, self.pv_user_move
+        return self.hint_move[self.board.turn], self.pv_user_move[self.board.turn]
 
     def get_pos_analysis(self):
         if not (self.coach_on or self.watcher_on):
@@ -1006,13 +1021,13 @@ class PicoTutor:
         score = 0
 
         try:
-            best_move = self.best_info[0]["pv"][0]
-            self.eval_legal_moves()  # take snapshot of current evaluation
+            self.eval_legal_moves()  # @todo - why do we need to call this?
+            best_move = self.best_info[self.board.turn][0]["pv"][0]
         except IndexError:
             best_move = ""
 
         try:
-            best_score = self.best_info[0]["score"]
+            best_score = self.best_info[self.board.turn][0]["score"]
         except IndexError:
             best_score = 0
 
@@ -1022,7 +1037,7 @@ class PicoTutor:
             mate = best_score.mate
 
         try:
-            pv_best_move = self.best_info[0]["pv"]
+            pv_best_move = self.best_info[self.board.turn][0]["pv"]
         except IndexError:
             pv_best_move = []
 
@@ -1031,4 +1046,4 @@ class PicoTutor:
         elif mate < 0:
             score = -99999
 
-        return best_move, score, mate, pv_best_move, self.alt_best_moves
+        return best_move, score, mate, pv_best_move, self.alt_best_moves[self.board.turn]
