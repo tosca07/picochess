@@ -100,6 +100,9 @@ class PicoTutor:
         # evaluated moves keeps a memory of all non zero evaluation strings
         # it can then be used to print comments in the PGN file
         self.evaluated_moves = {} # key=(fullmove_number, turn, move) value={}
+        # the following setting can be True if engine is not playing
+        # or if you want to analyse also engine moves (like pgn_engine)
+        self.analyse_both_sides = False  # analyse only user side as default
 
         try:
             with open("chess-eco_pos.txt") as fp:
@@ -349,13 +352,19 @@ class PicoTutor:
         self.evaluated_moves = {}
 
 
-    async def set_user_color(self, i_user_color):
+    async def set_user_color(self, i_user_color, analyse_both_sides: bool):
+        """ set the user color to analyse moves for, normally engine is playing the other side
+        if you send analyse_both_sides True it means both sides will be analysed """
         logger.debug("picotutor set user color %s", i_user_color)
+        self.analyse_both_sides = analyse_both_sides
         self.pause()
         # no need to reset_color_coded_vars
 
         self.user_color = i_user_color
-        if self.user_color == self.board.turn and self.board.fullmove_number > 1:
+        if(
+            (self.analyse_both_sides or self.user_color == self.board.turn)
+            and self.board.ply() > 1
+        ):
             await self.start()
 
     def get_user_color(self):
@@ -379,7 +388,10 @@ class PicoTutor:
 
         # below code probably have no effect...
         # caller must call set_color to start analysis
-        if self.board.turn == self.user_color:
+        if(
+            (self.analyse_both_sides or self.board.turn == self.user_color)
+            and self.board.ply() > 1
+        ):
             # if it is user player's turn then start analyse engine
             # otherwise it is computer opponents turn and analysis engine
             # should be paused
@@ -402,18 +414,31 @@ class PicoTutor:
         self.board.push(i_uci_move)  # this keeps board in sync with picochess main
         c_filler_str = PicoTutor.printable_move_filler(self.board.ply(), self.board.turn)
         logger.debug("picotutor push move %s%s", c_filler_str, c_move_str)
-        if self.board.turn == self.user_color:
-            # if it is user player's turn then start analyse engine
-            # otherwise it is computer opponents turn and analysis engine
-            # should be paused
-            await self.start()
+        if not self.analyse_both_sides:
+            # Pico V3 functionality
+            if self.board.turn == self.user_color:
+                # if it is user player's turn then start analyse engine
+                if self.board.ply() > 1:
+                    await self.start()
+            else:
+                # otherwise it is computer turn and analysis to be paused
+                try:
+                    await self.eval_legal_moves()  # take snapshot of current evaluation
+                    self.eval_user_move(i_uci_move)  # determine & save evaluation of user move
+                except IndexError:
+                    logger.debug("program internal error - no move pushed before evaluation attempt")
+                self.pause()
         else:
+            # Pico V4 can analyse both sides in HINT mode - do all steps above
+            self.pause()  # pause while evaluating
             try:
                 await self.eval_legal_moves()  # take snapshot of current evaluation
                 self.eval_user_move(i_uci_move)  # determine & save evaluation of user move
             except IndexError:
                 logger.debug("program internal error - no move pushed before evaluation attempt")
-            self.pause()
+            self.start()
+
+
 
         # self.log_sync_info()  # normally commented out
         return True
@@ -452,7 +477,10 @@ class PicoTutor:
             return False
 
         result = self._update_internal_history_after_pop(poped_move=poped_move)
-        if self.board.turn == self.user_color:
+        if(
+            (self.analyse_both_sides or self.board.turn == self.user_color)
+            and self.board.ply() > 1
+        ):
             # if it is user player's turn then start analyse engine
             # otherwise it is computer opponents turn and analysis engine
             # should be paused
@@ -646,6 +674,7 @@ class PicoTutor:
 
     async def eval_legal_moves(self):
         """ Update analysis information from engine analysis snapshot """
+        # @todo check if this can throw exceptions
         if not (self.coach_on or self.watcher_on):
             return
         self.best_moves = {color: [] for color in [chess.WHITE, chess.BLACK]}
