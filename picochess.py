@@ -1031,6 +1031,7 @@ async def main() -> None:
             )
             await self.state.picotutor.open_engine()
             my_pgn_display.set_picotutor(self.state.picotutor)  # needed for comments in pgn
+            # set_mode in picotutor init set to False
 
             ModeInfo.set_game_ending(result="*")
 
@@ -1266,7 +1267,6 @@ async def main() -> None:
 
             if (
                 self.state.flag_picotutor
-                and self.state.interaction_mode in (Mode.NORMAL, Mode.TRAINING, Mode.BRAIN)
                 and not self.online_mode()
                 and not self.pgn_mode()
                 and (
@@ -2805,17 +2805,20 @@ async def main() -> None:
                     self.state.dgtmenu.get_picoexplorer(),
                     self.state.dgtmenu.get_picocomment(),
                 )
-                self.state.picotutor.reset()
+                if self.state.flag_picotutor:
+                    self.state.picotutor.set_mode(not self.is_engine_playing_moves())  # always False here
             elif self.state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
                 self.engine.set_mode()
                 self.background_analyse_timer.start()  # permanent brain in analysis mode
-                # tutor cannot run if playing engine is only watching?
+                # Pico v4 allow picotutor to run also when watching
                 self.state.picotutor.set_status(
-                    watcher=False,
-                    coach=PicoCoach.COACH_OFF,
-                    explorer=self.state.dgtmenu.get_picoexplorer(),
-                    comments=False,
+                    self.state.dgtmenu.get_picowatcher(),
+                    self.state.dgtmenu.get_picocoach(),
+                    self.state.dgtmenu.get_picoexplorer(),
+                    self.state.dgtmenu.get_picocomment(),
                 )
+                if self.state.flag_picotutor:
+                    self.state.picotutor.set_mode(True)
 
         def remote_engine_mode(self):
             if "remote" in self.state.engine_file:
@@ -4376,6 +4379,8 @@ async def main() -> None:
                 else:
                     self.state.flag_picotutor = False
 
+                if self.state.flag_picotutor:
+                    self.state.picotutor.set_mode(not self.is_engine_playing_moves())
                 await DisplayMsg.show(Message.PICOWATCHER(picowatcher=event.picowatcher))
 
             elif isinstance(event, Event.PICOCOACH):
@@ -4400,6 +4405,8 @@ async def main() -> None:
                 else:
                     self.state.flag_picotutor = False
 
+                if self.state.flag_picotutor:
+                    self.state.picotutor.set_mode(not self.is_engine_playing_moves())
                 if self.state.dgtmenu.get_picocoach() == PicoCoach.COACH_OFF:
                     await DisplayMsg.show(Message.PICOCOACH(picocoach=False))
                 elif self.state.dgtmenu.get_picocoach() == PicoCoach.COACH_ON and event.picocoach != 2:
@@ -4428,6 +4435,8 @@ async def main() -> None:
                     else:
                         self.state.flag_picotutor = False
 
+                if self.state.flag_picotutor:
+                    self.state.picotutor.set_mode(not self.is_engine_playing_moves())
                 await DisplayMsg.show(Message.PICOEXPLORER(picoexplorer=event.picoexplorer))
 
             elif isinstance(event, Event.RSPEED):

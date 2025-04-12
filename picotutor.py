@@ -138,6 +138,17 @@ class PicoTutor:
         if self.engine is None:
             logger.debug("Engine loading failed in Picotutor")
 
+    def set_mode(self, analyse_both_sides: bool):
+        """ normally analyse_both_sides is False but if True
+            both sides will be analysed """
+        self.analyse_both_sides = analyse_both_sides
+        if(
+            not (self.analyse_both_sides or self.board.turn == self.user_color)
+            or self.board.ply() <= 1
+        ):
+            # reversed logic above
+            self.pause()
+
     def is_coach_analyser(self) -> bool:
         # to be an analyser for main we have to have a loaded engine
         # and the setting coach_analyser must be True in picochess.ini
@@ -182,10 +193,13 @@ class PicoTutor:
         self.explorer_on = explorer
         self.comments_on = comments
 
-        self.stop()
+        if(
+            not (self.analyse_both_sides or self.board.turn == self.user_color)
+            or self.board.ply() <= 1
+        ):
+            # reversed logic above
+            self.pause()
 
-        if watcher or b_coach:
-            self._reset_int()
 
     def get_game_comment(self, pico_comment=PicoComment.COM_OFF, com_factor=0):
         max_range = 0
@@ -357,7 +371,12 @@ class PicoTutor:
         if you send analyse_both_sides True it means both sides will be analysed """
         logger.debug("picotutor set user color %s", i_user_color)
         self.analyse_both_sides = analyse_both_sides
-        self.pause()
+        if(
+            not (self.analyse_both_sides or self.board.turn == self.user_color)
+            or self.board.ply() <= 1
+        ):
+            # reversed logic above
+            self.pause()
         # no need to reset_color_coded_vars
 
         self.user_color = i_user_color
@@ -430,13 +449,13 @@ class PicoTutor:
                 self.pause()
         else:
             # Pico V4 can analyse both sides in HINT mode - do all steps above
-            self.pause()  # pause while evaluating
+            #self.pause()  # pause while evaluating
             try:
                 await self.eval_legal_moves()  # take snapshot of current evaluation
                 self.eval_user_move(i_uci_move)  # determine & save evaluation of user move
             except IndexError:
                 logger.debug("program internal error - no move pushed before evaluation attempt")
-            self.start()
+            await self.start()
 
 
 
@@ -694,7 +713,7 @@ class PicoTutor:
         if self.best_info[self.board.turn]:
             best_score = PicoTutor._eval_pv_list(self.user_color, self.best_info[self.board.turn], self.best_moves[self.board.turn])
             if self.best_moves[self.board.turn]:
-                self.best_moves[self.board.turn].sort(key=self.sort_score, reverse=True)
+                # self.best_moves[self.board.turn].sort(key=self.sort_score, reverse=True)
                 # collect possible good alternative moves
                 for pv_key, move, score, mate in self.best_moves[self.board.turn]:
                     if move:
@@ -703,7 +722,7 @@ class PicoTutor:
                             self.alt_best_moves[self.board.turn].append(move)
         if self.obvious_info[self.board.turn]:
             PicoTutor._eval_pv_list(self.user_color, self.obvious_info[self.board.turn], self.obvious_moves[self.board.turn])
-            self.obvious_moves[self.board.turn].sort(key=self.sort_score, reverse=True)
+            # self.obvious_moves[self.board.turn].sort(key=self.sort_score, reverse=True)
         self.log_pv_lists(long_version=True) # debug only
 
     async def get_analysis(self) -> dict:
