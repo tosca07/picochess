@@ -2284,7 +2284,7 @@ async def main() -> None:
                         info_list: list[chess.engine.InfoDict] = result.get("best")
                         if info_list:
                             info = info_list[0]  # pv first
-                            logger.debug("we got picotutor best move!")
+                            # logger.debug("we got picotutor best move!")
                             self.debug_pv_info(info)
             else:
                 # get info from playing engine
