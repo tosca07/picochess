@@ -202,16 +202,17 @@ class ContinuousAnalysis:
         self.limit_reached = False  # True when depth limit reached for position
         while self._running:
             try:
-                if self.limit_reached:
-                    if debug_once_limit:
-                        logger.debug("%s ContinuousAnalyser analysis limited", self.whoami)
-                        debug_once_limit = False  # dont flood log
-                    await asyncio.sleep(self.delay * 2)
-                    continue
                 if not self._game_analysable(self.game):
                     if debug_once_game:
                         logger.debug("%s ContinuousAnalyser no game to analyse", self.whoami)
                         debug_once_game = False  # dont flood log
+                    await asyncio.sleep(self.delay * 2)
+                    continue
+                # important to check limit AND that game is still same - bug fix 13.4.2025
+                if self.limit_reached and self.get_fen() == self.game.fen():
+                    if debug_once_limit:
+                        logger.debug("%s ContinuousAnalyser analysis limited", self.whoami)
+                        debug_once_limit = False  # dont flood log
                     await asyncio.sleep(self.delay * 2)
                     continue
                 # new position - start with new current_game and empty data
@@ -617,8 +618,10 @@ class UciEngine(object):
         if self.analyser.is_running():
             if game.fen() != self.analyser.get_fen():
                 await self.analyser.update_game(game)  # new position
+                logger.debug("new analysis position")
             else:
                 result = True  # was running - results to be expected
+                logger.debug("continue with old analysis position")
         else:
             if self.engine:
                 async with self.engine_lock:
