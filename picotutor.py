@@ -719,7 +719,7 @@ class PicoTutor:
         if self.best_info[self.board.turn]:
             best_score = PicoTutor._eval_pv_list(self.board.turn, self.best_info[self.board.turn], self.best_moves[self.board.turn])
             if self.best_moves[self.board.turn]:
-                # self.best_moves[self.board.turn].sort(key=self.sort_score, reverse=True)
+                self.best_moves[self.board.turn].sort(key=self.sort_score, reverse=True)
                 # collect possible good alternative moves
                 for pv_key, move, score, mate in self.best_moves[self.board.turn]:
                     if move:
@@ -728,7 +728,7 @@ class PicoTutor:
                             self.alt_best_moves[self.board.turn].append(move)
         if self.obvious_info[self.board.turn]:
             PicoTutor._eval_pv_list(self.board.turn, self.obvious_info[self.board.turn], self.obvious_moves[self.board.turn])
-            # self.obvious_moves[self.board.turn].sort(key=self.sort_score, reverse=True)
+            self.obvious_moves[self.board.turn].sort(key=self.sort_score, reverse=True)
         self.log_pv_lists(long_version=True) # debug only
 
     async def get_analysis(self) -> dict:
