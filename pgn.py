@@ -510,13 +510,15 @@ class PgnDisplay(DisplayMsg):
                         comment = PicoTutor.nag_to_symbol(nag) # back to !!, ! etc
                         if "score" in value:
                             comment += " Score: " + str(value["score"])
+                        if "CPL" in value:
+                            comment += " CPL: " + str(value["CPL"])
+                        if "deep_low_diff" in value:
+                            comment += " DS: " + str(value.get("deep_low_diff"))
                         if(
                             nag in (chess.pgn.NAG_BLUNDER, chess.pgn.NAG_MISTAKE, chess.pgn.NAG_DUBIOUS_MOVE)
                         ):
                             if "best_move" in value:
                                 comment += " Best: " + value["best_move"]
-                            if "LCP" in value:
-                                comment += " CPL: " + str(value["LCP"])
                         node.comment = comment
                     else:
                         logger.debug("strange, move %s-%s picotutor eval mismatch", pgn_move.uci(), user_move.uci())

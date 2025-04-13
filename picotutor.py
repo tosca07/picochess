@@ -796,9 +796,9 @@ class PicoTutor:
         if approximations_in_use:
             logger.debug("approximations in use - only evaluating ? and ??")
             logger.debug("current_pv=%s low_pv=%s", current_pv, low_pv)
-            logger.debug("approximated minimum LCP: %d for move %s", best_deep_diff, c_move_str)
+            logger.debug("approximated minimum CPL: %d for move %s", best_deep_diff, c_move_str)
         else:
-            logger.debug("LCP: %d for move %s", best_deep_diff, c_move_str)
+            logger.debug("CPL: %d for move %s", best_deep_diff, c_move_str)
             logger.debug("deep_low_diff = %d", deep_low_diff)
         if before_score:
             score_hist_diff = current_score - before_score
@@ -891,7 +891,7 @@ class PicoTutor:
             e_value["nag"] = PicoTutor.symbol_to_nag(eval_string)
             if current_pv:  # user move identified, not approximated
                 e_value["score"] = current_score # eval score
-                e_value["LCP"] = best_deep_diff  # lost centipawns
+                e_value["CPL"] = best_deep_diff  # lost centipawns
                 if low_pv:  # low also identified, needs both current AND low
                     e_value["deep_low_diff"] = deep_low_diff # Cambridge delta S
                 if before_score:  # not approximated, need both current AND history
@@ -1051,7 +1051,7 @@ class PicoTutor:
                 best_move_str = value.get("best_move", "")
                 nag_str = PicoTutor.nag_to_symbol(value.get("nag"))
                 eval_score = " Score: " + str(value.get("score")) if "score" in value else ""
-                lcp_str = " LCP: " + str(value.get("LCP")) if "LCP" in value else ""
+                lcp_str = " CPL: " + str(value.get("CPL")) if "CPL" in value else ""
                 diff_str = " DS: " + str(value.get("deep_low_diff")) if "deep_low_diff" in value else ""
                 hist_str = " hist: " + str(value.get("score_hist_diff")) if "score_hist_diff" in value else ""
                 logger.debug("%s%s {best was %s%s%s%s%s}", move_str, nag_str, best_move_str, eval_score, lcp_str, diff_str, hist_str)
