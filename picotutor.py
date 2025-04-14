@@ -449,7 +449,6 @@ class PicoTutor:
                 self.pause()
         else:
             # Pico V4 can analyse both sides in HINT mode - do all steps above
-            #self.pause()  # pause while evaluating
             try:
                 await self.eval_legal_moves()  # take snapshot of current evaluation
                 self.eval_user_move(i_uci_move)  # determine & save evaluation of user move
@@ -729,7 +728,7 @@ class PicoTutor:
         if self.obvious_info[self.board.turn]:
             PicoTutor._eval_pv_list(self.board.turn, self.obvious_info[self.board.turn], self.obvious_moves[self.board.turn])
             self.obvious_moves[self.board.turn].sort(key=self.sort_score, reverse=True)
-        self.log_pv_lists(long_version=True) # debug only
+        self.log_pv_lists() # debug only
 
     async def get_analysis(self) -> dict:
         """get best move info if exists - during user thinking"""
