@@ -1361,9 +1361,9 @@ async def main() -> None:
             if not l_error:
                 if self.picotutor_mode():
                     if self.state.best_move_posted:
-                        await self.state.picotutor.pop_last_move()
+                        await self.state.picotutor.pop_last_move(self.state.game)
                         self.state.best_move_posted = False
-                    await self.state.picotutor.pop_last_move()
+                    await self.state.picotutor.pop_last_move(self.state.game)
                 self.state.done_computer_fen = None
                 self.state.done_move = self.state.pb_move = chess.Move.null()
                 self.state.searchmoves.reset()
@@ -1531,9 +1531,9 @@ async def main() -> None:
                         self.state.game.pop()
                         if self.picotutor_mode():
                             if self.state.best_move_posted:
-                                await self.state.picotutor.pop_last_move()  # bestmove already sent to tutor
+                                await self.state.picotutor.pop_last_move(self.state.game)  # bestmove already sent to tutor
                                 self.state.best_move_posted = False
-                            await self.state.picotutor.pop_last_move()  # no switch of sides
+                            await self.state.picotutor.pop_last_move(self.state.game)  # no switch of sides
                         logger.info("user move in computer turn, reverting to: %s", self.state.game.fen())
                     elif self.state.done_computer_fen:
                         self.state.done_computer_fen = None
@@ -1541,9 +1541,9 @@ async def main() -> None:
                         self.state.game.pop()
                         if self.picotutor_mode():
                             if self.state.best_move_posted:
-                                await self.state.picotutor.pop_last_move()  # bestmove already sent to tutor
+                                await self.state.picotutor.pop_last_move(self.state.game)  # bestmove already sent to tutor
                                 self.state.best_move_posted = False
-                            await self.state.picotutor.pop_last_move()  # no switch of sides
+                            await self.state.picotutor.pop_last_move(self.state.game)  # no switch of sides
                         logger.info(
                             "user move while computer move is displayed, reverting to: %s",
                             self.state.game.fen(),
@@ -1556,9 +1556,9 @@ async def main() -> None:
                         self.state.game.pop()
                         if self.picotutor_mode():
                             if self.state.best_move_posted:
-                                await self.state.picotutor.pop_last_move()  # bestmove already sent to tutor
+                                await self.state.picotutor.pop_last_move(self.state.game)  # bestmove already sent to tutor
                                 self.state.best_move_posted = False
-                            await self.state.picotutor.pop_last_move()
+                            await self.state.picotutor.pop_last_move(self.state.game)
                         logger.info("user move in remote turn, reverting to: %s", self.state.game.fen())
                     elif self.state.done_computer_fen:
                         self.state.done_computer_fen = None
@@ -1566,9 +1566,9 @@ async def main() -> None:
                         self.state.game.pop()
                         if self.picotutor_mode():
                             if self.state.best_move_posted:
-                                await self.state.picotutor.pop_last_move()  # bestmove already sent to tutor
+                                await self.state.picotutor.pop_last_move(self.state.game)  # bestmove already sent to tutor
                                 self.state.best_move_posted = False
-                            await self.state.picotutor.pop_last_move()
+                            await self.state.picotutor.pop_last_move(self.state.game)
                         logger.info(
                             "user move while remote move is displayed, reverting to: %s",
                             self.state.game.fen(),
@@ -1580,9 +1580,9 @@ async def main() -> None:
                     self.state.game.pop()
                     if self.picotutor_mode():
                         if self.state.best_move_posted:
-                            await self.state.picotutor.pop_last_move()  # bestmove already sent to tutor
+                            await self.state.picotutor.pop_last_move(self.state.game)  # bestmove already sent to tutor
                             self.state.best_move_posted = False
-                        await self.state.picotutor.pop_last_move()
+                        await self.state.picotutor.pop_last_move(self.state.game)
                         # just to be sure set fen pos.
                         await self.state.picotutor.set_position(self.state.game)
                         if self.state.play_mode == PlayMode.USER_BLACK:
@@ -1887,9 +1887,9 @@ async def main() -> None:
 
                                 if self.picotutor_mode():
                                     if self.state.best_move_posted:  # molli computer move already sent to tutor!
-                                        await self.state.picotutor.pop_last_move()
+                                        await self.state.picotutor.pop_last_move(self.state.game)
                                         self.state.best_move_posted = False
-                                    await self.state.picotutor.pop_last_move()
+                                    await self.state.picotutor.pop_last_move(self.state.game)
 
                             # its a complete new pos, delete saved values
                             self.state.done_computer_fen = None
@@ -2018,7 +2018,7 @@ async def main() -> None:
                 if self.picotutor_mode() and not self.state.position_mode:
                     l_mate = ""
                     t_hint_move = chess.Move.null()
-                    valid = await self.state.picotutor.push_move(move)
+                    valid = await self.state.picotutor.push_move(move, self.state.game)
                     # get evalutaion result and give user feedback
                     if self.state.dgtmenu.get_picowatcher():
                         if valid:
@@ -3645,7 +3645,7 @@ async def main() -> None:
                         )
                         if not self.state.check_game_state():
                             if self.picotutor_mode():
-                                await self.state.picotutor.pop_last_move()
+                                await self.state.picotutor.pop_last_move(self.state.game)
                             await self.think(
                                 Message.ALTERNATIVE_MOVE(game=self.state.game.copy(), play_mode=self.state.play_mode),
                                 searchlist=True,
@@ -3728,7 +3728,7 @@ async def main() -> None:
                             await self.state.picotutor.set_user_color(chess.WHITE, not self.is_engine_playing_moves())
                         if self.state.best_move_posted:
                             self.state.best_move_posted = False
-                            await self.state.picotutor.pop_last_move()
+                            await self.state.picotutor.pop_last_move(self.state.game)
 
                     self.state.legal_fens = []
 
@@ -4108,7 +4108,7 @@ async def main() -> None:
                                     else:
                                         await self.state.picotutor.set_user_color(chess.BLACK, not self.is_engine_playing_moves())
 
-                                valid = await self.state.picotutor.push_move(event.move)
+                                valid = await self.state.picotutor.push_move(event.move, game_copy)
 
                                 if not valid:
                                     await self.state.picotutor.set_position(game_copy)
