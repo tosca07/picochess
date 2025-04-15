@@ -324,22 +324,49 @@ class PicoTutor:
         else:
             return "", False
 
-    def reset(self):
-        # all history will be lost
-        self._reset_int()
-        self.board = chess.Board()
 
-    def _reset_int(self):
-        logger.debug("picotutor reset")
+    def is_same_board(self, game: chess.Board) -> bool:
+        """ main program can check if tutor game is still in sync with same move stacks"""
+        return self.board.fen() == game.fen()
+
+    def reset(self):
+        """ this is newgame reset - all is re-initialised 
+        see also set_position"""
+        # @ todo - let main program call reset_to_newgame?
+        self._reset_to_newgame()
+
+    def _reset_to_newgame(self):
+        """ reset everything - game board becomes starting position
+        analyser is stopped"""
+        self._reset_to_new_position(chess.Board(), new_game=True)
+        self.expl_start_position = True # make sure opening moves are explored
+
+
+    def _reset_to_new_position(self, game: chess.Board, new_game: bool = False):
+        """ update position and delete history - re-sync position
+        the engine analyser will be stopped so start it again if needed
+        you can indicate that this is a new game 
+        eval comments and more will reset if new_game is True"""
         self.stop()
-        self.op = []
-        self.expl_start_position = True
-        # @todo minimize situations where you have to delete history
-        # by checking through calls to set_position in main picochess?
+        if new_game:
+            self.evaluated_moves = {}  # forget evals from last game
+            logger.debug("picotutor reset to new position and newgame")
+        else:
+            logger.debug("picotutor reset to new position")
         self._reset_color_coded_vars()
+        self.board = game.copy()
+        # opening move explorer vars
+        self.op = []
+        if self.board.board_fen() == chess.STARTING_BOARD_FEN:
+            if not new_game:
+                logger.debug("strange - tutor position set to starting without newgame")
+            self.expl_start_position = True
+        else:
+            self.expl_start_position = False
+ 
 
     def _reset_color_coded_vars(self):
-        """ reset and forget all color coded variables - needs to be done on newgame """
+        """ reset and forget all color coded variables - needs to be done on new position"""
         # snapshot list of best = deep/max-ply, and obvious = shallow/low-ply
         # lists of InfoDict per color - filled in eval_legal_moves()
         self.best_info = {color: [] for color in [chess.WHITE, chess.BLACK]}
@@ -363,7 +390,6 @@ class PicoTutor:
         self.hint_move = {color: chess.Move.null() for color in [chess.WHITE, chess.BLACK]}
         # alt_best_moves are filled in eval_legal_moves()
         self.alt_best_moves = {color: [] for color in [chess.WHITE, chess.BLACK]}
-        self.evaluated_moves = {}
 
 
     async def set_user_color(self, i_user_color, analyse_both_sides: bool):
@@ -389,34 +415,18 @@ class PicoTutor:
     def get_user_color(self):
         return self.user_color
 
-    async def set_position(self, i_fen, i_turn=chess.WHITE, i_ignore_expl=False):
-        logger.debug("set_position called and causes reset")
-        self.reset()  # @todo - only call this when game changes
-        self.board = chess.Board(i_fen)
-        chess.Board.turn = i_turn
-
-        if i_ignore_expl:
-            fen = self.board.board_fen()
-            if fen == chess.STARTING_BOARD_FEN:
-                self.expl_start_position = True
-            else:
-                self.expl_start_position = False
+    async def set_position(self, game: chess.Board, new_game: bool = False):
+        """ main calls this to re-set position to same as main
+        this re-synchronizes the main chess board with tutors own
+        it is not a newgame - for newgame call reset or send new_game True"""
+        logger.debug("set_position called")
+        self._reset_to_new_position(game, new_game)
 
         if not (self.coach_on or self.watcher_on):
             return
 
-        # below code probably have no effect...
-        # caller must call set_color to start analysis
-        if(
-            (self.analyse_both_sides or self.board.turn == self.user_color)
-            and self.board.ply() > 1
-        ):
-            # if it is user player's turn then start analyse engine
-            # otherwise it is computer opponents turn and analysis engine
-            # should be paused
-            await self.start()
-        else:
-            self.pause()
+        # position has changed, should analyser run or not
+        await self._start_or_stop_as_needed()
 
     async def push_move(self, i_uci_move: chess.Move) -> bool:
         """inform picotutor that a board move was made"""
@@ -464,24 +474,23 @@ class PicoTutor:
     def _update_internal_history_after_pop(self, poped_move: chess.Move) -> bool:
         """return True if sync is ok after pop = keep history"""
         result = True
-        if self.board.turn == self.user_color:
-            # need to pop user move
-            try:
-                pv_key, move, score, mate = self.best_history[self.board.turn][-1]
-                if move == poped_move:
-                    self.best_history[self.board.turn].pop()
-                else:
-                    result = False
-                    logger.debug("picotutor pop best move not in sync")
-                pv_key, move, score, mate = self.obvious_history[self.board.turn][-1]
-                if move == poped_move:
-                    self.obvious_history[self.board.turn].pop()
-                else:
-                    result = False
-                    logger.debug("picotutor pop obvious move not in sync")
-            except IndexError:
+        # in new colour-coded pico V4 we pop both colours
+        try:
+            pv_key, move, score, mate = self.best_history[self.board.turn][-1]
+            if move == poped_move:
+                self.best_history[self.board.turn].pop()
+            else:
                 result = False
-                logger.debug("picotutor no obvious move to pop - not in sync")
+                logger.warning("picotutor pop best move not in sync")
+            pv_key, move, score, mate = self.obvious_history[self.board.turn][-1]
+            if move == poped_move:
+                self.obvious_history[self.board.turn].pop()
+            else:
+                result = False
+                logger.debug("picotutor pop obvious move not in sync")
+        except IndexError:
+            result = False
+            logger.debug("picotutor no move history to pop from")
         return result
 
     async def _update_internal_state_after_pop(self, poped_move: chess.Move) -> bool:
@@ -517,8 +526,7 @@ class PicoTutor:
             result = await self._update_internal_state_after_pop(poped_move)
             if not result:
                 logger.debug("picotutor pop move not in sync - erasing history")
-                self.best_moves = {color: [] for color in [chess.WHITE, chess.BLACK]}
-                self.obvious_moves = {color: [] for color in [chess.WHITE, chess.BLACK]}
+                self._reset_color_coded_vars()
 
         self.log_sync_info()  # debug only
         return poped_move
@@ -557,6 +565,20 @@ class PicoTutor:
     def stop(self):
         if self.engine:
             self.engine.stop()
+
+
+    async def _start_or_stop_as_needed(self):
+        """start or stop analyser as needed"""
+        if(
+            (self.analyse_both_sides or self.board.turn == self.user_color)
+            and self.board.ply() > 1
+        ):
+            # if it is user player's turn then start analyse engine
+            # otherwise it is computer opponents turn and analysis engine
+            # should be paused
+            await self.start()
+        else:
+            self.pause()
 
     def log_sync_info(self):
         """logging help to check if picotutor and main picochess are in sync"""

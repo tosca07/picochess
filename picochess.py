@@ -1253,8 +1253,7 @@ async def main() -> None:
                 self.state.legal_fens_after_cmove = []
                 self.state.last_legal_fens = []
                 if self.picotutor_mode():
-                    self.state.picotutor.reset()
-                    await self.state.picotutor.set_position(self.state.game.fen(), i_turn=self.state.game.turn)
+                    await self.state.picotutor.set_position(self.state.game, new_game=True)
                     if self.state.play_mode == PlayMode.USER_BLACK:
                         await self.state.picotutor.set_user_color(chess.BLACK, not self.is_engine_playing_moves())
                     else:
@@ -1585,8 +1584,7 @@ async def main() -> None:
                             self.state.best_move_posted = False
                         await self.state.picotutor.pop_last_move()
                         # just to be sure set fen pos.
-                        game_copy = copy.deepcopy(self.state.game)
-                        await self.state.picotutor.set_position(game_copy.fen(), i_turn=game_copy.turn)
+                        await self.state.picotutor.set_position(self.state.game)
                         if self.state.play_mode == PlayMode.USER_BLACK:
                             await self.state.picotutor.set_user_color(chess.BLACK, not self.is_engine_playing_moves())
                         else:
@@ -1684,12 +1682,9 @@ async def main() -> None:
                 game_end = self.state.check_game_state()
                 valid = True
                 if self.picotutor_mode():
-                    # @todo why do we pop a picotutor move here?
-                    await self.state.picotutor.pop_last_move()
-                    valid = await self.state.picotutor.push_move(self.state.done_move)
+                    valid = await self.state.picotutor.is_same_board(self.state.game)
                     if not valid:
-                        self.state.picotutor.reset()
-                        await self.state.picotutor.set_position(self.state.game.fen(), i_turn=self.state.game.turn)
+                        await self.state.picotutor.set_position(self.state.game)
 
                 if game_end:
                     self.state.legal_fens = []
@@ -2031,7 +2026,7 @@ async def main() -> None:
                         else:
                             # invalid move from tutor side!? Something went wrong
                             eval_str = "ER"
-                            await self.state.picotutor.set_position(self.state.game.fen(), i_turn=self.state.game.turn)
+                            await self.state.picotutor.set_position(self.state.game)
                             if self.state.play_mode == PlayMode.USER_BLACK:
                                 await self.state.picotutor.set_user_color(chess.BLACK, not self.is_engine_playing_moves())
                             else:
@@ -2601,7 +2596,7 @@ async def main() -> None:
 
             # game state should be done now, start picotutor
             if self.picotutor_mode():
-                await self.state.picotutor.set_position(self.state.game.fen(), i_turn=self.state.game.turn)
+                await self.state.picotutor.set_position(self.state.game, new_game=True)
                 if self.state.play_mode == PlayMode.USER_BLACK:
                     await self.state.picotutor.set_user_color(chess.BLACK, not self.is_engine_playing_moves())
                 else:
@@ -3291,9 +3286,8 @@ async def main() -> None:
                 self.state.game_declared = False
 
                 if self.picotutor_mode():
-                    self.state.picotutor.reset()
                     await self.state.picotutor.set_position(
-                        self.state.game.fen(), i_turn=self.state.game.turn, i_ignore_expl=True
+                        self.state.game, new_game=True
                     )
                     if self.state.play_mode == PlayMode.USER_BLACK:
                         await self.state.picotutor.set_user_color(chess.BLACK, not self.is_engine_playing_moves())
@@ -4117,7 +4111,7 @@ async def main() -> None:
                                 valid = await self.state.picotutor.push_move(event.move)
 
                                 if not valid:
-                                    await self.state.picotutor.set_position(game_copy.fen(), i_turn=game_copy.turn)
+                                    await self.state.picotutor.set_position(game_copy)
 
                                     if self.state.play_mode == PlayMode.USER_BLACK:
                                         await self.state.picotutor.set_user_color(chess.BLACK, not self.is_engine_playing_moves())
@@ -4367,7 +4361,8 @@ async def main() -> None:
                 )
                 if event.picowatcher:
                     self.state.flag_picotutor = True
-                    await self.state.picotutor.set_position(self.state.game.fen(), i_turn=self.state.game.turn)
+                    # @ todo - why do we need to re-set position in tutor?
+                    await self.state.picotutor.set_position(self.state.game)
                     if self.state.play_mode == PlayMode.USER_BLACK:
                         await self.state.picotutor.set_user_color(chess.BLACK, not self.is_engine_playing_moves())
                     else:
@@ -4393,7 +4388,8 @@ async def main() -> None:
 
                 if event.picocoach != PicoCoach.COACH_OFF:
                     self.state.flag_picotutor = True
-                    await self.state.picotutor.set_position(self.state.game.fen(), i_turn=self.state.game.turn)
+                    # @ todo - why do we need to set tutor pos here?
+                    await self.state.picotutor.set_position(self.state.game)
                     if self.state.play_mode == PlayMode.USER_BLACK:
                         await self.state.picotutor.set_user_color(chess.BLACK, not self.is_engine_playing_moves())
                     else:
