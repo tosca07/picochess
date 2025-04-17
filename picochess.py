@@ -1023,7 +1023,8 @@ async def main() -> None:
                 loop=self.loop,
                 i_depth=depth,
             )
-            self.state.picotutor.set_status(
+            # @ todo first init status should be set in init above
+            await self.state.picotutor.set_status(
                 self.state.dgtmenu.get_picowatcher(),
                 self.state.dgtmenu.get_picocoach(),
                 self.state.dgtmenu.get_picoexplorer(),
@@ -1685,6 +1686,10 @@ async def main() -> None:
                     valid = await self.state.picotutor.is_same_board(self.state.game)
                     if not valid:
                         await self.state.picotutor.set_position(self.state.game)
+                        if self.state.play_mode == PlayMode.USER_BLACK:
+                            await self.state.picotutor.set_user_color(chess.BLACK, not self.is_engine_playing_moves())
+                        else:
+                            await self.state.picotutor.set_user_color(chess.WHITE, not self.is_engine_playing_moves())
 
                 if game_end:
                     self.state.legal_fens = []
@@ -2783,7 +2788,7 @@ async def main() -> None:
             await self.state.stop_clock()
             await DisplayMsg.show(Message.EXIT_MENU())
 
-        def engine_mode(self):
+        async def engine_mode(self):
             """call when engine mode is changed"""
             if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
                 # optimisation, dont ask for ponder unless needed
@@ -2794,26 +2799,26 @@ async def main() -> None:
                 else:
                     self.background_analyse_timer.stop()  # Normal mode no analysis
                 # mode might have changed back to playing, activate tutor
-                self.state.picotutor.set_status(
+                await self.state.picotutor.set_status(
                     self.state.dgtmenu.get_picowatcher(),
                     self.state.dgtmenu.get_picocoach(),
                     self.state.dgtmenu.get_picoexplorer(),
                     self.state.dgtmenu.get_picocomment(),
                 )
                 if self.state.flag_picotutor:
-                    self.state.picotutor.set_mode(not self.is_engine_playing_moves())  # always False here
+                    await self.state.picotutor.set_mode(not self.is_engine_playing_moves())  # always False here
             elif self.state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
                 self.engine.set_mode()
                 self.background_analyse_timer.start()  # permanent brain in analysis mode
                 # Pico v4 allow picotutor to run also when watching
-                self.state.picotutor.set_status(
+                await self.state.picotutor.set_status(
                     self.state.dgtmenu.get_picowatcher(),
                     self.state.dgtmenu.get_picocoach(),
                     self.state.dgtmenu.get_picoexplorer(),
                     self.state.dgtmenu.get_picocomment(),
                 )
                 if self.state.flag_picotutor:
-                    self.state.picotutor.set_mode(True)
+                    await self.state.picotutor.set_mode(True)
 
         def remote_engine_mode(self):
             if "remote" in self.state.engine_file:
@@ -3109,7 +3114,7 @@ async def main() -> None:
                 else:
                     self.engine.newgame(self.state.game.copy())
 
-                self.engine_mode()
+                await self.engine_mode()
 
                 if engine_fallback:
                     msg = Message.ENGINE_FAIL()
@@ -4109,10 +4114,8 @@ async def main() -> None:
                                         await self.state.picotutor.set_user_color(chess.BLACK, not self.is_engine_playing_moves())
 
                                 valid = await self.state.picotutor.push_move(event.move, game_copy)
-
                                 if not valid:
                                     await self.state.picotutor.set_position(game_copy)
-
                                     if self.state.play_mode == PlayMode.USER_BLACK:
                                         await self.state.picotutor.set_user_color(chess.BLACK, not self.is_engine_playing_moves())
                                     else:
@@ -4314,7 +4317,7 @@ async def main() -> None:
                         self.state.newgame_happened = False
                     await self.stop_search_and_clock()
                     self.state.interaction_mode = event.mode
-                    self.engine_mode()
+                    await self.engine_mode()
                     msg = Message.INTERACTION_MODE(mode=event.mode, mode_text=event.mode_text, show_ok=event.show_ok)
                     await self.set_wait_state(msg)  # dont clear searchmoves here
 
@@ -4353,7 +4356,7 @@ async def main() -> None:
                 await DisplayMsg.show(Message.ALTMOVES(altmoves=event.altmoves))
 
             elif isinstance(event, Event.PICOWATCHER):
-                self.state.picotutor.set_status(
+                await self.state.picotutor.set_status(
                     self.state.dgtmenu.get_picowatcher(),
                     self.state.dgtmenu.get_picocoach(),
                     self.state.dgtmenu.get_picoexplorer(),
@@ -4375,11 +4378,11 @@ async def main() -> None:
                     self.state.flag_picotutor = False
 
                 if self.state.flag_picotutor:
-                    self.state.picotutor.set_mode(not self.is_engine_playing_moves())
+                    await self.state.picotutor.set_mode(not self.is_engine_playing_moves())
                 await DisplayMsg.show(Message.PICOWATCHER(picowatcher=event.picowatcher))
 
             elif isinstance(event, Event.PICOCOACH):
-                self.state.picotutor.set_status(
+                await self.state.picotutor.set_status(
                     self.state.dgtmenu.get_picowatcher(),
                     self.state.dgtmenu.get_picocoach(),
                     self.state.dgtmenu.get_picoexplorer(),
@@ -4402,7 +4405,7 @@ async def main() -> None:
                     self.state.flag_picotutor = False
 
                 if self.state.flag_picotutor:
-                    self.state.picotutor.set_mode(not self.is_engine_playing_moves())
+                    await self.state.picotutor.set_mode(not self.is_engine_playing_moves())
                 if self.state.dgtmenu.get_picocoach() == PicoCoach.COACH_OFF:
                     await DisplayMsg.show(Message.PICOCOACH(picocoach=False))
                 elif self.state.dgtmenu.get_picocoach() == PicoCoach.COACH_ON and event.picocoach != 2:
@@ -4415,7 +4418,7 @@ async def main() -> None:
                     self.call_pico_coach()
 
             elif isinstance(event, Event.PICOEXPLORER):
-                self.state.picotutor.set_status(
+                await self.state.picotutor.set_status(
                     self.state.dgtmenu.get_picowatcher(),
                     self.state.dgtmenu.get_picocoach(),
                     self.state.dgtmenu.get_picoexplorer(),
@@ -4432,7 +4435,7 @@ async def main() -> None:
                         self.state.flag_picotutor = False
 
                 if self.state.flag_picotutor:
-                    self.state.picotutor.set_mode(not self.is_engine_playing_moves())
+                    await self.state.picotutor.set_mode(not self.is_engine_playing_moves())
                 await DisplayMsg.show(Message.PICOEXPLORER(picoexplorer=event.picoexplorer))
 
             elif isinstance(event, Event.RSPEED):
@@ -4492,7 +4495,7 @@ async def main() -> None:
                     self.state.last_legal_fens = []
                     self.state.legal_fens_after_cmove = []
                     self.is_out_of_time_already = False
-                    self.engine_mode()
+                    await self.engine_mode()
                     await DisplayMsg.show(Message.RSPEED(rspeed=event.rspeed))
                     await self.update_elo_display()
 

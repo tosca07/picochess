@@ -138,16 +138,12 @@ class PicoTutor:
         if self.engine is None:
             logger.debug("Engine loading failed in Picotutor")
 
-    def set_mode(self, analyse_both_sides: bool):
+    async def set_mode(self, analyse_both_sides: bool):
         """ normally analyse_both_sides is False but if True
             both sides will be analysed """
-        self.analyse_both_sides = analyse_both_sides
-        if(
-            not (self.analyse_both_sides or self.board.turn == self.user_color)
-            or self.board.ply() <= 1
-        ):
-            # reversed logic above
-            self.pause()
+        if self.analyse_both_sides != analyse_both_sides:
+            self.analyse_both_sides = analyse_both_sides
+            await self._start_or_stop_as_needed()
 
     def is_coach_analyser(self) -> bool:
         # to be an analyser for main we have to have a loaded engine
@@ -182,7 +178,7 @@ class PicoTutor:
         else:
             self.board = chess.Board()  # starting position if no other set_position command comes
 
-    def set_status(self, watcher=False, coach=PicoCoach.COACH_OFF, explorer=False, comments=False):
+    async def set_status(self, watcher=False, coach=PicoCoach.COACH_OFF, explorer=False, comments=False):
         if coach == PicoCoach.COACH_OFF:
             b_coach = False
         else:
@@ -192,14 +188,8 @@ class PicoTutor:
         self.coach_on = b_coach
         self.explorer_on = explorer
         self.comments_on = comments
-
-        if(
-            not (self.analyse_both_sides or self.board.turn == self.user_color)
-            or self.board.ply() <= 1
-        ):
-            # reversed logic above
-            self.pause()
-
+        # @ todo - check if something changed before calling
+        await self._start_or_stop_as_needed()
 
     def get_game_comment(self, pico_comment=PicoComment.COM_OFF, com_factor=0):
         max_range = 0
@@ -374,7 +364,7 @@ class PicoTutor:
             self.stop() # only stop analysing if its wrong game
             self.board = game.copy()
         self._reset_color_coded_vars()  # all has to go? analysis starts over?
-        self.op = []
+        # opening move history should be ok, so no self.op = []
 
 
     def _reset_color_coded_vars(self):
@@ -408,21 +398,14 @@ class PicoTutor:
         """ set the user color to analyse moves for, normally engine is playing the other side
         if you send analyse_both_sides True it means both sides will be analysed """
         logger.debug("picotutor set user color %s", i_user_color)
-        self.analyse_both_sides = analyse_both_sides
-        if(
-            not (self.analyse_both_sides or self.board.turn == self.user_color)
-            or self.board.ply() <= 1
-        ):
-            # reversed logic above
-            self.pause()
-        # no need to reset_color_coded_vars
-
-        self.user_color = i_user_color
-        if(
-            (self.analyse_both_sides or self.user_color == self.board.turn)
-            and self.board.ply() > 1
-        ):
-            await self.start()
+        if self.user_color != i_user_color or self.analyse_both_sides != analyse_both_sides:
+            # if new user colour and we are not going to analyse both sides
+            # one history colour is going to become old and obsolete
+            # but pop_user_move will detect it and delete history
+            self.user_color = i_user_color
+            self.analyse_both_sides = analyse_both_sides
+            # no need to reset_color_coded_vars
+            await self._start_or_stop_as_needed()
 
     def get_user_color(self):
         return self.user_color
@@ -436,9 +419,9 @@ class PicoTutor:
 
         if not (self.coach_on or self.watcher_on):
             return
-
-        # position has changed, should analyser run or not
-        await self._start_or_stop_as_needed()
+        # at the moment pico main always calls set_user_color after this
+        # therefore no self._start_or_stop_as_needed()
+        # @ todo: combine set_colour into this call
 
     async def push_move(self, i_uci_move: chess.Move, game: chess.Board) -> bool:
         """inform picotutor that a board move was made
@@ -469,7 +452,7 @@ class PicoTutor:
                     self.eval_user_move(i_uci_move)  # determine & save evaluation of user move
                 except IndexError:
                     logger.debug("program internal error - no move pushed before evaluation attempt")
-                self.pause()
+                self.stop()
         else:
             # Pico V4 can analyse both sides in HINT mode - do all steps above
             try:
@@ -483,32 +466,38 @@ class PicoTutor:
         return True
 
     def _update_internal_history_after_pop(self, poped_move: chess.Move) -> bool:
-        """return True if sync is ok after pop = keep history"""
+        """return True if history sync with board is ok after pop"""
         result = True
         if self.analyse_both_sides or self.board.turn == self.user_color:
             # need to pop user move - this will fail if game starts in
             # hint/ANALYSIS mode and continues as NORMAL, BRAIN etc
-            # part of the history will have move for both sides, part will not
+            # part of the history has move for both sides, part has not
+
+            # we have already poped move - turn coding need to be reversed
+            if self.board.turn == chess.WHITE:
+                turn = chess.BLACK
+            else:
+                turn = chess.WHITE
             try:
-                pv_key, move, score, mate = self.best_history[self.board.turn][-1]
+                pv_key, move, score, mate = self.best_history[turn][-1]
                 if move == poped_move:
-                    self.best_history[self.board.turn].pop()
+                    self.best_history[turn].pop()
                 else:
                     result = False
-                    logger.warning("picotutor pop best move not in sync")
-                pv_key, move, score, mate = self.obvious_history[self.board.turn][-1]
+                    logger.debug("picotutor pop best move not in sync - probably due to user color change")
+                pv_key, move, score, mate = self.obvious_history[turn][-1]
                 if move == poped_move:
-                    self.obvious_history[self.board.turn].pop()
+                    self.obvious_history[turn].pop()
                 else:
                     result = False
-                    logger.debug("picotutor pop obvious move not in sync")
+                    logger.debug("picotutor pop obvious move not in sync - probably due to user color change")
             except IndexError:
                 result = False
-                logger.debug("picotutor no move history to pop from")
+                logger.debug("picotutor no move history to pop from, color=%s", self.board.turn)
         return result
 
-    async def _update_internal_state_after_pop(self, poped_move: chess.Move) -> bool:
-        """return True if sync is ok after pop = keep history"""
+    def _update_internal_state_after_pop(self, poped_move: chess.Move) -> bool:
+        """return True if history sync with board is ok after pop"""
         try:
             self.op.pop()
         except IndexError:
@@ -518,39 +507,41 @@ class PicoTutor:
             return False
 
         result = self._update_internal_history_after_pop(poped_move=poped_move)
-        if(
-            (self.analyse_both_sides or self.board.turn == self.user_color)
-            and self.board.ply() > 1
-        ):
-            # if it is user player's turn then start analyse engine
-            # otherwise it is computer opponents turn and analysis engine
-            # should be paused
-            await self.start()
-        else:
-            self.pause()
         return result
 
-    async def pop_last_move(self, game: chess.Board):
-        """inform picotutor that move takeback has been done"""
+    async def pop_last_move(self, game: chess.Board) -> bool:
+        """inform picotutor that move takeback has been done
+        returns False if tutor board is out of sync
+        and caller must set_position again"""
+        result = True
         if self.board.move_stack:
             if game.fen() != self.board.fen():  # not same before pop = ok
                 poped_move = self.board.pop() # now they should be same
                 if self.board.fen() == game.fen():
-                    logger.debug("picotutor pop move %s", poped_move.uci())
-                    result = await self._update_internal_state_after_pop(poped_move)
-                    if not result:
-                        logger.debug("picotutor history not in sync - erasing history")
+                    logger.debug("picotutor pop move %s colour=%s", poped_move.uci(), self.board.turn)
+                    history_ok = self._update_internal_state_after_pop(poped_move)
+                    if not history_ok:
+                        # result is still True, boards are in sync, history is not
+                        logger.warning("picotutor eval for next move must be done without history")
                         self._reset_history_vars(game) # same game - no re-sync
                 else:
-                    logger.debug("picotutor board not in sync after pop_last_move")
+                    result = False
+                    logger.debug("picotutor board not in sync after takeback")
                     self._reset_history_vars(game)  # re-sync new game board
             else:
-                # boards have same fen already before pop
-                logger.debug("strange - picotutor board already pop_last_move")
+                # result is still True, boards have same fen already before pop
+                logger.debug("strange - picotutor board already pop last move in takeback")
         else:
-            logger.debug("picotutor board has no moves to pop - doing nothing")
-
+            logger.debug("picotutor board has no move stack in takeback - doing nothing")
+            if game.fen() != self.board.fen():
+                result = False  # why ask for pop if move stack is empty in main?
+        if result:
+            await self._start_or_stop_as_needed()  # boards in sync, keep analysing
+        else:
+            logger.warning("picotutor board out of sync after takeback move")
         self.log_sync_info()  # debug only
+        return result
+
     def get_stack(self):
         return self.board.move_stack
 
@@ -576,13 +567,9 @@ class PicoTutor:
             else:
                 logger.error("engine has terminated in picotutor?")
 
-    def pause(self):
+    def stop(self):
         # during thinking time of opponent tutor should be paused
         # after the user move has been pushed
-        if self.engine:
-            self.engine.stop()
-
-    def stop(self):
         if self.engine:
             self.engine.stop()
 
@@ -598,7 +585,16 @@ class PicoTutor:
             # should be paused
             await self.start()
         else:
-            self.pause()
+            self.stop()
+
+    def _stop_if_needed(self):
+        """ stop analyser if needed """
+        if(
+            not (self.analyse_both_sides or self.board.turn == self.user_color)
+            or self.board.ply() <= 1
+        ):
+            # reversed logic from _start_or_stop_as_needed above 
+            self.stop()
 
     def log_sync_info(self):
         """logging help to check if picotutor and main picochess are in sync"""
@@ -609,10 +605,11 @@ class PicoTutor:
             uci_moves.append(move.uci())
         logger.debug("picotutor board moves %s", uci_moves)
         hist_moves = []
-        if self.best_history[self.board.turn]:
-            for pv_key, move, score, mate in self.best_history[self.board.turn]:
-                hist_moves.append(move.uci())
-        logger.debug("picotutor history moves %s", hist_moves)
+        for turn in (chess.WHITE, chess.BLACK):
+            if self.best_history[turn]:
+                for pv_key, move, score, mate in self.best_history[turn]:
+                    hist_moves.append(move.uci())
+            logger.debug("picotutor history moves %s", hist_moves)
         self.log_eval_moves()
 
 
