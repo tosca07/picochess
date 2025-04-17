@@ -806,6 +806,8 @@ class PicoTutor:
 
         if len(self.best_history[self.board.turn]) > 1:
             before_pv, before_move, before_score, before_mate = self.best_history[self.board.turn][-2]
+            if before_pv is None:  # pv_key index - move not analysed
+                before_score = None  # history not usable, fake-move or missed
         else:
             before_score = None
         # before_pv can be None if no obvious move had been found
@@ -838,7 +840,7 @@ class PicoTutor:
         else:
             logger.debug("CPL: %d for move %s", best_deep_diff, c_move_str)
             logger.debug("deep_low_diff = %d", deep_low_diff)
-        if before_score:
+        if before_score is not None:
             score_hist_diff = current_score - before_score
             history_in_use = True
             logger.debug("score_hist_diff = %d", score_hist_diff)
