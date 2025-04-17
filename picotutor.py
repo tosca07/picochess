@@ -810,7 +810,6 @@ class PicoTutor:
                 before_score = None  # history not usable, fake-move or missed
         else:
             before_score = None
-        # before_pv can be None if no obvious move had been found
 
         # best deep engine score/move
         best_pv, best_move, best_score, best_mate = self.best_moves[self.board.turn][0]
