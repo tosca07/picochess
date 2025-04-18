@@ -364,7 +364,7 @@ class PicoTutor:
             self.stop() # only stop analysing if its wrong game
             self.board = game.copy()
         self._reset_color_coded_vars()  # all has to go? analysis starts over?
-        # opening move history should be ok, so no self.op = []
+        self.op = []  # unfortunatly pop is out of sync so we lose this
 
 
     def _reset_color_coded_vars(self):
@@ -444,6 +444,7 @@ class PicoTutor:
             if self.board.turn == self.user_color:
                 # if it is user player's turn then start analyse engine
                 if self.board.ply() > 1:
+                    self._eval_engine_move(i_uci_move)  # Pico v4 line
                     await self.start()
             else:
                 # otherwise it is computer turn and analysis to be paused
@@ -468,32 +469,27 @@ class PicoTutor:
     def _update_internal_history_after_pop(self, poped_move: chess.Move) -> bool:
         """return True if history sync with board is ok after pop"""
         result = True
-        if self.analyse_both_sides or self.board.turn == self.user_color:
-            # need to pop user move - this will fail if game starts in
-            # hint/ANALYSIS mode and continues as NORMAL, BRAIN etc
-            # part of the history has move for both sides, part has not
-
-            # we have already poped move - turn coding need to be reversed
-            if self.board.turn == chess.WHITE:
-                turn = chess.BLACK
+        # we have already poped move - turn coding need to be reversed
+        if self.board.turn == chess.WHITE:
+            turn = chess.BLACK
+        else:
+            turn = chess.WHITE
+        try:
+            pv_key, move, score, mate = self.best_history[turn][-1]
+            if move == poped_move:
+                self.best_history[turn].pop()
             else:
-                turn = chess.WHITE
-            try:
-                pv_key, move, score, mate = self.best_history[turn][-1]
-                if move == poped_move:
-                    self.best_history[turn].pop()
-                else:
-                    result = False
-                    logger.debug("picotutor pop best move not in sync - probably due to user color change")
-                pv_key, move, score, mate = self.obvious_history[turn][-1]
-                if move == poped_move:
-                    self.obvious_history[turn].pop()
-                else:
-                    result = False
-                    logger.debug("picotutor pop obvious move not in sync - probably due to user color change")
-            except IndexError:
                 result = False
-                logger.debug("picotutor no move history to pop from, color=%s", self.board.turn)
+                logger.debug("picotutor pop best move not in sync - probably due to user color change")
+            pv_key, move, score, mate = self.obvious_history[turn][-1]
+            if move == poped_move:
+                self.obvious_history[turn].pop()
+            else:
+                result = False
+                logger.debug("picotutor pop obvious move not in sync - probably due to user color change")
+        except IndexError:
+            result = False
+            logger.debug("picotutor no move history to pop from, color=%s", self.board.turn)
         return result
 
     def _update_internal_state_after_pop(self, poped_move: chess.Move) -> bool:
@@ -530,7 +526,7 @@ class PicoTutor:
                     self._reset_history_vars(game)  # re-sync new game board
             else:
                 # result is still True, boards have same fen already before pop
-                logger.debug("strange - picotutor board already pop last move in takeback")
+                logger.debug("strange - picotutor board already poped - boards are in sync")
         else:
             logger.debug("picotutor board has no move stack in takeback - doing nothing")
             if game.fen() != self.board.fen():
@@ -604,8 +600,8 @@ class PicoTutor:
         for move in moves:
             uci_moves.append(move.uci())
         logger.debug("picotutor board moves %s", uci_moves)
-        hist_moves = []
-        for turn in (chess.WHITE, chess.BLACK):
+        for turn in (chess.BLACK, chess.WHITE):
+            hist_moves = []
             if self.best_history[turn]:
                 for pv_key, move, score, mate in self.best_history[turn]:
                     hist_moves.append(move.uci())
@@ -639,6 +635,21 @@ class PicoTutor:
                     logger.debug("%s score %d mate in %d depth %d", move.uci(), score, mate, info["depth"])
                 if not long_version:
                     break
+
+    def _eval_engine_move(self, eng_move: chess.Move):
+        """add engine played move to history"""
+        # @todo we could take in engine score here and set pv_key = 0
+        # same as when user move not found in best move list in eval_user_move
+        pv_key = None  # so that we know its not found and score is wrong
+        score = mate = 0
+        # t tuple(pv_key, move, score, mate)
+        t = (pv_key, eng_move, score, mate)
+        # when a move is poped, its poped from best and obvious
+        self.best_history[self.board.turn].append(t)
+        self.obvious_history[self.board.turn].append(t)
+        # not sure following is needed but follow same logic as eval_user_move
+        self.pv_user_move = {color: [] for color in [chess.WHITE, chess.BLACK]}
+        self.pv_best_move = {color: [] for color in [chess.WHITE, chess.BLACK]}
 
     def eval_user_move(self, user_move: chess.Move):
         """add user move to self.best_history and self.obvious_history

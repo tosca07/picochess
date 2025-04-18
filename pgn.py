@@ -521,7 +521,7 @@ class PgnDisplay(DisplayMsg):
                                 comment += " Best: " + value["best_move"]
                         node.comment = comment
                     else:
-                        logger.debug("strange, move %s-%s picotutor eval mismatch", pgn_move.uci(), user_move.uci())
+                        logger.debug("skipped move %s-%s picotutor eval mismatch", pgn_move.uci(), user_move.uci())
 
     def _save_and_email_pgn(self, message):
         logger.debug("Saving game to [%s]", self.file_name)
