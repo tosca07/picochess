@@ -2249,8 +2249,8 @@ async def main() -> None:
             """
 
             while not self.engine.is_waiting():
-                await asyncio.sleep(0.05)
                 logger.warning("engine is still not waiting")
+            # @ todo - check how to do this in new chess library
             # self.engine.position(copy.deepcopy(game))
 
         def is_engine_playing_moves(self) -> bool:

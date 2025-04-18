@@ -543,14 +543,19 @@ class UciEngine(object):
             os.system("sudo pkill -9 -f mess")
 
     def stop(self):
-        """Stop background ContinuousAnalyser"""
+        """Stop background ContinuousAnalyser and/or force engine to move"""
         if self.analyser.is_running() is not None:
             self.analyser.stop()
+        if not self.is_waiting():
+            logger.debug("forcing engine to make a move")
+            # new chess lib does not have a stop call
+            self.engine.send_line("stop")
 
     def force_move(self):
-        """Force engine to move"""
+        """Force engine to move - only call this when engine not waiting"""
         if self.engine:
             logger.debug("forcing engine to make a move")
+            # new chess lib does not have a stop call
             self.engine.send_line("stop")
 
     def pause_pgn_audio(self):
