@@ -36,6 +36,7 @@ import picotutor_constants as c
 
 logger = logging.getLogger(__name__)
 
+
 class PicoTutor:
     def __init__(
         self,
@@ -52,7 +53,7 @@ class PicoTutor:
         self.user_color: chess.Color = i_player_color
         self.engine_path: str = i_engine_path
 
-        self.engine: UciEngine | None = None # Pico4 uses UciEngine, not direct chess api
+        self.engine: UciEngine | None = None  # Pico4 uses UciEngine, not direct chess api
         # snapshot list of best = deep/max-ply, and obvious = shallow/low-ply
         # lists of InfoDict per color - filled in eval_legal_moves()
         self.best_info = {color: [] for color in [chess.WHITE, chess.BLACK]}
@@ -99,7 +100,7 @@ class PicoTutor:
         self.deep_limit_depth = i_depth  # override picotutor value
         # evaluated moves keeps a memory of all non zero evaluation strings
         # it can then be used to print comments in the PGN file
-        self.evaluated_moves = {} # key=(fullmove_number, turn, move) value={}
+        self.evaluated_moves = {}  # key=(fullmove_number, turn, move) value={}
         # the following setting can be True if engine is not playing
         # or if you want to analyse also engine moves (like pgn_engine)
         self.analyse_both_sides = False  # analyse only user side as default
@@ -139,8 +140,8 @@ class PicoTutor:
             logger.debug("Engine loading failed in Picotutor")
 
     async def set_mode(self, analyse_both_sides: bool):
-        """ normally analyse_both_sides is False but if True
-            both sides will be analysed """
+        """normally analyse_both_sides is False but if True
+        both sides will be analysed"""
         if self.analyse_both_sides != analyse_both_sides:
             self.analyse_both_sides = analyse_both_sides
             await self._start_or_stop_as_needed()
@@ -314,28 +315,26 @@ class PicoTutor:
         else:
             return "", False
 
-
     def is_same_board(self, game: chess.Board) -> bool:
-        """ main program can check if tutor game is still in sync with same move stacks"""
+        """main program can check if tutor game is still in sync with same move stacks"""
         return self.board.fen() == game.fen()
 
     def reset(self):
-        """ this is newgame reset - all is re-initialised 
+        """this is newgame reset - all is re-initialised
         see also set_position"""
         # @ todo - let main program call reset_to_newgame?
         self._reset_to_newgame()
 
     def _reset_to_newgame(self):
-        """ reset everything - game board becomes starting position
+        """reset everything - game board becomes starting position
         analyser is stopped"""
         self._reset_to_new_position(chess.Board(), new_game=True)
-        self.expl_start_position = True # make sure opening moves are explored
-
+        self.expl_start_position = True  # make sure opening moves are explored
 
     def _reset_to_new_position(self, game: chess.Board, new_game: bool = False):
-        """ update position and delete history - re-sync position
+        """update position and delete history - re-sync position
         the engine analyser will be stopped, start it again if needed
-        you can indicate that this is a new game 
+        you can indicate that this is a new game
         eval comments to PGN will reset if new_game is True"""
         self.stop()
         if new_game:
@@ -354,21 +353,19 @@ class PicoTutor:
         else:
             self.expl_start_position = False
 
-
     def _reset_history_vars(self, game: chess.Board):
-        """ reset and forget history only - needed when history is out of sync
+        """reset and forget history only - needed when history is out of sync
         this is a lighter version of _reset_to_new_position
         it leaves analyser running - caller must check board sync
         if you send a different game board analyser is stopped and board copied"""
         if game.fen() != self.board.fen():
-            self.stop() # only stop analysing if its wrong game
+            self.stop()  # only stop analysing if its wrong game
             self.board = game.copy()
         self._reset_color_coded_vars()  # all has to go? analysis starts over?
         self.op = []  # unfortunatly pop is out of sync so we lose this
 
-
     def _reset_color_coded_vars(self):
-        """ reset and forget all color coded variables - needs to be done on new position"""
+        """reset and forget all color coded variables - needs to be done on new position"""
         # snapshot list of best = deep/max-ply, and obvious = shallow/low-ply
         # lists of InfoDict per color - filled in eval_legal_moves()
         self.best_info = {color: [] for color in [chess.WHITE, chess.BLACK]}
@@ -393,10 +390,9 @@ class PicoTutor:
         # alt_best_moves are filled in eval_legal_moves()
         self.alt_best_moves = {color: [] for color in [chess.WHITE, chess.BLACK]}
 
-
     async def set_user_color(self, i_user_color, analyse_both_sides: bool):
-        """ set the user color to analyse moves for, normally engine is playing the other side
-        if you send analyse_both_sides True it means both sides will be analysed """
+        """set the user color to analyse moves for, normally engine is playing the other side
+        if you send analyse_both_sides True it means both sides will be analysed"""
         logger.debug("picotutor set user color %s", i_user_color)
         if self.user_color != i_user_color or self.analyse_both_sides != analyse_both_sides:
             # if new user colour and we are not going to analyse both sides
@@ -411,7 +407,7 @@ class PicoTutor:
         return self.user_color
 
     async def set_position(self, game: chess.Board, new_game: bool = False):
-        """ main calls this to re-set position to same as main
+        """main calls this to re-set position to same as main
         this re-synchronizes the main chess board with tutors own
         it is not a newgame - for newgame call reset or send new_game True"""
         logger.debug("set_position called")
@@ -425,9 +421,9 @@ class PicoTutor:
 
     async def push_move(self, i_uci_move: chess.Move, game: chess.Board) -> bool:
         """inform picotutor that a board move was made
-           returns False if tutor board is out of sync
-           and caller must set_position again"""
-        self.op.append(self.board.san(i_uci_move)) # for opening matching
+        returns False if tutor board is out of sync
+        and caller must set_position again"""
+        self.op.append(self.board.san(i_uci_move))  # for opening matching
         self.board.push(i_uci_move)  # now boards should be in sync, check!
         if game.fen() != self.board.fen():
             logger.debug("picotutor board not in sync when pushing move %s", i_uci_move.uci())
@@ -512,14 +508,14 @@ class PicoTutor:
         result = True
         if self.board.move_stack:
             if game.fen() != self.board.fen():  # not same before pop = ok
-                poped_move = self.board.pop() # now they should be same
+                poped_move = self.board.pop()  # now they should be same
                 if self.board.fen() == game.fen():
                     logger.debug("picotutor pop move %s colour=%s", poped_move.uci(), self.board.turn)
                     history_ok = self._update_internal_state_after_pop(poped_move)
                     if not history_ok:
                         # result is still True, boards are in sync, history is not
                         logger.warning("picotutor eval for next move must be done without history")
-                        self._reset_history_vars(game) # same game - no re-sync
+                        self._reset_history_vars(game)  # same game - no re-sync
                 else:
                     result = False
                     logger.debug("picotutor board not in sync after takeback")
@@ -569,13 +565,9 @@ class PicoTutor:
         if self.engine:
             self.engine.stop()
 
-
     async def _start_or_stop_as_needed(self):
         """start or stop analyser as needed"""
-        if(
-            (self.analyse_both_sides or self.board.turn == self.user_color)
-            and self.board.ply() > 1
-        ):
+        if (self.analyse_both_sides or self.board.turn == self.user_color) and self.board.ply() > 1:
             # if it is user player's turn then start analyse engine
             # otherwise it is computer opponents turn and analysis engine
             # should be paused
@@ -584,12 +576,9 @@ class PicoTutor:
             self.stop()
 
     def _stop_if_needed(self):
-        """ stop analyser if needed """
-        if(
-            not (self.analyse_both_sides or self.board.turn == self.user_color)
-            or self.board.ply() <= 1
-        ):
-            # reversed logic from _start_or_stop_as_needed above 
+        """stop analyser if needed"""
+        if not (self.analyse_both_sides or self.board.turn == self.user_color) or self.board.ply() <= 1:
+            # reversed logic from _start_or_stop_as_needed above
             self.stop()
 
     def log_sync_info(self):
@@ -607,7 +596,6 @@ class PicoTutor:
                     hist_moves.append(move.uci())
             logger.debug("picotutor history moves %s", hist_moves)
         self.log_eval_moves()
-
 
     def log_pv_lists(self, long_version: bool = False):
         """logging help for picotutor developers"""
@@ -747,7 +735,7 @@ class PicoTutor:
         return best_score
 
     async def eval_legal_moves(self):
-        """ Update analysis information from engine analysis snapshot """
+        """Update analysis information from engine analysis snapshot"""
         # @todo check if this can throw exceptions
         if not (self.coach_on or self.watcher_on):
             return
@@ -766,7 +754,9 @@ class PicoTutor:
         self.obvious_info[self.board.turn] = result.get("low")
         self.best_info[self.board.turn] = result.get("best")
         if self.best_info[self.board.turn]:
-            best_score = PicoTutor._eval_pv_list(self.board.turn, self.best_info[self.board.turn], self.best_moves[self.board.turn])
+            best_score = PicoTutor._eval_pv_list(
+                self.board.turn, self.best_info[self.board.turn], self.best_moves[self.board.turn]
+            )
             if self.best_moves[self.board.turn]:
                 self.best_moves[self.board.turn].sort(key=self.sort_score, reverse=True)
                 # collect possible good alternative moves
@@ -776,9 +766,11 @@ class PicoTutor:
                         if diff <= 20:
                             self.alt_best_moves[self.board.turn].append(move)
         if self.obvious_info[self.board.turn]:
-            PicoTutor._eval_pv_list(self.board.turn, self.obvious_info[self.board.turn], self.obvious_moves[self.board.turn])
+            PicoTutor._eval_pv_list(
+                self.board.turn, self.obvious_info[self.board.turn], self.obvious_moves[self.board.turn]
+            )
             self.obvious_moves[self.board.turn].sort(key=self.sort_score, reverse=True)
-        self.log_pv_lists() # debug only
+        self.log_pv_lists()  # debug only
 
     async def get_analysis(self) -> dict:
         """get best move info if exists - during user thinking"""
@@ -932,7 +924,7 @@ class PicoTutor:
         # key to find evaluation later =(ply halfmove number: int, move: chess.Move)
         # not always unique if we have takeback sequence with other moves
         # should work since we evaluate all moves and remove if no evaluation
-        e_key = (self.board.ply(), current_move, self.board.turn) # halfmove key AFTER the move
+        e_key = (self.board.ply(), current_move, self.board.turn)  # halfmove key AFTER the move
         if eval_string == "":
             # due to takeback remove any possible previous evaluation
             self.evaluated_moves.pop(e_key, None)  # None prevents KeyError
@@ -940,10 +932,10 @@ class PicoTutor:
             e_value = {}  # clear possible old value
             e_value["nag"] = PicoTutor.symbol_to_nag(eval_string)
             if current_pv:  # user move identified, not approximated
-                e_value["score"] = current_score # eval score
+                e_value["score"] = current_score  # eval score
                 e_value["CPL"] = best_deep_diff  # lost centipawns
                 if low_pv:  # low also identified, needs both current AND low
-                    e_value["deep_low_diff"] = deep_low_diff # Cambridge delta S
+                    e_value["deep_low_diff"] = deep_low_diff  # Cambridge delta S
                 if before_score:  # not approximated, need both current AND history
                     e_value["score_hist_diff"] = score_hist_diff
             try:
@@ -969,12 +961,12 @@ class PicoTutor:
     def symbol_to_nag(eval_string: str) -> int:
         """convert an evaluation string like ! to NAG format like NAG_GOOD_MOVE"""
         symbol_to_nag = {
-            "!": chess.pgn.NAG_GOOD_MOVE,         # $1
-            "?": chess.pgn.NAG_MISTAKE,           # $2
-            "!!": chess.pgn.NAG_BRILLIANT_MOVE,   # $3
-            "??": chess.pgn.NAG_BLUNDER,          # $4
-            "!?": chess.pgn.NAG_SPECULATIVE_MOVE, # $5
-            "?!": chess.pgn.NAG_DUBIOUS_MOVE,     # $6
+            "!": chess.pgn.NAG_GOOD_MOVE,  # $1
+            "?": chess.pgn.NAG_MISTAKE,  # $2
+            "!!": chess.pgn.NAG_BRILLIANT_MOVE,  # $3
+            "??": chess.pgn.NAG_BLUNDER,  # $4
+            "!?": chess.pgn.NAG_SPECULATIVE_MOVE,  # $5
+            "?!": chess.pgn.NAG_DUBIOUS_MOVE,  # $6
         }
         # empty or unrecognized str becomes NAG_NULL
         return symbol_to_nag.get(eval_string, chess.pgn.NAG_NULL)
@@ -1026,8 +1018,8 @@ class PicoTutor:
     # but ply() is correct, so always take ply() first then convert to fullmove_number
     @staticmethod
     def halvmove_to_simple_fullmove(halfmove_nr: int, turn: chess.Color) -> int:
-        """ simplified method when you know turn and
-        dont care if it was first_move_black """
+        """simplified method when you know turn and
+        dont care if it was first_move_black"""
         t = PicoTutor.halfmove_to_fullmove(halfmove_nr, turn)
         return t[0]  # see tuple returned from method below
 
@@ -1045,9 +1037,9 @@ class PicoTutor:
         if known_turn is not None and known_turn != turn:
             ply = ply + 1  # add missing whites first move before converting
             turn = known_turn  # return known turn as it differs
-            first_move_black = True # inform caller that Black move first
+            first_move_black = True  # inform caller that Black move first
         else:
-            first_move_black = False # normal situation with White move first
+            first_move_black = False  # normal situation with White move first
         fullmove_nr = ply // 2  # simplest, see table above
         return fullmove_nr, turn, first_move_black
 
@@ -1062,7 +1054,7 @@ class PicoTutor:
 
     @staticmethod
     def printable_move_filler(halfmove_nr: int, turn: chess.Color) -> str:
-        """ return filler str to put in front of uci or san move str 
+        """return filler str to put in front of uci or san move str
         notice that input is halfmove_nr you get using board.ply()"""
         filler_str = str(PicoTutor.printable_fullmove(halfmove_nr, turn))
         filler_str += ". - " if turn == chess.WHITE else ". "
@@ -1070,7 +1062,7 @@ class PicoTutor:
 
     @staticmethod
     def fullmove_to_halfmove(fullmove_nr: int, turn: chess.Color, first_move_black: bool = None) -> int:
-        """ convert back from fullmove to halfmove after a move
+        """convert back from fullmove to halfmove after a move
         1. e4 = halfmove 1 = fullmove 0, 1.-e5 = halfmove 2 = fullmove 1
         Note that board.pop() does not reduce fullmove number
         To support setup position with black first move we need to know first_move_black
@@ -1080,9 +1072,9 @@ class PicoTutor:
         # for fullmove 0 and turn BLACK White has moved once, or position setup
         halfmove_nr = fullmove_nr * 2
         if turn == chess.BLACK:
-            halfmove_nr = halfmove_nr + 1 # add one halfmove after WHITE move
+            halfmove_nr = halfmove_nr + 1  # add one halfmove after WHITE move
         if first_move_black is not None and first_move_black is True and halfmove_nr > 0:
-            halfmove_nr = halfmove_nr - 1 # reduce with missing first WHITE move
+            halfmove_nr = halfmove_nr - 1  # reduce with missing first WHITE move
         return halfmove_nr
 
     def get_eval_moves(self) -> dict:
@@ -1104,13 +1096,22 @@ class PicoTutor:
                 lcp_str = " CPL: " + str(value.get("CPL")) if "CPL" in value else ""
                 diff_str = " DS: " + str(value.get("deep_low_diff")) if "deep_low_diff" in value else ""
                 hist_str = " hist: " + str(value.get("score_hist_diff")) if "score_hist_diff" in value else ""
-                logger.debug("%s%s {best was %s%s%s%s%s}", move_str, nag_str, best_move_str, eval_score, lcp_str, diff_str, hist_str)
+                logger.debug(
+                    "%s%s {best was %s%s%s%s%s}",
+                    move_str,
+                    nag_str,
+                    best_move_str,
+                    eval_score,
+                    lcp_str,
+                    diff_str,
+                    hist_str,
+                )
             except (KeyError, ValueError, AttributeError):
                 logger.debug("failed to log full list of evaluated moves in picotutor")
                 # dont care, just dont let this debug crash picotutor
 
     def get_user_move_info(self):
-        """ return the hint move and the analysed InfoDict pv array of user chosen move"""
+        """return the hint move and the analysed InfoDict pv array of user chosen move"""
         if not (self.coach_on or self.watcher_on):
             return
         # not sending self.pv_best_move as its not used?

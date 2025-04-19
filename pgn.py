@@ -490,10 +490,10 @@ class PgnDisplay(DisplayMsg):
         """get the node halfmove_nr (ply) in the game tree - 0 is like 1. e4"""
         nodes = list(game.mainline())
         if halfmove_nr - 1 < len(nodes):
-            return nodes[halfmove_nr - 1] # first halfmove index zero
+            return nodes[halfmove_nr - 1]  # first halfmove index zero
         else:
             return None
-        
+
     def add_picotutor_evaluation(self, game: chess.Board):
         """add picotutor evaluations to the game"""
         # see if we have an evaluation in picotutor
@@ -502,21 +502,19 @@ class PgnDisplay(DisplayMsg):
             for (halfmove_nr, user_move, turn), value in eval_moves.items():
                 # key=(ply halfmove number, move)
                 node = self.get_node_at_halfmove_nr(game, halfmove_nr)
-                if node: # game has this ply node
+                if node:  # game has this ply node
                     pgn_move = node.move
-                    if pgn_move == user_move and node.turn() == turn: # checksum
-                        nag = value["nag"] # $N symbol for !!, ! etc
+                    if pgn_move == user_move and node.turn() == turn:  # checksum
+                        nag = value["nag"]  # $N symbol for !!, ! etc
                         node.nags.add(nag)
-                        comment = PicoTutor.nag_to_symbol(nag) # back to !!, ! etc
+                        comment = PicoTutor.nag_to_symbol(nag)  # back to !!, ! etc
                         if "score" in value:
                             comment += " Score: " + str(value["score"])
                         if "CPL" in value:
                             comment += " CPL: " + str(value["CPL"])
                         if "deep_low_diff" in value:
                             comment += " DS: " + str(value.get("deep_low_diff"))
-                        if(
-                            nag in (chess.pgn.NAG_BLUNDER, chess.pgn.NAG_MISTAKE, chess.pgn.NAG_DUBIOUS_MOVE)
-                        ):
+                        if nag in (chess.pgn.NAG_BLUNDER, chess.pgn.NAG_MISTAKE, chess.pgn.NAG_DUBIOUS_MOVE):
                             if "best_move" in value:
                                 comment += " Best: " + value["best_move"]
                         node.comment = comment
