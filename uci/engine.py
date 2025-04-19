@@ -158,7 +158,10 @@ class ContinuousAnalysis:
     ) -> None:
         """async task to ask the engine for a move - to avoid blocking result is put in queue"""
         self._idle = False  # engine is going to be busy now
-        result = await self.engine.play(copy.deepcopy(game), limit=limit, ponder=ponder, root_moves=root_moves)
+        r_info = chess.engine.INFO_SCORE | chess.engine.INFO_PV | chess.engine.INFO_BASIC
+        result = await self.engine.play(
+            copy.deepcopy(game), limit=limit, info=r_info, ponder=ponder, root_moves=root_moves
+        )
         await result_queue.put(result)
         self._idle = True  # engine idle again
 

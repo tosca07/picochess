@@ -38,6 +38,7 @@ import platform
 import paramiko
 import chess.pgn
 import chess.polyglot
+import chess.engine
 from tornado.platform.asyncio import AsyncIOMainLoop
 from chess.engine import InfoDict, Limit
 import dgt.util
@@ -1074,10 +1075,10 @@ async def main() -> None:
                     root_moves = None
                 try:
                     result_queue = asyncio.Queue()  # engines move result
-                    engine_res = await self.engine.go(
+                    await self.engine.go(
                         time_dict=uci_dict, game=self.state.game, result_queue=result_queue, root_moves=root_moves
                     )
-                    engine_res = await result_queue.get()  # on engine error queue has None
+                    engine_res: chess.engine.PlayResult = await result_queue.get()  # on engine error its None
                     if engine_res:
                         logger.debug("engine moved %s", engine_res.move.uci)
                         if self.state.ignore_next_engine_move:
@@ -1087,6 +1088,8 @@ async def main() -> None:
                             await Observable.fire(
                                 Event.BEST_MOVE(move=engine_res.move, ponder=engine_res.ponder, inbook=False)
                             )
+                            if engine_res.info:
+                                await self.send_analyse(engine_res.info, True)  # fire PV, SCORE info, etc
                             # webplay: Event.BEST_MOVE pushes the move on display
                             # dgt board: BEST_MOVE 1) informs 2) user moves, 3) dgt event to process_fen() push
                     else:
@@ -2309,8 +2312,9 @@ async def main() -> None:
                             # logger.debug("we got picotutor best move!")
                             self.debug_pv_info(info)
             else:
-                # get info from playing engine
-                if not engine_playing_moves or user_turn:
+                # get info from analyser if user is playing both sides
+                # if engine is playing info is from PlayResult in think()
+                if not engine_playing_moves:
                     deep_kwargs = {"limit": Limit(depth=FLOAT_MAX_ANALYSIS_DEPTH)}
                     was_running = await self.engine.start_analysis(self.state.game, deep_kwargs)
                     if was_running:
@@ -2322,16 +2326,20 @@ async def main() -> None:
                                 self.debug_pv_info(info)
                             info: InfoDict = info_list[0]  # pv first
             if info:
-                await self.send_analyse(info, engine_playing_moves)
+                await self.send_analyse(info)
             return info
 
-        async def send_analyse(self, info: chess.engine.InfoDict, engine_playing_moves: bool):
+        async def send_analyse(self, info: chess.engine.InfoDict, send_next_move: bool = False):
             """send info - if engine_playing_moves use user color
-            otherwise its in analysing state and score is for turn"""
+            otherwise its in analysing state and score is for turn
+            if send_next_move is true it sends the counter move pv[1]"""
             # info is first multipv root move; send to displays
             if "pv" in info:
                 # @todo check if we really have a move list here
-                move = info.get("pv")[0]  # first move
+                if send_next_move:
+                    move = info.get("pv")[1]  # first counter move
+                else:
+                    move = info.get("pv")[0]  # first move
                 if move:
                     self.state.pb_move = move  # backward compatibility
                     await Observable.fire(Event.NEW_PV(pv=[move]))
@@ -2342,10 +2350,7 @@ async def main() -> None:
                     await Observable.fire(Event.NEW_DEPTH(depth=d))
             if "score" in info:
                 s = info["score"]
-                if engine_playing_moves:
-                    p = s.pov(self.state.get_user_color()).score()
-                else:
-                    p = s.pov(self.state.game.turn).score()
+                p = s.pov(self.state.game.turn).score()
                 if p:
                     await Observable.fire(Event.NEW_SCORE(score=p, mate=s.is_mate()))
 
@@ -2816,10 +2821,7 @@ async def main() -> None:
                 # optimisation, dont ask for ponder unless needed
                 ponder_mode = True if self.state.interaction_mode == Mode.BRAIN else False
                 self.engine.set_mode(ponder=ponder_mode)
-                if self.state.interaction_mode in (Mode.BRAIN, Mode.TRAINING):
-                    self.background_analyse_timer.start()
-                else:
-                    self.background_analyse_timer.stop()  # Normal mode no analysis
+                self.background_analyse_timer.stop()  # No permanent brain when engine plays
                 # mode might have changed back to playing, activate tutor
                 await self.state.picotutor.set_status(
                     self.state.dgtmenu.get_picowatcher(),
