@@ -1309,7 +1309,9 @@ async def main() -> None:
                         logger.debug("new play mode: %s", self.state.play_mode)
                         text = self.state.play_mode.value  # type: str
                         if self.picotutor_mode():
-                            await self.state.picotutor.set_user_color(self.state.get_user_color(), not self.is_engine_playing_moves())
+                            await self.state.picotutor.set_user_color(
+                                self.state.get_user_color(), not self.is_engine_playing_moves()
+                            )
                         await DisplayMsg.show(
                             Message.PLAY_MODE(
                                 play_mode=self.state.play_mode, play_mode_text=self.state.dgttranslate.text(text)
@@ -1532,7 +1534,9 @@ async def main() -> None:
                         self.state.game.pop()
                         if self.picotutor_mode():
                             if self.state.best_move_posted:
-                                await self.state.picotutor.pop_last_move(self.state.game)  # bestmove already sent to tutor
+                                await self.state.picotutor.pop_last_move(
+                                    self.state.game
+                                )  # bestmove already sent to tutor
                                 self.state.best_move_posted = False
                             await self.state.picotutor.pop_last_move(self.state.game)  # no switch of sides
                         logger.info("user move in computer turn, reverting to: %s", self.state.game.fen())
@@ -1542,7 +1546,9 @@ async def main() -> None:
                         self.state.game.pop()
                         if self.picotutor_mode():
                             if self.state.best_move_posted:
-                                await self.state.picotutor.pop_last_move(self.state.game)  # bestmove already sent to tutor
+                                await self.state.picotutor.pop_last_move(
+                                    self.state.game
+                                )  # bestmove already sent to tutor
                                 self.state.best_move_posted = False
                             await self.state.picotutor.pop_last_move(self.state.game)  # no switch of sides
                         logger.info(
@@ -1557,7 +1563,9 @@ async def main() -> None:
                         self.state.game.pop()
                         if self.picotutor_mode():
                             if self.state.best_move_posted:
-                                await self.state.picotutor.pop_last_move(self.state.game)  # bestmove already sent to tutor
+                                await self.state.picotutor.pop_last_move(
+                                    self.state.game
+                                )  # bestmove already sent to tutor
                                 self.state.best_move_posted = False
                             await self.state.picotutor.pop_last_move(self.state.game)
                         logger.info("user move in remote turn, reverting to: %s", self.state.game.fen())
@@ -1567,7 +1575,9 @@ async def main() -> None:
                         self.state.game.pop()
                         if self.picotutor_mode():
                             if self.state.best_move_posted:
-                                await self.state.picotutor.pop_last_move(self.state.game)  # bestmove already sent to tutor
+                                await self.state.picotutor.pop_last_move(
+                                    self.state.game
+                                )  # bestmove already sent to tutor
                                 self.state.best_move_posted = False
                             await self.state.picotutor.pop_last_move(self.state.game)
                         logger.info(
@@ -2033,9 +2043,13 @@ async def main() -> None:
                             eval_str = "ER"
                             await self.state.picotutor.set_position(self.state.game)
                             if self.state.play_mode == PlayMode.USER_BLACK:
-                                await self.state.picotutor.set_user_color(chess.BLACK, not self.is_engine_playing_moves())
+                                await self.state.picotutor.set_user_color(
+                                    chess.BLACK, not self.is_engine_playing_moves()
+                                )
                             else:
-                                await self.state.picotutor.set_user_color(chess.WHITE, not self.is_engine_playing_moves())
+                                await self.state.picotutor.set_user_color(
+                                    chess.WHITE, not self.is_engine_playing_moves()
+                                )
                                 l_mate = ""
                             eval_str = ""  # no error message
                         if eval_str != "" and self.state.last_move != move:  # molli takeback_mame
@@ -2102,7 +2116,9 @@ async def main() -> None:
                 # Start engine think
                 #
                 if self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
-                    msg = Message.USER_MOVE_DONE(move=move, fen=game_before.fen(), turn=game_before.turn, game=self.state.game.copy())
+                    msg = Message.USER_MOVE_DONE(
+                        move=move, fen=game_before.fen(), turn=game_before.turn, game=self.state.game.copy()
+                    )
                     game_end = self.state.check_game_state()
                     if game_end:
                         await self.update_elo(game_end.result)
@@ -2144,7 +2160,9 @@ async def main() -> None:
 
                     self.state.last_move = move
                 elif self.state.interaction_mode == Mode.REMOTE:
-                    msg = Message.USER_MOVE_DONE(move=move, fen=game_before.fen(), turn=game_before.turn, game=self.state.game.copy())
+                    msg = Message.USER_MOVE_DONE(
+                        move=move, fen=game_before.fen(), turn=game_before.turn, game=self.state.game.copy()
+                    )
                     game_end = self.state.check_game_state()
                     await DisplayMsg.show(msg)
                     if game_end:
@@ -2152,7 +2170,9 @@ async def main() -> None:
                     else:
                         await self.observe()
                 elif self.state.interaction_mode == Mode.OBSERVE:
-                    msg = Message.REVIEW_MOVE_DONE(move=move, fen=game_before.fen(), turn=game_before.turn, game=self.state.game.copy())
+                    msg = Message.REVIEW_MOVE_DONE(
+                        move=move, fen=game_before.fen(), turn=game_before.turn, game=self.state.game.copy()
+                    )
                     game_end = self.state.check_game_state()
                     if game_end:
                         await DisplayMsg.show(msg)
@@ -2161,7 +2181,9 @@ async def main() -> None:
                         await DisplayMsg.show(msg)
                         await self.observe()
                 else:  # self.state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.PONDER):
-                    msg = Message.REVIEW_MOVE_DONE(move=move, fen=game_before.fen(), turn=game_before.turn, game=self.state.game.copy())
+                    msg = Message.REVIEW_MOVE_DONE(
+                        move=move, fen=game_before.fen(), turn=game_before.turn, game=self.state.game.copy()
+                    )
                     game_end = self.state.check_game_state()
                     if game_end:
                         await DisplayMsg.show(msg)
@@ -2277,7 +2299,7 @@ async def main() -> None:
             user_turn = self.state.is_user_turn()
             if self.state.picotutor.is_coach_analyser():
                 # we ask picotutor engine for best move info
-                if user_turn:
+                if not engine_playing_moves or user_turn:
                     result = await self.state.picotutor.get_analysis()
                     if result.get("fen") == self.state.game.fen():
                         # analysis was for our current board position
@@ -2844,9 +2866,7 @@ async def main() -> None:
 
         async def process_main_events(self, event):
             """Consume event from evt_queue"""
-            if (
-                not isinstance(event, Event.CLOCK_TIME)
-            ):
+            if not isinstance(event, Event.CLOCK_TIME):
                 logger.debug("received event from evt_queue: %s", event)
             if isinstance(event, Event.FEN):
                 await self.process_fen(event.fen, self.state)
@@ -3291,9 +3311,7 @@ async def main() -> None:
                 self.state.game_declared = False
 
                 if self.picotutor_mode():
-                    await self.state.picotutor.set_position(
-                        self.state.game, new_game=True
-                    )
+                    await self.state.picotutor.set_position(self.state.game, new_game=True)
                     if self.state.play_mode == PlayMode.USER_BLACK:
                         await self.state.picotutor.set_user_color(chess.BLACK, not self.is_engine_playing_moves())
                     else:
@@ -3459,9 +3477,13 @@ async def main() -> None:
                         self.state.picotutor.reset()
                         if not self.state.flag_startup:
                             if self.state.play_mode == PlayMode.USER_BLACK:
-                                await self.state.picotutor.set_user_color(chess.BLACK, not self.is_engine_playing_moves())
+                                await self.state.picotutor.set_user_color(
+                                    chess.BLACK, not self.is_engine_playing_moves()
+                                )
                             else:
-                                await self.state.picotutor.set_user_color(chess.WHITE, not self.is_engine_playing_moves())
+                                await self.state.picotutor.set_user_color(
+                                    chess.WHITE, not self.is_engine_playing_moves()
+                                )
                 else:
                     if self.online_mode():
                         logger.debug("starting a new game with code: %s", event.pos960)
@@ -3641,7 +3663,7 @@ async def main() -> None:
                     self.state.done_computer_fen = None
                     self.state.done_move = chess.Move.null()
                     if self.is_engine_playing_moves():
-                    # @todo handle Mode.REMOTE too
+                        # @todo handle Mode.REMOTE too
                         if self.state.time_control.mode == TimeMode.FIXED:
                             self.state.time_control.reset()
                         # set computer to move - in case the user just changed the engine
@@ -4109,17 +4131,25 @@ async def main() -> None:
                                 if self.pgn_mode():
                                     t_color = self.state.picotutor.get_user_color()
                                     if t_color == chess.BLACK:
-                                        await self.state.picotutor.set_user_color(chess.WHITE, not self.is_engine_playing_moves())
+                                        await self.state.picotutor.set_user_color(
+                                            chess.WHITE, not self.is_engine_playing_moves()
+                                        )
                                     else:
-                                        await self.state.picotutor.set_user_color(chess.BLACK, not self.is_engine_playing_moves())
+                                        await self.state.picotutor.set_user_color(
+                                            chess.BLACK, not self.is_engine_playing_moves()
+                                        )
 
                                 valid = await self.state.picotutor.push_move(event.move, game_copy)
                                 if not valid:
                                     await self.state.picotutor.set_position(game_copy)
                                     if self.state.play_mode == PlayMode.USER_BLACK:
-                                        await self.state.picotutor.set_user_color(chess.BLACK, not self.is_engine_playing_moves())
+                                        await self.state.picotutor.set_user_color(
+                                            chess.BLACK, not self.is_engine_playing_moves()
+                                        )
                                     else:
-                                        await self.state.picotutor.set_user_color(chess.WHITE, not self.is_engine_playing_moves())
+                                        await self.state.picotutor.set_user_color(
+                                            chess.WHITE, not self.is_engine_playing_moves()
+                                        )
 
                             self.state.done_computer_fen = game_copy.board_fen()
                             self.state.done_move = event.move
