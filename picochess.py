@@ -2855,7 +2855,7 @@ async def main() -> None:
         async def _pv_score_depth_analyser(self):
             """Analyse PV score depth in the background"""
             if self.state.game:
-                if self.state.game.fullmove_number > 1 and not self.state.game.is_game_over():
+                if self.state.game.ply() > 0 and not self.state.game.is_game_over():
                     # @todo find a way to skip background analysis
                     # while we are doing inbook
                     await self.analyse()

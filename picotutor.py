@@ -448,7 +448,7 @@ class PicoTutor:
             # Pico V3 functionality
             if self.board.turn == self.user_color:
                 # if it is user player's turn then start analyse engine
-                if self.board.ply() > 1:
+                if self.board.ply() > 0:
                     self._eval_engine_move(i_uci_move)  # Pico v4 line
                     await self.start()
             else:
@@ -576,7 +576,7 @@ class PicoTutor:
 
     async def _start_or_stop_as_needed(self):
         """start or stop analyser as needed"""
-        if (self.analyse_both_sides or self.board.turn == self.user_color) and self.board.ply() > 1:
+        if (self.analyse_both_sides or self.board.turn == self.user_color) and self.board.ply() > 0:
             # if it is user player's turn then start analyse engine
             # otherwise it is computer opponents turn and analysis engine
             # should be paused
@@ -586,7 +586,7 @@ class PicoTutor:
 
     def _stop_if_needed(self):
         """stop analyser if needed"""
-        if not (self.analyse_both_sides or self.board.turn == self.user_color) or self.board.ply() <= 1:
+        if not (self.analyse_both_sides or self.board.turn == self.user_color) or self.board.ply() <= 0:
             # reversed logic from _start_or_stop_as_needed above
             self.stop()
 
