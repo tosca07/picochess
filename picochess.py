@@ -2309,7 +2309,7 @@ async def main() -> None:
                 not engine_playing_moves and self.state.picotutor.shall_use_coach_analyser()
             ):
                 # engine playing moves and user has overridden with coach-analyser=True
-                # or engine not playing moves and tutor can be used
+                # or engine not playing moves and user has overridden with coach-analyser=True
                 result = await self.state.picotutor.get_analysis()
                 if result.get("fen") == self.state.game.fen():
                     # analysis was for our current board position
@@ -2854,7 +2854,7 @@ async def main() -> None:
         async def _pv_score_depth_analyser(self):
             """Analyse PV score depth in the background"""
             if self.state.game:
-                if self.state.game.ply() > 0 and not self.state.game.is_game_over():
+                if not self.state.game.is_game_over():
                     # @todo find a way to skip background analysis
                     # while we are doing inbook
                     await self.analyse()
