@@ -651,7 +651,7 @@ class UciEngine(object):
             if self.analyser.get_fen() == game.fen():
                 result = await self.analyser.get_analysis()
             else:
-                logger.debug("warning: analysis for old position")
+                logger.debug("analysis for old position")
                 logger.debug("current new position is %s", game.fen())
         else:
             logger.debug("caller has forgot to start analysis")

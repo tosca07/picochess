@@ -91,7 +91,7 @@ from picotutor import PicoTutor
 FLOAT_MIN_BACKGROUND_TIME = 1.5  # dont update analysis more often than this
 # Limit analysis of engine
 # ENGINE WATCHING
-FLOAT_MAX_ANALYSIS_DEPTH = 27  # same famous limit as in deep blue 1997?
+FLOAT_MAX_ANALYSIS_DEPTH = 25  # selection depth is more so this is enough?
 # ENGINE PLAYING
 # Dont make the following large as it will block engine play go
 FLOAT_MAX_ANALYSE_TIME = 0.1  # asking for hint while not pondering
@@ -1014,6 +1014,8 @@ async def main() -> None:
                 uci_shell = self.uci_remote_shell
             else:
                 uci_shell = self.uci_local_shell
+            # @ todo - we might not need this depth any more if picotutor
+            # see picotutor_constans DEEP_DEPTH --> simplify this logic
             depth = FLOAT_MAX_ANALYSIS_DEPTH if bool(self.args.coach_analyser) else None
             self.state.picotutor = PicoTutor(
                 i_ucishell=uci_shell,
@@ -2303,31 +2305,35 @@ async def main() -> None:
             info: InfoDict | None = None
             engine_playing_moves = self.is_engine_playing_moves()
             user_turn = self.state.is_user_turn()
-            if self.state.picotutor.is_coach_analyser():
-                # we ask picotutor engine for best move info
-                if not engine_playing_moves or user_turn:
-                    result = await self.state.picotutor.get_analysis()
-                    if result.get("fen") == self.state.game.fen():
-                        # analysis was for our current board position
-                        info_list: list[chess.engine.InfoDict] = result.get("best")
-                        if info_list:
-                            info = info_list[0]  # pv first
-                            # logger.debug("we got picotutor best move!")
+            if (engine_playing_moves and user_turn and self.state.picotutor.shall_use_coach_analyser()) or (
+                not engine_playing_moves and self.state.picotutor.can_use_coach_analyser
+            ):
+                # engine playing moves and user has overridden with coach-analyser=True
+                # or engine not playing moves and tutor can be used
+                result = await self.state.picotutor.get_analysis()
+                if result.get("fen") == self.state.game.fen():
+                    # analysis was for our current board position
+                    info_list: list[chess.engine.InfoDict] = result.get("best")
+                    if info_list:
+                        info = info_list[0]  # pv first
+                        # logger.debug("we got picotutor best move!")
+                        self.debug_pv_info(info)
+            elif not engine_playing_moves:
+                assert not self.state.picotutor.can_use_coach_analyser()
+                # we need to analyse both sides without tutor - start an extra analyser
+                deep_kwargs = {"limit": Limit(depth=FLOAT_MAX_ANALYSIS_DEPTH)}
+                was_running = await self.engine.start_analysis(self.state.game, deep_kwargs)
+                if was_running:
+                    # optimisation, ask only if analysis was already running
+                    result = await self.engine.get_analysis(self.state.game)
+                    info_list: list[InfoDict] = result.get("best")
+                    if info_list:
+                        for info in info_list:
                             self.debug_pv_info(info)
-            else:
-                # get info from analyser if user is playing both sides
-                # if engine is playing info is from PlayResult in think()
-                if not engine_playing_moves:
-                    deep_kwargs = {"limit": Limit(depth=FLOAT_MAX_ANALYSIS_DEPTH)}
-                    was_running = await self.engine.start_analysis(self.state.game, deep_kwargs)
-                    if was_running:
-                        # optimisation, ask only if analysis was already running
-                        result = await self.engine.get_analysis(self.state.game)
-                        info_list: list[InfoDict] = result.get("best")
-                        if info_list:
-                            for info in info_list:
-                                self.debug_pv_info(info)
-                            info: InfoDict = info_list[0]  # pv first
+                        info: InfoDict = info_list[0]  # pv first
+            # else let PlayResult from think() do engine send_analyse()
+            # @todo when we know how to update engine thinking we can do it here
+            # two cases: its user turn or engine is thinking = not engine_is_waiting
             if info:
                 await self.send_analyse(info)
             return info

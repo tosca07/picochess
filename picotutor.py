@@ -146,10 +146,19 @@ class PicoTutor:
             self.analyse_both_sides = analyse_both_sides
             await self._start_or_stop_as_needed()
 
-    def is_coach_analyser(self) -> bool:
-        # to be an analyser for main we have to have a loaded engine
-        # and the setting coach_analyser must be True in picochess.ini
-        return (self.engine.loaded_ok() and self.coach_analyser) if self.engine else False
+    def shall_use_coach_analyser(self) -> bool:
+        """check if coach_analyser is True in picochess.ini and that tutor engine
+        analysis is available. This info is used to override playing engine InfoDict"""
+        return self.can_use_coach_analyser() and self.coach_analyser
+
+    def can_use_coach_analyser(self) -> bool:
+        """is the tutor active and analysing - if yes InfoDicts can be used"""
+        result = False
+        # most analysing functions are skipped if neither coach nor watcher is on
+        if self.engine:
+            if self.engine.loaded_ok() and (self.coach_on or self.watcher_on):
+                result = True
+        return result
 
     def _setup_comments(self, i_lang, i_comment_file):
         if i_comment_file:
