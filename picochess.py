@@ -2306,7 +2306,7 @@ async def main() -> None:
             engine_playing_moves = self.is_engine_playing_moves()
             user_turn = self.state.is_user_turn()
             if (engine_playing_moves and user_turn and self.state.picotutor.shall_use_coach_analyser()) or (
-                not engine_playing_moves and self.state.picotutor.can_use_coach_analyser
+                not engine_playing_moves and self.state.picotutor.shall_use_coach_analyser()
             ):
                 # engine playing moves and user has overridden with coach-analyser=True
                 # or engine not playing moves and tutor can be used
@@ -2319,7 +2319,6 @@ async def main() -> None:
                         # logger.debug("we got picotutor best move!")
                         self.debug_pv_info(info)
             elif not engine_playing_moves:
-                assert not self.state.picotutor.can_use_coach_analyser()
                 # we need to analyse both sides without tutor - start an extra analyser
                 deep_kwargs = {"limit": Limit(depth=FLOAT_MAX_ANALYSIS_DEPTH)}
                 was_running = await self.engine.start_analysis(self.state.game, deep_kwargs)
