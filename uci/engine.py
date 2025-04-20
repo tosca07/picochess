@@ -313,8 +313,8 @@ class ContinuousAnalysis:
             return False
         if game.is_game_over():
             return False
-        if game.fen() == chess.Board.starting_fen:
-            return False
+        # if game.fen() == chess.Board.starting_fen:
+        #    return False
         # @todo skip while in book? or is that main loops logic?
         return True
 
