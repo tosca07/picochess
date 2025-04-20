@@ -91,7 +91,7 @@ from picotutor import PicoTutor
 FLOAT_MIN_BACKGROUND_TIME = 1.5  # dont update analysis more often than this
 # Limit analysis of engine
 # ENGINE WATCHING
-FLOAT_MAX_ANALYSIS_DEPTH = 25  # selection depth is more so this is enough?
+FLOAT_MAX_ANALYSIS_DEPTH = 28  # the famous limit of deep blue?
 # ENGINE PLAYING
 # Dont make the following large as it will block engine play go
 FLOAT_MAX_ANALYSE_TIME = 0.1  # asking for hint while not pondering
@@ -1014,8 +1014,6 @@ async def main() -> None:
                 uci_shell = self.uci_remote_shell
             else:
                 uci_shell = self.uci_local_shell
-            # @ todo - we might not need this depth any more if picotutor
-            # see picotutor_constans DEEP_DEPTH --> simplify this logic
             depth = FLOAT_MAX_ANALYSIS_DEPTH if bool(self.args.coach_analyser) else None
             self.state.picotutor = PicoTutor(
                 i_ucishell=uci_shell,
@@ -2855,8 +2853,6 @@ async def main() -> None:
             """Analyse PV score depth in the background"""
             if self.state.game:
                 if not self.state.game.is_game_over():
-                    # @todo find a way to skip background analysis
-                    # while we are doing inbook
                     await self.analyse()
 
         async def event_consumer(self):
@@ -3640,7 +3636,7 @@ async def main() -> None:
 
             elif isinstance(event, Event.PAUSE_RESUME):
                 if self.pgn_mode():
-                    self.engine.pause_pgn_audio()  # @todo this does not do anything
+                    self.engine.pause_pgn_audio()
                 else:
                     if self.engine.is_thinking():
                         self.engine.force_move()
