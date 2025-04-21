@@ -878,6 +878,7 @@ class DgtDisplay(DisplayMsg):
             self.score = text
         else:
             text = self.dgttranslate.text("N10_mate", str(message.mate))
+            self.score = text
         if message.mode in (Mode.KIBITZ, Mode.TRAINING) and not self._inside_main_menu():
             text = self._combine_depth_and_score()
             text.wait = True

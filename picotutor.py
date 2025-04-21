@@ -617,7 +617,7 @@ class PicoTutor:
                 if "pv" in info and "score" in info and "depth" in info:
                     # score_turn must be as BEFORE the move - so opposite
                     score_turn = chess.WHITE if self.board.turn == chess.BLACK else chess.BLACK
-                    move, score, mate = PicoTutor._get_score(score_turn, info)
+                    move, score, mate = PicoTutor.get_score(score_turn, info)
                     logger.debug("%s score %d mate in %d depth %d", move.uci(), score, mate, info["depth"])
                 if not long_version:
                     break
@@ -627,7 +627,7 @@ class PicoTutor:
                 if "pv" in info and "score" in info and "depth" in info:
                     # score_turn must be as BEFORE the move - so opposite
                     score_turn = chess.WHITE if self.board.turn == chess.BLACK else chess.BLACK
-                    move, score, mate = PicoTutor._get_score(score_turn, info)
+                    move, score, mate = PicoTutor.get_score(score_turn, info)
                     logger.debug("%s score %d mate in %d depth %d", move.uci(), score, mate, info["depth"])
                 if not long_version:
                     break
@@ -708,9 +708,10 @@ class PicoTutor:
         return tupel[2]
 
     @staticmethod
-    def _get_score(turn: chess.Color, info: chess.engine.InfoDict) -> tuple:
+    def get_score(turn: chess.Color, info: chess.engine.InfoDict) -> tuple:
         """return tuple (move, score, mate) extracted from info"""
         move = info["pv"][0] if "pv" in info else chess.Move.null()
+        # @todo can we make score default None without crash in get_user_move_eval()
         score = mate = 0
         if "score" in info:
             score_val = info["score"]
@@ -720,7 +721,8 @@ class PicoTutor:
                 score = score_val.pov(turn).score(mate_score=99999)
             else:
                 score = score_val.pov(turn).score()
-            return (move, score, mate)
+        else:
+            logger.warning("no score in tutor info dict")
         return (move, score, mate)
 
     # @todo re-design this method?
@@ -735,10 +737,11 @@ class PicoTutor:
             info: InfoDict = info_list[pv_key]
             # score_turn must be as BEFORE the move - so opposite
             score_turn = chess.WHITE if turn == chess.BLACK else chess.BLACK
-            move, score, mate = PicoTutor._get_score(score_turn, info)
+            move, score, mate = PicoTutor.get_score(score_turn, info)
             # put an score: int here for sorting best moves
             moves.append((pv_key, move, score, mate))
-            best_score = max(best_score, score)
+            if score is not None:
+                best_score = max(best_score, score)
             pv_key = pv_key + 1
         return best_score
 

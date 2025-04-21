@@ -2341,19 +2341,16 @@ async def main() -> None:
             # send depth before score as score is assembling depth in receiver end
             if "depth" in info:
                 await Observable.fire(Event.NEW_DEPTH(depth=info.get("depth")))
-            if send_pv:
-                move = info.get("pv")[0] if "pv" in info else chess.Move.null()
-                if move:
-                    self.state.pb_move = move  # backward compatibility
-                    await Observable.fire(Event.NEW_PV(pv=[move]))
-            if "score" in info:
-                s = info["score"]
-                if self.is_engine_playing_moves():
-                    p = s.pov(self.state.get_user_color()).score()
-                else:
-                    p = s.pov(self.state.game.turn).score()
-                if p:
-                    await Observable.fire(Event.NEW_SCORE(score=p, mate=s.is_mate()))
+            if self.is_engine_playing_moves():
+                turn = self.state.get_user_color()
+            else:
+                turn = self.state.game.turn
+            (move, score, mate) = PicoTutor.get_score(turn, info)
+            if send_pv and move != chess.Move.null():
+                self.state.pb_move = move  # backward compatibility
+                await Observable.fire(Event.NEW_PV(pv=[move]))
+            if score:
+                await Observable.fire(Event.NEW_SCORE(score=score, mate=mate))
 
         async def expired_fen_timer(self):
             """Handle times up for an unhandled fen string send from board."""
@@ -4303,12 +4300,12 @@ async def main() -> None:
 
             elif isinstance(event, Event.NEW_SCORE):
                 if event.score:
-                    if event.score == 999 or event.score == -999:
+                    if event.score == 99999 or event.score == -99999:
                         self.state.flag_pgn_game_over = True  # molli pgn mode: signal that pgn is at end
                     else:
                         self.state.flag_pgn_game_over = False
 
-                    # only score and mate received from event
+                    # only score and mate received from event, turn is missing
                     await DisplayMsg.show(
                         Message.NEW_SCORE(
                             score=event.score,
