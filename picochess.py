@@ -2302,12 +2302,12 @@ async def main() -> None:
             # it will work to get a short hint move also when not pondering
             info: InfoDict | None = None
             engine_playing_moves = self.is_engine_playing_moves()
-            user_turn = self.state.is_user_turn()
-            if (engine_playing_moves and user_turn and self.state.picotutor.shall_use_coach_analyser()) or (
-                not engine_playing_moves and self.state.picotutor.shall_use_coach_analyser()
-            ):
-                # engine playing moves and user has overridden with coach-analyser=True
-                # or engine not playing moves and user has overridden with coach-analyser=True
+            # user_turn = self.state.is_user_turn()
+            # @todo add intermediate solution:
+            # engine_playing_moves and not user_turn and self.state.picotutor.shall_use_coach_analyser()
+            # needs tutor code to be updated with this capability first
+            if not engine_playing_moves and self.state.picotutor.shall_use_coach_analyser():
+                # engine not playing moves and user has overridden with coach-analyser=True
                 result = await self.state.picotutor.get_analysis()
                 if result.get("fen") == self.state.game.fen():
                     # analysis was for our current board position
@@ -2329,8 +2329,7 @@ async def main() -> None:
                             self.debug_pv_info(info)
                         info: InfoDict = info_list[0]  # pv first
             # else let PlayResult from think() do engine send_analyse()
-            # @todo when we know how to update engine thinking we can do it here
-            # two cases: its user turn or engine is thinking = not engine_is_waiting
+            # @todo when we know how to update while engine thinking - do it here
             if info:
                 await self.send_analyse(info)
             return info
