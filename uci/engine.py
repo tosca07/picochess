@@ -343,6 +343,22 @@ class ContinuousAnalysis:
         else:
             logging.info("%s ContinuousAnalysis already running - strange!", self.whoami)
 
+    def get_normal_deep_kwargs_limit(self) -> int:
+        """return the limit of the normal deep kwargs"""
+        if self._normal_deep_kwargs and "limit" in self._normal_deep_kwargs:
+            return self._normal_deep_kwargs["limit"]
+        return 0
+
+    def update_normal_deep_limit(self, normal_deep_kwargs: dict | None):
+        """update the deep limit for the analysis - first check if needed"""
+        if self._running:
+            if normal_deep_kwargs:
+                self._normal_deep_kwargs = normal_deep_kwargs
+            else:
+                logger.debug("%s ContinuousAnalysis no kwargs to update", self.whoami)
+        else:
+            logger.debug("%s ContinuousAnalysis not running - cannot update", self.whoami)
+
     def stop(self):
         """Stops the continuous analysis."""
         if self._running:
@@ -437,11 +453,12 @@ class UciEngine(object):
         self.transport: chess.engine.Protocol | None = None  # find out correct type
         self.engine: chess.engine.UciProtocol | None = None
         self.engine_name = "NN"
+        self.eng_long_name = "NN"
         self.options: dict = {}
         self.res: chess.engine.PlayResult = None
         self.level_support = False
         self.shell = None  # check if uci files can be used any more
-        self.engine_debug_name = engine_debug_name
+        self.whoami = engine_debug_name
         self.engine_lock = asyncio.Lock()
 
     async def open_engine(self):
@@ -456,11 +473,11 @@ class UciEngine(object):
             logger.info("opening engine")
             self.transport, self.engine = await chess.engine.popen_uci(mfile)
             self.analyser = ContinuousAnalysis(
-                engine=self.engine, delay=FLOAT_ANALYSIS_WAIT, loop=self.loop, engine_debug_name=self.engine_debug_name
+                engine=self.engine, delay=FLOAT_ANALYSIS_WAIT, loop=self.loop, engine_debug_name=self.whoami
             )
             if self.engine:
                 if "name" in self.engine.id:
-                    self.engine_name = self.engine.id["name"]
+                    self.engine_name = self.eng_long_name = self.engine.id["name"]
                     i = self.engine_name.find(" ")
                     if i != -1:
                         self.engine_name = self.engine_name[:i]
@@ -478,9 +495,12 @@ class UciEngine(object):
         return self.engine is not None
 
     def get_name(self) -> str:
-        """Get engine name. Use engine_loaded_ok if you
-        want to check if engine is loaded"""
+        """Get engine display name. Shorter version"""
         return self.engine_name
+
+    def get_long_name(self) -> str:
+        """Get full engine name - usually contains version info"""
+        return self.eng_long_name
 
     def get_options(self):
         """Get engine options."""
@@ -624,12 +644,20 @@ class UciEngine(object):
            - a dict with limit and multipv"""
         result = False
         if self.analyser.is_running():
+            if (
+                normal_deep_kwargs
+                and "limit" in normal_deep_kwargs
+                and normal_deep_kwargs.get("limit") != self.analyser.get_normal_deep_kwargs_limit()
+            ):
+                limit: chess.engine.Limit = normal_deep_kwargs["limit"]  # only for debug
+                logger.debug("%s picotutor normal_deep limit change: %d- mode/engine switch?", self.whoami, limit.depth)
+                self.analyser.update_normal_deep_limit(normal_deep_kwargs)
             if game.fen() != self.analyser.get_fen():
                 await self.analyser.update_game(game)  # new position
-                logger.debug("new analysis position")
+                logger.debug("picotutor new analysis position")
             else:
                 result = True  # was running - results to be expected
-                logger.debug("continue with old analysis position")
+                # logger.debug("continue with old analysis position")
         else:
             if self.engine:
                 async with self.engine_lock:

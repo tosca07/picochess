@@ -1014,7 +1014,6 @@ async def main() -> None:
                 uci_shell = self.uci_remote_shell
             else:
                 uci_shell = self.uci_local_shell
-            depth = FLOAT_MAX_ANALYSIS_DEPTH if bool(self.args.coach_analyser) else None
             self.state.picotutor = PicoTutor(
                 i_ucishell=uci_shell,
                 i_engine_path=tutor_engine,
@@ -1022,7 +1021,6 @@ async def main() -> None:
                 i_lang=self.args.language,
                 i_coach_analyser=bool(self.args.coach_analyser),
                 loop=self.loop,
-                i_depth=depth,
             )
             # @ todo first init status should be set in init above
             await self.state.picotutor.set_status(
@@ -2281,6 +2279,21 @@ async def main() -> None:
             # @ todo - check how to do this in new chess library
             # self.engine.position(copy.deepcopy(game))
 
+        def tutor_depth(self) -> bool:
+            """return depth to override in tutor set_mode if coach-analyser is True else None"""
+            # important that we use same bool function as in analyse()
+            # if analyse is going to use tutor, depth should be full FLOAT_MAX_ANALYSIS_DEPTH
+            return FLOAT_MAX_ANALYSIS_DEPTH if self.is_coach_analyser() else None
+
+        def is_coach_analyser(self) -> bool:
+            """should coach-analyser override make us use tutor score-depth-hint analysis"""
+            # no read from ini file - auto-True if tutor and main engine same (long name)
+            result = (
+                not self.is_engine_playing_moves()
+                and self.engine.get_long_name() == self.state.picotutor.get_eng_long_name()
+            )
+            return result
+
         def is_engine_playing_moves(self) -> bool:
             """return true if engine is playing moves based on self.state.Mode
             otherwise engine is watching and user plays both sides"""
@@ -2304,9 +2317,9 @@ async def main() -> None:
             engine_playing_moves = self.is_engine_playing_moves()
             # user_turn = self.state.is_user_turn()
             # @todo add intermediate solution:
-            # engine_playing_moves and not user_turn and self.state.picotutor.shall_use_coach_analyser()
+            # engine_playing_moves and not user_turn and self.state.picotutor.can_use_coach_analyser()
             # needs tutor code to be updated with this capability first
-            if not engine_playing_moves and self.state.picotutor.shall_use_coach_analyser():
+            if self.is_coach_analyser() and self.state.picotutor.can_use_coach_analyser():
                 # engine not playing moves and user has overridden with coach-analyser=True
                 result = await self.state.picotutor.get_analysis()
                 if result.get("fen") == self.state.game.fen():
@@ -2826,7 +2839,8 @@ async def main() -> None:
                     self.state.dgtmenu.get_picocomment(),
                 )
                 if self.state.flag_picotutor:
-                    await self.state.picotutor.set_mode(not self.is_engine_playing_moves())  # always False here
+                    # is_engine_playing_moves always False here...
+                    await self.state.picotutor.set_mode(not self.is_engine_playing_moves(), self.tutor_depth())
             elif self.state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
                 self.engine.set_mode()
                 # Pico v4 allow picotutor to run also when watching
@@ -2837,7 +2851,7 @@ async def main() -> None:
                     self.state.dgtmenu.get_picocomment(),
                 )
                 if self.state.flag_picotutor:
-                    await self.state.picotutor.set_mode(True)
+                    await self.state.picotutor.set_mode(True, self.tutor_depth())
 
         def remote_engine_mode(self):
             if "remote" in self.state.engine_file:
@@ -3271,6 +3285,9 @@ async def main() -> None:
                     ModeInfo.set_pgn_mode(mode=False)
 
                 await self.update_elo_display()
+
+                # new engine might change result of tutor_depth() to use - inform tutor
+                self.state.picotutor.set_mode(not self.is_engine_playing_moves(), self.tutor_depth())
 
             elif isinstance(event, Event.SETUP_POSITION):
                 logger.debug("setting up custom fen: %s", event.fen)
@@ -4403,7 +4420,7 @@ async def main() -> None:
                     self.state.flag_picotutor = False
 
                 if self.state.flag_picotutor:
-                    await self.state.picotutor.set_mode(not self.is_engine_playing_moves())
+                    await self.state.picotutor.set_mode(not self.is_engine_playing_moves(), self.tutor_depth())
                 await DisplayMsg.show(Message.PICOWATCHER(picowatcher=event.picowatcher))
 
             elif isinstance(event, Event.PICOCOACH):
@@ -4430,7 +4447,7 @@ async def main() -> None:
                     self.state.flag_picotutor = False
 
                 if self.state.flag_picotutor:
-                    await self.state.picotutor.set_mode(not self.is_engine_playing_moves())
+                    await self.state.picotutor.set_mode(not self.is_engine_playing_moves(), self.tutor_depth())
                 if self.state.dgtmenu.get_picocoach() == PicoCoach.COACH_OFF:
                     await DisplayMsg.show(Message.PICOCOACH(picocoach=False))
                 elif self.state.dgtmenu.get_picocoach() == PicoCoach.COACH_ON and event.picocoach != 2:
@@ -4460,7 +4477,7 @@ async def main() -> None:
                         self.state.flag_picotutor = False
 
                 if self.state.flag_picotutor:
-                    await self.state.picotutor.set_mode(not self.is_engine_playing_moves())
+                    await self.state.picotutor.set_mode(not self.is_engine_playing_moves(), self.tutor_depth())
                 await DisplayMsg.show(Message.PICOEXPLORER(picoexplorer=event.picoexplorer))
 
             elif isinstance(event, Event.RSPEED):

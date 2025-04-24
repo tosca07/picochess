@@ -48,7 +48,6 @@ class PicoTutor:
         i_lang="en",
         i_coach_analyser=False,
         loop=None,
-        i_depth=None,
     ):
         self.user_color: chess.Color = i_player_color
         self.engine_path: str = i_engine_path
@@ -97,7 +96,7 @@ class PicoTutor:
         # as PV and Score analyser instead of the engine you are playing
         self.coach_analyser = i_coach_analyser
         self.loop = loop  # main loop everywhere
-        self.deep_limit_depth = i_depth  # override picotutor value
+        self.deep_limit_depth = None  # override picotutor value in set_mode
         # evaluated moves keeps a memory of all non zero evaluation strings
         # it can then be used to print comments in the PGN file
         self.evaluated_moves = {}  # key=(fullmove_number, turn, move) value={}
@@ -139,9 +138,14 @@ class PicoTutor:
         if self.engine is None:
             logger.debug("Engine loading failed in Picotutor")
 
-    async def set_mode(self, analyse_both_sides: bool):
-        """normally analyse_both_sides is False but if True
-        both sides will be analysed"""
+    def get_eng_long_name(self):
+        """return the full engine name as used by picotutor"""
+        return self.engine.get_long_name() if self.engine else "no engine"
+
+    async def set_mode(self, analyse_both_sides: bool, deep_limit_depth: int = None):
+        """normally analyse_both_sides is False but if True both sides will be analysed
+        deep_limit_depth defaults to DEEP_DEPTH 17 if not set"""
+        self.deep_limit_depth = deep_limit_depth  # None also ok = back to default
         if self.analyse_both_sides != analyse_both_sides:
             self.analyse_both_sides = analyse_both_sides
             await self._start_or_stop_as_needed()
@@ -549,7 +553,8 @@ class PicoTutor:
         return self.board.fullmove_number
 
     async def start(self):
-        # after newgame event
+        """start the engine analyser - or update depth if already running"""
+        # after newgame, setposition, pushmove etc events
         if self.engine:
             if self.engine.loaded_ok():
                 if self.coach_on or self.watcher_on:
@@ -558,7 +563,8 @@ class PicoTutor:
                 else:
                     low_kwargs = None  # main program dont need first low
                 if self.deep_limit_depth:
-                    # override for main program when using coach_analyser True
+                    # override for main program when using coach as analyser
+                    # used for analysis when tutor engine is same as playing engine
                     deep_limit = chess.engine.Limit(depth=self.deep_limit_depth)
                 else:
                     deep_limit = chess.engine.Limit(depth=c.DEEP_DEPTH)
@@ -568,6 +574,7 @@ class PicoTutor:
                 logger.error("engine has terminated in picotutor?")
 
     def stop(self):
+        """stop the engine analyser"""
         # during thinking time of opponent tutor should be paused
         # after the user move has been pushed
         if self.engine:
