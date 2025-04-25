@@ -600,6 +600,7 @@ class UciEngine(object):
 
     def get_engine_limit(self, time_dict: dict) -> Limit:
         """convert time_dict to engine Limit for engine thinking"""
+        max_time = None
         try:
             logger.debug("molli: timedict: %s", str(time_dict))
             if "movestogo" in time_dict:
@@ -609,14 +610,18 @@ class UciEngine(object):
             if "wtime" in time_dict:
                 white_t = float(time_dict["wtime"]) / 1000.0
             elif "movetime" in time_dict:
-                white_t = float(time_dict["movetime"]) / 1000.0
+                # send max_time to search exactly N seconds
+                white_t = None
+                max_time = float(time_dict["movetime"]) / 1000.0
             else:
                 white_t = FLOAT_MAX_ENGINE_TIME  # fallback
                 logger.warning("engine using fallback time for white")
             if "btime" in time_dict:
                 black_t = float(time_dict["btime"]) / 1000.0
             elif "movetime" in time_dict:
-                black_t = float(time_dict["movetime"]) / 1000.0
+                # send max_time to search exactly N seconds
+                black_t = None
+                max_time = float(time_dict["movetime"]) / 1000.0
             else:
                 black_t = FLOAT_MAX_ENGINE_TIME  # fallback
                 logger.warning("engine using fallback time for black")
@@ -627,7 +632,12 @@ class UciEngine(object):
             white_t = black_t = FLOAT_MAX_ENGINE_TIME
             white_inc = black_inc = 0
         use_time = Limit(
-            white_clock=white_t, black_clock=black_t, white_inc=white_inc, black_inc=black_inc, remaining_moves=moves
+            time=max_time,
+            white_clock=white_t,
+            black_clock=black_t,
+            white_inc=white_inc,
+            black_inc=black_inc,
+            remaining_moves=moves,
         )
         return use_time
 
