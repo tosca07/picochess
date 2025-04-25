@@ -1014,12 +1014,12 @@ async def main() -> None:
                 uci_shell = self.uci_remote_shell
             else:
                 uci_shell = self.uci_local_shell
+            # not using self.args.coach_analyser any more
             self.state.picotutor = PicoTutor(
                 i_ucishell=uci_shell,
                 i_engine_path=tutor_engine,
                 i_comment_file=self.state.comment_file,
                 i_lang=self.args.language,
-                i_coach_analyser=bool(self.args.coach_analyser),
                 loop=self.loop,
             )
             # @ todo first init status should be set in init above

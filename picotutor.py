@@ -46,7 +46,6 @@ class PicoTutor:
         i_fen="",
         i_comment_file="",
         i_lang="en",
-        i_coach_analyser=False,
         loop=None,
     ):
         self.user_color: chess.Color = i_player_color
@@ -92,9 +91,6 @@ class PicoTutor:
         # with the state.game board in picochess.py main
         self.board = chess.Board()
         self.ucishell = i_ucishell
-        # user ini file coach-analyser value, if set PicoTutor is used
-        # as PV and Score analyser instead of the engine you are playing
-        self.coach_analyser = i_coach_analyser
         self.loop = loop  # main loop everywhere
         self.deep_limit_depth = None  # override picotutor value in set_mode
         # evaluated moves keeps a memory of all non zero evaluation strings
@@ -149,11 +145,6 @@ class PicoTutor:
         if self.analyse_both_sides != analyse_both_sides:
             self.analyse_both_sides = analyse_both_sides
             await self._start_or_stop_as_needed()
-
-    def shall_use_coach_analyser(self) -> bool:
-        """check if coach_analyser is True in picochess.ini and that tutor engine
-        analysis is available. This info is used to override playing engine InfoDict"""
-        return self.can_use_coach_analyser() and self.coach_analyser
 
     def can_use_coach_analyser(self) -> bool:
         """is the tutor active and analysing - if yes InfoDicts can be used"""

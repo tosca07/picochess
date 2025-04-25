@@ -198,6 +198,10 @@ class ContinuousAnalysis:
         finally:
             self.pause_event.set()  # Resume analysis
 
+    def is_limit_reached(self) -> bool:
+        """return True if limit was reached for position being analysed"""
+        return self.limit_reached
+
     async def _watching_analyse(self):
         """Internal function for continuous analysis in the background."""
         debug_once_limit = True
@@ -684,6 +688,12 @@ class UciEngine(object):
         else:
             logger.debug("caller has forgot to start analysis")
         return result
+
+    def is_analysis_limit_reached(self) -> bool:
+        """return True if limit was reached for position being analysed"""
+        if self.analyser.is_running():
+            return self.analyser.is_limit_reached()
+        return False
 
     # this function was taken out of use after introduction
     # of the new analyser ContinuousAnalysis
