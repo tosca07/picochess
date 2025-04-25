@@ -232,6 +232,11 @@ class ContinuousAnalysis:
                 # same situation as in stop
                 self._task = None
                 self._running = False
+            except chess.engine.EngineTerminatedError:
+                logger.debug("Engine terminated while analysing - maybe user switched engine")
+                # have to stop analysing
+                self._task = None
+                self._running = False
 
     async def _analyse_position(self) -> bool:
         """analyse while position stays same or limit reached
@@ -571,12 +576,14 @@ class UciEngine(object):
 
     def stop(self):
         """Stop background ContinuousAnalyser and/or force engine to move"""
+        self.stop_analysis()
+        if not self.is_waiting():
+            self.force_move()
+
+    def stop_analysis(self):
+        """Stop background ContinuousAnalyser"""
         if self.analyser.is_running() is not None:
             self.analyser.stop()
-        if not self.is_waiting():
-            logger.debug("forcing engine to make a move")
-            # new chess lib does not have a stop call
-            self.engine.send_line("stop")
 
     def force_move(self):
         """Force engine to move - only call this when engine not waiting"""

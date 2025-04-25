@@ -1043,6 +1043,7 @@ async def main() -> None:
                 msg = Message.ENGINE_NAME(engine_name=self.state.engine_text)
                 await DisplayMsg.show(msg)
 
+            await self._start_or_stop_analysis_as_needed()  # start analysis if needed
             self.background_analyse_timer.start()  # always run background analyser
 
         async def think(
@@ -2285,9 +2286,26 @@ async def main() -> None:
             result = not self.eng_plays() and self.engine.get_long_name() == self.state.picotutor.get_eng_long_name()
             return result
 
+        def need_engine_analyser(self) -> bool:
+            """return true if engine is analysing moves based on PlayMode"""
+            # reverse the first if in analyse(), meaning: it does not use tutor analysis
+            result = not (self.is_coach_analyser() and self.state.picotutor.can_use_coach_analyser())
+            # and the 2nd if in analyse()
+            result = result and not self.eng_plays()
+            return result
+
         def eng_plays(self) -> bool:
             """return true if engine is playing moves based on PlayMode"""
             return bool(self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING))
+
+        async def _start_or_stop_analysis_as_needed(self):
+            """start or stop engine analyser as needed (tutor handles this on its own)"""
+            if self.engine:
+                if self.need_engine_analyser():
+                    deep_kwargs = {"limit": Limit(depth=FLOAT_MAX_ANALYSIS_DEPTH)}
+                    await self.engine.start_analysis(self.state.game, deep_kwargs)
+                else:
+                    self.engine.stop_analysis()
 
         def debug_pv_info(self, info: chess.engine.InfoDict):
             if info:
@@ -2302,39 +2320,29 @@ async def main() -> None:
 
         async def analyse(self) -> chess.engine.InfoDict | None:
             """analyse, observe etc depening on mode - create analysis info"""
-            # it will work to get a short hint move also when not pondering
             info: InfoDict | None = None
-            engine_playing_moves = self.eng_plays()
+            info_list: list[chess.engine.InfoDict] = None
             # user_turn = self.state.is_user_turn()
             # @todo add intermediate solution:
             # engine_playing_moves and not user_turn and self.state.picotutor.can_use_coach_analyser()
-            # needs tutor code to be updated with this capability first
             if self.is_coach_analyser() and self.state.picotutor.can_use_coach_analyser():
                 # engine not playing moves and user has overridden with coach-analyser=True
                 result = await self.state.picotutor.get_analysis()
-                if result.get("fen") == self.state.game.fen():
-                    # analysis was for our current board position
-                    info_list: list[chess.engine.InfoDict] = result.get("best")
-                    if info_list:
-                        info = info_list[0]  # pv first
-                        # logger.debug("we got picotutor best move!")
-                        self.debug_pv_info(info)
-            elif not engine_playing_moves:
-                # we need to analyse both sides without tutor - start an extra analyser
-                deep_kwargs = {"limit": Limit(depth=FLOAT_MAX_ANALYSIS_DEPTH)}
-                was_running = await self.engine.start_analysis(self.state.game, deep_kwargs)
-                if was_running:
-                    # optimisation, ask only if analysis was already running
-                    result = await self.engine.get_analysis(self.state.game)
-                    info_list: list[InfoDict] = result.get("best")
-                    if info_list:
-                        for info in info_list:
-                            self.debug_pv_info(info)
-                        info: InfoDict = info_list[0]  # pv first
+                info_list: list[chess.engine.InfoDict] = result.get("best")
+            elif not self.eng_plays():
+                # we need to analyse both sides without tutor - use engine analyser
+                result = await self.engine.get_analysis(self.state.game)
+                info_list: list[InfoDict] = result.get("best")
+                # @todo - the following line here should not be needed
+                # but its safer to always correct engine analyser start/stop state
+                await self._start_or_stop_analysis_as_needed()
             # else let PlayResult from think() do engine send_analyse()
             # @todo when we know how to update while engine thinking - do it here
-            if info:
-                await self.send_analyse(info)
+            if info_list:
+                info = info_list[0]  # pv first
+                if info:
+                    self.debug_pv_info(info)
+                    await self.send_analyse(info)
             return info
 
         async def send_analyse(self, info: chess.engine.InfoDict, send_pv: bool = True):
@@ -2842,6 +2850,7 @@ async def main() -> None:
                 )
                 if self.state.flag_picotutor:
                     await self.state.picotutor.set_mode(True, self.tutor_depth())
+            await self._start_or_stop_analysis_as_needed()  # engine mode changed
 
         def remote_engine_mode(self):
             if "remote" in self.state.engine_file:
@@ -3277,7 +3286,10 @@ async def main() -> None:
                 await self.update_elo_display()
 
                 # new engine might change result of tutor_depth() to use - inform tutor
-                self.state.picotutor.set_mode(not self.eng_plays(), self.tutor_depth())
+                await self.state.picotutor.set_mode(not self.eng_plays(), self.tutor_depth())
+                # also state of main analyser might have changed
+                await self._start_or_stop_analysis_as_needed()
+                # end of NEW_ENGINE
 
             elif isinstance(event, Event.SETUP_POSITION):
                 logger.debug("setting up custom fen: %s", event.fen)
