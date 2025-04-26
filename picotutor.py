@@ -560,7 +560,7 @@ class PicoTutor:
                 if self.coach_on or self.watcher_on:
                     low_limit = chess.engine.Limit(depth=c.LOW_DEPTH)
                     low_kwargs = {"limit": low_limit, "multipv": c.LOW_ROOT_MOVES}
-                    await self.obvious_engine.start_analysis(self.board, low_kwargs, None)
+                    await self.obvious_engine.start_analysis(self.board, low_kwargs)
             else:
                 logger.error("obvious engine has terminated in picotutor?")
         if self.best_engine:
@@ -573,7 +573,7 @@ class PicoTutor:
                     else:
                         deep_limit = chess.engine.Limit(depth=c.DEEP_DEPTH)
                     deep_kwargs = {"limit": deep_limit, "multipv": c.VALID_ROOT_MOVES}
-                    await self.best_engine.start_analysis(self.board, deep_kwargs, None)
+                    await self.best_engine.start_analysis(self.board, deep_kwargs)
             else:
                 logger.error("best engine has terminated in picotutor?")
 
