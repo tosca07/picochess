@@ -138,7 +138,8 @@ class ContinuousAnalysis:
         self._first_data = None  # "low" InfoDict list
         self.loop = loop  # main loop everywhere
         self.whoami = engine_debug_name  # picotutor or engine
-        self._normal_deep_kwargs: dict | None = None  # set in start
+        self.limit = None  # limit for analysis - set in start
+        self.multipv = None  # multipv for analysis - set in start
         self.lock = asyncio.Lock()
         self.pause_event = asyncio.Event()
         self.pause_event.set()  # Start unpaused
@@ -241,24 +242,16 @@ class ContinuousAnalysis:
         """analyse while position stays same or limit reached
         returns True if limit was reached for this position"""
         while self._running and self.current_game.fen() == self.game.fen():
-            kwargs = self._normal_deep_kwargs
             try:
-                await self._analyse_forever(kwargs)
+                await self._analyse_forever(self.limit, self.multipv)
                 return True  # limit reached
             except chess.engine.AnalysisComplete:
                 logger.debug("ContinuousAnalyser ran out of information")
                 asyncio.sleep(self.delay)  # maybe it helps to wait some extra?
         return False  # limit not reached, position changed
 
-    async def _analyse_forever(self, kwargs: dict | None = None):
-        """analyse forever if no kwargs Limit sent
-        if first is True store an extra first low result"""
-        if kwargs:
-            limit: chess.engine.Limit = kwargs["limit"] if "limit" in kwargs else None
-            multipv: int = kwargs["multipv"] if "multipv" in kwargs else None
-        else:
-            limit = None
-            multipv = None
+    async def _analyse_forever(self, limit: Limit | None, multipv: int | None) -> None:
+        """analyse forever if no limit sent"""
         with await self.engine.analysis(self.current_game, limit=limit, multipv=multipv) as analysis:
             async for info in analysis:
                 await self.pause_event.wait()  # Wait if analysis is paused
@@ -308,16 +301,12 @@ class ContinuousAnalysis:
         # @todo skip while in book? or is that main loops logic?
         return True
 
-    def start(self, game: chess.Board, normal_deep_kwargs: dict | None = None):
-        """
-        Starts the analysis. You may ask for two rounds by giving
-        an extra first_low_kwargs, typically with low limit like limit=5
-        Normal one will be deep and is run after optional first low
+    def start(self, game: chess.Board, limit: Limit | None = None, multipv: int | None = None):
+        """Starts the analysis.
 
-        :param engine: An instance of SimpleEngine managed externally.
-        :param game: The current chess board (game) to analyze.
-        :param normal_deep_kwargs: limit the analysis, None means forever
-        :param first_low_kwargs: optional limit to get a first low analysis
+        :param game: The current position to analyse.
+        :param limit: limit the analysis, None means forever
+        :param multipv: analyse with multipv, None means 1
         """
         if not self._running:
             if not self.engine:
@@ -325,26 +314,24 @@ class ContinuousAnalysis:
             else:
                 self.game = game.copy()  # remember this game position
                 self.limit_reached = False  # True when limit reached for position
-                self._normal_deep_kwargs = normal_deep_kwargs
+                self.limit = limit
+                self.multipv = multipv
                 self._running = True
                 self._task = self.loop.create_task(self._watching_analyse())
                 logging.debug("%s ContinuousAnalysis started", self.whoami)
         else:
             logging.info("%s ContinuousAnalysis already running - strange!", self.whoami)
 
-    def get_normal_deep_kwargs_limit(self) -> int:
-        """return the limit of the normal deep kwargs"""
-        if self._normal_deep_kwargs and "limit" in self._normal_deep_kwargs:
-            return self._normal_deep_kwargs["limit"]
-        return 0
+    def get_limit_depth(self) -> int | None:
+        """return the limit.depth used by analysis - None if no limit or no limit.depth"""
+        if self.limit:
+            return self.limit.depth
+        return None
 
-    def update_normal_deep_limit(self, normal_deep_kwargs: dict | None):
-        """update the deep limit for the analysis - first check if needed"""
+    def update_limit(self, limit: Limit | None):
+        """update the limit for the analysis - first check if needed"""
         if self._running:
-            if normal_deep_kwargs:
-                self._normal_deep_kwargs = normal_deep_kwargs
-            else:
-                logger.debug("%s ContinuousAnalysis no kwargs to update", self.whoami)
+            self.limit = limit  # None is also OK here
         else:
             logger.debug("%s ContinuousAnalysis not running - cannot update", self.whoami)
 
@@ -632,25 +619,19 @@ class UciEngine(object):
                 game, limit=limit, ponder=self.pondering, result_queue=result_queue, root_moves=root_moves
             )
 
-    async def start_analysis(self, game: chess.Board, normal_deep_kwargs: dict | None = None) -> bool:
+    async def start_analysis(self, game: chess.Board, limit: Limit | None = None, multipv: int | None = None) -> bool:
         """start analyser - returns True if if it was already running
         in current game position, which means result can be expected
 
         parameters:
-        normal_deep_kwargs: normal deep limit - use None for forever
-           - a dict with limit and multipv
-        first_low_kwargs: extra limited first low analysis
-           - a dict with limit and multipv"""
+        game: the game position to be analysed
+        limit: limit for analysis - None means forever
+        multipv: multipv for analysis - None means 1"""
         result = False
         if self.analyser.is_running():
-            if (
-                normal_deep_kwargs
-                and "limit" in normal_deep_kwargs
-                and normal_deep_kwargs.get("limit") != self.analyser.get_normal_deep_kwargs_limit()
-            ):
-                limit: chess.engine.Limit = normal_deep_kwargs["limit"]  # only for debug
-                logger.debug("%s picotutor normal_deep limit change: %d- mode/engine switch?", self.whoami, limit.depth)
-                self.analyser.update_normal_deep_limit(normal_deep_kwargs)
+            if limit and limit.depth != self.analyser.get_limit_depth():
+                logger.debug("%s picotutor limit change: %d- mode/engine switch?", self.whoami, limit.depth)
+                self.analyser.update_limit(limit)
             if game.fen() != self.analyser.get_fen():
                 await self.analyser.update_game(game)  # new position
                 logger.debug("picotutor new analysis position")
@@ -660,7 +641,7 @@ class UciEngine(object):
         else:
             if self.engine:
                 async with self.engine_lock:
-                    self.analyser.start(game, normal_deep_kwargs)
+                    self.analyser.start(game, limit=limit, multipv=multipv)
             else:
                 logger.warning("start analysis requested but no engine loaded")
         return result
