@@ -51,7 +51,8 @@ class PicoTutor:
         self.user_color: chess.Color = i_player_color
         self.engine_path: str = i_engine_path
 
-        self.engine: UciEngine | None = None  # Pico4 uses UciEngine, not direct chess api
+        self.best_engine: UciEngine | None = None  # best - max
+        self.obvious_engine: UciEngine | None = None  # obvious - min
         # snapshot list of best = deep/max-ply, and obvious = shallow/low-ply
         # lists of InfoDict per color - filled in eval_legal_moves()
         self.best_info = {color: [] for color in [chess.WHITE, chess.BLACK]}
@@ -121,22 +122,30 @@ class PicoTutor:
         # @todo we have to start the engine always as the set_status has
         # not yet been changed to async --> causes changes in main
         # set_status might later be changed that require this engine
-        if not self.engine:
-            self.engine = UciEngine(self.engine_path, self.ucishell, self.mame_par, self.loop, "picotutor")
-            await self.engine.open_engine()
-            if self.engine.loaded_ok() is True:
-                options = {"MultiPV": c.VALID_ROOT_MOVES, "Contempt": 0, "Threads": c.NUM_THREADS}
-                await self.engine.startup(options=options)
-                self.engine.set_mode()  # not needed as we dont ponder?
-            else:
-                # No need to call engine quit if its not loaded?
-                self.engine = None
-        if self.engine is None:
-            logger.debug("Engine loading failed in Picotutor")
+        if not self.best_engine:
+            self.best_engine = await self._load_engine("best picotutor")
+            if self.best_engine is None:
+                logger.debug("best engine loading failed in Picotutor")
+        if not self.obvious_engine:
+            self.obvious_engine = await self._load_engine("obvious picotutor")
+            if self.obvious_engine is None:
+                logger.debug("obvious engine loading failed in Picotutor")
+
+    async def _load_engine(self, debug_whoami: str) -> UciEngine:
+        """internal function to load each tutor engine"""
+        engine = UciEngine(self.engine_path, self.ucishell, self.mame_par, self.loop, debug_whoami)
+        await engine.open_engine()
+        if engine.loaded_ok() is True:
+            options = {"MultiPV": c.VALID_ROOT_MOVES, "Contempt": 0, "Threads": c.NUM_THREADS}
+            await engine.startup(options=options)
+            engine.set_mode()  # not needed as we dont ponder?
+        else:
+            engine = None
+        return engine
 
     def get_eng_long_name(self):
         """return the full engine name as used by picotutor"""
-        return self.engine.get_long_name() if self.engine else "no engine"
+        return self.best_engine.get_long_name() if self.best_engine else "no engine"
 
     async def set_mode(self, analyse_both_sides: bool, deep_limit_depth: int = None):
         """normally analyse_both_sides is False but if True both sides will be analysed
@@ -150,8 +159,8 @@ class PicoTutor:
         """is the tutor active and analysing - if yes InfoDicts can be used"""
         result = False
         # most analysing functions are skipped if neither coach nor watcher is on
-        if self.engine:
-            if self.engine.loaded_ok() and (self.coach_on or self.watcher_on):
+        if self.best_engine:
+            if self.best_engine.loaded_ok() and (self.coach_on or self.watcher_on):
                 result = True
         return result
 
@@ -546,30 +555,36 @@ class PicoTutor:
     async def start(self):
         """start the engine analyser - or update depth if already running"""
         # after newgame, setposition, pushmove etc events
-        if self.engine:
-            if self.engine.loaded_ok():
+        if self.obvious_engine:
+            if self.obvious_engine.loaded_ok():
                 if self.coach_on or self.watcher_on:
                     low_limit = chess.engine.Limit(depth=c.LOW_DEPTH)
                     low_kwargs = {"limit": low_limit, "multipv": c.LOW_ROOT_MOVES}
-                else:
-                    low_kwargs = None  # main program dont need first low
-                if self.deep_limit_depth:
-                    # override for main program when using coach as analyser
-                    # used for analysis when tutor engine is same as playing engine
-                    deep_limit = chess.engine.Limit(depth=self.deep_limit_depth)
-                else:
-                    deep_limit = chess.engine.Limit(depth=c.DEEP_DEPTH)
-                deep_kwargs = {"limit": deep_limit, "multipv": c.VALID_ROOT_MOVES}
-                await self.engine.start_analysis(self.board, deep_kwargs, low_kwargs)
+                    await self.obvious_engine.start_analysis(self.board, low_kwargs, None)
             else:
-                logger.error("engine has terminated in picotutor?")
+                logger.error("obvious engine has terminated in picotutor?")
+        if self.best_engine:
+            if self.best_engine.loaded_ok():
+                if self.coach_on or self.watcher_on:
+                    if self.deep_limit_depth:
+                        # override for main program when using coach as analyser
+                        # used for analysis when tutor engine is same as playing engine
+                        deep_limit = chess.engine.Limit(depth=self.deep_limit_depth)
+                    else:
+                        deep_limit = chess.engine.Limit(depth=c.DEEP_DEPTH)
+                    deep_kwargs = {"limit": deep_limit, "multipv": c.VALID_ROOT_MOVES}
+                    await self.best_engine.start_analysis(self.board, deep_kwargs, None)
+            else:
+                logger.error("best engine has terminated in picotutor?")
 
     def stop(self):
         """stop the engine analyser"""
         # during thinking time of opponent tutor should be paused
         # after the user move has been pushed
-        if self.engine:
-            self.engine.stop()
+        if self.best_engine:
+            self.best_engine.stop()
+        if self.obvious_engine:
+            self.obvious_engine.stop()
 
     async def _start_or_stop_as_needed(self):
         """start or stop analyser as needed"""
@@ -759,9 +774,10 @@ class PicoTutor:
         except ValueError:
             logger.debug("can not evaluate empty board 1st move")
             return
-        result = await self.engine.get_analysis(board_before_usermove)
-        self.obvious_info[self.board.turn] = result.get("low")
-        self.best_info[self.board.turn] = result.get("best")
+        obvious_result = await self.obvious_engine.get_analysis(board_before_usermove)
+        self.obvious_info[self.board.turn] = obvious_result.get("best")
+        best_result = await self.best_engine.get_analysis(board_before_usermove)
+        self.best_info[self.board.turn] = best_result.get("best")
         if self.best_info[self.board.turn]:
             best_score = PicoTutor._eval_pv_list(
                 self.board.turn, self.best_info[self.board.turn], self.best_moves[self.board.turn]
@@ -785,9 +801,9 @@ class PicoTutor:
         """get best move info if exists - during user thinking"""
         # failed answer is empty lists
         result = {"low": [], "best": [], "fen": ""}
-        if self.engine:
-            if self.engine.is_analyser_running():
-                result = await self.engine.get_analysis(self.board)
+        if self.best_engine:
+            if self.best_engine.is_analyser_running():
+                result = await self.best_engine.get_analysis(self.board)
         return result
 
     def get_user_move_eval(self) -> tuple:
