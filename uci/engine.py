@@ -134,8 +134,7 @@ class ContinuousAnalysis:
         self.delay = delay
         self._running = False
         self._task = None
-        self._analysis_data = None  # "best" InfoDict list
-        self._first_data = None  # "low" InfoDict list
+        self._analysis_data = None  # InfoDict list
         self.loop = loop  # main loop everywhere
         self.whoami = engine_debug_name  # picotutor or engine
         self.limit = None  # limit for analysis - set in start
@@ -225,7 +224,7 @@ class ContinuousAnalysis:
                 # new position - start with new current_game and empty data
                 async with self.lock:
                     self.current_game = self.game.copy()
-                    self._analysis_data = self._first_data = None
+                    self._analysis_data = None
                 self.limit_reached = await self._analyse_position()
             except asyncio.CancelledError:
                 logger.debug("%s ContinuousAnalyser cancelled", self.whoami)
@@ -258,7 +257,7 @@ class ContinuousAnalysis:
                 async with self.lock:
                     # after waiting, check if position has changed
                     if self.current_game.fen() != self.game.fen():
-                        self._analysis_data = self._first_data = None
+                        self._analysis_data = None
                         return  # old position, quit analysis
                     updated = self._update_analysis_data(analysis)  # update to latest
                     if updated:
@@ -357,8 +356,7 @@ class ContinuousAnalysis:
         # continues to update it all the time, deepcopy needed
         async with self.lock:
             result = {
-                "low": copy.deepcopy(self._first_data),
-                "best": copy.deepcopy(self._analysis_data),
+                "info": copy.deepcopy(self._analysis_data),
                 "fen": copy.deepcopy(self.current_game.fen()),
             }
             return result
@@ -369,7 +367,7 @@ class ContinuousAnalysis:
         async with self.lock:
             self.game = new_game.copy()  # remember this game position
             self.limit_reached = False  # True when limit reached for position
-            # dont reset self._analysis_data and self._first_data to None
+            # dont reset self._analysis_data to None
             # let the main loop self._analyze_position manage it
 
     def is_running(self) -> bool:
@@ -654,7 +652,7 @@ class UciEngine(object):
         """key 'first': first low/quick list of InfoDict (multipv)
         key 'last': newest list of InfoDict (multipv)"""
         # failed answer is empty lists
-        result = {"low": [], "best": [], "fen": ""}
+        result = {"info": [], "fen": ""}
         if self.analyser.is_running():
             if self.analyser.get_fen() == game.fen():
                 result = await self.analyser.get_analysis()

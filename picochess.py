@@ -2328,11 +2328,11 @@ async def main() -> None:
             if self.is_coach_analyser() and self.state.picotutor.can_use_coach_analyser():
                 # engine not playing moves and user has overridden with coach-analyser=True
                 result = await self.state.picotutor.get_analysis()
-                info_list: list[chess.engine.InfoDict] = result.get("best")
+                info_list: list[chess.engine.InfoDict] = result.get("info")
             elif not self.eng_plays():
                 # we need to analyse both sides without tutor - use engine analyser
                 result = await self.engine.get_analysis(self.state.game)
-                info_list: list[InfoDict] = result.get("best")
+                info_list: list[InfoDict] = result.get("info")
                 # @todo - the following line here should not be needed
                 # but its safer to always correct engine analyser start/stop state
                 await self._start_or_stop_analysis_as_needed()

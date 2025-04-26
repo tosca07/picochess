@@ -775,9 +775,9 @@ class PicoTutor:
             logger.debug("can not evaluate empty board 1st move")
             return
         obvious_result = await self.obvious_engine.get_analysis(board_before_usermove)
-        self.obvious_info[self.board.turn] = obvious_result.get("best")
+        self.obvious_info[self.board.turn] = obvious_result.get("info")
         best_result = await self.best_engine.get_analysis(board_before_usermove)
-        self.best_info[self.board.turn] = best_result.get("best")
+        self.best_info[self.board.turn] = best_result.get("info")
         if self.best_info[self.board.turn]:
             best_score = PicoTutor._eval_pv_list(
                 self.board.turn, self.best_info[self.board.turn], self.best_moves[self.board.turn]
@@ -800,7 +800,7 @@ class PicoTutor:
     async def get_analysis(self) -> dict:
         """get best move info if exists - during user thinking"""
         # failed answer is empty lists
-        result = {"low": [], "best": [], "fen": ""}
+        result = {"info": [], "fen": ""}
         if self.best_engine:
             if self.best_engine.is_analyser_running():
                 result = await self.best_engine.get_analysis(self.board)
