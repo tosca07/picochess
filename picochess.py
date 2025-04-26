@@ -40,7 +40,7 @@ import chess.pgn
 import chess.polyglot
 import chess.engine
 from tornado.platform.asyncio import AsyncIOMainLoop
-from chess.engine import InfoDict, Limit
+from chess.engine import InfoDict, Limit, BestMove, PlayResult
 import dgt.util
 
 from configuration import Configuration
@@ -130,7 +130,7 @@ class AlternativeMover:
             book_ponder = choice.move
         except IndexError:
             book_ponder = None
-        return chess.engine.BestMove(book_move, book_ponder)
+        return BestMove(book_move, book_ponder)
 
     def check_book(self, bookreader, game_copy: chess.Board) -> bool:
         """Checks if a BookMove exists in current game position."""
@@ -1079,7 +1079,7 @@ async def main() -> None:
                     await self.engine.go(
                         time_dict=uci_dict, game=self.state.game, result_queue=result_queue, root_moves=root_moves
                     )
-                    engine_res: chess.engine.PlayResult = await result_queue.get()  # on engine error its None
+                    engine_res: PlayResult = await result_queue.get()  # on engine error its None
                     if engine_res:
                         logger.debug("engine moved %s", engine_res.move.uci)
                         if self.state.ignore_next_engine_move:
@@ -2221,7 +2221,7 @@ async def main() -> None:
                             await asyncio.sleep(0.7)
                 self.state.takeback_active = False
 
-        async def observe(self) -> chess.engine.InfoDict | None:
+        async def observe(self) -> InfoDict | None:
             """Start a new ponder search on the current game."""
             info = await self.analyse()
             await self.state.start_clock()
@@ -2302,12 +2302,12 @@ async def main() -> None:
             """start or stop engine analyser as needed (tutor handles this on its own)"""
             if self.engine:
                 if self.need_engine_analyser():
-                    limit = chess.engine.Limit(depth=FLOAT_MAX_ANALYSIS_DEPTH)
+                    limit = Limit(depth=FLOAT_MAX_ANALYSIS_DEPTH)
                     await self.engine.start_analysis(self.state.game, limit=limit)
                 else:
                     self.engine.stop_analysis()
 
-        def debug_pv_info(self, info: chess.engine.InfoDict):
+        def debug_pv_info(self, info: InfoDict):
             if info:
                 logger.debug(
                     "engine pv move: %s - depth %d - score %s",
@@ -2318,17 +2318,17 @@ async def main() -> None:
             else:
                 logger.debug("empty InfoDict")
 
-        async def analyse(self) -> chess.engine.InfoDict | None:
+        async def analyse(self) -> InfoDict | None:
             """analyse, observe etc depening on mode - create analysis info"""
             info: InfoDict | None = None
-            info_list: list[chess.engine.InfoDict] = None
+            info_list: list[InfoDict] = None
             # user_turn = self.state.is_user_turn()
             # @todo add intermediate solution:
             # engine_playing_moves and not user_turn and self.state.picotutor.can_use_coach_analyser()
             if self.is_coach_analyser() and self.state.picotutor.can_use_coach_analyser():
                 # engine not playing moves and user has overridden with coach-analyser=True
                 result = await self.state.picotutor.get_analysis()
-                info_list: list[chess.engine.InfoDict] = result.get("info")
+                info_list: list[InfoDict] = result.get("info")
             elif not self.eng_plays():
                 # we need to analyse both sides without tutor - use engine analyser
                 result = await self.engine.get_analysis(self.state.game)
@@ -2345,7 +2345,7 @@ async def main() -> None:
                     await self.send_analyse(info)
             return info
 
-        async def send_analyse(self, info: chess.engine.InfoDict, send_pv: bool = True):
+        async def send_analyse(self, info: InfoDict, send_pv: bool = True):
             """send pv, depth, and score events
             with send_pv False pv message is not sent - use if its previous move InfoDict"""
             # send depth before score as score is assembling depth in receiver end

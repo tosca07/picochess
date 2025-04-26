@@ -25,7 +25,7 @@ from random import randint
 from typing import Tuple
 import platform
 import chess  # type: ignore
-from chess.engine import InfoDict
+from chess.engine import InfoDict, Limit
 import chess.engine
 import chess.pgn
 from uci.engine import UciShell, UciEngine
@@ -558,7 +558,7 @@ class PicoTutor:
         if self.obvious_engine:
             if self.obvious_engine.loaded_ok():
                 if self.coach_on or self.watcher_on:
-                    limit = chess.engine.Limit(depth=c.LOW_DEPTH)
+                    limit = Limit(depth=c.LOW_DEPTH)
                     multipv = c.LOW_ROOT_MOVES
                     await self.obvious_engine.start_analysis(self.board, limit=limit, multipv=multipv)
             else:
@@ -569,9 +569,9 @@ class PicoTutor:
                     if self.deep_limit_depth:
                         # override for main program when using coach as analyser
                         # used for analysis when tutor engine is same as playing engine
-                        limit = chess.engine.Limit(depth=self.deep_limit_depth)
+                        limit = Limit(depth=self.deep_limit_depth)
                     else:
-                        limit = chess.engine.Limit(depth=c.DEEP_DEPTH)  # default value
+                        limit = Limit(depth=c.DEEP_DEPTH)  # default value
                     multipv = c.VALID_ROOT_MOVES
                     await self.best_engine.start_analysis(self.board, limit=limit, multipv=multipv)
             else:

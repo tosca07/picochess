@@ -27,7 +27,7 @@ import spur  # type: ignore
 import paramiko
 
 import chess.engine  # type: ignore
-from chess.engine import Limit
+from chess.engine import InfoDict, Limit, UciProtocol, AnalysisResult, PlayResult
 from chess import Board  # type: ignore
 from uci.rating import Rating, Result
 from utilities import write_picochess_ini
@@ -120,14 +120,13 @@ class ContinuousAnalysis:
     """class for continous analysis from a chess engine"""
 
     def __init__(
-        self, engine: chess.engine.SimpleEngine, delay: float, loop: asyncio.AbstractEventLoop, engine_debug_name: str
+        self, engine: chess.engine.UciProtocol, delay: float, loop: asyncio.AbstractEventLoop, engine_debug_name: str
     ):
         """
         A continuous analysis generator that runs as a background async task.
 
         :param delay: Time interval to do CPU saving sleep between analysis.
         """
-        self.engine = None
         self.game = None  # latest position requested to be analysed
         self.limit_reached = False  # True when limit reached for position
         self.current_game = None  # latest position being analysed
@@ -142,7 +141,7 @@ class ContinuousAnalysis:
         self.lock = asyncio.Lock()
         self.pause_event = asyncio.Event()
         self.pause_event.set()  # Start unpaused
-        self.engine = engine
+        self.engine: UciProtocol = engine
         self._idle = True  # start with Engine marked as idle
         if not self.engine:
             logger.error("%s ContinuousAnalysis initialised without engine", self.whoami)
@@ -264,7 +263,7 @@ class ContinuousAnalysis:
                         #  self.debug_analyser()  # normally commented out
                         if limit:
                             # @todo change 0 to -1 to get all multipv finished
-                            info_limit: chess.engine.InfoDict = self._analysis_data[0]
+                            info_limit: InfoDict = self._analysis_data[0]
                             if "depth" in info_limit and limit.depth:
                                 if info_limit.get("depth") >= limit.depth:
                                     return  # limit reached
@@ -275,11 +274,11 @@ class ContinuousAnalysis:
         """use this debug call to see how low and deep depth evolves"""
         # lock is on when we come here
         if self._analysis_data:
-            j: chess.engine.InfoDict = self._analysis_data[0]
+            j: InfoDict = self._analysis_data[0]
             if "depth" in j:
                 logger.debug("%s ContinuousAnalyser deep depth: %d", self.whoami, j.get("depth"))
 
-    def _update_analysis_data(self, analysis: chess.engine.AnalysisResult) -> bool:
+    def _update_analysis_data(self, analysis: AnalysisResult) -> bool:
         """internal function for updating while analysing
         returns True if data was updated"""
         # lock is on when we come here
@@ -424,12 +423,12 @@ class UciEngine(object):
         self.file = file
         self.mame_par = mame_par
         self.is_mame = "/mame/" in self.file
-        self.transport: chess.engine.Protocol | None = None  # find out correct type
-        self.engine: chess.engine.UciProtocol | None = None
+        self.transport = None  # find out correct type
+        self.engine: UciProtocol | None = None
         self.engine_name = "NN"
         self.eng_long_name = "NN"
         self.options: dict = {}
-        self.res: chess.engine.PlayResult = None
+        self.res: PlayResult = None
         self.level_support = False
         self.shell = None  # check if uci files can be used any more
         self.whoami = engine_debug_name
@@ -674,8 +673,8 @@ class UciEngine(object):
     async def playmode_analyse(
         self,
         game: Board,
-        limit: chess.engine.Limit,
-    ) -> chess.engine.InfoDict | None:
+        limit: Limit,
+    ) -> InfoDict | None:
         """Get analysis update from playing engine
         might block if engine is thinking to protect chess library"""
         try:
