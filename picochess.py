@@ -2302,8 +2302,8 @@ async def main() -> None:
             """start or stop engine analyser as needed (tutor handles this on its own)"""
             if self.engine:
                 if self.need_engine_analyser():
-                    deep_kwargs = {"limit": Limit(depth=FLOAT_MAX_ANALYSIS_DEPTH)}
-                    await self.engine.start_analysis(self.state.game, deep_kwargs)
+                    limit = chess.engine.Limit(depth=FLOAT_MAX_ANALYSIS_DEPTH)
+                    await self.engine.start_analysis(self.state.game, limit=limit)
                 else:
                     self.engine.stop_analysis()
 
