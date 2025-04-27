@@ -868,6 +868,7 @@ async def main() -> None:
             self.bookreader = chess.polyglot.open_reader(self.all_books[self.book_index]["file"])
             self.state.searchmoves = AlternativeMover()
             self.state.artwork_in_use = False
+            self.always_run_tutor = self.args.coach_analyser if self.args.coach_analyser else False
 
         async def initialise(self, time_text):
             """Due to use of async some initialisation is moved here"""
@@ -1020,6 +1021,7 @@ async def main() -> None:
                 i_engine_path=tutor_engine,
                 i_comment_file=self.state.comment_file,
                 i_lang=self.args.language,
+                i_always_run_tutor=self.always_run_tutor,
                 loop=self.loop,
             )
             # @ todo first init status should be set in init above
@@ -2322,12 +2324,15 @@ async def main() -> None:
             """analyse, observe etc depening on mode - create analysis info"""
             info: InfoDict | None = None
             info_list: list[InfoDict] = None
-            # user_turn = self.state.is_user_turn()
-            # @todo add intermediate solution:
-            # engine_playing_moves and not user_turn and self.state.picotutor.can_use_coach_analyser()
-            if self.is_coach_analyser() and self.state.picotutor.can_use_coach_analyser():
-                # engine not playing moves and user has overridden with coach-analyser=True
-                result = await self.state.picotutor.get_analysis()
+            # @todo remove intermediate/temporary solution which is the 2nd part after "or" below:
+            # engine_playing_moves and not user_turn and can_use_coach_analyser() and user allowed it
+            if (self.is_coach_analyser() and self.state.picotutor.can_use_coach_analyser()) or (
+                self.eng_plays()
+                and not self.state.is_user_turn()
+                and self.state.picotutor.can_use_coach_analyser()
+                and self.always_run_tutor
+            ):
+                result = await self.state.picotutor.get_analysis()  # use tutor
                 info_list: list[InfoDict] = result.get("info")
             elif not self.eng_plays():
                 # we need to analyse both sides without tutor - use engine analyser
@@ -2337,7 +2342,7 @@ async def main() -> None:
                 # but its safer to always correct engine analyser start/stop state
                 await self._start_or_stop_analysis_as_needed()
             # else let PlayResult from think() do engine send_analyse()
-            # @todo when we know how to update while engine thinking - do it here
+            # @todo when we know how to update while engine thinking #49
             if info_list:
                 info = info_list[0]  # pv first
                 if info:

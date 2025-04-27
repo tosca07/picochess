@@ -46,6 +46,7 @@ class PicoTutor:
         i_fen="",
         i_comment_file="",
         i_lang="en",
+        i_always_run_tutor=False,
         loop=None,
     ):
         self.user_color: chess.Color = i_player_color
@@ -100,6 +101,7 @@ class PicoTutor:
         # the following setting can be True if engine is not playing
         # or if you want to analyse also engine moves (like pgn_engine)
         self.analyse_both_sides = False  # analyse only user side as default
+        self.always_run_tutor = i_always_run_tutor  # force deep tutor to always run
 
         try:
             with open("chess-eco_pos.txt") as fp:
@@ -156,12 +158,14 @@ class PicoTutor:
             await self._start_or_stop_as_needed()
 
     def can_use_coach_analyser(self) -> bool:
-        """is the tutor active and analysing - if yes InfoDicts can be used"""
+        """is the tutor active and analysing, and has user turned on the watcher
+        - if yes InfoDicts can be used"""
         result = False
         # most analysing functions are skipped if neither coach nor watcher is on
+        # in this case its enough if watcher is on - coach can be off
         if self.best_engine:
-            if self.best_engine.loaded_ok() and (self.coach_on or self.watcher_on):
-                result = True
+            if self.best_engine.loaded_ok() and self.watcher_on:  # coach can be off
+                result = self.best_engine.is_analyser_running()
         return result
 
     def _setup_comments(self, i_lang, i_comment_file):
@@ -431,6 +435,7 @@ class PicoTutor:
         # at the moment pico main always calls set_user_color after this
         # therefore no self._start_or_stop_as_needed()
         # @ todo: combine set_colour into this call
+        # that is why we leave the if not() above for now
 
     async def push_move(self, i_uci_move: chess.Move, game: chess.Board) -> bool:
         """inform picotutor that a board move was made
@@ -441,36 +446,27 @@ class PicoTutor:
         if game.fen() != self.board.fen():
             logger.debug("picotutor board not in sync when pushing move %s", i_uci_move.uci())
             return False
+        c_filler_str = PicoTutor.printable_move_filler(self.board.ply(), self.board.turn)
+        logger.debug("picotutor push move %s%s", c_filler_str, i_uci_move.uci())
 
         if not (self.coach_on or self.watcher_on):
             return True
 
-        c_filler_str = PicoTutor.printable_move_filler(self.board.ply(), self.board.turn)
-        logger.debug("picotutor push move %s%s", c_filler_str, i_uci_move.uci())
-
-        if not self.analyse_both_sides:
-            # Pico V3 functionality
-            if self.board.turn == self.user_color:
-                # if it is user player's turn then start analyse engine
-                self._eval_engine_move(i_uci_move)  # Pico v4 line
-                await self.start()
-            else:
-                # otherwise it is computer turn and analysis to be paused
-                try:
-                    await self.eval_legal_moves()  # take snapshot of current evaluation
-                    self.eval_user_move(i_uci_move)  # determine & save evaluation of user move
-                except IndexError:
-                    logger.debug("program internal error - no move pushed before evaluation attempt")
-                self.stop()
-        else:
-            # Pico V4 can analyse both sides in HINT mode - do all steps above
+        if self.analyse_both_sides or self.board.turn != self.user_color:
+            # we are analysing both sides or user just made a move, evaluate move
             try:
                 await self.eval_legal_moves()  # take snapshot of current evaluation
                 self.eval_user_move(i_uci_move)  # determine & save evaluation of user move
             except IndexError:
                 logger.debug("program internal error - no move pushed before evaluation attempt")
-            await self.start()
-
+        else:
+            # we are not analysing both sides or engine just made a move
+            # no analysis stored - except dummy row in history for poping computer moves
+            try:
+                self._eval_engine_move(i_uci_move)  # Pico v4 line, add engine move to history
+            except IndexError:
+                logger.debug("program internal error - no move pushed before storing engine move")
+        await self._start_or_stop_as_needed()  # new common code to start or stop analysers
         # self.log_sync_info()  # normally commented out
         return True
 
@@ -552,10 +548,12 @@ class PicoTutor:
     def get_move_counter(self):
         return self.board.fullmove_number
 
-    async def start(self):
-        """start the engine analyser - or update depth if already running"""
+    async def start(self, start_also_obvious_analyser: bool = True):
+        """start the engine analyser - or update depth if already running
+        start_also_obvious_analyser is used to start the obvious engine
+        you can override with False to prevent obvious analysis"""
         # after newgame, setposition, pushmove etc events
-        if self.obvious_engine:
+        if start_also_obvious_analyser and self.obvious_engine:
             if self.obvious_engine.loaded_ok():
                 if self.coach_on or self.watcher_on:
                     limit = Limit(depth=c.LOW_DEPTH)
@@ -588,19 +586,22 @@ class PicoTutor:
 
     async def _start_or_stop_as_needed(self):
         """start or stop analyser as needed"""
-        if self.analyse_both_sides or self.board.turn == self.user_color:
-            # if it is user player's turn then start analyse engine
-            # otherwise it is computer opponents turn and analysis engine
-            # should be paused
-            await self.start()
+        # common logic for all of tutors functions to start or stop
+        # determine if tutor should run and start if it should, pause if not
+        if self._should_run_tutor():
+            await self.start()  # normal both deep and obvious analysis
+        elif self.always_run_tutor:
+            # @todo intermediate solution #49 forcing deep tutor to run anyway
+            await self.start(False)  # only deep analysis, dont start obvious
         else:
             self.stop()
 
-    def _stop_if_needed(self):
-        """stop analyser if needed"""
-        if not (self.analyse_both_sides or self.board.turn == self.user_color):
-            # reversed logic from _start_or_stop_as_needed above
-            self.stop()
+    def _should_run_tutor(self) -> bool:
+        """return True if tutor should run"""
+        if not (self.coach_on or self.watcher_on):
+            return False  # user has turned tutor off
+        # run tutor if we are analysing both sides, or if it is user turn
+        return self.analyse_both_sides or self.board.turn == self.user_color
 
     def log_sync_info(self):
         """logging help to check if picotutor and main picochess are in sync"""
@@ -721,7 +722,7 @@ class PicoTutor:
         return tupel[2]
 
     @staticmethod
-    def get_score(turn: chess.Color, info: chess.engine.InfoDict) -> tuple:
+    def get_score(turn: chess.Color, info: InfoDict) -> tuple:
         """return tuple (move, score, mate) extracted from info"""
         move = info["pv"][0] if "pv" in info else chess.Move.null()
         # @todo can we make score default None without crash in get_user_move_eval()
@@ -1135,10 +1136,12 @@ class PicoTutor:
                 logger.debug("failed to log full list of evaluated moves in picotutor")
                 # dont care, just dont let this debug crash picotutor
 
-    def get_user_move_info(self):
-        """return the hint move and the analysed InfoDict pv array of user chosen move"""
+    def get_user_move_info(self) -> tuple:
+        """return a tuple of (hint move, pv) if tutor is on, where
+        - pv is the analysed InfoDict pv array of user chosen move
+        if tutor is deactivated by user it returns (chess.Move.null(), [])"""
         if not (self.coach_on or self.watcher_on):
-            return
+            return chess.Move.null(), []  # no move, no pv list
         # not sending self.pv_best_move as its not used?
         return self.hint_move[self.board.turn], self.pv_user_move[self.board.turn]
 

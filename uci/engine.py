@@ -119,9 +119,7 @@ class UciShell(object):
 class ContinuousAnalysis:
     """class for continous analysis from a chess engine"""
 
-    def __init__(
-        self, engine: chess.engine.UciProtocol, delay: float, loop: asyncio.AbstractEventLoop, engine_debug_name: str
-    ):
+    def __init__(self, engine: UciProtocol, delay: float, loop: asyncio.AbstractEventLoop, engine_debug_name: str):
         """
         A continuous analysis generator that runs as a background async task.
 
@@ -631,7 +629,7 @@ class UciEngine(object):
                 self.analyser.update_limit(limit)
             if game.fen() != self.analyser.get_fen():
                 await self.analyser.update_game(game)  # new position
-                logger.debug("picotutor new analysis position")
+                logger.debug("%s new analysis position", self.whoami)
             else:
                 result = True  # was running - results to be expected
                 # logger.debug("continue with old analysis position")
