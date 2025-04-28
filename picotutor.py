@@ -24,6 +24,7 @@ import logging
 from random import randint
 from typing import Tuple
 import platform
+import asyncio
 import chess  # type: ignore
 from chess.engine import InfoDict, Limit
 import chess.engine
@@ -461,9 +462,13 @@ class PicoTutor:
                 logger.debug("program internal error - no move pushed before evaluation attempt")
         else:
             # we are not analysing both sides or engine just made a move
-            # no analysis stored - except dummy row in history for poping computer moves
             try:
-                self._eval_engine_move(i_uci_move)  # Pico v4 line, add engine move to history
+                if self.always_run_tutor:
+                    # @todo this is intermediate solution for #49, we evaluate engine moves
+                    await self.eval_legal_moves()  # take snapshot of current evaluation
+                    self.eval_user_move(i_uci_move)  # determine & save evaluation of user move
+                else:
+                    self._eval_engine_move(i_uci_move)  # add "dummy" engine move to history
             except IndexError:
                 logger.debug("program internal error - no move pushed before storing engine move")
         await self._start_or_stop_as_needed()  # new common code to start or stop analysers
@@ -548,19 +553,11 @@ class PicoTutor:
     def get_move_counter(self):
         return self.board.fullmove_number
 
-    async def start(self, start_also_obvious_analyser: bool = True):
+    async def start(self):
         """start the engine analyser - or update depth if already running
         start_also_obvious_analyser is used to start the obvious engine
         you can override with False to prevent obvious analysis"""
         # after newgame, setposition, pushmove etc events
-        if start_also_obvious_analyser and self.obvious_engine:
-            if self.obvious_engine.loaded_ok():
-                if self.coach_on or self.watcher_on:
-                    limit = Limit(depth=c.LOW_DEPTH)
-                    multipv = c.LOW_ROOT_MOVES
-                    await self.obvious_engine.start_analysis(self.board, limit=limit, multipv=multipv)
-            else:
-                logger.error("obvious engine has terminated in picotutor?")
         if self.best_engine:
             if self.best_engine.loaded_ok():
                 if self.coach_on or self.watcher_on:
@@ -574,6 +571,15 @@ class PicoTutor:
                     await self.best_engine.start_analysis(self.board, limit=limit, multipv=multipv)
             else:
                 logger.error("best engine has terminated in picotutor?")
+        await asyncio.sleep(0.05)  # give deep engine analysis head start
+        if self.obvious_engine:
+            if self.obvious_engine.loaded_ok():
+                if self.coach_on or self.watcher_on:
+                    limit = Limit(depth=c.LOW_DEPTH)
+                    multipv = c.LOW_ROOT_MOVES
+                    await self.obvious_engine.start_analysis(self.board, limit=limit, multipv=multipv)
+            else:
+                logger.error("obvious engine has terminated in picotutor?")
 
     def stop(self):
         """stop the engine analyser"""
@@ -592,7 +598,7 @@ class PicoTutor:
             await self.start()  # normal both deep and obvious analysis
         elif self.always_run_tutor:
             # @todo intermediate solution #49 forcing deep tutor to run anyway
-            await self.start(False)  # only deep analysis, dont start obvious
+            await self.start()
         else:
             self.stop()
 
@@ -799,7 +805,9 @@ class PicoTutor:
         self.log_pv_lists()  # debug only
 
     async def get_analysis(self) -> dict:
-        """get best move info if exists - during user thinking"""
+        """get best move info if exists - returns dict with info and fen
+        the info element is a list of InfoDict
+        the fen element is board position that was analysed"""
         # failed answer is empty lists
         result = {"info": [], "fen": ""}
         if self.best_engine:

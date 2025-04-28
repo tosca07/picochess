@@ -1699,6 +1699,8 @@ async def main() -> None:
                 valid = True
                 if self.picotutor_mode():
                     valid = await self.state.picotutor.is_same_board(self.state.game)
+                    if valid and self.always_run_tutor:
+                        self.state.picotutor.get_user_move_eval()  # eval engine move
                     if not valid:
                         await self.state.picotutor.set_position(self.state.game)
                         if self.state.play_mode == PlayMode.USER_BLACK:
@@ -4151,6 +4153,8 @@ async def main() -> None:
                                         await self.state.picotutor.set_user_color(chess.BLACK, not self.eng_plays())
 
                                 valid = await self.state.picotutor.push_move(event.move, game_copy)
+                                if valid and self.always_run_tutor:
+                                    self.state.picotutor.get_user_move_eval()  # eval engine move
                                 if not valid:
                                     await self.state.picotutor.set_position(game_copy)
                                     if self.state.play_mode == PlayMode.USER_BLACK:

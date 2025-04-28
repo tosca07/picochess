@@ -646,8 +646,9 @@ class UciEngine(object):
         return self.analyser.is_running()
 
     async def get_analysis(self, game: chess.Board) -> dict:
-        """key 'first': first low/quick list of InfoDict (multipv)
-        key 'last': newest list of InfoDict (multipv)"""
+        """get analysis info from engine - returns dict with info and fen
+        key 'info': list of InfoDict (multipv)
+        key 'fen': analysed board position fen"""
         # failed answer is empty lists
         result = {"info": [], "fen": ""}
         if self.analyser.is_running():
