@@ -506,8 +506,15 @@ class PgnDisplay(DisplayMsg):
                     pgn_move = node.move
                     if pgn_move == user_move and node.turn() == turn:  # checksum
                         nag = value["nag"]  # $N symbol for !!, ! etc
-                        node.nags.add(nag)
-                        comment = PicoTutor.nag_to_symbol(nag)  # back to !!, ! etc
+                        if nag != chess.pgn.NAG_NULL:
+                            node.nags.add(nag)
+                            comment = PicoTutor.nag_to_symbol(nag)  # back to !!, ! etc
+                        else:
+                            # special case inaccuracy - see picotutor.py
+                            if "best_move" in value:
+                                comment = "Best: " + value["best_move"]
+                            else:
+                                comment = "Inaccuracy "
                         if "score" in value:
                             comment += " Score: " + str(value["score"])
                         if "CPL" in value:

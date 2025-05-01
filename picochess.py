@@ -2312,7 +2312,7 @@ async def main() -> None:
                     self.engine.stop_analysis()
 
         def debug_pv_info(self, info: InfoDict):
-            if info:
+            if info and "pv" in info and info["pv"]:
                 logger.debug(
                     "engine pv move: %s - depth %d - score %s",
                     info.get("pv")[0].uci(),

@@ -14,6 +14,9 @@ VERY_BAD_MOVE_TH = 250  # difference user to best move ??
 BAD_MOVE_TH = 150  # difference user to best move ?
 DUBIOUS_TH = 30  # difference user to best move ?!
 
+INACCURACY_TH = 20  # inaccuracy limit - only for PGN comments
+ALTERNATIVE_TH = 20  # limit for alternative moves
+
 VERY_GOOD_MOVE_TH = 0  # difference user to best move
 GOOD_MOVE_TH = 30  # difference user to best move
 INTERESTING_TH = 30  # difference user to best move !?

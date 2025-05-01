@@ -795,7 +795,7 @@ class PicoTutor:
                 for pv_key, move, score, mate in self.best_moves[self.board.turn]:
                     if move:
                         diff = abs(best_score - score)
-                        if diff <= 20:
+                        if diff <= c.ALTERNATIVE_TH:
                             self.alt_best_moves[self.board.turn].append(move)
         if self.obvious_info[self.board.turn]:
             PicoTutor._eval_pv_list(
@@ -958,28 +958,34 @@ class PicoTutor:
         # key to find evaluation later =(ply halfmove number: int, move: chess.Move)
         # not always unique if we have takeback sequence with other moves
         # should work since we evaluate all moves and remove if no evaluation
-        e_key = (self.board.ply(), current_move, self.board.turn)  # halfmove key AFTER the move
-        if eval_string == "":
-            # due to takeback remove any possible previous evaluation
+        e_key = (self.board.ply(), current_move, self.board.turn)  # halfmove key AFTER move
+        e_value = {}
+        e_value["nag"] = PicoTutor.symbol_to_nag(eval_string)
+        try:
+            # board_before_usermove is where we have popped the user move above
+            e_value["best_move"] = board_before_usermove.san(best_move)
+            e_value["user_move"] = board_before_usermove.san(current_move)
+            logger.debug("best move: %s, user move: %s", e_value["best_move"], e_value["user_move"])
+        except (KeyError, ValueError, AttributeError):
+            logger.warning("picotutor failed to convert to san for %s", current_move)
+        if e_value["nag"] == chess.pgn.NAG_NULL:
+            # no NAG to store, due to takeback make sure this e_key eval is empty
             self.evaluated_moves.pop(e_key, None)  # None prevents KeyError
-        else:
-            e_value = {}  # clear possible old value
-            e_value["nag"] = PicoTutor.symbol_to_nag(eval_string)
-            if current_pv:  # user move identified, not approximated
-                e_value["score"] = current_score  # eval score
+            # special case, if inaccurate move store DS, also when approximated
+            if best_deep_diff >= c.INACCURACY_TH:
                 e_value["CPL"] = best_deep_diff  # lost centipawns
-                if low_pv:  # low also identified, needs both current AND low
-                    e_value["deep_low_diff"] = deep_low_diff  # Cambridge delta S
-                if before_score:  # not approximated, need both current AND history
-                    e_value["score_hist_diff"] = score_hist_diff
-            try:
-                # board_before_usermove is where we have popped the user move above
-                e_value["best_move"] = board_before_usermove.san(best_move)
-                e_value["user_move"] = board_before_usermove.san(current_move)
-            except (KeyError, ValueError, AttributeError):
-                logger.warning("picotutor failed to convert to san for %s", current_move)
-            finally:
-                self.evaluated_moves[e_key] = e_value  # sometimes overwritten after takeback
+                if current_pv is None:
+                    e_value["score"] = current_score
+                self.evaluated_moves[e_key] = e_value  # ok with current_pv None (approx)
+        elif current_pv is not None:
+            # user move identified, not approximated, log to PGN file
+            e_value["score"] = current_score  # eval score
+            e_value["CPL"] = best_deep_diff  # lost centipawns
+            if low_pv:  # low also identified, needs both current_pv AND low
+                e_value["deep_low_diff"] = deep_low_diff  # Cambridge delta S
+            if before_score:  # not approximated, need both current_pv AND history
+                e_value["score_hist_diff"] = score_hist_diff
+            self.evaluated_moves[e_key] = e_value
 
         self.log_sync_info()  # debug only
 
