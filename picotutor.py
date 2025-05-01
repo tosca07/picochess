@@ -805,7 +805,7 @@ class PicoTutor:
         self.log_pv_lists()  # debug only
 
     async def get_analysis(self) -> dict:
-        """get best move info if exists - returns dict with info and fen
+        """get analysis info from engine - returns dict with info and fen
         the info element is a list of InfoDict
         the fen element is board position that was analysed"""
         # failed answer is empty lists
@@ -816,7 +816,8 @@ class PicoTutor:
         return result
 
     def get_user_move_eval(self) -> tuple:
-        """return (eval sts, moves to mate"""
+        """for main program to get the evaluation of the previous move
+        return (str int) which is (eval sts, moves to mate"""
         eval_string = ""
         best_mate = 0
         best_score = 0
@@ -824,23 +825,31 @@ class PicoTutor:
         if not (self.coach_on or self.watcher_on):
             return eval_string, 0
 
-        # check precondition for calculations
-        # more than one best and obvious move have to be found
+        # all history list have tuples: (pv,move,score,mate)
+        # where pv can be None if score and mate are not available
+        # move is always valid, even for fake history tuples
+
+        # best and obvious history tuples needed, and min 2 moves analysed
         if (
             len(self.best_history[self.board.turn]) < 1
             or len(self.obvious_history[self.board.turn]) < 1
             or len(self.best_moves[self.board.turn]) < 2
-            or len(self.obvious_moves[self.board.turn]) < 2
         ):
-            eval_string = ""
             return eval_string, 0
 
-        # user move score and previoues score
-        # last evaluation = for current user move
-        current_pv, current_move, current_score, current_mate = self.best_history[self.board.turn][-1]
-        # current_pv can be None if no best_move had been found
-        # but current_move is always the user move
+        #  best score/move is the first in the list - needed to proceed
+        best_pv, best_move, best_score, best_mate = self.best_moves[self.board.turn][0]
+        if best_pv is None:
+            logger.debug("cannot evaluate move as best move data is missing")
+            return eval_string, 0
 
+        # best/deep/max-ply engine analysis
+        current_pv, current_move, current_score, current_mate = self.best_history[self.board.turn][-1]
+
+        # obvious/shallow/min-ply engine analysis
+        low_pv, low_move, low_score, low_mate = self.obvious_history[self.board.turn][-1]
+
+        # dig into best/deep/max-ply history for before_score for previous user move
         if len(self.best_history[self.board.turn]) > 1:
             before_pv, before_move, before_score, before_mate = self.best_history[self.board.turn][-2]
             if before_pv is None:  # pv_key index - move not analysed
@@ -848,21 +857,12 @@ class PicoTutor:
         else:
             before_score = None
 
-        # best deep engine score/move
-        best_pv, best_move, best_score, best_mate = self.best_moves[self.board.turn][0]
-        # tupel (pv,move,score,mate)
-
-        # calculate diffs based on low depth search for obvious moves
-        low_pv, low_move, low_score, low_mate = self.obvious_history[self.board.turn][-1]
-        # last evaluation = for current user move
-        # low_pv can be None if no if user move found in obvious_moves
-
-        # optimisations in Picochess 4 - 200 wide multipv searches reduced to 5 to 50 ish
+        # optimisations in Picochess 4 - 200 wide multipv searches reduced to to 50 ish
         # approximation_in_use is True when user misses either obvious or best history
         # user move might be missing in obvious history - can happen!
-        #  --> low_score is lowest seen score, low_pv is None
+        #  --> low_score is lowest seen score, known by low_pv is None
         # user move might also be missing in best history
-        #  --> current_score is lowest seen score, current_pv is None
+        #  --> current_score is lowest seen score, known by current_pv is None
         logger.debug("Score: %d", current_score)
         best_deep_diff = best_score - current_score
         deep_low_diff = current_score - low_score
