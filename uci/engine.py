@@ -716,7 +716,9 @@ class UciEngine(object):
             self.engine.send_line("ucinewgame")
         if self.analyser.is_running() and game:
             # send new board to analyser? avoid stop?
-            self.analyser.update_game(game)
+            # @todo fix this early game update
+            pass
+            # self.analyser.update_game(game)
 
     def set_mode(self, ponder: bool = True):
         """Set engine ponder mode for a playing engine"""
