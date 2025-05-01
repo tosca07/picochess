@@ -17,6 +17,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import asyncio
+from asyncio import CancelledError
 import os
 from typing import Optional, Iterable
 import logging
@@ -490,7 +491,10 @@ class UciEngine(object):
         try:
             await self.engine.configure(self.options)
             # some engines like pgn_engine will not work without this
-            await self.engine.ping()  # send isready and wait for answer
+            try:
+                await self.engine.ping()  # send isready and wait for answer
+            except CancelledError:
+                logger.debug("ping isready cancelled - we are probably closing down")
         except chess.engine.EngineError as e:
             logger.warning(e)
 

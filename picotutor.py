@@ -959,7 +959,7 @@ class PicoTutor:
         # not always unique if we have takeback sequence with other moves
         # should work since we evaluate all moves and remove if no evaluation
         e_key = (self.board.ply(), current_move, self.board.turn)  # halfmove key AFTER move
-        e_value = {}
+        e_value = {}  # collect eval values for the move here
         e_value["nag"] = PicoTutor.symbol_to_nag(eval_string)
         try:
             # board_before_usermove is where we have popped the user move above
@@ -972,15 +972,17 @@ class PicoTutor:
             # no NAG to store, due to takeback make sure this e_key eval is empty
             self.evaluated_moves.pop(e_key, None)  # None prevents KeyError
             # special case, if inaccurate move store DS, also when approximated
-            if best_deep_diff >= c.INACCURACY_TH:
+            if best_deep_diff > c.INACCURACY_TH:
                 e_value["CPL"] = best_deep_diff  # lost centipawns
                 if current_pv is None:
                     e_value["score"] = current_score
                 self.evaluated_moves[e_key] = e_value  # ok with current_pv None (approx)
         elif current_pv is not None:
-            # user move identified, not approximated, log to PGN file
-            e_value["score"] = current_score  # eval score
+            # user move identified, not approximated, ok to log to PGN file
             e_value["CPL"] = best_deep_diff  # lost centipawns
+            if current_mate != 0:
+                e_value["mate"] = current_mate
+            e_value["score"] = current_score  # eval score
             if low_pv is not None:  # low also identified, needs both current_pv AND low
                 e_value["deep_low_diff"] = deep_low_diff  # Cambridge delta S
             if before_score is not None:  # not approximated, need both current_pv AND history

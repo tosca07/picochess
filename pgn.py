@@ -508,25 +508,34 @@ class PgnDisplay(DisplayMsg):
                         nag = value["nag"]  # $N symbol for !!, ! etc
                         if nag != chess.pgn.NAG_NULL:
                             node.nags.add(nag)
-                            comment = PicoTutor.nag_to_symbol(nag)  # back to !!, ! etc
-                        else:
-                            # special case inaccuracy - see picotutor.py
-                            if "best_move" in value:
-                                comment = "Best: " + value["best_move"]
-                            else:
-                                comment = "Inaccuracy "
-                        if "score" in value:
-                            comment += " Score: " + str(value["score"])
-                        if "CPL" in value:
-                            comment += " CPL: " + str(value["CPL"])
-                        if "deep_low_diff" in value:
-                            comment += " DS: " + str(value.get("deep_low_diff"))
-                        if nag in (chess.pgn.NAG_BLUNDER, chess.pgn.NAG_MISTAKE, chess.pgn.NAG_DUBIOUS_MOVE):
-                            if "best_move" in value:
-                                comment += " Best: " + value["best_move"]
-                        node.comment = comment
+                        node.comment = self._get_picotutor_eval_comments(nag, value)
                     else:
                         logger.debug("skipped move %s-%s picotutor eval mismatch", pgn_move.uci(), user_move.uci())
+
+    def _get_picotutor_eval_comments(self, nag: int, value: dict) -> str:
+        """get comments found in picotutor evaluations value dict"""
+        if nag != chess.pgn.NAG_NULL:
+            comment = PicoTutor.nag_to_symbol(nag)  # back to !!, ! etc
+        else:
+            # special case inaccuracy - its not a nag, but CPL > INACCURACY_TH
+            # its the only case where there is a No-NULL evaluation
+            if "best_move" in value:
+                comment = "Best: " + value["best_move"]
+            else:
+                comment = "Inaccuracy "  # should never happen, fallback
+        if "mate" in value:
+            comment += " Mate in: " + str(value["mate"])
+        else:
+            if "score" in value:
+                comment += " Score: " + str(value["score"])
+        if "CPL" in value:
+            comment += " CPL: " + str(value["CPL"])
+        if "deep_low_diff" in value:
+            comment += " DS: " + str(value.get("deep_low_diff"))
+        if nag in (chess.pgn.NAG_BLUNDER, chess.pgn.NAG_MISTAKE, chess.pgn.NAG_DUBIOUS_MOVE):
+            if "best_move" in value:
+                comment += " Best: " + value["best_move"]
+        return comment
 
     def _save_and_email_pgn(self, message):
         logger.debug("Saving game to [%s]", self.file_name)

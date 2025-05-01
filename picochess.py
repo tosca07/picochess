@@ -37,6 +37,7 @@ import platform
 
 import paramiko
 import chess.pgn
+from chess.pgn import Game
 import chess.polyglot
 import chess.engine
 from tornado.platform.asyncio import AsyncIOMainLoop
@@ -822,6 +823,7 @@ async def main() -> None:
             board_type,
             loop: asyncio.AbstractEventLoop,
             args,
+            shared: dict,
         ):
             self.loop = loop
             self._task = None  # placeholder for message consumer task
@@ -843,6 +845,7 @@ async def main() -> None:
             self.background_analyse_timer = AsyncRepeatingTimer(
                 FLOAT_MIN_BACKGROUND_TIME, self._pv_score_depth_analyser, loop=self.loop
             )
+            self.shared = shared
             ###########################################
 
             # try the given engine first and if that fails the first from "engines.ini" then exit
@@ -2569,7 +2572,7 @@ async def main() -> None:
             except OSError:
                 return
 
-            l_game_pgn = chess.pgn.read_game(l_file_pgn)
+            l_game_pgn: Game | None = chess.pgn.read_game(l_file_pgn)
             l_file_pgn.close()
 
             logger.debug("molli: read game filename %s", l_filename)
@@ -2582,23 +2585,28 @@ async def main() -> None:
             self.state.game = chess.Board()
             l_move = chess.Move.null()
 
+            update_speed = 1.0
             if l_game_pgn.headers["Event"]:
                 await DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers["Event"])))
+                await asyncio.sleep(update_speed)
 
             if l_game_pgn.headers["White"]:
                 await DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers["White"])))
+                await asyncio.sleep(update_speed)
 
             await DisplayMsg.show(Message.SHOW_TEXT(text_string="versus"))
+            await asyncio.sleep(update_speed)
 
             if l_game_pgn.headers["Black"]:
                 await DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers["Black"])))
+                await asyncio.sleep(update_speed)
 
             if l_game_pgn.headers["Result"]:
                 await DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers["Result"])))
+                await asyncio.sleep(update_speed)
 
-            await asyncio.sleep(2)
             await DisplayMsg.show(Message.READ_GAME)
-            await asyncio.sleep(2)
+            await asyncio.sleep(update_speed)
 
             # check if we should stop loading pgn game "in the middle"
             # this feature can be used to "jump to" a certain position in pgn
@@ -4789,6 +4797,7 @@ async def main() -> None:
         board_type,
         main_loop,
         args,
+        shared,
     )
 
     await my_main.initialise(time_text)
