@@ -70,7 +70,7 @@ from utilities import (
 )
 from utilities import AsyncRepeatingTimer
 from pgn import Emailer, PgnDisplay, ModeInfo
-from server import WebDisplay, WebServer, WebVr
+from server import WebDisplay, WebServer, WebVr, EventHandler
 from picotalker import PicoTalkerDisplay
 from dispatcher import Dispatcher
 
@@ -2606,7 +2606,6 @@ async def main() -> None:
                 await asyncio.sleep(update_speed)
 
             await DisplayMsg.show(Message.READ_GAME)
-            await asyncio.sleep(update_speed)
 
             # check if we should stop loading pgn game "in the middle"
             # this feature can be used to "jump to" a certain position in pgn
@@ -2632,7 +2631,7 @@ async def main() -> None:
 
             # switch temporarly picotutor off
             self.state.flag_picotutor = False
-            # Pico 4 - avoid wait for a computer move - temp switch to ANALYSIS
+            # Pico 4 - avoid wait for a computer move - START IN ANALYSIS
             old_interaction_mode = self.state.interaction_mode
             self.state.interaction_mode = Mode.ANALYSIS
 
@@ -2641,7 +2640,7 @@ async def main() -> None:
                 await self.user_move(l_move, sliding=True)
 
             self.state.flag_picotutor = True
-            self.state.interaction_mode = old_interaction_mode
+            # dont put back: self.state.interaction_mode = old_interaction_mode
 
             await self.stop_search_and_clock()
             turn = self.state.game.turn
@@ -2727,13 +2726,11 @@ async def main() -> None:
                 await DisplayMsg.show(game_end)
             else:
                 self.state.play_mode = PlayMode.USER_WHITE if turn == chess.WHITE else PlayMode.USER_BLACK
-                text = self.state.play_mode.value
-                msg = Message.PLAY_MODE(
-                    play_mode=self.state.play_mode,
-                    play_mode_text=self.state.dgttranslate.text(text),
-                )
-                await DisplayMsg.show(msg)
                 await asyncio.sleep(1)
+
+            self.shared["headers"] = l_game_pgn.headers  # update headers from file
+            EventHandler.write_to_clients({"event": "Header", "headers": dict(self.shared["headers"])})
+            await asyncio.sleep(0.1)  # give time to write_to_clients
 
             self.state.take_back_locked = True  # important otherwise problems for setting up the position
 

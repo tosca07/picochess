@@ -552,7 +552,7 @@ class WebDisplay(DisplayMsg):
         def _build_headers():
             self._create_headers()
             pgn_game = pgn.Game()
-            self._build_game_header(pgn_game)
+            self._build_game_header(pgn_game)  # rebuilds game headers
             self.shared["headers"].update(pgn_game.headers)
 
         def _send_headers():
@@ -562,10 +562,13 @@ class WebDisplay(DisplayMsg):
             if "ip_info" in self.shared:
                 EventHandler.write_to_clients({"event": "Title", "ip_info": self.shared["ip_info"]})
 
-        def _transfer(game: chess.Board):
+        def _transfer(game: chess.Board, keep_these_headers: dict = None):
             pgn_game = pgn.Game().from_board(game)
-            self._build_game_header(pgn_game)
-            self.shared["headers"] = pgn_game.headers
+            if keep_these_headers is None:
+                self._build_game_header(pgn_game)
+                self.shared["headers"] = pgn_game.headers
+            else:
+                self.shared["headers"] = keep_these_headers
             return pgn_game.accept(pgn.StringExporter(headers=True, comments=False, variations=False))
 
         def peek_uci(game: chess.Board):
@@ -729,7 +732,7 @@ class WebDisplay(DisplayMsg):
         elif isinstance(message, Message.COMPUTER_MOVE):
             game_copy = message.game.copy()
             game_copy.push(message.move)
-            pgn_str = _transfer(game_copy)
+            pgn_str = _transfer(game_copy, self.shared["headers"])  # dont remake headers every move
             fen = _oldstyle_fen(game_copy)
             mov = message.move.uci()
             result = {"pgn": pgn_str, "fen": fen, "event": "Fen", "move": mov, "play": "computer"}
@@ -742,7 +745,7 @@ class WebDisplay(DisplayMsg):
 
         elif isinstance(message, Message.USER_MOVE_DONE):
             WebDisplay.result_sav = ""
-            pgn_str = _transfer(message.game)
+            pgn_str = _transfer(message.game, self.shared["headers"])  # dont remake headers every move
             fen = _oldstyle_fen(message.game)
             mov = message.move.uci()
             result = {"pgn": pgn_str, "fen": fen, "event": "Fen", "move": mov, "play": "user"}
@@ -750,7 +753,7 @@ class WebDisplay(DisplayMsg):
             EventHandler.write_to_clients(result)
 
         elif isinstance(message, Message.REVIEW_MOVE_DONE):
-            pgn_str = _transfer(message.game)
+            pgn_str = _transfer(message.game, self.shared["headers"])  # dont remake headers every move
             fen = _oldstyle_fen(message.game)
             mov = message.move.uci()
             result = {"pgn": pgn_str, "fen": fen, "event": "Fen", "move": mov, "play": "review"}
@@ -758,7 +761,7 @@ class WebDisplay(DisplayMsg):
             EventHandler.write_to_clients(result)
 
         elif isinstance(message, Message.ALTERNATIVE_MOVE):
-            pgn_str = _transfer(message.game)
+            pgn_str = _transfer(message.game, self.shared["headers"])  # dont remake headers every move
             fen = _oldstyle_fen(message.game)
             mov = peek_uci(message.game)
             result = {"pgn": pgn_str, "fen": fen, "event": "Fen", "move": mov, "play": "reload"}
