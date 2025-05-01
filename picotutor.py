@@ -981,9 +981,9 @@ class PicoTutor:
             # user move identified, not approximated, log to PGN file
             e_value["score"] = current_score  # eval score
             e_value["CPL"] = best_deep_diff  # lost centipawns
-            if low_pv:  # low also identified, needs both current_pv AND low
+            if low_pv is not None:  # low also identified, needs both current_pv AND low
                 e_value["deep_low_diff"] = deep_low_diff  # Cambridge delta S
-            if before_score:  # not approximated, need both current_pv AND history
+            if before_score is not None:  # not approximated, need both current_pv AND history
                 e_value["score_hist_diff"] = score_hist_diff
             self.evaluated_moves[e_key] = e_value
 
