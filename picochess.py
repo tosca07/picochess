@@ -1008,7 +1008,7 @@ async def main() -> None:
                 await self.set_wait_state(Message.START_NEW_GAME(game=self.state.game.copy(), newgame=True))
             else:
                 ModeInfo.set_online_mode(mode=False)
-                self.engine.newgame(self.state.game.copy())
+                await self.engine.newgame(self.state.game.copy())
 
             await DisplayMsg.show(Message.PICOCOMMENT(picocomment="ok"))
 
@@ -2419,7 +2419,7 @@ async def main() -> None:
                         if bit_board.is_valid():
                             self.state.game = chess.Board(bit_board.fen())
                             await self.stop_search_and_clock()
-                            self.engine.newgame(self.state.game.copy())
+                            await self.engine.newgame(self.state.game.copy())
                             self.state.done_computer_fen = None
                             self.state.done_move = self.state.pb_move = chess.Move.null()
                             self.state.searchmoves.reset()
@@ -2440,7 +2440,7 @@ async def main() -> None:
                             if bit_board.is_valid():
                                 self.state.game = chess.Board(bit_board.fen())
                                 await self.stop_search_and_clock()
-                                self.engine.newgame(self.state.game.copy())
+                                await self.engine.newgame(self.state.game.copy())
                                 self.state.done_computer_fen = None
                                 self.state.done_move = self.state.pb_move = chess.Move.null()
                                 self.state.searchmoves.reset()
@@ -2627,7 +2627,7 @@ async def main() -> None:
             if l_move:
                 self.state.game.pop()
 
-            self.engine.newgame(self.state.game.copy())
+            await self.engine.newgame(self.state.game.copy())
 
             # switch temporarly picotutor off
             self.state.flag_picotutor = False
@@ -3057,7 +3057,7 @@ async def main() -> None:
                         )
                         await self.engine.open_engine()
                     await self.engine.startup(old_options, self.state.rating)
-                    self.engine.newgame(self.state.game.copy())
+                    await self.engine.newgame(self.state.game.copy())
                     if not self.engine.loaded_ok():
                         logger.error("no engines started")
                         await DisplayMsg.show(Message.ENGINE_FAIL())
@@ -3139,7 +3139,7 @@ async def main() -> None:
                     self.state.game = chess.Board()
                     self.state.game.turn = chess.WHITE
                     self.state.play_mode = PlayMode.USER_WHITE
-                    self.engine.newgame(self.state.game.copy())
+                    await self.engine.newgame(self.state.game.copy())
                     self.state.done_computer_fen = None
                     self.state.done_move = self.state.pb_move = chess.Move.null()
                     self.state.searchmoves.reset()
@@ -3152,7 +3152,7 @@ async def main() -> None:
                     msg = Message.START_NEW_GAME(game=self.state.game.copy(), newgame=real_new_game)
                     await DisplayMsg.show(msg)
                 else:
-                    self.engine.newgame(self.state.game.copy())
+                    await self.engine.newgame(self.state.game.copy())
 
                 await self.engine_mode()
 
@@ -3327,7 +3327,7 @@ async def main() -> None:
                     await self.engine.send()
 
                 await DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION_SCAN"))
-                self.engine.newgame(self.state.game.copy())
+                await self.engine.newgame(self.state.game.copy())
                 self.state.done_computer_fen = None
                 self.state.done_move = self.state.pb_move = chess.Move.null()
                 self.state.legal_fens_after_cmove = []
@@ -3443,7 +3443,7 @@ async def main() -> None:
 
                     if self.emulation_mode():
                         self.engine.stop()
-                    self.engine.newgame(self.state.game.copy())
+                    await self.engine.newgame(self.state.game.copy())
 
                     self.state.done_computer_fen = None
                     self.state.done_move = self.state.pb_move = chess.Move.null()
@@ -3540,7 +3540,7 @@ async def main() -> None:
                         self.engine.stop()
                         self.state.seeking_flag = True
 
-                        self.engine.newgame(self.state.game.copy())
+                        await self.engine.newgame(self.state.game.copy())
 
                         (
                             self.login,
@@ -3720,7 +3720,7 @@ async def main() -> None:
                     if bit_board.is_valid():
                         self.state.game = chess.Board(bit_board.fen())
                         await self.stop_search_and_clock()
-                        self.engine.newgame(self.state.game.copy())
+                        await self.engine.newgame(self.state.game.copy())
                         self.state.done_computer_fen = None
                         self.state.done_move = self.state.pb_move = chess.Move.null()
                         self.state.time_control.reset()
@@ -4532,7 +4532,7 @@ async def main() -> None:
                     if game_fen != chess.STARTING_BOARD_FEN:
                         msg = Message.START_NEW_GAME(game=self.state.game.copy(), newgame=True)
                         await DisplayMsg.show(msg)
-                    self.engine.newgame(self.state.game.copy())
+                    await self.engine.newgame(self.state.game.copy())
                     self.state.done_computer_fen = None
                     self.state.done_move = self.state.pb_move = chess.Move.null()
                     self.state.searchmoves.reset()

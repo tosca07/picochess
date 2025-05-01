@@ -708,17 +708,16 @@ class UciEngine(object):
         """Engine waiting."""
         return True  # should not be needed any more
 
-    def newgame(self, game: Board):
+    async def newgame(self, game: Board):
         """Engine sometimes need this to setup internal values.
         parameter game will not change"""
         if self.engine:
             # some engines like pgn_engine will not work without this
             self.engine.send_line("ucinewgame")
         if self.analyser.is_running() and game:
-            # send new board to analyser? avoid stop?
-            # @todo fix this early game update
-            pass
-            # self.analyser.update_game(game)
+            # send new board to analyser if it has changed - avoid stop
+            if self.analyser.get_fen() == game.fen():
+                await self.analyser.update_game(game)
 
     def set_mode(self, ponder: bool = True):
         """Set engine ponder mode for a playing engine"""
