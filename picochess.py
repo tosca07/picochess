@@ -2587,8 +2587,12 @@ async def main() -> None:
             l_move = chess.Move.null()
 
             update_speed = 1.0
+            is_pico_save_game: bool = False
             if l_game_pgn.headers["Event"]:
-                await DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers["Event"])))
+                event_str = l_game_pgn.headers["Event"]
+                if (event_str or "").startswith("PicoChess"):
+                    is_pico_save_game = True  # game was saved by Pico
+                await DisplayMsg.show(Message.SHOW_TEXT(text_string=str(event_str)))
                 await asyncio.sleep(update_speed)
 
             if l_game_pgn.headers["White"]:
@@ -2621,10 +2625,10 @@ async def main() -> None:
             except ValueError:
                 l_stop_at_halfmove = None
 
-            if not l_stop_at_halfmove:
+            if not l_stop_at_halfmove and not is_pico_save_game:
                 # no PicoStop override found above - check game result - issue #54
-                if not result_header or (result_header != "*" and result_header != ""):
-                    # non-pico game was downloaded or pico game has final result
+                if result_header and result_header != "*" and result_header != "":
+                    # non-pico game was downloaded and it has a result
                     l_stop_at_halfmove = 1  # cant use zero due to one pop below
 
             for l_move in l_game_pgn.mainline_moves():
