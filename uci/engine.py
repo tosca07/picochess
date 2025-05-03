@@ -548,7 +548,7 @@ class UciEngine(object):
 
     def stop_analysis(self):
         """Stop background ContinuousAnalyser"""
-        if self.analyser.is_running() is not None:
+        if self.analyser.is_running():
             self.analyser.stop()
 
     def force_move(self):
