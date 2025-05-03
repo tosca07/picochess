@@ -2602,8 +2602,10 @@ async def main() -> None:
                 await DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers["Black"])))
                 await asyncio.sleep(update_speed)
 
+            result_header = None
             if l_game_pgn.headers["Result"]:
-                await DisplayMsg.show(Message.SHOW_TEXT(text_string=str(l_game_pgn.headers["Result"])))
+                result_header = l_game_pgn.headers["Result"]
+                await DisplayMsg.show(Message.SHOW_TEXT(text_string=str(result_header)))
                 await asyncio.sleep(update_speed)
 
             await DisplayMsg.show(Message.READ_GAME)
@@ -2619,12 +2621,21 @@ async def main() -> None:
             except ValueError:
                 l_stop_at_halfmove = None
 
+            if not l_stop_at_halfmove:
+                # no PicoStop override found above - check game result - issue #54
+                if not result_header or (result_header != "*" and result_header != ""):
+                    # non-pico game was downloaded or pico game has final result
+                    l_stop_at_halfmove = 1  # cant use zero due to one pop below
+
             for l_move in l_game_pgn.mainline_moves():
                 self.state.game.push(l_move)
                 if l_stop_at_halfmove and len(self.state.game.move_stack) >= l_stop_at_halfmove:
                     break  # stop loading pgn game moves as instructed by PicoStop
 
             # take back last move in order to send it with user_move for web publishing
+            # @ todo Pico V3 made user + engine move here = unnecessary waiting for engine move
+            # Pico V4 only makes an engine move... just to update the web screen and main states?
+            # maybe there is a smarter way to do this?
             if l_move:
                 self.state.game.pop()
 
@@ -2632,7 +2643,6 @@ async def main() -> None:
 
             # switch temporarly picotutor off
             self.state.flag_picotutor = False
-            # Pico 4 - avoid wait for a computer move - START IN ANALYSIS
             old_interaction_mode = self.state.interaction_mode
             self.state.interaction_mode = Mode.ANALYSIS
 
@@ -2641,7 +2651,14 @@ async def main() -> None:
                 await self.user_move(l_move, sliding=True)
 
             self.state.flag_picotutor = True
-            # dont put back: self.state.interaction_mode = old_interaction_mode
+            if result_header and result_header == "*":
+                # issue #54 game is not finished
+                if old_interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
+                    # same as eng_plays()
+                    self.state.interaction_mode = old_interaction_mode
+                else:
+                    self.state.interaction_mode = Mode.NORMAL
+            # else remain in ANALYSIS mode - game already has a result or is downloaded
 
             await self.stop_search_and_clock()
             turn = self.state.game.turn
@@ -2719,6 +2736,10 @@ async def main() -> None:
             self.state.last_legal_fens = []
             await self.stop_search_and_clock()
 
+            self.shared["headers"] = l_game_pgn.headers  # update headers from file
+            EventHandler.write_to_clients({"event": "Header", "headers": dict(self.shared["headers"])})
+            await asyncio.sleep(0.1)  # give time to write_to_clients
+
             game_end = self.state.check_game_state()
             if game_end:
                 self.state.play_mode = PlayMode.USER_WHITE if turn == chess.WHITE else PlayMode.USER_BLACK
@@ -2727,11 +2748,15 @@ async def main() -> None:
                 await DisplayMsg.show(game_end)
             else:
                 self.state.play_mode = PlayMode.USER_WHITE if turn == chess.WHITE else PlayMode.USER_BLACK
-                await asyncio.sleep(1)
-
-            self.shared["headers"] = l_game_pgn.headers  # update headers from file
-            EventHandler.write_to_clients({"event": "Header", "headers": dict(self.shared["headers"])})
-            await asyncio.sleep(0.1)  # give time to write_to_clients
+                if self.eng_plays():
+                    # we continue in a mode where engine is playing, not analysis
+                    text = self.state.play_mode.value
+                    msg = Message.PLAY_MODE(
+                        play_mode=self.state.play_mode,
+                        play_mode_text=self.state.dgttranslate.text(text),
+                    )
+                    await DisplayMsg.show(msg)
+                    await asyncio.sleep(1)
 
             self.state.take_back_locked = True  # important otherwise problems for setting up the position
 
