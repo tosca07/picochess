@@ -352,6 +352,7 @@ class PicochessState:
             result=result,
             play_mode=self.play_mode,
             game=self.game.copy(),
+            mode=self.interaction_mode,
         )
 
     @staticmethod
@@ -797,7 +798,7 @@ async def main() -> None:
         sfrom=args.smtp_from,
     )
 
-    my_pgn_display = PgnDisplay("games" + os.sep + args.pgn_file, emailer, main_loop)
+    my_pgn_display = PgnDisplay("games" + os.sep + args.pgn_file, emailer, shared, main_loop)
     asyncio.create_task(my_pgn_display.message_consumer())
 
     # Update
@@ -3317,6 +3318,7 @@ async def main() -> None:
                                 result=result,
                                 play_mode=self.state.play_mode,
                                 game=self.state.game.copy(),
+                                mode=self.state.interaction_mode,
                             )
                         )
                 self.state.game = chess.Board(event.fen)  # check what uci960 should do here
@@ -3405,6 +3407,7 @@ async def main() -> None:
                                 result=result,
                                 play_mode=self.state.play_mode,
                                 game=self.state.game.copy(),
+                                mode=self.state.interaction_mode,
                             )
                         )
                         await asyncio.sleep(0.3)
@@ -3424,25 +3427,28 @@ async def main() -> None:
                         await DisplayMsg.show(msg)
                     await self.stop_search_and_clock()
 
+                    if self.engine:
+                        # need to stop analyser for all modes
+                        if self.engine.is_thinking():
+                            # force a move and skip it to get rid of engine thinking
+                            self.state.ignore_next_engine_move = True
+                            self.engine.force_move()
+                            await asyncio.sleep(0.5)  # wait for forced move to be handled
+                        self.engine.stop()
+
                     # see setup_position
                     if self.engine.has_chess960():
                         self.engine.option("UCI_Chess960", uci960)
                         await self.engine.send()
 
-                    if self.state.interaction_mode == Mode.TRAINING:
-                        self.engine.stop()
-
                     if self.online_mode():
                         await DisplayMsg.show(Message.SEEKING())
-                        self.engine.stop()
                         self.state.seeking_flag = True
                         self.state.stop_fen_timer()
                         ModeInfo.set_online_mode(mode=True)
                     else:
                         ModeInfo.set_online_mode(mode=False)
 
-                    if self.emulation_mode():
-                        self.engine.stop()
                     await self.engine.newgame(self.state.game.copy())
 
                     self.state.done_computer_fen = None
@@ -3537,7 +3543,6 @@ async def main() -> None:
                         self.state.searchmoves.reset()
 
                         await DisplayMsg.show(Message.SEEKING())
-                        self.engine.stop()
                         self.state.seeking_flag = True
 
                         await self.engine.newgame(self.state.game.copy())
@@ -3862,6 +3867,7 @@ async def main() -> None:
                             result=event.result,
                             play_mode=self.state.play_mode,
                             game=self.state.game.copy(),
+                            mode=self.state.interaction_mode,
                         )
                     )
                     await asyncio.sleep(1.5)
@@ -4003,6 +4009,7 @@ async def main() -> None:
                                                 result=gameresult_tmp2,
                                                 play_mode=self.state.play_mode,
                                                 game=game_msg,
+                                                mode=self.state.interaction_mode,
                                             )
                                         )
                                     else:
@@ -4012,6 +4019,7 @@ async def main() -> None:
                                                 result=gameresult_tmp,
                                                 play_mode=self.state.play_mode,
                                                 game=game_msg,
+                                                mode=self.state.interaction_mode,
                                             )
                                         )
                                         await asyncio.sleep(2)
@@ -4021,6 +4029,7 @@ async def main() -> None:
                                                 result=gameresult_tmp2,
                                                 play_mode=self.state.play_mode,
                                                 game=game_msg,
+                                                mode=self.state.interaction_mode,
                                             )
                                         )
                                 else:
@@ -4031,6 +4040,7 @@ async def main() -> None:
                                                 result=gameresult_tmp2,
                                                 play_mode=self.state.play_mode,
                                                 game=game_msg,
+                                                mode=self.state.interaction_mode,
                                             )
                                         )
                                     else:
@@ -4040,6 +4050,7 @@ async def main() -> None:
                                                 result=gameresult_tmp,
                                                 play_mode=self.state.play_mode,
                                                 game=game_msg,
+                                                mode=self.state.interaction_mode,
                                             )
                                         )
                             else:
@@ -4125,6 +4136,7 @@ async def main() -> None:
                                             result=GameResult.ABORT,
                                             play_mode=self.state.play_mode,
                                             game=self.state.game.copy(),
+                                            mode=self.state.interaction_mode,
                                         )
                                     )
 
@@ -4387,6 +4399,7 @@ async def main() -> None:
                             play_mode=self.state.play_mode,
                             game=self.state.game.copy(),
                             pgn_filename=event.pgn_filename,
+                            mode=self.state.interaction_mode,
                         )
                     )
 
@@ -4667,6 +4680,7 @@ async def main() -> None:
                             result=result,
                             play_mode=self.state.play_mode,
                             game=self.state.game.copy(),
+                            mode=self.state.interaction_mode,
                         )
                     )
                     self.is_out_of_time_already = True
@@ -4696,6 +4710,7 @@ async def main() -> None:
                         result=result,
                         play_mode=self.state.play_mode,
                         game=self.state.game.copy(),
+                        mode=self.state.interaction_mode,
                     )
                 )
                 await DisplayMsg.show(Message.SYSTEM_SHUTDOWN())
@@ -4713,6 +4728,7 @@ async def main() -> None:
                         result=result,
                         play_mode=self.state.play_mode,
                         game=self.state.game.copy(),
+                        mode=self.state.interaction_mode,
                     )
                 )
                 await DisplayMsg.show(Message.SYSTEM_REBOOT())
@@ -4732,6 +4748,7 @@ async def main() -> None:
                         result=result,
                         play_mode=self.state.play_mode,
                         game=self.state.game.copy(),
+                        mode=self.state.interaction_mode,
                     )
                 )
                 #  await DisplayMsg.show(Message.SYSTEM_EXIT())

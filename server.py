@@ -564,11 +564,11 @@ class WebDisplay(DisplayMsg):
 
         def _transfer(game: chess.Board, keep_these_headers: dict = None):
             pgn_game = pgn.Game().from_board(game)
-            if keep_these_headers is None:
-                self._build_game_header(pgn_game)
-                self.shared["headers"] = pgn_game.headers
-            else:
-                self.shared["headers"] = keep_these_headers
+            # if keep_these_headers is None:
+            self._build_game_header(pgn_game)
+            self.shared["headers"] = pgn_game.headers
+            # else:
+            # self.shared["headers"].update(keep_these_headers)  # overwrite with the ones to keep
             return pgn_game.accept(pgn.StringExporter(headers=True, comments=False, variations=False))
 
         def peek_uci(game: chess.Board):
@@ -732,7 +732,7 @@ class WebDisplay(DisplayMsg):
         elif isinstance(message, Message.COMPUTER_MOVE):
             game_copy = message.game.copy()
             game_copy.push(message.move)
-            pgn_str = _transfer(game_copy, self.shared["headers"])  # dont remake headers every move
+            pgn_str = _transfer(game_copy)
             fen = _oldstyle_fen(game_copy)
             mov = message.move.uci()
             result = {"pgn": pgn_str, "fen": fen, "event": "Fen", "move": mov, "play": "computer"}
@@ -800,9 +800,7 @@ class WebDisplay(DisplayMsg):
                     WebDisplay.result_sav = "1-0"
             else:
                 WebDisplay.result_sav = ""
-            if WebDisplay.result_sav != "":
-                _build_headers()
-                _send_headers()
+            # dont rebuild headers here, use existing one
         else:  # Default
             await asyncio.sleep(0.05)  # balancing message queues
 

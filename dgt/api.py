@@ -272,7 +272,7 @@ class Message:
     CLOCK_STOP = ClassFactory(MessageApi.CLOCK_STOP, ["devs"])
     CLOCK_TIME = ClassFactory(MessageApi.CLOCK_TIME, ["time_white", "time_black", "low_time"])
     USER_MOVE_DONE = ClassFactory(MessageApi.USER_MOVE_DONE, ["move", "fen", "turn", "game"])
-    GAME_ENDS = ClassFactory(MessageApi.GAME_ENDS, ["tc_init", "result", "play_mode", "game"])
+    GAME_ENDS = ClassFactory(MessageApi.GAME_ENDS, ["tc_init", "result", "play_mode", "game", "mode"])
 
     SYSTEM_INFO = ClassFactory(MessageApi.SYSTEM_INFO, ["info"])
     STARTUP_INFO = ClassFactory(MessageApi.STARTUP_INFO, ["info"])
@@ -292,7 +292,7 @@ class Message:
     PICOCOMMENT = ClassFactory(MessageApi.PICOCOMMENT, ["picocomment"])
     RSPEED = ClassFactory(MessageApi.RSPEED, ["rspeed"])
     READ_GAME = ClassFactory(MessageApi.READ_GAME, ["pgn_filename"])
-    SAVE_GAME = ClassFactory(MessageApi.SAVE_GAME, ["tc_init", "play_mode", "game", "pgn_filename"])
+    SAVE_GAME = ClassFactory(MessageApi.SAVE_GAME, ["tc_init", "play_mode", "game", "pgn_filename", "mode"])
     CONTLAST = ClassFactory(MessageApi.CONTLAST, ["contlast"])
     ALTMOVES = ClassFactory(MessageApi.ALTMOVES, ["altmoves"])
 

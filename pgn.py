@@ -329,7 +329,7 @@ class Emailer(object):
 class PgnDisplay(DisplayMsg):
     """Deal with DisplayMessages related to pgn."""
 
-    def __init__(self, file_name: str, emailer: Emailer, loop: asyncio.AbstractEventLoop):
+    def __init__(self, file_name: str, emailer: Emailer, shared: dict, loop: asyncio.AbstractEventLoop):
         super(PgnDisplay, self).__init__(loop)
         self.file_name = file_name
         self.last_file_name = "games" + os.sep + "last_game.pgn"
@@ -352,12 +352,31 @@ class PgnDisplay(DisplayMsg):
         self.startime = datetime.datetime.now().strftime("%H:%M:%S")
         self.last_saved_game = None
         self.picotutor: PicoTutor | None = None
+        self.shared = shared  # shared headers needed in generate_pgn_from_message
 
     def set_picotutor(self, picotutor: PicoTutor):
         """Assign a reference to the picotutor object."""
         self.picotutor = picotutor
 
+    def _pgn_game_from_message(self, message) -> chess.pgn.Game:
+        """common routine for pgn creators to create a savable game
+        wraps the two _generate_pgn_from... functions"""
+        # if message.mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
+        # same as main eng_plays()
+        pgn_game: chess.pgn.Game = self._generate_pgn_from_message(message)
+        # else:
+        # in analysis try to preserve original headers as we have not played
+        # pgn_game: chess.pgn.Game = self._generate_pgn_from_existing_headers(message)
+        return pgn_game
+
+    def _generate_pgn_from_existing_headers(self, message) -> chess.pgn.Game:
+        """create a pgn.game and fill it with existing headers"""
+        pgn_game = chess.pgn.Game().from_board(message.game)
+        pgn_game.headers.update(self.shared["headers"])  # overwrite with existing headers
+        return pgn_game
+
     def _generate_pgn_from_message(self, message) -> chess.pgn.Game:
+        """create a pgn.game and fill it with headers from a played game"""
         pgn_game = chess.pgn.Game().from_board(message.game)
 
         # Headers
@@ -538,8 +557,9 @@ class PgnDisplay(DisplayMsg):
         return comment
 
     def _save_and_email_pgn(self, message):
+        """when game ends the pgn file is saved and emailed"""
         logger.debug("Saving game to [%s]", self.file_name)
-        pgn_game: chess.pgn.Game = self._generate_pgn_from_message(message)
+        pgn_game = self._pgn_game_from_message(message)
         pgn_game_last = pgn_game
 
         # If we already saved the exact same game, do not
@@ -572,8 +592,7 @@ class PgnDisplay(DisplayMsg):
     def _save_pgn(self, message):
         l_file_name = "games" + os.sep + message.pgn_filename
         logger.debug("Saving PGN game to [%s]", l_file_name)
-
-        pgn_game = self._generate_pgn_from_message(message)
+        pgn_game = self._pgn_game_from_message(message)
 
         # add picotutor stored evaluations before saving game
         self.add_picotutor_evaluation(pgn_game)
