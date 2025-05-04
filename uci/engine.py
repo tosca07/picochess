@@ -154,13 +154,17 @@ class ContinuousAnalysis:
         root_moves: Optional[Iterable[chess.Move]],
     ) -> None:
         """async task to ask the engine for a move - to avoid blocking result is put in queue"""
-        self._idle = False  # engine is going to be busy now
-        r_info = chess.engine.INFO_SCORE | chess.engine.INFO_PV | chess.engine.INFO_BASIC
-        result = await self.engine.play(
-            copy.deepcopy(game), limit=limit, info=r_info, ponder=ponder, root_moves=root_moves
-        )
-        await result_queue.put(result)
-        self._idle = True  # engine idle again
+        try:
+            self._idle = False  # engine is going to be busy now
+            r_info = chess.engine.INFO_SCORE | chess.engine.INFO_PV | chess.engine.INFO_BASIC
+            result = await self.engine.play(
+                copy.deepcopy(game), limit=limit, info=r_info, ponder=ponder, root_moves=root_moves
+            )
+            await result_queue.put(result)
+        except chess.engine.EngineError:
+            await result_queue.put(None)
+        finally:
+            self._idle = True  # engine idle again
 
     def is_idle(self) -> bool:
         """return True if engine is not thinking about a move"""

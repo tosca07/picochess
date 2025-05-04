@@ -174,7 +174,9 @@ def get_move():
             ## get next move
             move_pgn = move_list[move_counter]
             move_counter = move_counter + 1
-            board.push(chess.Move.from_uci(move_pgn))
+            # Do NOT: push the board here because it might be a wrong guess
+            # Do NOT: board.push(chess.Move.from_uci(move_pgn))
+            # push it in caller pub_move
 
             if log:
                 log.write("get pgn_move: %s\n" % str(move_pgn))
@@ -209,9 +211,7 @@ def pub_move():
     uci_move, ponder_move, info_str = get_move()
 
     if uci_move != "" and uci_move != "ABORT" and guess_ok:
-        ##board.push(chess.Move.from_uci(uci_move))
-        ##uci_move = uci_move
-        pass
+        board.push(chess.Move.from_uci(uci_move))
     else:
         move_counter = move_counter - 1
         uci_move = "ABORT"
@@ -220,7 +220,13 @@ def pub_move():
     if info_str != "":
         print2(info_str)
 
-    result_str = "bestmove " + uci_move + " ponder " + ponder_move
+    # uci communication states to send 0000 instead of ABORT
+    move_to_send = "0000" if uci_move == "ABORT" else uci_move
+    if ponder_move:
+        result_str = "bestmove " + move_to_send + " ponder " + ponder_move
+    else:
+        result_str = "bestmove " + move_to_send
+
     print2(result_str)
 
     if log:

@@ -1081,6 +1081,9 @@ async def main() -> None:
                 else:
                     root_moves = None
                 try:
+                    # engine moves are received here
+                    # webplay: Event.BEST_MOVE pushes the move on display
+                    # dgt board: BEST_MOVE 1) informs 2) user moves, 3) dgt event to process_fen() push
                     result_queue = asyncio.Queue()  # engines move result
                     await self.engine.go(
                         time_dict=uci_dict, game=self.state.game, result_queue=result_queue, root_moves=root_moves
@@ -1090,26 +1093,19 @@ async def main() -> None:
                         logger.debug("engine moved %s", engine_res.move.uci)
                         if self.state.ignore_next_engine_move:
                             self.state.ignore_next_engine_move = False  # make sure we handle next move
-                            logger.debug("ignored engine move - forced move due to takeback during engine think")
+                            logger.debug("ignored engine move - takeback or state change forced move")
                         else:
-                            await Observable.fire(
-                                Event.BEST_MOVE(move=engine_res.move, ponder=engine_res.ponder, inbook=False)
-                            )
+                            move = engine_res.move if engine_res.move != chess.Move.null() else None
+                            await Observable.fire(Event.BEST_MOVE(move=move, ponder=engine_res.ponder, inbook=False))
                             if engine_res.info:
                                 # send pv, score, not pv as its old pv[1] and sent by BEST_MOVE
                                 await self.send_analyse(engine_res.info, False)
-                            # webplay: Event.BEST_MOVE pushes the move on display
-                            # dgt board: BEST_MOVE 1) informs 2) user moves, 3) dgt event to process_fen() push
                     else:
-                        logger.error("fatal no move received from engine")
-                        #  this code is most likely never reached, exception below is more likely
+                        logger.error("Engine returned Exception when asked to make a move")
                         await Observable.fire(Event.BEST_MOVE(move=None, ponder=None, inbook=False))
                 except Exception as e:
-                    if self.pgn_mode():
-                        logger.debug("pgn_mode no valid move received from engine %s", e)
-                    else:
-                        logger.error("fatal - engine failed to make a move %s", e)
-                    #  @todo do we need to check for pgn_mode or other?
+                    # most likely never reached, engine exceptions in UciEngine return None above
+                    logger.error("fatal - engine failed to make a move %s", e)
                     await Observable.fire(Event.BEST_MOVE(move=None, ponder=None, inbook=False))
             # set state variables wait for computer move
             # @todo: should we add set self.state.done_computer_fen = None
