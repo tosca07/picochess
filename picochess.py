@@ -3714,7 +3714,9 @@ async def main() -> None:
                         if next_move:
                             logger.debug("Next PGN move is %s:", next_move.uci())
                             # @todo ask evaluation to be given after move has been shown
-                            await self.user_move(next_move, sliding=False)
+                            # @todo what to do with DGT board?
+                            if self.board_type == dgt.util.EBoard.NOEBOARD:
+                                await self.user_move(next_move, sliding=False)
                         else:
                             logger.debug("No next PGN move found.")
                     elif not self.state.done_computer_fen:
