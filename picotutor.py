@@ -103,6 +103,8 @@ class PicoTutor:
         # or if you want to analyse also engine moves (like pgn_engine)
         self.analyse_both_sides = False  # analyse only user side as default
         self.always_run_tutor = i_always_run_tutor  # force deep tutor to always run
+        # new feature to be able to step through a PGN game
+        self.pgn_game: chess.pgn.Game | None = None
 
         try:
             with open("chess-eco_pos.txt") as fp:
@@ -119,6 +121,31 @@ class PicoTutor:
         self._setup_comments(i_lang, i_comment_file)
 
         self._setup_board(i_fen)
+
+    def set_pgn_game_to_step(self, pgn_game: chess.pgn.Game):
+        """store a loaded PGN game here so that it can be stepped through"""
+        self.pgn_game = pgn_game  # read by picochess.py read_pgn_file()
+
+    def get_next_pgn_move(self, current_board: chess.Board) -> chess.Move:
+        """whats the next move to step through in a loaded PGN game
+        send current game board to see if a match is found in the loaded PGN game
+        return None if no PGN file loaded or PGN move not found"""
+        if self.pgn_game:
+            node = self.pgn_game
+            while node.variations:
+                next_node = node.variations[0]
+                # Apply the current move to a temporary board
+                temp_board = node.board()
+                temp_board.push(next_node.move)
+
+                if temp_board.fen() == current_board.fen():
+                    # This board is the current one; return the next move from here
+                    if next_node.variations:
+                        return next_node.variations[0].move  # Return the next move
+                    else:
+                        return None  # No move after this
+                node = next_node
+        return None  # Reached end of game without matching board
 
     async def open_engine(self):
         """open the tutor engine"""
@@ -337,13 +364,7 @@ class PicoTutor:
         """main program can check if tutor game is still in sync with same move stacks"""
         return self.board.fen() == game.fen()
 
-    def reset(self):
-        """this is newgame reset - all is re-initialised
-        see also set_position"""
-        # @ todo - let main program call reset_to_newgame?
-        self._reset_to_newgame()
-
-    def _reset_to_newgame(self):
+    def newgame(self):
         """reset everything - game board becomes starting position
         analyser is stopped"""
         self._reset_to_new_position(chess.Board(), new_game=True)
@@ -357,6 +378,7 @@ class PicoTutor:
         self.stop()
         if new_game:
             self.evaluated_moves = {}  # forget evals from last game
+            self.pgn_game = None  # forget loaded PGN game
             logger.debug("picotutor reset to new position and newgame")
         else:
             logger.debug("picotutor reset to new position")

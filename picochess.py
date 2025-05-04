@@ -2577,7 +2577,7 @@ async def main() -> None:
             await self.stop_search_and_clock()
 
             if self.picotutor_mode():
-                self.state.picotutor.reset()
+                self.state.picotutor.newgame()
 
             self.state.game = chess.Board()
             l_move = chess.Move.null()
@@ -2621,16 +2621,19 @@ async def main() -> None:
             except ValueError:
                 l_stop_at_halfmove = None
 
-            if not l_stop_at_halfmove and not is_pico_save_game:
-                # no PicoStop override found above - check game result - issue #54
-                if result_header and result_header != "*" and result_header != "":
-                    # non-pico game was downloaded and it has a result
+            if not l_stop_at_halfmove:
+                # no PicoStop override found above - check game result
+                if result_header and result_header != "*":
+                    # a game with a final result was loaded - issue #54
                     l_stop_at_halfmove = 1  # cant use zero due to one pop below
 
+            pgn_game_to_step = None
             for l_move in l_game_pgn.mainline_moves():
                 self.state.game.push(l_move)
                 if l_stop_at_halfmove and len(self.state.game.move_stack) >= l_stop_at_halfmove:
-                    break  # stop loading pgn game moves as instructed by PicoStop
+                    # stop loading pgn game moves... Store them so user can step through them
+                    pgn_game_to_step = l_game_pgn  # do it after newgame - at end of function
+                    break
 
             # take back last move in order to send it with user_move for web publishing
             # @ todo Pico V3 made user + engine move here = unnecessary waiting for engine move
@@ -2759,6 +2762,9 @@ async def main() -> None:
                     await asyncio.sleep(1)
 
             self.state.take_back_locked = True  # important otherwise problems for setting up the position
+            if pgn_game_to_step:
+                # this PGN game was not loaded to the end (above) - remember it
+                self.state.picotutor.set_pgn_game_to_step(pgn_game_to_step)
 
         def emulation_mode(self):
             emulation = False
@@ -3531,7 +3537,7 @@ async def main() -> None:
                     if "no_player" not in self.opp_user and "no_user" not in self.own_user:
                         await self.switch_online()
                     if self.picotutor_mode():
-                        self.state.picotutor.reset()
+                        self.state.picotutor.newgame()
                         if not self.state.flag_startup:
                             if self.state.play_mode == PlayMode.USER_BLACK:
                                 await self.state.picotutor.set_user_color(chess.BLACK, not self.eng_plays())
@@ -3634,7 +3640,7 @@ async def main() -> None:
                             await DisplayMsg.show(Message.START_NEW_GAME(game=self.state.game.copy(), newgame=newgame))
 
                 if self.picotutor_mode():
-                    self.state.picotutor.reset()
+                    self.state.picotutor.newgame()
                     if not self.state.flag_startup:
                         if self.state.play_mode == PlayMode.USER_BLACK:
                             await self.state.picotutor.set_user_color(chess.BLACK, not self.eng_plays())
@@ -3702,6 +3708,15 @@ async def main() -> None:
                                 Message.ALTERNATIVE_MOVE(game=self.state.game.copy(), play_mode=self.state.play_mode),
                                 searchlist=True,
                             )
+                    elif not self.eng_plays():
+                        # ANALYSIS modes - check if we have a loaded PGN move to play
+                        next_move = self.state.picotutor.get_next_pgn_move(self.state.game)
+                        if next_move:
+                            logger.debug("Next PGN move is %s:", next_move.uci())
+                            # @todo ask evaluation to be given after move has been shown
+                            await self.user_move(next_move, sliding=False)
+                        else:
+                            logger.debug("No next PGN move found.")
                     elif not self.state.done_computer_fen:
                         if self.state.time_control.internal_running():
                             await self.state.stop_clock()
