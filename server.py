@@ -31,6 +31,7 @@ import tornado.wsgi  # type: ignore
 from tornado.websocket import WebSocketHandler  # type: ignore
 
 from utilities import Observable, DisplayMsg, hms_time, AsyncRepeatingTimer
+from upload_pgn import UploadHandler
 from web.picoweb import picoweb as pw
 
 from dgt.api import Event, Message
@@ -213,6 +214,11 @@ class HelpHandler(ServerRequestHandler):
         self.render("web/picoweb/templates/help.html", theme=self.theme)
 
 
+class UploadPageHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.render("web/picoweb/templates/upload.html")
+
+
 class WebServer:
     def __init__(self):
         pass
@@ -228,6 +234,8 @@ class WebServer:
                 (r"/info", InfoHandler, dict(shared=shared)),
                 (r"/help", HelpHandler, dict(theme=theme)),
                 (r"/channel", ChannelHandler, dict(shared=shared)),
+                (r"/upload-pgn", UploadHandler),
+                (r"/upload", UploadPageHandler),
                 (r".*", tornado.web.FallbackHandler, {"fallback": wsgi_app}),
             ]
         )

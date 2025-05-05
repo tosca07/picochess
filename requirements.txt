@@ -9,11 +9,11 @@ pyOpenSSL==25.0.0
 requests==2.32.3
 spur==0.3.23
 tornado==6.4.2
-trio==0.29.0
 configobj==5.0.9
 geopy==2.4.1
 astral==3.2
 pygame==2.6.1
+pam==0.2.0
 # potentially needed
 #lczero_bindings==0.1.0
 #bcrypt==4.2.0
