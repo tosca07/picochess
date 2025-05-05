@@ -752,13 +752,17 @@ class DgtDisplay(DisplayMsg):
             await self._set_clock()
 
     async def _process_computer_move(self, message):
-        self.last_pos_start = False
-        await self.force_leds_off(log=True)  # can happen in case of a book move
+        if not message.is_user_move:
+            self.last_pos_start = False  # issue 54, see below
+            await self.force_leds_off(log=True)  # can happen in case of a book move
         move = message.move
         ponder = message.ponder
-        self.play_move = move
-        self.play_fen = message.game.fen()
-        self.play_turn = message.game.turn
+        if not message.is_user_move:
+            # @todo issue 54 misuse this as USER_MOVE until we have such a message
+            # do not update state variables
+            self.play_move = move
+            self.play_fen = message.game.fen()
+            self.play_turn = message.game.turn
         if ponder:
             game_copy = message.game.copy()
             game_copy.push(move)

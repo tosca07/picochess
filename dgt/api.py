@@ -233,7 +233,8 @@ class Message:
     """General class for transmitting messages between several parts of picochess."""
 
     # Messages to display devices
-    COMPUTER_MOVE = ClassFactory(MessageApi.COMPUTER_MOVE, ["move", "ponder", "game", "wait"])
+    # @ todo - temporarily mis-use COMPUTER_MOVE as a USER_MOVE message with last bool param is_user_move
+    COMPUTER_MOVE = ClassFactory(MessageApi.COMPUTER_MOVE, ["move", "ponder", "game", "wait", "is_user_move"])
     BOOK_MOVE = ClassFactory(MessageApi.BOOK_MOVE, [])
     NEW_PV = ClassFactory(MessageApi.NEW_PV, ["pv", "mode", "game"])
     REVIEW_MOVE_DONE = ClassFactory(MessageApi.REVIEW_MOVE_DONE, ["move", "fen", "turn", "game"])

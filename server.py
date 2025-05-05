@@ -730,13 +730,15 @@ class WebDisplay(DisplayMsg):
             EventHandler.write_to_clients(result)
 
         elif isinstance(message, Message.COMPUTER_MOVE):
-            game_copy = message.game.copy()
-            game_copy.push(message.move)
-            pgn_str = _transfer(game_copy)
-            fen = _oldstyle_fen(game_copy)
-            mov = message.move.uci()
-            result = {"pgn": pgn_str, "fen": fen, "event": "Fen", "move": mov, "play": "computer"}
-            self.shared["last_dgt_move_msg"] = result  # not send => keep it for COMPUTER_MOVE_DONE
+            # @todo issue 54 misuse this as USER_MOVE until we have such a message
+            if not message.is_user_move:
+                game_copy = message.game.copy()
+                game_copy.push(message.move)
+                pgn_str = _transfer(game_copy)
+                fen = _oldstyle_fen(game_copy)
+                mov = message.move.uci()
+                result = {"pgn": pgn_str, "fen": fen, "event": "Fen", "move": mov, "play": "computer"}
+                self.shared["last_dgt_move_msg"] = result  # not send => keep it for COMPUTER_MOVE_DONE
 
         elif isinstance(message, Message.COMPUTER_MOVE_DONE):
             WebDisplay.result_sav = ""

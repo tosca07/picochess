@@ -132,6 +132,12 @@ class PicoTutor:
         return None if no PGN file loaded or PGN move not found"""
         if self.pgn_game:
             node = self.pgn_game
+            # special case - starting position
+            if current_board.fen() == chess.Board.starting_fen:
+                if node.variations:
+                    return node.variations[0].move  # Return the first move
+                else:
+                    return None  # special case, PGN game had no moves at all
             while node.variations:
                 next_node = node.variations[0]
                 # Apply the current move to a temporary board

@@ -1630,7 +1630,9 @@ async def main() -> None:
                         )
                         await asyncio.sleep(2)
                         await DisplayMsg.show(
-                            Message.COMPUTER_MOVE(move=move, ponder=False, game=self.state.game.copy(), wait=False)
+                            Message.COMPUTER_MOVE(
+                                move=move, ponder=False, game=self.state.game.copy(), wait=False, is_user_move=False
+                            )
                         )
                         await asyncio.sleep(2)
                 logger.debug("user move did a move for pico")
@@ -1675,7 +1677,13 @@ async def main() -> None:
                 self.state.best_move_displayed = None
                 if computer_move:
                     await DisplayMsg.show(
-                        Message.COMPUTER_MOVE(move=computer_move, ponder=False, game=self.state.game.copy(), wait=False)
+                        Message.COMPUTER_MOVE(
+                            move=computer_move,
+                            ponder=False,
+                            game=self.state.game.copy(),
+                            wait=False,
+                            is_user_move=False,
+                        )
                     )
                     await asyncio.sleep(3)
                 await DisplayMsg.show(
@@ -1685,7 +1693,11 @@ async def main() -> None:
                 if self.state.done_move:
                     await DisplayMsg.show(
                         Message.COMPUTER_MOVE(
-                            move=self.state.done_move, ponder=False, game=self.state.game.copy(), wait=False
+                            move=self.state.done_move,
+                            ponder=False,
+                            game=self.state.game.copy(),
+                            wait=False,
+                            is_user_move=False,
                         )
                     )
                     await asyncio.sleep(1.5)
@@ -2467,6 +2479,7 @@ async def main() -> None:
                                     ponder=False,
                                     game=self.state.game.copy(),
                                     wait=False,
+                                    is_user_move=False,
                                 )
                             )
                     fen_res = ""
@@ -2625,21 +2638,26 @@ async def main() -> None:
                 # no PicoStop override found above - check game result
                 if result_header and result_header != "*":
                     # a game with a final result was loaded - issue #54
-                    l_stop_at_halfmove = 1  # cant use zero due to one pop below
+                    if self.board_type == dgt.util.EBoard.NOEBOARD:
+                        # @todo cant use zero on web display because Pico code below
+                        # does a pop and user_move just to update web display - see todo below
+                        # maybe this is ok, or some other web display update could be found?
+                        l_stop_at_halfmove = 1
+                    else:
+                        l_stop_at_halfmove = 0  # for DGT board its better with zero
 
-            pgn_game_to_step = None
-            for l_move in l_game_pgn.mainline_moves():
-                self.state.game.push(l_move)
-                if l_stop_at_halfmove and len(self.state.game.move_stack) >= l_stop_at_halfmove:
-                    # stop loading pgn game moves... Store them so user can step through them
-                    pgn_game_to_step = l_game_pgn  # do it after newgame - at end of function
-                    break
+            if l_stop_at_halfmove != 0:
+                for l_move in l_game_pgn.mainline_moves():
+                    self.state.game.push(l_move)
+                    if l_stop_at_halfmove and len(self.state.game.move_stack) >= l_stop_at_halfmove:
+                        # stop loading pgn game moves... Store them so user can step through them
+                        break
 
             # take back last move in order to send it with user_move for web publishing
             # @ todo Pico V3 made user + engine move here = unnecessary waiting for engine move
             # Pico V4 only makes an engine move... just to update the web screen and main states?
             # maybe there is a smarter way to do this?
-            if l_move:
+            if l_move and l_stop_at_halfmove != 0:
                 self.state.game.pop()
 
             await self.engine.newgame(self.state.game.copy())
@@ -2649,7 +2667,7 @@ async def main() -> None:
             old_interaction_mode = self.state.interaction_mode
             self.state.interaction_mode = Mode.ANALYSIS
 
-            if l_move:
+            if l_move and l_stop_at_halfmove != 0:
                 # publish current position to webserver
                 await self.user_move(l_move, sliding=True)
 
@@ -2762,6 +2780,7 @@ async def main() -> None:
                     await asyncio.sleep(1)
 
             self.state.take_back_locked = True  # important otherwise problems for setting up the position
+            pgn_game_to_step = None if l_stop_at_halfmove is None else l_game_pgn
             if pgn_game_to_step:
                 # this PGN game was not loaded to the end (above) - remember it
                 self.state.picotutor.set_pgn_game_to_step(pgn_game_to_step)
@@ -3717,6 +3736,16 @@ async def main() -> None:
                             # @todo what to do with DGT board?
                             if self.board_type == dgt.util.EBoard.NOEBOARD:
                                 await self.user_move(next_move, sliding=False)
+                            else:
+                                await DisplayMsg.show(
+                                    Message.COMPUTER_MOVE(
+                                        move=next_move,
+                                        ponder=False,
+                                        game=self.state.game.copy(),
+                                        wait=False,
+                                        is_user_move=True,
+                                    )
+                                )
                         else:
                             logger.debug("No next PGN move found.")
                     elif not self.state.done_computer_fen:
@@ -3931,6 +3960,7 @@ async def main() -> None:
                                 ponder=chess.Move.null(),
                                 game=self.state.game.copy(),
                                 wait=False,
+                                is_user_move=False,
                             )
                         )
                         game_copy = self.state.game.copy()
@@ -4198,6 +4228,7 @@ async def main() -> None:
                                     ponder=event.ponder,
                                     game=self.state.game.copy(),
                                     wait=event.inbook,
+                                    is_user_move=False,
                                 )
                             )
                             game_copy = self.state.game.copy()
