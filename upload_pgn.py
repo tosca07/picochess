@@ -63,4 +63,4 @@ class UploadHandler(tornado.web.RequestHandler):
             self.finish(f"Failed to save file: {str(e)}")
             return
 
-        self.write(f"User '{self.current_user}' uploaded '{original_name}' and it was saved as '{FIXED_FILENAME}'.")
+        self.write(f"User '{self.current_user}' uploaded '{original_name}' and it was saved as Game 1.")
