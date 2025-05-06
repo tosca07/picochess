@@ -93,7 +93,7 @@ setcap 'cap_sys_boot,cap_net_bind_service+eip' $(readlink -f $(which python3))
 echo " ------- "
 echo "Picochess installation complete. Please reboot"
 echo "NOTE: If you are on DGTPi clock hardware you need to run install-dgtpi-clock.sh"
-echo "After reboot open a browser to localhost:8080"
+echo "After reboot open a browser to localhost"
 echo "If you have a DGT board you need to change the board type"
 echo "in the picochess.ini like this: board-type = dgt"
 echo "Other board types are also supported - see the picochess.ini file"

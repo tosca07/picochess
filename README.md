@@ -1,7 +1,7 @@
 PicoChess
 =========
-Picochess transforms your Raspberry Pi or any Debian-based computer into a powerful chess computer. It is not a chess engine itself but a manager for the chess engines you choose to use.
-This repository includes Stockfish 17 and Leela Chess Zero (LCZero) as examples. If you want to add more engines you should have a look in the picochess google group. The retro and mame engines like Mephisto works, but the special and historical engines do not work at the moment.
+Picochess transforms your Raspberry Pi or any Debian-based computer into a chess computer. It is not a chess engine itself but a manager for the chess engines you choose to use.
+This repository includes Stockfish 17 and Leela Chess Zero (LCZero) as examples. If you want to add more engines you should have a look in the picochess google group. The retro and mame engines like Mephisto works, but the special and historical engines might not work.
 
 Features
 ========
@@ -34,7 +34,14 @@ The script installs the following services in /etc/systemd/system/
 - gamesdb, games window on web page
 
 How to open the web page and play?
-Use localhost:8080 in your browser to open the web page. If you are running on another machine replace localhost with the ip address of your Pi4. 
+Use localhost in your browser to open the web page. If you are running on another machine replace localhost with the ip address of your Pi4.
+
+How to analyse a game?
+You can use the menu to go to Mode and switch to "Hint On" mode. Now you make moves for both sides. Use the plus and minus button to check the score. When you are done analysing: use the Game Setup from the menu and chose Declare game ending. Your game with comments is saved in /opt/picochess/games/last_game.pgn.
+
+How to analyse a PGN game?
+You can upload a PGN game. Go to localhost/upload and chose a PGN file to upload to Picochess. Now you can step through the game in Picochess by using the pause button ". Finally save the game from the menu if you want to store the evaluations.
+
 
 Additional scripts you might find useful:
 - install-dgtpi-clock.sh, run this on DGT3000 Dgt Pi clock hardware, it installs the dgtpi service
@@ -43,7 +50,7 @@ Additional scripts you might find useful:
 How to add more engines?
 In the repo there are only Stockfish and LC0 examples. To add an engine you need:
 - locate the /opt/picochess/engines folder - Pi uses aarch64 and Debian laptops x86_64 folder
-- add an executable file like "engineX" and a text file "engineX.uci" with settings
+- add an executable engine file like "engineX" and a text file "engineX.uci" with settings
 - add an [engineX] section in engines.ini file
 To get a lot of Pi engines copy the entire /opt/picoshess/engines/ folder from an image found in the picochess google group.
 
@@ -63,7 +70,7 @@ Installation with more detailed info
 10. Get this repo. First cd /opt then do sudo git clone. This should create your /opt/picochess folder. Alternative: Download the install-picochess.sh script and run it using sudo. See quick installation above.
 11. Run the install-picochess.sh script. The script will first do a system update which may run for a while depending on how old your installation is. Then it will do git clone if you dont have the repo, and git pull if you already have the repo in /opt/picochess.
 12. Reboot when install is done. When you login again the voice should say "picochess", "engine startup", "ok".
-13. Open your web browser on localhost:8080 or from another computer using the IP address of your PI. You can change the web port in pocochess.ini
+13. Open your web browser on localhost or from another computer using the IP address of your PI. You can change the web port in pocochess.ini
 14. Start playing !
 
 Tailoring: edit the picochess.ini file.

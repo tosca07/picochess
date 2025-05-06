@@ -134,7 +134,7 @@ set the following as needed:
 dgtpi = False
 engine = /opt/picochess/engines/aarch64/a-stockf
 engine-level = Level@03
-web-server = 8080
+web-server = 80
 board-type = <your board type>
 
 14. (Optional) Download syzygy 3-4-5 piece tablebases and place all .rtbw and .rtbz files in /opt/picochess/tablebases/syzygy. One source is here:
@@ -160,9 +160,9 @@ https://chess.massimilianogoi.com/download/tablebases/
 
   Reboot.
 
-17. NOTE: to use the web interface, point your browser to the ip address of your Pi, using http and port 8080:
+17. NOTE: to use the web interface, point your browser to the ip address of your Pi, using http and port 80:
 
-     http://<ip address of pi>:8080
+     http://<ip address of pi>:80
 
 18. (Optional) If you want to use the default port 80 for the web server, edit picochess.ini (see above) and change the web-server port to 80. The execute the command:
 

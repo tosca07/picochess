@@ -209,8 +209,8 @@ pgn-elo = 1500
 ##enable-update-reboot = True
 
 ## The port of the built-in web server
-#web-server = 80
-web-server = 8080
+#web-server = 8080
+web-server = 80
 
 ## When in ponder mode decides how long each info is displayed. Default is 3 secs.
 ## Must be between 1 to 8 secs.
