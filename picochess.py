@@ -2673,7 +2673,10 @@ async def main() -> None:
             # switch temporarly picotutor off
             self.state.flag_picotutor = False
             old_interaction_mode = self.state.interaction_mode
-            self.state.interaction_mode = Mode.ANALYSIS
+            if self.eng_plays():
+                # if mode is a playing mode - switch to non-playing
+                self.state.interaction_mode = Mode.KIBITZ
+            # else preserve previous analysis non-playing mode
 
             if l_move and l_stop_at_halfmove != 0:
                 # publish current position to webserver
@@ -2681,9 +2684,9 @@ async def main() -> None:
 
             self.state.flag_picotutor = True
             if result_header and result_header == "*":
-                # issue #54 game is not finished
+                # issue #54 game is not finished - switch back to playing mode
                 if old_interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
-                    # same as eng_plays()
+                    # same as eng_plays() - preserve previous playing mode
                     self.state.interaction_mode = old_interaction_mode
                 else:
                     self.state.interaction_mode = Mode.NORMAL
@@ -2752,10 +2755,11 @@ async def main() -> None:
             tc_init = self.state.time_control.get_parameters()
             if lt_white and lt_black:
                 tc_init["internal_time"] = {chess.WHITE: lt_white, chess.BLACK: lt_black}
-            text = self.state.dgttranslate.text("N00_oktime")
-            await Observable.fire(Event.SET_TIME_CONTROL(tc_init=tc_init, time_text=text, show_ok=False))
-            await self.state.stop_clock()
-            await DisplayMsg.show(Message.EXIT_MENU())
+            if self.eng_plays():
+                text = self.state.dgttranslate.text("N00_oktime")
+                await Observable.fire(Event.SET_TIME_CONTROL(tc_init=tc_init, time_text=text, show_ok=False))
+                await self.state.stop_clock()
+                await DisplayMsg.show(Message.EXIT_MENU())
 
             self.state.searchmoves.reset()
             self.state.game_declared = False

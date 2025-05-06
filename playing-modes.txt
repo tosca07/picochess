@@ -1,13 +1,13 @@
 13. Renaming of the play modes! Now we have:
 
-# New mode name                                         Old mode name
-# a5 NORMAL (rolling info display off by default)       NORMAL
-# b5 PONDER ON (rolling info display on by default)     BRAIN
+# New mode name                                         Old mode name       Engine plays moves
+# a5 NORMAL (rolling info display off by default)       NORMAL              X
+# b5 PONDER ON (rolling info display on by default)     BRAIN               X
 # c5 MOVE HINT                                          ANALYSIS
 # d5 EVAL.SCORE                                         KIBITZ
 # e5 OBSERVE                                            OBSERVE
 # f5 ANALYSIS (flexible option on by default)           PONDER
-# g5 TRAINING (this is new in 2.00)                     -
+# g5 TRAINING (this is new in 2.00)                     -                   X
 # h5 REMOTE (working again from 1.00 on)                REMOTE
 
 
