@@ -356,6 +356,11 @@ tutor-coach = off
 ## Engine used for PicoTutor analysis. Default is /opt/picochess/engines/aarch64/a-stockf.
 tutor-engine = /opt/picochess/engines/x86_64/a-stockf
 
+## The coach-analyser setting will make tutor analyse also engine moves. It needs more CPU.
+## Use tutor engine listed above for score-depth-hint when its the engines turn to move.
+## Could be interesting to let stockfish analyse mame engine performance. Default is False.
+#coach-analyser = True
+
 ## Type of e-Board. Supported values: 'certabo', 'chesslink', 'chessnut', 'dgt' (default), 'ichessone', 'noeboard' (play against
 ## engine using web server interface).
 #board-type = chesslink
