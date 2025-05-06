@@ -2755,11 +2755,10 @@ async def main() -> None:
             tc_init = self.state.time_control.get_parameters()
             if lt_white and lt_black:
                 tc_init["internal_time"] = {chess.WHITE: lt_white, chess.BLACK: lt_black}
-            if self.eng_plays():
-                text = self.state.dgttranslate.text("N00_oktime")
-                await Observable.fire(Event.SET_TIME_CONTROL(tc_init=tc_init, time_text=text, show_ok=False))
-                await self.state.stop_clock()
-                await DisplayMsg.show(Message.EXIT_MENU())
+            text = self.state.dgttranslate.text("N00_oktime")
+            await Observable.fire(Event.SET_TIME_CONTROL(tc_init=tc_init, time_text=text, show_ok=False))
+            await self.state.stop_clock()
+            await DisplayMsg.show(Message.EXIT_MENU())
 
             self.state.searchmoves.reset()
             self.state.game_declared = False
