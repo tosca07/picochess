@@ -2597,6 +2597,8 @@ async def main() -> None:
 
             await self.stop_search_and_clock()
 
+            # forget possible previously loaded PGN game
+            self.state.picotutor.set_pgn_game_to_step(None)
             if self.picotutor_mode():
                 self.state.picotutor.newgame()
 

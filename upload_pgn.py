@@ -5,6 +5,10 @@ import base64
 import pam
 import tornado.web
 
+from utilities import Observable
+from dgt.api import Event
+
+
 UPLOAD_DIR = "/opt/picochess/games"
 FIXED_FILENAME = "picochess_game_1.pgn"
 FIXED_PATH = os.path.join(UPLOAD_DIR, FIXED_FILENAME)
@@ -37,7 +41,7 @@ class UploadHandler(tornado.web.RequestHandler):
         self.set_header("WWW-Authenticate", 'Basic realm="Upload Area"')
         self.finish("Authentication required")
 
-    def post(self):
+    async def post(self):
         if not hasattr(self, "current_user"):
             return  # Auth failed
 
@@ -58,6 +62,8 @@ class UploadHandler(tornado.web.RequestHandler):
         try:
             with open(FIXED_PATH, "wb") as f:
                 f.write(fileinfo["body"])
+                event = Event.READ_GAME(pgn_filename="picochess_game_1.pgn")
+                await Observable.fire(event)
         except Exception as e:
             self.set_status(500)
             self.finish(f"Failed to save file: {str(e)}")
