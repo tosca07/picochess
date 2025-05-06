@@ -2314,6 +2314,14 @@ async def main() -> None:
             """return true if engine is playing moves based on PlayMode"""
             return bool(self.state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING))
 
+        async def get_rid_of_engine_move(self):
+            """in some mode switches we need to get rid of a move engine is thinking about"""
+            if self.engine.is_thinking():
+                # force a move and skip it to get rid of engine thinking
+                self.state.ignore_next_engine_move = True
+                self.engine.force_move()
+                await asyncio.sleep(0.5)  # wait for forced move to be handled
+
         async def _start_or_stop_analysis_as_needed(self):
             """start or stop engine analyser as needed (tutor handles this on its own)"""
             if self.engine:
@@ -2966,6 +2974,8 @@ async def main() -> None:
                 )
 
             elif isinstance(event, Event.NEW_ENGINE):
+                # if we are waiting for an engine move, get rid of that first
+                await self.get_rid_of_engine_move()
                 old_file = self.state.engine_file
                 old_options = {}
                 old_options = self.engine.get_pgn_options()
@@ -3416,6 +3426,7 @@ async def main() -> None:
                 await asyncio.sleep(1)
 
             elif isinstance(event, Event.NEW_GAME):
+                await self.get_rid_of_engine_move()
                 last_move_no = self.state.game.fullmove_number
                 self.state.takeback_active = False
                 self.state.automatic_takeback = False
@@ -3479,11 +3490,6 @@ async def main() -> None:
 
                     if self.engine:
                         # need to stop analyser for all modes
-                        if self.engine.is_thinking():
-                            # force a move and skip it to get rid of engine thinking
-                            self.state.ignore_next_engine_move = True
-                            self.engine.force_move()
-                            await asyncio.sleep(0.5)  # wait for forced move to be handled
                         self.engine.stop()
 
                     # see setup_position
@@ -3779,6 +3785,7 @@ async def main() -> None:
                         logger.warning("wrong function call [alternative]! mode: %s", self.state.interaction_mode)
 
             elif isinstance(event, Event.SWITCH_SIDES):
+                await self.get_rid_of_engine_move()
                 self.state.flag_startup = False
                 await DisplayMsg.show(Message.EXIT_MENU())
 
@@ -4435,6 +4442,9 @@ async def main() -> None:
                 await DisplayMsg.show(Message.SEARCH_STOPPED())
 
             elif isinstance(event, Event.SET_INTERACTION_MODE):
+                if self.eng_plays() and event.mode not in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
+                    # force engine move if we go from playing mode to non-playing mode
+                    await self.get_rid_of_engine_move()
                 if (
                     event.mode not in (Mode.NORMAL, Mode.REMOTE, Mode.TRAINING) and self.state.done_computer_fen
                 ):  # @todo check why still needed
@@ -4640,11 +4650,7 @@ async def main() -> None:
                         or (self.emulation_mode() and not self.state.automatic_takeback)
                     )
                 ):
-                    if self.engine.is_thinking():
-                        # Pico4 if engine thinking force a move to keep picotutor in sync
-                        self.state.ignore_next_engine_move = True
-                        self.engine.force_move()
-                        await asyncio.sleep(0.5)  # wait for forced move to be handled
+                    self.get_rid_of_engine_move()  # unnecessary engine move not yet done
                     await self.takeback()
 
             elif isinstance(event, Event.PICOCOMMENT):
