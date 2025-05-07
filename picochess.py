@@ -2678,6 +2678,8 @@ async def main() -> None:
             if self.eng_plays():
                 # if mode is a playing mode - switch to non-playing
                 self.state.interaction_mode = Mode.KIBITZ
+                # eng_play always False here...
+                await self.state.picotutor.set_mode(not self.eng_plays(), self.tutor_depth())
             # else preserve previous analysis non-playing mode
 
             if l_move and l_stop_at_halfmove != 0:
