@@ -1,0 +1,10 @@
+[Unit]
+Description=Run PicoChess update script if flagged
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/run-picochess-if-flagged.sh
+
+[Install]
+WantedBy=multi-user.target

@@ -36,6 +36,8 @@ from configobj import ConfigObj, ConfigObjError, DuplicateError  # type: ignore
 
 from typing import Optional
 
+from pathlib import Path
+
 # picochess version
 version = "4.0.8"
 
@@ -246,6 +248,19 @@ def checkout_tag(tag):
     git = git_name()
     do_popen([git, "checkout", tag])
     do_popen(["pip3", "install", "-r", "requirements.txt"])
+
+
+def update_pico_v4():
+    """use the picochess-update.service and update on next boot"""
+    # Path to the update trigger flag
+    flag_path = Path("/home/pi/run_picochess_update.flag")
+
+    # Create the flag file if it doesn't exist
+    try:
+        flag_path.touch(exist_ok=True)
+        logger.info("Update flag created. Will run on next boot.")
+    except Exception:
+        logger.info("Failed to create update flag. Cannot update picochess on next boot.")
 
 
 async def update_picochess(dgtpi: bool, auto_reboot: bool, dgttranslate: DgtTranslate):

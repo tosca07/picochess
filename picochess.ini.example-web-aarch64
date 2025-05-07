@@ -201,12 +201,9 @@ pgn-user = Player
 #pgn-elo = 1500
 pgn-elo = 1500
 
-## Picochess will check for a new version at startup.
-## This is by currently not available. In the future, once available, if you want this feature, please
-## uncomment the next line
+## If you want a full system and pico upgrade once a day at boot time
+## please uncomment the next line so that enable-update = True
 ##enable-update = True
-## After an update should the machine reboot automatically? If so, please uncomment the next line
-##enable-update-reboot = True
 
 ## The port of the built-in web server
 #web-server = 8080

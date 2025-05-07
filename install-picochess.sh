@@ -72,16 +72,22 @@ sudo -u pi /opt/picochess/venv/bin/pip3 install --upgrade pip
 sudo -u pi /opt/picochess/venv/bin/pip3 install --upgrade -r requirements.txt
 
 echo " ------- "
-echo "setting up picochess, obooksrv and gamesdb services"
+echo "setting up picochess, obooksrv, gamesdb, and update services"
 cp etc/picochess.service /etc/systemd/system/
 ln -sf /opt/picochess/obooksrv/$(uname -m)/obooksrv /opt/picochess/obooksrv/obooksrv
 cp etc/obooksrv.service /etc/systemd/system/
 ln -sf /opt/picochess/gamesdb/$(uname -m)/tcscid /opt/picochess/gamesdb/tcscid
 cp etc/gamesdb.service /etc/systemd/system/
+cp etc/picochess-update.service /etc/systemd/system/
+cp etc/run-picochess-if-flagged.sh /usr/local/bin/
+chmod +x /usr/local/bin/run-picochess-if-flagged.sh
+touch /var/log/picochess-update.log /var/log/picochess-last-update
+chown root:root /var/log/picochess-*
 systemctl daemon-reload
 systemctl enable picochess.service
 systemctl enable obooksrv.service
 systemctl enable gamesdb.service
+systemctl enable picochess-update.service
 
 echo " ------- "
 echo "after each system update we need to rerun the cap_net rights"

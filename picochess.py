@@ -53,7 +53,7 @@ from timecontrol import TimeControl
 from theme import calc_theme
 from utilities import (
     get_location,
-    update_picochess,
+    update_pico_v4,
     get_opening_books,
     shutdown,
     reboot,
@@ -803,7 +803,8 @@ async def main() -> None:
 
     # Update
     if args.enable_update:
-        await update_picochess(args.dgtpi, args.enable_update_reboot, state.dgttranslate)
+        # picov3: await update_picochess(args.dgtpi, args.enable_update_reboot, state.dgttranslate)
+        update_pico_v4()  # next boot will trigger picochess-update.service
 
     #################################################
 
@@ -2692,7 +2693,8 @@ async def main() -> None:
                 else:
                     self.state.interaction_mode = Mode.NORMAL
             # else remain in non-playing mode - as set above
-            self.state.flag_picotutor = True
+
+            self.state.flag_picotutor = True  # switch tutor back on
             # always fix the picotutor if-to-analyse both sides and depth
             await self.state.picotutor.set_mode(not self.eng_plays(), self.tutor_depth())
 
