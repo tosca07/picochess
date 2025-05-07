@@ -14,16 +14,17 @@ About This Fork
 This fork of Picochess focuses on:
 - Upgrading dependencies – Uses the latest Python with the latest chess, and Tornado libraries.
 - Asynchronous Architecture – Replaces threads with an async-based architecture for improved performance and scalability.
+- Keep the main program picochess.py as it was, rewrites are done on Web server, UciEngine, PicoTutor
 
 Requirements
 ------------
 
-- Raspberry Pi 3, or Pi 4 (aarch64) or Debian (x86_64)
+- Raspberry Pi 3, or Pi 4 (aarch64) or a Debian computer (x86_64)
 - RaspiOS Bookworm (latest) 64bit recommended
 
 Quick Installation
 ------------------
-Get the installations script, give it execution rights, and run it as sudo. It will clone the repository to /opt/picochess and install the needed services as listed below.
+Get the installations script, give it execution rights, and run it as sudo. It will clone the repository to /opt/picochess and install the needed services.
 - wget -L https://raw.github.com/JohanSjoblom/Picochess/master/install-picochess.sh
 - chmod a+x install-picochess.sh
 - sudo ./install-picochess
@@ -34,20 +35,24 @@ The script installs the following services in /etc/systemd/system/
 - gamesdb, games window on web page
 
 How to open the web page and play?
+----------------------------------
 Use localhost in your browser to open the web page. If you are running on another machine replace localhost with the ip address of your Pi4.
 
-How to analyse a game?
-You can use the menu to go to Mode and switch to "Hint On" mode. Now you make moves for both sides. Use the plus and minus button to check the score. When you are done analysing: use the Game Setup from the menu and chose Declare game ending. Your game with comments is saved in /opt/picochess/games/last_game.pgn.
+How to analyse a PGN game using Picotutor?
+------------------------------------------
+You can upload a PGN game. Go to localhost/upload and chose a PGN file to upload to Picochess. It will ask you for your pi user password. It will load the PGN game into the starting position. Now you can step through the PGN game in Picochess by using the pause button. Finally save the game from the menu if you want to store the evaluations. Games are saved in /opt/picochess/games. To upload a game from your mobile phone to Picochess you need to know the ip address of your Pi computer and replace localhost with that ip address. You also need to be on the same network as your pi computer.
 
-How to analyse a PGN game?
-You can upload a PGN game. Go to localhost/upload and chose a PGN file to upload to Picochess. Now you can step through the game in Picochess by using the pause button ". Finally save the game from the menu if you want to store the evaluations.
-
+How to enter and analyse a game using Picotutor?
+------------------------------------------------
+You can use the menu to go to Mode and switch to "Hint On" mode. Now you make moves for both sides. Use the plus and minus button to check the score. When you are done analysing: use the Game Setup from the menu and chose Declare game ending. Your game with picotutor evaluations are saved in /opt/picochess/games/last_game.pgn.
 
 Additional scripts you might find useful:
+-----------------------------------------
 - install-dgtpi-clock.sh, run this on DGT3000 Dgt Pi clock hardware, it installs the dgtpi service
 - connect-dgt-on-debian.sh, needed on Debian laptops to connect to a Bluetooth DGT e-board
 
 How to add more engines?
+------------------------
 In the repo there are only Stockfish and LC0 examples. To add an engine you need:
 - locate the /opt/picochess/engines folder - Pi uses aarch64 and Debian laptops x86_64 folder
 - add an executable engine file like "engineX" and a text file "engineX.uci" with settings
