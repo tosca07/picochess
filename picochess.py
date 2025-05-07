@@ -2678,15 +2678,12 @@ async def main() -> None:
             if self.eng_plays():
                 # if mode is a playing mode - switch to non-playing
                 self.state.interaction_mode = Mode.KIBITZ
-                # eng_play always False here...
-                await self.state.picotutor.set_mode(not self.eng_plays(), self.tutor_depth())
             # else preserve previous analysis non-playing mode
 
             if l_move and l_stop_at_halfmove != 0:
                 # publish current position to webserver
                 await self.user_move(l_move, sliding=True)
 
-            self.state.flag_picotutor = True
             if result_header and result_header == "*":
                 # issue #54 game is not finished - switch back to playing mode
                 if old_interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
@@ -2694,7 +2691,10 @@ async def main() -> None:
                     self.state.interaction_mode = old_interaction_mode
                 else:
                     self.state.interaction_mode = Mode.NORMAL
-            # else remain in ANALYSIS mode - game already has a result or is downloaded
+            # else remain in non-playing mode - as set above
+            self.state.flag_picotutor = True
+            # always fix the picotutor if-to-analyse both sides and depth
+            await self.state.picotutor.set_mode(not self.eng_plays(), self.tutor_depth())
 
             await self.stop_search_and_clock()
             turn = self.state.game.turn
@@ -2914,9 +2914,6 @@ async def main() -> None:
                     self.state.dgtmenu.get_picoexplorer(),
                     self.state.dgtmenu.get_picocomment(),
                 )
-                if self.state.flag_picotutor:
-                    # eng_play always False here...
-                    await self.state.picotutor.set_mode(not self.eng_plays(), self.tutor_depth())
             elif self.state.interaction_mode in (Mode.ANALYSIS, Mode.KIBITZ, Mode.OBSERVE, Mode.PONDER):
                 self.engine.set_mode()
                 # Pico v4 allow picotutor to run also when watching
@@ -2926,8 +2923,9 @@ async def main() -> None:
                     self.state.dgtmenu.get_picoexplorer(),
                     self.state.dgtmenu.get_picocomment(),
                 )
-                if self.state.flag_picotutor:
-                    await self.state.picotutor.set_mode(True, self.tutor_depth())
+            if self.state.flag_picotutor:
+                # always fix the picotutor if-to-analyse both sides and depth
+                await self.state.picotutor.set_mode(not self.eng_plays(), self.tutor_depth())
             await self._start_or_stop_analysis_as_needed()  # engine mode changed
 
         def remote_engine_mode(self):
