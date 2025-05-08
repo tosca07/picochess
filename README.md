@@ -1,7 +1,7 @@
 PicoChess
 =========
 Picochess transforms your Raspberry Pi or any Debian-based computer into a chess computer. It is not a chess engine itself but a manager for the chess engines you choose to use.
-This repository includes Stockfish 17 and Leela Chess Zero (LCZero) as examples. If you want to add more engines you should have a look in the picochess google group. The retro and mame engines like Mephisto works, but the special and historical engines might not work.
+This repository includes Stockfish 17 and Leela Chess Zero (LCZero) as examples. If you want to add more engines you should have a look in the picochess google group. The retro and mame engines like Mephisto works. All special and historical engines might not work.
 
 Features
 ========
@@ -31,8 +31,13 @@ Get the installations script, give it execution rights, and run it as sudo. It w
 - reboot and if everything went well Picochess should start as a service
 The script installs the following services in /etc/systemd/system/
 - picochess, main service
+- picochess-update, the service to stay updated
 - obooksrv, opening books window on web page
 - gamesdb, games window on web page
+
+How to stay updated
+-------------------
+You can manually update to latest version from within the program. Go to the System, Power menu and select Restart and Update Picochess. If you really want to stay updated you can edit your picochess.ini file and uncomment the line enable-update = True. In this case it will update the code every time you reboot. It will not run a system update at boot, as that takes quite some time. It will only update the picochess code.
 
 How to open the web page and play?
 ----------------------------------
@@ -40,7 +45,8 @@ Use localhost in your browser to open the web page. If you are running on anothe
 
 How to analyse a PGN game using Picotutor?
 ------------------------------------------
-You can upload a PGN game. Go to localhost/upload and chose a PGN file to upload to Picochess. It will ask you for your pi user password. It will load the PGN game into the starting position. Now you can step through the PGN game in Picochess by using the pause button. Finally save the game from the menu if you want to store the evaluations. Games are saved in /opt/picochess/games. To upload a game from your mobile phone to Picochess you need to know the ip address of your Pi computer and replace localhost with that ip address. You also need to be on the same network as your pi computer.
+You can upload a PGN game. Go to localhost/upload and chose a PGN file to upload to Picochess. It will ask you for your pi user password. It will load the PGN game into the starting position. Now you can step through the PGN game in Picochess by using the pause button. Finally save the game from the menu if you want to store the evaluations. Games are saved in /opt/picochess/games.
+To upload a game from your mobile phone to Picochess you need to know the ip address of your Pi computer and replace localhost above with the ip address. You also need to be on the same network as your pi computer.
 
 How to enter and analyse a game using Picotutor?
 ------------------------------------------------
