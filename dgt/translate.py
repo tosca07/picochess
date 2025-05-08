@@ -7701,6 +7701,33 @@ class DgtTranslate(object):
                 medium_text="Vers " + msg,
                 small_text="ver" + msg,
             )
+        if text_id == "updt_picochess":
+            entxt = Dgt.DISPLAY_TEXT(
+                web_text="Restart and update Picochess",
+                large_text="Restart and update Picochess",
+                medium_text="Rstrt/Update",
+                small_text="Rst/Upd",
+            )
+            ittxt = Dgt.DISPLAY_TEXT(
+                web_text="Riavvia e aggiorna Picochess",
+                large_text="Riavvia e aggiorna Picochess",
+                medium_text="Aggiornare",
+                small_text="Aggiorn",
+            )
+            detxt = Dgt.DISPLAY_TEXT(
+                web_text="Neu starten und Aktualisieren Pico",
+                large_text="Neu starten und Aktualisieren Pico",
+                medium_text="start und update",
+                small_text="restrt/upd",
+            )
+            nltxt = Dgt.DISPLAY_TEXT(
+                web_text="Opnieuw opstarten en bijwerken",
+                large_text="Opnieuw opstarten en bijwerken",
+                medium_text="Opstart/bijwerken",
+                small_text="Update",
+            )
+            frtxt = entxt
+            estxt = entxt
         if text_id == "bat_percent":
             entxt = Dgt.DISPLAY_TEXT(
                 web_text="",

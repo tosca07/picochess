@@ -4804,6 +4804,8 @@ async def main() -> None:
                 shutdown(self.args.dgtpi, dev=event.dev)  # @todo make independant of remote eng
 
             elif isinstance(event, Event.REBOOT):
+                if self.eng_plays():
+                    await self.get_rid_of_engine_move()
                 await self.stop_search()
                 await self.state.stop_clock()
                 await self.engine.quit()
@@ -4871,7 +4873,12 @@ async def main() -> None:
 
             elif isinstance(event, Event.UPDATE_PICO):
                 await DisplayMsg.show(Message.UPDATE_PICO())
-                checkout_tag(event.tag)
+                if not event.tag or event.tag == "":
+                    # full update at next boot for all scripts
+                    update_pico_v4()  # in utilities for now
+                else:
+                    # only update code to a specific tag
+                    checkout_tag(event.tag)
                 await DisplayMsg.show(Message.EXIT_MENU())
 
             elif isinstance(event, Event.REMOTE_ROOM):

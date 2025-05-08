@@ -19,6 +19,7 @@ import os
 import subprocess
 import logging
 import dgt.util
+import asyncio
 from configobj import ConfigObj  # type: ignore
 from collections import OrderedDict
 from typing import Dict, List, Set
@@ -143,6 +144,7 @@ class MenuState(object):
     SYS_POWER_SHUT_DOWN = 705100
     SYS_POWER_EXIT = 705200
     SYS_POWER_RESTART = 705300
+    SYS_POWER_UPDATE = 705400
     SYS_INFO = 710000
     SYS_INFO_VERS = 711000
     SYS_INFO_IP = 712000
@@ -1515,6 +1517,12 @@ class DgtMenu(object):
         text = self.dgttranslate.text(self.menu_system_power.value)
         return text
 
+    def enter_sys_power_update_menu(self):
+        """Set the menu state."""
+        self.state = MenuState.SYS_POWER_UPDATE
+        text = self.dgttranslate.text(self.menu_system_power.value)
+        return text
+
     def enter_sys_power_exit_menu(self):
         """Set the menu state."""
         self.state = MenuState.SYS_POWER_EXIT
@@ -1961,6 +1969,9 @@ class DgtMenu(object):
             text = self.enter_sys_power_menu()
 
         elif self.state == MenuState.SYS_POWER_RESTART:
+            text = self.enter_sys_power_menu()
+
+        elif self.state == MenuState.SYS_POWER_UPDATE:
             text = self.enter_sys_power_menu()
 
         elif self.state == MenuState.SYS_POWER_EXIT:
@@ -2794,6 +2805,8 @@ class DgtMenu(object):
                 text = self.enter_sys_power_shut_down_menu()
             if self.menu_system_power == Power.RESTART:
                 text = self.enter_sys_power_restart_menu()
+            if self.menu_system_power == Power.UPDATE:
+                text = self.enter_sys_power_update_menu()
             if self.menu_system_power == Power.EXIT:
                 text = self.enter_sys_power_exit_menu()
 
@@ -2803,6 +2816,12 @@ class DgtMenu(object):
 
         elif self.state == MenuState.SYS_POWER_RESTART:
             text = self.dgttranslate.text("B10_power_restart_menu")
+            await self._fire_event(Event.REBOOT(dev="menu"))
+
+        elif self.state == MenuState.SYS_POWER_UPDATE:
+            text = self.dgttranslate.text("B00_updt_picochess")
+            await self._fire_event(Event.UPDATE_PICO(tag=""))
+            await asyncio.sleep(0.5)  # let update work first
             await self._fire_event(Event.REBOOT(dev="menu"))
 
         elif self.state == MenuState.SYS_POWER_EXIT:
@@ -3497,6 +3516,11 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_system.value)
 
         elif self.state == MenuState.SYS_POWER_SHUT_DOWN:
+            self.state = MenuState.SYS_POWER_UPDATE
+            self.menu_system_power = PowerLoop.prev(self.menu_system_power)
+            text = self.dgttranslate.text(self.menu_system_power.value)
+
+        elif self.state == MenuState.SYS_POWER_UPDATE:
             self.state = MenuState.SYS_POWER_RESTART
             self.menu_system_power = PowerLoop.prev(self.menu_system_power)
             text = self.dgttranslate.text(self.menu_system_power.value)
@@ -4117,6 +4141,11 @@ class DgtMenu(object):
             text = self.dgttranslate.text(self.menu_system_power.value)
 
         elif self.state == MenuState.SYS_POWER_RESTART:
+            self.state = MenuState.SYS_POWER_UPDATE
+            self.menu_system_power = PowerLoop.next(self.menu_system_power)
+            text = self.dgttranslate.text(self.menu_system_power.value)
+
+        elif self.state == MenuState.SYS_POWER_UPDATE:
             self.state = MenuState.SYS_POWER_SHUT_DOWN
             self.menu_system_power = PowerLoop.next(self.menu_system_power)
             text = self.dgttranslate.text(self.menu_system_power.value)
