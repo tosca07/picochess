@@ -2557,19 +2557,24 @@ async def main() -> None:
                                 pgn_black,
                             ) = read_pgn_info()
 
+                            update_speed = 1.0
                             if pgn_white:
                                 await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_white))
+                                await asyncio.sleep(update_speed)
                             if pgn_black:
                                 await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_black))
+                                await asyncio.sleep(update_speed)
 
                             if pgn_result:
                                 await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_result))
+                                await asyncio.sleep(update_speed)
 
                             if "mate in" in pgn_problem or "Mate in" in pgn_problem:
                                 await self.set_fen_from_pgn(pgn_fen)
                                 await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_problem))
                             else:
                                 await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_game_name))
+                            await asyncio.sleep(update_speed)
 
                     else:
                         if self.state.done_computer_fen and not self.state.position_mode:
@@ -3697,22 +3702,28 @@ async def main() -> None:
                             pgn_black,
                         ) = read_pgn_info()
 
+                        update_speed = 1.0
                         if not pgn_white:
                             pgn_white = "????"
                         await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_white))
+                        await asyncio.sleep(update_speed)
 
                         await DisplayMsg.show(Message.SHOW_TEXT(text_string="versus"))
+                        await asyncio.sleep(update_speed)
 
                         if not pgn_black:
                             pgn_black = "????"
                         await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_black))
+                        await asyncio.sleep(update_speed)
 
                         if pgn_result:
                             await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_result))
+                        await asyncio.sleep(update_speed)
                         if "mate in" in pgn_problem or "Mate in" in pgn_problem:
                             await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_problem))
                         else:
                             await DisplayMsg.show(Message.SHOW_TEXT(text_string=pgn_game_name))
+                        await asyncio.sleep(update_speed)
 
                         # reset pgn guess counters
                         if last_move_no > 1:
