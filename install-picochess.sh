@@ -5,11 +5,11 @@
 
 # Check for the "pico" parameter, if present skip system upgrade
 SKIP_UPDATE=false
-if [[ "$1" == "pico" ]]; then
+if [ "$1" = "pico" ]; then
     SKIP_UPDATE=true
 fi
 
-if ! $SKIP_UPDATE; then
+if [ "$SKIP_UPDATE" = false ]; then
     echo "starting by upgrading system before installing picochess"
     apt update && apt upgrade -y
 else
