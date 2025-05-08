@@ -16,8 +16,8 @@ if [ -f "$FLAG" ]; then
     LAST_RUN=$(cat "$TIMESTAMP_FILE" 2>/dev/null || echo 0)
     DIFF=$((NOW - LAST_RUN))
 
-    # One day = 86400 seconds
-    if [ "$DIFF" -ge 86400 ]; then
+    # 10 min = 600 seconds
+    if [ "$DIFF" -ge 600 ]; then
         echo "$(date): Running PicoChess update..." | tee -a "$LOGFILE"
         
         # Clear the flag first to avoid loops
@@ -27,13 +27,15 @@ if [ -f "$FLAG" ]; then
         echo "$NOW" > "$TIMESTAMP_FILE"
 
         # Run the update script
-        bash "$SCRIPT" >> "$LOGFILE" 2>&1
+        # system upgrade takes a long time to do
+        # use pico param to skip system upgrade (pico update only)
+        bash "$SCRIPT" "pico" >> "$LOGFILE" 2>&1
 
         # Optionally reboot
-        reboot
+        # reboot
 
     else
-        echo "$(date): Skipped update (last run was less than a day ago)" >> "$LOGFILE"
+        echo "$(date): Skipped update (last run was less than 10 minutes ago)" >> "$LOGFILE"
         rm "$FLAG"  # Optionally remove flag to prevent retry
     fi
 fi

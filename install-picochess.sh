@@ -3,11 +3,21 @@
 # Installation script for picochess
 #
 
-echo "starting by updating library information"
-apt -y update
-echo "and upgrading system before installing picochess"
-apt -y full-upgrade
+# Check for the "pico" parameter, if present skip system upgrade
+SKIP_UPDATE=false
+if [[ "$1" == "pico" ]]; then
+    SKIP_UPDATE=true
+fi
 
+if ! $SKIP_UPDATE; then
+    echo "starting by upgrading system before installing picochess"
+    apt update && apt upgrade -y
+else
+    echo "Skipping system update because 'pico' parameter was given."
+    echo "Updating Picochess but not system"
+fi
+
+echo " ------------------------- "
 echo "installing needed libraries"
 apt -y install git sox unzip wget libtcl8.6 telnet libglib2.0-dev
 apt -y install avahi-daemon avahi-discover libnss-mdns
