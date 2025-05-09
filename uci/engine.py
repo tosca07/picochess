@@ -171,9 +171,9 @@ class ContinuousAnalysis:
                 root_moves=root_moves,
             )
             await result_queue.put(result)
+            self._idle = True  # engine idle again
         except chess.engine.EngineError:
             await result_queue.put(None)
-        finally:
             self._idle = True  # engine idle again
 
     def is_idle(self) -> bool:
