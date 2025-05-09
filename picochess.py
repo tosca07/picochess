@@ -92,7 +92,7 @@ from picotutor import PicoTutor
 FLOAT_MIN_BACKGROUND_TIME = 1.5  # dont update analysis more often than this
 # Limit analysis of engine
 # ENGINE WATCHING
-FLOAT_MAX_ANALYSIS_DEPTH = 18  # the famous limit of deep blue?
+FLOAT_MAX_ANALYSIS_DEPTH = 28  # the famous limit of deep blue?
 # ENGINE PLAYING
 # Dont make the following large as it will block engine play go
 FLOAT_MAX_ANALYSE_TIME = 0.1  # asking for hint while not pondering
