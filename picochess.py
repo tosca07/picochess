@@ -2317,7 +2317,7 @@ async def main() -> None:
 
         async def get_rid_of_engine_move(self):
             """in some mode switches we need to get rid of a move engine is thinking about"""
-            if self.engine.is_thinking():
+            if self.eng_plays() and self.engine.is_thinking():
                 # force a move and skip it to get rid of engine thinking
                 self.state.ignore_next_engine_move = True
                 self.engine.force_move()
@@ -4815,8 +4815,7 @@ async def main() -> None:
                 shutdown(self.args.dgtpi, dev=event.dev)  # @todo make independant of remote eng
 
             elif isinstance(event, Event.REBOOT):
-                if self.eng_plays():
-                    await self.get_rid_of_engine_move()
+                await self.get_rid_of_engine_move()
                 await self.stop_search()
                 await self.state.stop_clock()
                 await self.engine.quit()
