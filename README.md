@@ -27,7 +27,7 @@ Quick Installation
 Get the installations script, give it execution rights, and run it as sudo. It will clone the repository to /opt/picochess and install the needed services.
 - wget -L https://raw.github.com/JohanSjoblom/Picochess/master/install-picochess.sh
 - chmod a+x install-picochess.sh
-- sudo ./install-picochess
+- sudo ./install-picochess.sh
 - reboot and if everything went well Picochess should start as a service
 The script installs the following services in /etc/systemd/system/
 - picochess, main service
