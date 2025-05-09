@@ -362,12 +362,15 @@ class ContinuousAnalysis:
             logging.debug("%s asking for ContinuousAnalysis to stop running", self.whoami)
 
     def cancel(self):
-        """force the analyser to cancel"""
-        if self._task is not None:
-            logger.debug("Cancelling ContinuousAnalysis by killing task")
-            self._task.cancel()
-            self._task = None
-            self._running = False
+        """force the analyser to stop"""
+        if self._running:
+            if self._task is not None:
+                logger.debug("%s Cancelling ContinuousAnalysis by killing task", self.whoami)
+                self._task.cancel()
+                self._task = None
+                self._running = False
+            else:
+                logger.debug("ContinousAnalyser strange - running but task is none")
 
     def get_fen(self) -> str:
         """return the fen the analysis is based on"""
@@ -563,8 +566,7 @@ class UciEngine(object):
         if self.analyser.is_running():
             self.analyser.stop()
             await asyncio.sleep(0.3)  # ask nicely
-            if self.analyser.is_running():
-                self.analyser.cancel()  # still running, force bye bye
+            self.analyser.cancel()  # still running, force bye bye
         await self.engine.quit()  # Ask nicely
         # @todo not sure how to know if we can call terminate and kill?
         if self.is_mame:
@@ -579,7 +581,8 @@ class UciEngine(object):
     def stop_analysis(self):
         """Stop background ContinuousAnalyser"""
         if self.analyser.is_running():
-            self.analyser.stop()
+            # self.analyser.stop()
+            self.analyser.cancel()  # @todo - find out why we need this
 
     def force_move(self):
         """Force engine to move - only call this when engine not waiting"""
@@ -742,8 +745,9 @@ class UciEngine(object):
         """Engine sometimes need this to setup internal values.
         parameter game will not change"""
         if self.analyser.is_running():
-            self.analyser.stop()  # stop analyser for a new game
-            await asyncio.sleep(0.3)  # make sure analysis stops
+            self.analyser.stop()
+            await asyncio.sleep(0.3)  # wait for analyser to stop
+            self.analyser.cancel()  # @todo we could wait for ping isready instead?
         # do not self.engine.send_line("ucinewgame"), see read_pgn_file in picochess.py
         # it will confuse the engine when switching between playing/non-playing modes
         self.analyser.newgame()  # chess lib signals ucinewgame in next call to engine

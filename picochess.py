@@ -4508,6 +4508,7 @@ async def main() -> None:
                 if event.pgn_filename:
                     await DisplayMsg.show(Message.READ_GAME(pgn_filename=event.pgn_filename))
                     await self.read_pgn_file(event.pgn_filename)
+                    await self._start_or_stop_analysis_as_needed()
 
             elif isinstance(event, Event.CONTLAST):
                 await DisplayMsg.show(Message.CONTLAST(contlast=event.contlast))
