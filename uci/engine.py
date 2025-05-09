@@ -142,8 +142,13 @@ class ContinuousAnalysis:
         self.pause_event.set()  # Start unpaused
         self.engine: UciProtocol = engine
         self._idle = True  # start with Engine marked as idle
+        self.game_id = 1  # signal ucinewgame to engine when this game id changes
         if not self.engine:
             logger.error("%s ContinuousAnalysis initialised without engine", self.whoami)
+
+    def newgame(self):
+        """start a new game - it only updates the game parameter in Play calls"""
+        self.game_id = self.game_id + 1
 
     async def _engine_move_task(
         self,
@@ -158,7 +163,12 @@ class ContinuousAnalysis:
             self._idle = False  # engine is going to be busy now
             r_info = chess.engine.INFO_SCORE | chess.engine.INFO_PV | chess.engine.INFO_BASIC
             result = await self.engine.play(
-                copy.deepcopy(game), limit=limit, info=r_info, ponder=ponder, root_moves=root_moves
+                board=copy.deepcopy(game),
+                limit=limit,
+                game=self.game_id,
+                info=r_info,
+                ponder=ponder,
+                root_moves=root_moves,
             )
             await result_queue.put(result)
         except chess.engine.EngineError:
@@ -227,7 +237,9 @@ class ContinuousAnalysis:
                 async with self.lock:
                     self.current_game = self.game.copy()
                     self._analysis_data = None
-                self.limit_reached = await self._analyse_position()
+                debug_once_limit = True  # ok to debug once more after coming here again
+                debug_once_game = True
+                await self._analyse_position()  # infinite analysis until limit reached
             except asyncio.CancelledError:
                 logger.debug("%s ContinuousAnalyser cancelled", self.whoami)
                 # same situation as in stop
@@ -239,13 +251,13 @@ class ContinuousAnalysis:
                 self._task = None
                 self._running = False
 
-    async def _analyse_position(self) -> bool:
-        """analyse while position stays same or limit reached
-        returns True if limit was reached for this position"""
+    async def _analyse_position(self) -> None:
+        """analyse while not stopped, position stays same or limit reached"""
         while self._running and self.current_game.fen() == self.game.fen():
             try:
+                self.limit_reached = False  # set to True by next call
                 await self._analyse_forever(self.limit, self.multipv)
-                return True  # limit reached
+                return  # analysis stopped, position changed, or limit reached
             except chess.engine.AnalysisComplete:
                 logger.debug("ContinuousAnalyser ran out of information")
                 asyncio.sleep(self.delay)  # maybe it helps to wait some extra?
@@ -253,14 +265,20 @@ class ContinuousAnalysis:
 
     async def _analyse_forever(self, limit: Limit | None, multipv: int | None) -> None:
         """analyse forever if no limit sent"""
-        with await self.engine.analysis(self.current_game, limit=limit, multipv=multipv) as analysis:
+        with await self.engine.analysis(
+            board=self.current_game, limit=limit, multipv=multipv, game=self.game_id
+        ) as analysis:
             async for info in analysis:
                 await self.pause_event.wait()  # Wait if analysis is paused
                 async with self.lock:
-                    # after waiting, check if position has changed
-                    if self.current_game.fen() != self.game.fen():
+                    # after waiting, check if analysis to be stopped or position changed
+                    if not self._running or self.current_game.fen() != self.game.fen():
                         self._analysis_data = None
-                        return  # old position, quit analysis
+                        try:
+                            analysis.stop()  # ask engine to stop analysing
+                        except Exception:
+                            logger.debug("failed sending stop in infinite analysis")
+                        return  # not running or old position, quit analysis
                     updated = self._update_analysis_data(analysis)  # update to latest
                     if updated:
                         #  self.debug_analyser()  # normally commented out
@@ -269,6 +287,7 @@ class ContinuousAnalysis:
                             info_limit: InfoDict = self._analysis_data[0]
                             if "depth" in info_limit and limit.depth:
                                 if info_limit.get("depth") >= limit.depth:
+                                    self.limit_reached = True
                                     return  # limit reached
                 await asyncio.sleep(self.delay)  # save cpu
                 # else just wait for info so that we get updated True
@@ -297,9 +316,8 @@ class ContinuousAnalysis:
             return False
         if game.is_game_over():
             return False
-        # if game.fen() == chess.Board.starting_fen:
-        #    return False
-        # @todo skip while in book? or is that main loops logic?
+        if game.fen() == chess.Board.starting_fen:
+            return False  # dont waste CPU on analysing starting position
         return True
 
     def start(self, game: chess.Board, limit: Limit | None = None, multipv: int | None = None):
@@ -337,13 +355,19 @@ class ContinuousAnalysis:
             logger.debug("%s ContinuousAnalysis not running - cannot update", self.whoami)
 
     def stop(self):
-        """Stops the continuous analysis."""
+        """Stops the continuous analysis - in a nice way
+        it lets infinite analyser stop by itself"""
         if self._running:
-            if self._task is not None:
-                self._task.cancel()
-                self._task = None
-                self._running = False
-                logging.debug("%s ContinuousAnalysis stopped", self.whoami)
+            self._running = False  # causes infinite analysis loop to send stop to engine
+            logging.debug("%s asking for ContinuousAnalysis to stop running", self.whoami)
+
+    def cancel(self):
+        """force the analyser to cancel"""
+        if self._task is not None:
+            logger.debug("Cancelling ContinuousAnalysis by killing task")
+            self._task.cancel()
+            self._task = None
+            self._running = False
 
     def get_fen(self) -> str:
         """return the fen the analysis is based on"""
@@ -494,7 +518,6 @@ class UciEngine(object):
         """Send options to engine."""
         try:
             await self.engine.configure(self.options)
-            # some engines like pgn_engine will not work without this
             try:
                 await self.engine.ping()  # send isready and wait for answer
             except CancelledError:
@@ -539,6 +562,9 @@ class UciEngine(object):
         """Quit engine."""
         if self.analyser.is_running():
             self.analyser.stop()
+            await asyncio.sleep(0.3)  # ask nicely
+            if self.analyser.is_running():
+                self.analyser.cancel()  # still running, force bye bye
         await self.engine.quit()  # Ask nicely
         # @todo not sure how to know if we can call terminate and kill?
         if self.is_mame:
@@ -715,13 +741,12 @@ class UciEngine(object):
     async def newgame(self, game: Board):
         """Engine sometimes need this to setup internal values.
         parameter game will not change"""
-        if self.engine:
-            # some engines like pgn_engine will not work without this
-            self.engine.send_line("ucinewgame")
-        if self.analyser.is_running() and game:
-            # send new board to analyser if it has changed - avoid stop
-            if self.analyser.get_fen() == game.fen():
-                await self.analyser.update_game(game)
+        if self.analyser.is_running():
+            self.analyser.stop()  # stop analyser for a new game
+            await asyncio.sleep(0.3)  # make sure analysis stops
+        # do not self.engine.send_line("ucinewgame"), see read_pgn_file in picochess.py
+        # it will confuse the engine when switching between playing/non-playing modes
+        self.analyser.newgame()  # chess lib signals ucinewgame in next call to engine
 
     def set_mode(self, ponder: bool = True):
         """Set engine ponder mode for a playing engine"""
