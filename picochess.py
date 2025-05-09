@@ -2702,7 +2702,8 @@ async def main() -> None:
             self.state.flag_picotutor = True  # switch tutor back on
             # always fix the picotutor if-to-analyse both sides and depth
             self.engine.stop_analysis()  # stop possible engine analyser
-            self.state.picotutor.stop()  # stop possible old tutor analysers
+            if self.eng_plays():
+                self.state.picotutor.stop()  # stop possible old tutor analysers
             await self.state.picotutor.set_mode(not self.eng_plays(), self.tutor_depth())
 
             await self.stop_search_and_clock()

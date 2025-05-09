@@ -143,6 +143,7 @@ class ContinuousAnalysis:
         self.engine: UciProtocol = engine
         self._idle = True  # start with Engine marked as idle
         self.game_id = 1  # signal ucinewgame to engine when this game id changes
+        self.current_game_id = 1  # latest game_id being analysed
         if not self.engine:
             logger.error("%s ContinuousAnalysis initialised without engine", self.whoami)
 
@@ -227,7 +228,7 @@ class ContinuousAnalysis:
                     await asyncio.sleep(self.delay * 2)
                     continue
                 # important to check limit AND that game is still same - bug fix 13.4.2025
-                if self.limit_reached and self.get_fen() == self.game.fen():
+                if self.limit_reached and self.current_game_id == self.game_id and self.get_fen() == self.game.fen():
                     if debug_once_limit:
                         logger.debug("%s ContinuousAnalyser analysis limited", self.whoami)
                         debug_once_limit = False  # dont flood log
@@ -235,7 +236,9 @@ class ContinuousAnalysis:
                     continue
                 # new position - start with new current_game and empty data
                 async with self.lock:
-                    self.current_game = self.game.copy()
+                    self.current_game = self.game.copy()  # position for infinite analysis
+                    self.limit_reached = False
+                    self.current_game_id = self.game_id  # new id for each game
                     self._analysis_data = None
                 debug_once_limit = True  # ok to debug once more after coming here again
                 debug_once_game = True
@@ -253,9 +256,9 @@ class ContinuousAnalysis:
 
     async def _analyse_position(self) -> None:
         """analyse while not stopped, position stays same or limit reached"""
-        while self._running and self.current_game.fen() == self.game.fen():
+        while self._running and self.current_game_id == self.game_id and self.current_game.fen() == self.game.fen():
             try:
-                self.limit_reached = False  # set to True by next call
+                self.limit_reached = False  # possibly set to True by next call
                 await self._analyse_forever(self.limit, self.multipv)
                 return  # analysis stopped, position changed, or limit reached
             except chess.engine.AnalysisComplete:
@@ -271,14 +274,18 @@ class ContinuousAnalysis:
             async for info in analysis:
                 await self.pause_event.wait()  # Wait if analysis is paused
                 async with self.lock:
-                    # after waiting, check if analysis to be stopped or position changed
-                    if not self._running or self.current_game.fen() != self.game.fen():
+                    # after waiting, check if analysis to be stopped
+                    if (
+                        not self._running
+                        or self.current_game_id != self.game_id
+                        or self.current_game.fen() != self.game.fen()
+                    ):
                         self._analysis_data = None
                         try:
                             analysis.stop()  # ask engine to stop analysing
                         except Exception:
                             logger.debug("failed sending stop in infinite analysis")
-                        return  # not running or old position, quit analysis
+                        return  # quit analysis
                     updated = self._update_analysis_data(analysis)  # update to latest
                     if updated:
                         #  self.debug_analyser()  # normally commented out
@@ -387,12 +394,12 @@ class ContinuousAnalysis:
             result = {
                 "info": copy.deepcopy(self._analysis_data),
                 "fen": copy.deepcopy(self.current_game.fen()),
+                "game": self.current_game_id,
             }
             return result
 
     async def update_game(self, new_game: chess.Board):
-        """Updates the game for analysis in a thread-safe manner.
-        Do not call if fen() is still the same"""
+        """Updates the position for analysis. The game id is still the same"""
         async with self.lock:
             self.game = new_game.copy()  # remember this game position
             self.limit_reached = False  # True when limit reached for position
