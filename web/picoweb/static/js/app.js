@@ -1,4 +1,5 @@
 // if you don't want the last move of each player side to be "highlighted", set the variable highlight_move to
+// if you don't want the last move of each player side to be "highlighted", set the variable highlight_move to
 // HIGHLIGHT_OFF
 const HIGHLIGHT_OFF = 0;
 const HIGHLIGHT_ON = 1;
@@ -63,7 +64,7 @@ function talk(text) {
         if (myvoice != "") {
             msg.voice = myvoice;
         }
-        // window.speechSynthesis.speak(msg);
+        window.speechSynthesis.speak(msg);
     }
 }
 
@@ -1489,6 +1490,12 @@ function updateDGTPosition(data) {
 function goToDGTFen() {
     $.get('/dgt', { action: 'get_last_move' }, function(data) {
         if (data) {
+            updateDGTPosition(data);
+            highlightBoard(data.move, data.play);
+            addArrow(data.move, data.play);
+        }
+        else {
+            data.fen = START_FEN
             updateDGTPosition(data);
             highlightBoard(data.move, data.play);
             addArrow(data.move, data.play);

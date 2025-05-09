@@ -1,0 +1,563 @@
+@font-face {
+    font-family: 'Roboto';
+    src: url('../fonts/Roboto-Regular.ttf');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src: url('../fonts/Roboto-Medium.ttf');
+    font-weight: bolder;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'FreeSerif';
+    src: url('../fonts/FreeSerif-YO4a.otf') format('opentype');
+}
+
+body {
+    overflow-y: hidden;
+}
+
+.gameVariation {
+    font-size: 1.4vw;
+    display: block;
+    margin-left: 5vw;
+    margin-top: 0.6vw;
+    margin-bottom: 0.6vw;
+}
+
+.gameVariation .gameMoves {
+    font-weight: normal;
+}
+
+.comment {
+    font-size: 1.4vw;
+    display: block;
+    margin-top: 0.6vw;
+    margin-bottom: 0.6vw;
+    color: green;
+    font-weight: normal;
+}
+
+.bookMoves {
+    font-size: 1.8vw;
+    font-family: Roboto, FreeSerif, sans-serif;
+}
+
+.gameMoves {
+    font-size: 1.8vw;
+    font-weight: bolder;
+    line-height: 150%;
+    font-family: Roboto, FreeSerif, sans-serif;
+}
+
+.gameMoves .highlight {
+    color: darkgreen;
+    font-size: 1.8vw;
+}
+
+.gameMoves a {
+    text-decoration: none;
+}
+
+.gameResult {
+    font-size: 1.8vw;
+}
+
+#pgn h4 {
+    font-size: 1.8vw;
+}
+
+#pgn h5 {
+    font-size: 1.6vw;
+}
+
+.panel-heading {
+    overflow: hidden;
+}
+
+.panel-heading > .nav-tabs {
+    border-bottom: none;
+    margin-bottom: -10px;
+    overflow: visible;
+}
+
+.panel .panel-borderless .panel-primary {
+    border: 0;
+    box-shadow: none;
+}
+
+.card-body {
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.panel-body {
+    padding-top: 1.5vh;
+    padding-right: 1.2vw;
+    padding-bottom: 1.2vh;
+    padding-left: 1.5vw;
+}
+
+div.dataTables_info {
+    font-size: 1vw;
+}
+
+.dataTables_processing {
+    font-size: 1vw;
+}
+
+div.dataTables_wrapper div.dataTables_length select {
+    width: 20vw;
+}
+
+.svg-container {
+    display: inline-block;
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%;
+    vertical-align: middle;
+    overflow: hidden;
+}
+
+.svg-content {
+    display: inline-block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#boardcontrol {
+    padding-left: 0px;
+    padding-right: 0px;
+}
+
+#boardButtons {
+    margin-top: 10px;
+}
+
+#DGTClockStatus {
+    font-size: 3vh;
+}
+
+#DGTClockText {
+    font-size: 5vh;
+}
+
+#clockbuttons {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 0px;
+    padding-right: 0px;
+}
+
+.boardinfo {
+    padding-top: 21px;
+}
+
+#boardControlButtons {
+    padding-top: 10px;
+}
+
+#BoardStatus {
+    font-size: 1.8em;
+    line-height: .75em;
+    vertical-align: -15%;
+}
+
+.scroll_movelist {
+    height: 160px;
+    overflow: auto;
+    margin-bottom: 1vh;
+}
+
+.scroll_obooklist {
+    height: 168px;
+}
+
+#GameTable_wrapper {
+ min-height: 168px;
+}
+
+.scroll_engine {
+    height: 168px;
+    overflow: auto;
+    padding-right: 12px;
+    margin-left: 0px;
+    overflow-y: scroll;
+}
+
+.card-header {
+    padding: 5px;
+}
+
+.nav-pills .nav-link {
+    margin-top: 0px;
+    margin-bottom: 0px;
+    padding: 14px;
+}
+
+#data {
+    margin-top: 10px;
+}
+
+canvas {
+    width: 20vw;
+    height: 2vh;
+    vertical-align: middle;
+}
+
+table.compact.dataTable tbody th, table.compact.dataTable tbody td {
+    vertical-align: middle;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+table.dataTable {
+ margin-top:0px !important;
+}
+
+.dataTables_wrapper table thead{
+    display: none;
+}
+
+td.dt-right.zero-border-right {
+    text-align: right;
+    border-right: 0px;
+}
+
+td.dt-center.zero-border-right {
+    text-align: center;
+    border-right: 0px;
+}
+
+td.result {
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Corrected size of icons in buttons */
+.fa-lg {
+    font-size: 1.4em;
+}
+
+#engineMultiPVStatus {
+    font-size: 1.5vw;
+    vertical-align: text-top;
+}
+
+#analyzeBtn {
+    min-width: 114px;
+}
+
+.list-group-item {
+    color: var(--mdb-card-color);
+    padding-left: 8px;
+}
+
+#listener {
+    width: 0px;
+    height: 0px;
+}
+
+/* better visible hover for dark mode */
+#GameTable>tbody>tr:hover>* {
+    box-shadow: inset 0 0 0 9999px white;
+}
+
+/* Correction for the Download-Button size */
+#downloadBtn {
+    font-size: 1rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* start promotion */
+.promotion-overlay {
+    z-index: 4;
+    background: rgba(22,21,18,.7);
+    width: 100%;
+    height: 100%;
+    position: absolute;
+}
+
+.promotion-overlay square {
+    cursor: pointer;
+    border-radius: 50%;
+    background-color: #b0b0b0;
+    box-shadow: inset 0 0 25px 3px gray;
+    transition: all 150ms;
+    z-index: 2;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 12.5%;
+    height: 12.5%;
+    transition: all 150ms;
+}
+
+.promotion-overlay piece {
+    position: absolute;
+    top: 10%;
+    left: 10%;
+    width: 80%;
+    height: 80%;;
+    background-size: cover;
+    z-index: 5;
+    pointer-events: none;
+    transition: all 150ms;
+}
+
+.promotion-overlay square:hover piece {
+    transform: scale(120%);
+}
+
+.promotion-overlay square:hover {
+    box-shadow:inset 0 0 48px 8px #d64f00;
+    border-radius:0%;
+}
+
+#promotoion-choice {
+    background: rgba(22,21,18,.7);
+    z-index: 205;
+    position: absolute;
+    width: var(--cg-width, 100%);
+    height: var(--cg-height, 100%);
+    right: 0;
+}
+
+#promotion-choice piece {
+    pointer-events: auto;
+    opacity: 1;
+}
+
+.knight.white {background-image: url('chessground/images/pieces/merida/wN.svg')}
+.bishop.white {background-image: url('chessground/images/pieces/merida/wB.svg')}
+.rook.white {background-image: url('chessground/images/pieces/merida/wR.svg')}
+.queen.white {background-image: url('chessground/images/pieces/merida/wQ.svg')}
+.knight.black {background-image: url('chessground/images/pieces/merida/bN.svg')}
+.bishop.black {background-image: url('chessground/images/pieces/merida/bB.svg')}
+.rook.black {background-image: url('chessground/images/pieces/merida/bR.svg')}
+.queen.black {background-image: url('chessground/images/pieces/merida/bQ.svg')}
+/* end promotion */
+
+/* Responsive styles for portrait mode */
+@media (max-width: 768px) and (orientation: portrait) {
+    #DGTClockText {
+        font-size: 1.1rem !important; /* Font size for Clock-Text */
+    }
+    
+    #DGTClockStatus {
+        font-size: 0.7rem !important;
+    }
+    
+    .card-header {
+        font-size: 0.7rem !important;
+    }
+    
+    h4, h5 {
+        font-size: 0.7rem !important;
+    }
+    
+    #pgn, .gameMoves, .bookMoves {
+        font-size: 0.65rem !important;
+    }
+    
+    #BoardStatus {
+        font-size: 0.65rem !important;
+    }
+    
+    .nav-pills .nav-link {
+        padding: 5px 8px !important;
+        font-size: 0.65rem !important;
+    }
+    
+    /* Hide button text on small screens */
+    .btn-text {
+        display: none;
+    }
+    
+    /* Ensure buttons have appropriate size */
+    .btn-group .btn {
+        padding: 0.2rem 0.3rem;
+    }
+    
+    /* Smaller icons in buttons for portrait mode */
+    .fa-lg {
+        font-size: 1.2em !important;
+    }
+    
+    /* Move list height */
+    .scroll_movelist {
+        height: 120px !important;
+        overflow: auto;
+        margin-bottom: 1vh;
+    }
+    
+    /* Chessboard container fixes */
+    .svg-container {
+        overflow: hidden !important;
+        position: relative !important;
+        width: 100% !important;
+        padding-bottom: 100% !important;
+    }
+    
+    /* Chessboard positioning fixes */
+    .svg-content {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
+    
+    /* Fix for promotion overlay */
+    .promotion-overlay {
+        width: 100% !important;
+        height: 100% !important;
+    }
+    
+    /* Ensure buttons don't appear in chessboard */
+    .board-container .btn,
+    #board .btn {
+        display: none !important; /* Hide buttons in chessboard */
+    }
+    
+    /* Ensure tabs have consistent layout */
+    .tab-pane {
+        display: none !important;
+    }
+    
+    .tab-pane.active,
+    .tab-pane.show.active {
+        display: block !important;
+    }
+    
+    /* Container layout for portrait mode */
+    .container-fluid {
+        padding-left: 5px !important;
+        padding-right: 5px !important;
+    }
+    
+    /* Main rows for portrait adjustment */
+    .container-fluid > .row {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Correct column sizes for portrait */
+    .container-fluid > .row > .col {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 0 0 100% !important;
+    }
+    
+    /* Fix for chessboard in any tab context */
+    #board_panel {
+        margin-bottom: 10px !important;
+    }
+    
+    /* Consistent layout for all tabs */
+    .tab-content,
+    .tab-pane,
+    #book,
+    #engine,
+    #games {
+        width: 100% !important;
+    }
+    
+    /* Prevent layout shift when switching tabs */
+    #board {
+        transform: translateZ(0);
+        backface-visibility: hidden;
+        perspective: 1000;
+        -webkit-transform: translateZ(0);
+        -webkit-backface-visibility: hidden;
+        -webkit-perspective: 1000;
+    }
+    
+    /* Improved tab display in portrait mode */
+    #data {
+        margin-top: 5px !important;
+    }
+    
+    /* CRITICAL FIX: Make controls row compact */
+    #boardcontrol .row:nth-child(2) {
+        min-height: 30px !important;
+        max-height: 30px !important;
+        margin: 0 !important;
+        position: relative !important;
+        display: flex !important;
+        align-items: center !important;
+        width: 100% !important;
+    }
+    
+    /* Fix White label alignment */
+    .boardinfo {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        height: 30px !important;
+    }
+    
+    /* Better vertical alignment of side to move text */
+    #sidetomove {
+        display: inline-flex !important;
+        align-items: center !important;
+        vertical-align: middle !important;
+    }
+    
+    /* Fix download button container */
+    #boardControlButtons {
+        padding: 0 !important;
+        height: 30px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        padding-right: 10px !important;
+    }
+    
+    /* Fix download button */
+    #downloadBtn {
+        font-size: 0.8rem !important;
+        padding: 0.2rem 0.4rem !important;
+        margin: 0 !important;
+    }
+    
+    /* Reduce space below chessboard */
+    #board_panel .card-body {
+        padding-bottom: 5px !important;
+    }
+    
+    /* Fix checkbox alignment */
+    input[type="checkbox"] {
+        transform: scale(1) !important;
+        margin-right: 4px !important;
+        vertical-align: middle !important;
+    }
+    
+    /* Make label text properly sized */
+    label {
+        font-size: 0.8rem !important;
+        vertical-align: middle !important;
+        margin: 0 !important;
+    }
+    
+    /* Ensure proper height of control area */
+    #boardcontrol .col {
+        padding: 0 !important;
+        min-height: 30px !important;
+        max-height: 30px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+}
