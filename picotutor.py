@@ -159,20 +159,21 @@ class PicoTutor:
         # not yet been changed to async --> causes changes in main
         # set_status might later be changed that require this engine
         if not self.best_engine:
-            self.best_engine = await self._load_engine("best picotutor")
+            options = {"MultiPV": c.VALID_ROOT_MOVES, "Contempt": 0, "Threads": c.NUM_THREADS}
+            self.best_engine = await self._load_engine(options, "best picotutor")
             if self.best_engine is None:
                 logger.debug("best engine loading failed in Picotutor")
         if not self.obvious_engine:
-            self.obvious_engine = await self._load_engine("obvious picotutor")
+            options = {"MultiPV": c.VALID_ROOT_MOVES, "Contempt": 0, "Threads": c.LOW_NUM_THREADS}
+            self.obvious_engine = await self._load_engine(options, "obvious picotutor")
             if self.obvious_engine is None:
                 logger.debug("obvious engine loading failed in Picotutor")
 
-    async def _load_engine(self, debug_whoami: str) -> UciEngine:
+    async def _load_engine(self, options: dict, debug_whoami: str) -> UciEngine:
         """internal function to load each tutor engine"""
         engine = UciEngine(self.engine_path, self.ucishell, self.mame_par, self.loop, debug_whoami)
         await engine.open_engine()
         if engine.loaded_ok() is True:
-            options = {"MultiPV": c.VALID_ROOT_MOVES, "Contempt": 0, "Threads": c.NUM_THREADS}
             await engine.startup(options=options)
             engine.set_mode()  # not needed as we dont ponder?
         else:

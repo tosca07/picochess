@@ -34,7 +34,7 @@ from uci.rating import Rating, Result
 from utilities import write_picochess_ini
 
 FLOAT_MAX_ENGINE_TIME = 1.0  # engine fallback thinking time
-FLOAT_ANALYSIS_WAIT = 0.1  # save CPU in ContinuousAnalysis
+FLOAT_ANALYSIS_WAIT = 0.05  # save CPU in ContinuousAnalysis
 
 UCI_ELO = "UCI_Elo"
 UCI_ELO_NON_STANDARD = "UCI Elo"
@@ -234,15 +234,15 @@ class ContinuousAnalysis:
                         debug_once_limit = False  # dont flood log
                     await asyncio.sleep(self.delay * 2)
                     continue
-                # new position - start with new current_game and empty data
                 async with self.lock:
-                    self.current_game = self.game.copy()  # position for infinite analysis
+                    # new limit, position, possibly new game_id infinite analysis
+                    self.current_game = self.game.copy()  # position
                     self.limit_reached = False
                     self.current_game_id = self.game_id  # new id for each game
                     self._analysis_data = None
                 debug_once_limit = True  # ok to debug once more after coming here again
                 debug_once_game = True
-                await self._analyse_position()  # infinite analysis until limit reached
+                await self._analyse_forever(self.limit, self.multipv)
             except asyncio.CancelledError:
                 logger.debug("%s ContinuousAnalyser cancelled", self.whoami)
                 # same situation as in stop
@@ -253,18 +253,9 @@ class ContinuousAnalysis:
                 # have to stop analysing
                 self._task = None
                 self._running = False
-
-    async def _analyse_position(self) -> None:
-        """analyse while not stopped, position stays same or limit reached"""
-        while self._running and self.current_game_id == self.game_id and self.current_game.fen() == self.game.fen():
-            try:
-                self.limit_reached = False  # possibly set to True by next call
-                await self._analyse_forever(self.limit, self.multipv)
-                return  # analysis stopped, position changed, or limit reached
             except chess.engine.AnalysisComplete:
                 logger.debug("ContinuousAnalyser ran out of information")
-                asyncio.sleep(self.delay)  # maybe it helps to wait some extra?
-        return False  # limit not reached, position changed
+                asyncio.sleep(self.delay * 2)  # maybe it helps to wait some extra?
 
     async def _analyse_forever(self, limit: Limit | None, multipv: int | None) -> None:
         """analyse forever if no limit sent"""
