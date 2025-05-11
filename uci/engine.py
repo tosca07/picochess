@@ -34,7 +34,7 @@ from uci.rating import Rating, Result
 from utilities import write_picochess_ini
 
 FLOAT_MAX_ENGINE_TIME = 1.0  # engine fallback thinking time
-FLOAT_ANALYSIS_WAIT = 0.05  # save CPU in ContinuousAnalysis
+FLOAT_ANALYSIS_WAIT = 0.1  # save CPU in ContinuousAnalysis
 
 UCI_ELO = "UCI_Elo"
 UCI_ELO_NON_STANDARD = "UCI Elo"
@@ -271,7 +271,7 @@ class ContinuousAnalysis:
                         or self.current_game_id != self.game_id
                         or self.current_game.fen() != self.game.fen()
                     ):
-                        self._analysis_data = None
+                        self._analysis_data = None  # drop ref into library
                         try:
                             analysis.stop()  # ask engine to stop analysing
                         except Exception:
@@ -279,6 +279,7 @@ class ContinuousAnalysis:
                         return  # quit analysis
                     updated = self._update_analysis_data(analysis)  # update to latest
                     if updated:
+                        #  self._analysis data got a value
                         #  self.debug_analyser()  # normally commented out
                         if limit:
                             # @todo change 0 to -1 to get all multipv finished

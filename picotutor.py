@@ -771,7 +771,7 @@ class PicoTutor:
             else:
                 score = score_val.pov(turn).score()
         else:
-            logger.warning("no score in tutor info dict")
+            logger.debug("no score in tutor info dict")
         return (move, score, mate)
 
     # @todo re-design this method?
