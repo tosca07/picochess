@@ -1,5 +1,4 @@
 // if you don't want the last move of each player side to be "highlighted", set the variable highlight_move to
-// if you don't want the last move of each player side to be "highlighted", set the variable highlight_move to
 // HIGHLIGHT_OFF
 const HIGHLIGHT_OFF = 0;
 const HIGHLIGHT_ON = 1;
@@ -64,7 +63,7 @@ function talk(text) {
         if (myvoice != "") {
             msg.voice = myvoice;
         }
-        window.speechSynthesis.speak(msg);
+        // window.speechSynthesis.speak(msg);
     }
 }
 
@@ -130,7 +129,7 @@ var boardStatusEl = $('#BoardStatus'),
     dgtClockStatusEl = $('#DGTClockStatus'),
     dgtClockTextEl = $('#DGTClockText'),
     pgnEl = $('#pgn');
-    moveListEl = $('#moveList')
+moveListEl = $('#moveList')
 
 var gameHistory, fenHash, currentPosition;
 const SERVER_NAME = location.hostname
@@ -195,7 +194,7 @@ function figurinizeMove(move) {
 
 function isLightTheme() {
     var bgcolor = $('body').css("background-color")
-    const [r,g,b,a] = bgcolor.match(/[\d\.]+/g).map(Number);
+    const [r, g, b, a] = bgcolor.match(/[\d\.]+/g).map(Number);
     return r > 127 && g > 127 && b > 127;
 }
 
@@ -218,7 +217,7 @@ var bookDataTable = $('#BookTable').DataTable({
     'ajax': {
         'url': OBOCK_SERVER_PREFIX + '/query',
         'dataSrc': 'data',
-        'data': function(d) {
+        'data': function (d) {
             d.action = 'get_book_moves';
             d.fen = dataTableFen;
         }
@@ -226,7 +225,7 @@ var bookDataTable = $('#BookTable').DataTable({
     'columns': [
         {
             data: 'move',
-            render: function(data, type, row) {
+            render: function (data, type, row) {
                 if (currentPosition) {
                     var tmp_board = new Chess(currentPosition.fen, chessGameType);
                     move = tmp_board.move({ from: data.slice(0, 2), to: data.slice(2, 4), promotion: data.slice(4) });
@@ -240,8 +239,8 @@ var bookDataTable = $('#BookTable').DataTable({
         { data: 'count', render: $.fn.dataTable.render.number(',', '.') },
         {
             data: 'draws',
-            render: function(data, type, row) { return "" },
-            createdCell: function(td, cellData, rowData, row, col) {
+            render: function (data, type, row) { return "" },
+            createdCell: function (td, cellData, rowData, row, col) {
                 var canvas = jQuery("<canvas id=\"white_draws_black\"></canvas>");
                 canvas.appendTo(jQuery(td));
 
@@ -288,23 +287,23 @@ var gameDataTable = $('#GameTable').DataTable({
     'ajax': {
         'url': GAMES_SERVER_PREFIX + '/query',
         'dataSrc': 'data',
-        'data': function(d) {
+        'data': function (d) {
             d.action = 'get_games';
             d.fen = dataTableFen;
         },
-        'error': function(xhr, error, thrown) {
+        'error': function (xhr, error, thrown) {
             console.warn(xhr);
         }
     },
     'columns': [
         { data: 'white' },
         { data: 'black' },
-        { data: 'result', render: function(data, type, row) { return data.replace('1/2-1/2', '\u00BD'); } },
+        { data: 'result', render: function (data, type, row) { return data.replace('1/2-1/2', '\u00BD'); } },
         { data: 'event' }
     ]
 });
 
-gameDataTable.on('select', function(e, dt, type, indexes) {
+gameDataTable.on('select', function (e, dt, type, indexes) {
     var data = gameDataTable.rows(indexes).data().pluck('pgn')[0].split("\n");
     loadGame(data);
     updateStatus();
@@ -331,7 +330,7 @@ function stripFen(fen) {
     return strippedFen;
 }
 
-String.prototype.trim = function() {
+String.prototype.trim = function () {
     return this.replace(/\s*$/g, '');
 };
 
@@ -339,54 +338,54 @@ function WebExporter(columns) {
     this.lines = [];
     this.columns = columns;
     this.current_line = '';
-    this.flush_current_line = function() {
+    this.flush_current_line = function () {
         if (this.current_line) {
             this.lines.append(this.current_line.trim());
             this.current_line = '';
         }
     };
 
-    this.write_token = function(token) {
+    this.write_token = function (token) {
         if (this.columns && this.columns - this.current_line.length < token.length) {
             this.flush_current_line();
         }
         this.current_line += token;
     };
 
-    this.write_line = function(line) {
+    this.write_line = function (line) {
         this.flush_current_line();
         this.lines.push(line.trim());
     };
 
-    this.start_game = function() {};
+    this.start_game = function () { };
 
-    this.end_game = function() {
+    this.end_game = function () {
         this.write_line();
     };
 
-    this.start_headers = function() {};
+    this.start_headers = function () { };
 
-    this.end_headers = function() {
+    this.end_headers = function () {
         this.write_line();
     };
 
-    this.start_variation = function() {
+    this.start_variation = function () {
         this.write_token('<span class="gameVariation"> [ ');
     };
 
-    this.end_variation = function() {
+    this.end_variation = function () {
         this.write_token(' ] </span>');
     };
 
-    this.put_starting_comment = function(comment) {
+    this.put_starting_comment = function (comment) {
         this.put_comment(comment);
     };
 
-    this.put_comment = function(comment) {
+    this.put_comment = function (comment) {
         this.write_token('<span class="gameComment"><a href="#" class="comment"> ' + comment + ' </a></span>');
     };
 
-    this.put_nags = function(nags) {
+    this.put_nags = function (nags) {
         if (nags) {
             nags = nags.sort();
 
@@ -396,7 +395,7 @@ function WebExporter(columns) {
         }
     };
 
-    this.put_nag = function(nag) {
+    this.put_nag = function (nag) {
         var int_nag = parseInt(nag);
         if (simpleNags[int_nag]) {
             this.write_token(" " + simpleNags[int_nag] + " ");
@@ -406,7 +405,7 @@ function WebExporter(columns) {
         }
     };
 
-    this.put_fullmove_number = function(turn, fullmove_number, variation_start) {
+    this.put_fullmove_number = function (turn, fullmove_number, variation_start) {
         if (turn === 'w') {
             this.write_token(String(fullmove_number) + ". ");
         }
@@ -415,7 +414,7 @@ function WebExporter(columns) {
         }
     };
 
-    this.put_move = function(board, m) {
+    this.put_move = function (board, m) {
         var old_fen = board.fen();
         var tmp_board = new Chess(old_fen, chessGameType);
         var out_move = tmp_board.move(m);
@@ -432,12 +431,12 @@ function WebExporter(columns) {
         this.write_token('<span class="gameMove' + (board.fullmove_number) + '"><a href="#" class="fen" data-fen="' + fen + '" id="' + stripped_fen + '"> ' + figurinizeMove(out_move.san) + ' </a></span>');
     };
 
-    this.put_result = function(result) {
+    this.put_result = function (result) {
         this.write_token(result + " ");
     };
 
     // toString override
-    this.toString = function() {
+    this.toString = function () {
         if (this.current_line) {
             var tmp_lines = this.lines.slice(0);
             tmp_lines.push(this.current_line.trim());
@@ -454,58 +453,58 @@ function PgnExporter(columns) {
     this.lines = [];
     this.columns = columns;
     this.current_line = "";
-    this.flush_current_line = function() {
+    this.flush_current_line = function () {
         if (this.current_line) {
             this.lines.append(this.current_line.trim());
             this.current_line = "";
         }
     };
 
-    this.write_token = function(token) {
+    this.write_token = function (token) {
         if (this.columns && this.columns - this.current_line.length < token.length) {
             this.flush_current_line();
         }
         this.current_line += token;
     };
 
-    this.write_line = function(line) {
+    this.write_line = function (line) {
         this.flush_current_line();
         this.lines.push(line.trim());
     };
 
-    this.start_game = function() {};
+    this.start_game = function () { };
 
-    this.end_game = function() {
+    this.end_game = function () {
         this.write_line();
     };
 
-    this.start_headers = function() {};
+    this.start_headers = function () { };
 
-    this.put_header = function(tagname, tagvalue) {
+    this.put_header = function (tagname, tagvalue) {
         this.write_line("[{0} \"{1}\"]".format(tagname, tagvalue));
     };
 
-    this.end_headers = function() {
+    this.end_headers = function () {
         this.write_line();
     };
 
-    this.start_variation = function() {
+    this.start_variation = function () {
         this.write_token("( ");
     };
 
-    this.end_variation = function() {
+    this.end_variation = function () {
         this.write_token(") ");
     };
 
-    this.put_starting_comment = function(comment) {
+    this.put_starting_comment = function (comment) {
         this.put_comment(comment);
     };
 
-    this.put_comment = function(comment) {
+    this.put_comment = function (comment) {
         this.write_token("{ " + comment.replace("}", "").trim() + " } ");
     };
 
-    this.put_nags = function(nags) {
+    this.put_nags = function (nags) {
         if (nags) {
             nags = nags.sort();
 
@@ -515,11 +514,11 @@ function PgnExporter(columns) {
         }
     };
 
-    this.put_nag = function(nag) {
+    this.put_nag = function (nag) {
         this.write_token("$" + String(nag) + " ");
     };
 
-    this.put_fullmove_number = function(turn, fullmove_number, variation_start) {
+    this.put_fullmove_number = function (turn, fullmove_number, variation_start) {
         if (turn === 'w') {
             this.write_token(String(fullmove_number) + ". ");
         }
@@ -528,7 +527,7 @@ function PgnExporter(columns) {
         }
     };
 
-    this.put_move = function(board, m) {
+    this.put_move = function (board, m) {
         var tmp_board = new Chess(board.fen(), chessGameType);
         var out_move = tmp_board.move(m);
         if (!out_move) {
@@ -540,12 +539,12 @@ function PgnExporter(columns) {
         this.write_token(out_move.san + " ");
     };
 
-    this.put_result = function(result) {
+    this.put_result = function (result) {
         this.write_token(result + " ");
     };
 
     // toString override
-    this.toString = function() {
+    this.toString = function () {
         if (this.current_line) {
             var tmp_lines = this.lines.slice(0);
             tmp_lines.push(this.current_line.trim());
@@ -648,7 +647,7 @@ function updateCurrentPosition(move, tmpGame) {
     }
 }
 
-var updateStatus = function() {
+var updateStatus = function () {
     var status = '';
     $('.fen').unbind('click', goToGameFen).one('click', goToGameFen);
 
@@ -704,7 +703,7 @@ var updateStatus = function() {
         var element = $('#' + strippedFen);
         var y_position = element.position().top;
         moveListEl.scrollTop(y_position);
-        $(".fen").each(function() {
+        $(".fen").each(function () {
             $(this).removeClass('text-warning');
         });
         element.addClass('text-warning');
@@ -716,10 +715,10 @@ var updateStatus = function() {
 
 function toDests(chess) {
     var dests = {};
-    chess.SQUARES.forEach(function(s) {
+    chess.SQUARES.forEach(function (s) {
         var ms = chess.moves({ square: s, verbose: true });
         if (ms.length)
-            dests[s] = ms.map(function(m) { return m.to; });
+            dests[s] = ms.map(function (m) { return m.to; });
     });
     return dests;
 }
@@ -728,7 +727,7 @@ function toColor(chess) {
     return (chess.turn() === 'w') ? 'white' : 'black';
 }
 
-var onSnapEnd = async function(source, target) {
+var onSnapEnd = async function (source, target) {
     stopAnalysis();
     var tmpGame = createGamePointer();
 
@@ -744,21 +743,25 @@ var onSnapEnd = async function(source, target) {
 
     updateCurrentPosition(move, tmpGame);
     updateChessGround();
-    $.post('/channel', { action: 'move', fen: currentPosition.fen, source: source, target: target,
-                         promotion: move.promotion ? move.promotion : '' }, function(data) {});
+    $.post('/channel', {
+        action: 'move', fen: currentPosition.fen, source: source, target: target,
+        promotion: move.promotion ? move.promotion : ''
+    }, function (data) { });
     updateStatus();
 };
 
 async function promotionDialog(ucimove) {
     var move = ucimove.match(/.{2}/g);
     var source = move[0];
-    var target =move[1];
+    var target = move[1];
 
     var tmpGame = createGamePointer();
     var move = await getMove(tmpGame, source, target);
     if (move !== null) {
-        $.post('/channel', { action: 'promotion', fen: currentPosition.fen, source: source, target: target,
-                             promotion: move.promotion ? move.promotion : '' }, function(data) {});
+        $.post('/channel', {
+            action: 'promotion', fen: currentPosition.fen, source: source, target: target,
+            promotion: move.promotion ? move.promotion : ''
+        }, function (data) { });
     }
 }
 
@@ -808,7 +811,7 @@ chessground1.set({
     movable: { events: { after: playOtherSide() } }
 });
 
-$(window).resize(function() {
+$(window).resize(function () {
     chessground1.redrawAll();
 });
 
@@ -1101,23 +1104,23 @@ function newBoard(fen) {
 }
 
 function clockButton0() {
-    $.post('/channel', { action: 'clockbutton', button: 0 }, function(data) {});
+    $.post('/channel', { action: 'clockbutton', button: 0 }, function (data) { });
 }
 
 function clockButton1() {
-    $.post('/channel', { action: 'clockbutton', button: 1 }, function(data) {});
+    $.post('/channel', { action: 'clockbutton', button: 1 }, function (data) { });
 }
 
 function clockButton2() {
-    $.post('/channel', { action: 'clockbutton', button: 2 }, function(data) {});
+    $.post('/channel', { action: 'clockbutton', button: 2 }, function (data) { });
 }
 
 function clockButton3() {
-    $.post('/channel', { action: 'clockbutton', button: 3 }, function(data) {});
+    $.post('/channel', { action: 'clockbutton', button: 3 }, function (data) { });
 }
 
 function clockButton4() {
-    $.post('/channel', { action: 'clockbutton', button: 4 }, function(data) {});
+    $.post('/channel', { action: 'clockbutton', button: 4 }, function (data) { });
 }
 
 function toggleLeverButton() {
@@ -1127,11 +1130,11 @@ function toggleLeverButton() {
     if ($('#leverDown').is(':hidden')) {
         button = -0x40;
     }
-    $.post('/channel', { action: 'clockbutton', button: button }, function(data) {});
+    $.post('/channel', { action: 'clockbutton', button: button }, function (data) { });
 }
 
 function clockButtonPower() {
-    $.post('/channel', { action: 'clockbutton', button: 0x11 }, function(data) {});
+    $.post('/channel', { action: 'clockbutton', button: 0x11 }, function (data) { });
 }
 
 function goToPosition(fen) {
@@ -1461,7 +1464,7 @@ function analyze(position_update) {
     }
     if (!window.StockfishModule) {
         window.stockfish = new Worker('/static/js/stockfish.js');
-        window.stockfish.onmessage = function(event) {
+        window.stockfish.onmessage = function (event) {
             handleMessage(event);
         };
     }
@@ -1488,7 +1491,7 @@ function updateDGTPosition(data) {
 }
 
 function goToDGTFen() {
-    $.get('/dgt', { action: 'get_last_move' }, function(data) {
+    $.get('/dgt', { action: 'get_last_move' }, function (data) {
         if (data) {
             updateDGTPosition(data);
             highlightBoard(data.move, data.play);
@@ -1500,7 +1503,7 @@ function goToDGTFen() {
             highlightBoard(data.move, data.play);
             addArrow(data.move, data.play);
         }
-    }).fail(function(jqXHR, textStatus) {
+    }).fail(function (jqXHR, textStatus) {
         dgtClockStatusEl.html(textStatus);
     });
 }
@@ -1538,24 +1541,24 @@ function setHeaders(data) {
 }
 
 function getAllInfo() {
-    $.get('/info', { action: 'get_system_info' }, function(data) {
+    $.get('/info', { action: 'get_system_info' }, function (data) {
         window.system_info = data;
-    }).fail(function(jqXHR, textStatus) {
+    }).fail(function (jqXHR, textStatus) {
         dgtClockStatusEl.html(textStatus);
     });
-    $.get('/info', { action: 'get_ip_info' }, function(data) {
+    $.get('/info', { action: 'get_ip_info' }, function (data) {
         setTitle(data);
-    }).fail(function(jqXHR, textStatus) {
+    }).fail(function (jqXHR, textStatus) {
         dgtClockStatusEl.html(textStatus);
     });
-    $.get('/info', { action: 'get_headers' }, function(data) {
+    $.get('/info', { action: 'get_headers' }, function (data) {
         setHeaders(data);
-    }).fail(function(jqXHR, textStatus) {
+    }).fail(function (jqXHR, textStatus) {
         dgtClockStatusEl.html(textStatus);
     });
-    $.get('/info', { action: 'get_clock_text' }, function(data) {
+    $.get('/info', { action: 'get_clock_text' }, function (data) {
         dgtClockTextEl.html(data);
-    }).fail(function(jqXHR, textStatus) {
+    }).fail(function (jqXHR, textStatus) {
         console.warn(textStatus);
         dgtClockStatusEl.html(textStatus);
     });
@@ -1592,29 +1595,41 @@ $('#ClockBtn3').on('click', clockButton3);
 $('#ClockBtn4').on('click', clockButton4);
 $('#ClockLeverBtn').on('click', toggleLeverButton);
 
-$("#ClockBtn0").mouseup(function() { btn = $(this);
-    setTimeout(function() { btn.blur(); }, 100); })
-$("#ClockBtn1").mouseup(function() { btn = $(this);
-    setTimeout(function() { btn.blur(); }, 100); })
-$("#ClockBtn2").mouseup(function() { btn = $(this);
-    setTimeout(function() { btn.blur(); }, 100); })
-$("#ClockBtn3").mouseup(function() { btn = $(this);
-    setTimeout(function() { btn.blur(); }, 100); })
-$("#ClockBtn4").mouseup(function() { btn = $(this);
-    setTimeout(function() { btn.blur(); }, 100); })
-$("#ClockLeverBtn").mouseup(function() { btn = $(this);
-    setTimeout(function() { btn.blur(); }, 100); })
+$("#ClockBtn0").mouseup(function () {
+    btn = $(this);
+    setTimeout(function () { btn.blur(); }, 100);
+})
+$("#ClockBtn1").mouseup(function () {
+    btn = $(this);
+    setTimeout(function () { btn.blur(); }, 100);
+})
+$("#ClockBtn2").mouseup(function () {
+    btn = $(this);
+    setTimeout(function () { btn.blur(); }, 100);
+})
+$("#ClockBtn3").mouseup(function () {
+    btn = $(this);
+    setTimeout(function () { btn.blur(); }, 100);
+})
+$("#ClockBtn4").mouseup(function () {
+    btn = $(this);
+    setTimeout(function () { btn.blur(); }, 100);
+})
+$("#ClockLeverBtn").mouseup(function () {
+    btn = $(this);
+    setTimeout(function () { btn.blur(); }, 100);
+})
 
-$(function() {
+$(function () {
     getAllInfo();
 
-    $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
         updateStatus();
     });
     window.engine_lines = {};
     window.multipv = 1;
 
-    $(document).keydown(function(e) {
+    $(document).keydown(function (e) {
         if (e.keyCode === 39) { // right arrow
             if (e.ctrlKey) {
                 $('#endBtn').click();
@@ -1625,7 +1640,7 @@ $(function() {
         }
     });
 
-    $(document).keydown(function(e) {
+    $(document).keydown(function (e) {
         if (e.keyCode === 37) { // left arrow
             if (e.ctrlKey) {
                 $('#startBtn').click();
@@ -1644,7 +1659,7 @@ $(function() {
     else {
         var ws = new WebSocket('ws://' + location.host + '/event');
         // Process messages from picochess
-        ws.onmessage = function(e) {
+        ws.onmessage = function (e) {
             var data = JSON.parse(e.data);
             switch (data.event) {
                 case 'Fen':
@@ -1700,7 +1715,7 @@ $(function() {
                     console.warn(data);
             }
         };
-        ws.onclose = function() {
+        ws.onclose = function () {
             dgtClockStatusEl.html('closed');
         };
     }
@@ -1729,14 +1744,14 @@ let setPromotion = null
 async function getUserPromotion(toSquare) {
     const column = toSquare[0]
     const offSetMap = {
-        'a' : 0,
-        'b' : 12.5,
-        'c' : 25,
-        'd' : 37.5,
-        'e' : 50,
-        'f' : 62.5,
-        'g' : 75,
-        'h' : 87.5,
+        'a': 0,
+        'b': 12.5,
+        'c': 25,
+        'd': 37.5,
+        'e': 50,
+        'f': 62.5,
+        'g': 75,
+        'h': 87.5,
     }
     const leftOffset = offSetMap[column]
 
