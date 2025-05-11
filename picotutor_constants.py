@@ -3,8 +3,8 @@
 LOW_DEPTH = 5  # for 'obvious moves' calculation
 LOW_TIME = 0.2  # time limit for 'obvious moves' and first analysis
 DEEP_DEPTH = 17  # limit picotutor deep analysis (also used as analysis engine)
-LOW_NUM_THREADS = 1  # parallel threads for low/obvious/min-ply
-NUM_THREADS = 2  # parallel threads for deep/best/max-ply - set to 1 to save CPU
+LOW_NUM_THREADS = 1  # parallel threads for low
+NUM_THREADS = 1  # threads for deep - 1 to save CPU, 2 to have faster analysis
 # VALID_ROOT_MOVES must be high enough to find also some bad moves
 # but not so high that depth on PI 4 is as low as 5 or LOW_DEPTH
 VALID_ROOT_MOVES = 50  # number of multipv best moves
