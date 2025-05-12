@@ -39,11 +39,11 @@ apt -y install rsync
 
 # BACKUP section starts
 ###############################################################################
-# Safe Auto-Updater for Git Repository
-# - Backs up working directory, including untracked files
-# - Keeps latest 2 backups, deletes older ones
-# - Only resets if current branch is 'main'
-# - Untracked files are preserved in working directory
+# Fast Incremental Backup & Git Reset Script for /opt/picochess
+# - Maintains a single backup in /home/pi/pico_backups/current
+# - Uses rsync to copy only changed files
+# - Excludes 'engines/' and 'mame/' from backup
+# - Preserves untracked files outside excluded folders
 ###############################################################################
 
 if [ -d "/opt/picochess" ]; then
@@ -52,19 +52,15 @@ if [ -d "/opt/picochess" ]; then
     # === Configuration ===
     REPO_DIR="/opt/picochess" # Path to Git repo
     BRANCH="master"           # Expected working branch
-    REMOTE="origin"           # Remote to pull from
-    BACKUP_ROOT="/home/pi/pico_backups"  # Where backups will be stored
-    MAX_BACKUPS=2             # Number of recent backups to keep
-
-    # === Timestamped Backup Directory ===
-    TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
-    BACKUP_DIR="$BACKUP_ROOT/backup_$TIMESTAMP"
+    REMOTE="origin"           # Remote to pull from     
+    BACKUP_DIR="/home/pi/pico_backups/current"  # backups stored
     WORKING_COPY_DIR="$BACKUP_DIR/working_copy"
     UNTRACKED_DIR="$BACKUP_DIR/untracked_files"
+    EXCLUDED_DIR1="engines"
+    EXCLUDED_DIR2="mame"
 
     # Create required directories
     mkdir -p "$WORKING_COPY_DIR" "$UNTRACKED_DIR"
-
     echo "Creating backup in: $BACKUP_DIR"
     cd "$REPO_DIR" || exit 1
 
@@ -72,24 +68,26 @@ if [ -d "/opt/picochess" ]; then
     echo "Saving git diff..."
     git diff > "$BACKUP_DIR/local_changes.diff"
 
-    # === Save untracked files into their own subdirectory ===
-    echo "Saving untracked files..."
+    # === Save untracked files (excluding engines/ and mame/) ===
+    echo "Backing up untracked files..."
+    rm -rf "$UNTRACKED_DIR"/*
     git ls-files --others --exclude-standard | while read -r file; do
+    case "$file" in
+        "$EXCLUDED_DIR1"/*|"$EXCLUDED_DIR2"/*) continue ;;
+    esac
     mkdir -p "$UNTRACKED_DIR/$(dirname "$file")"
     cp -p "$file" "$UNTRACKED_DIR/$file"
     done
 
-    # === Copy full working directory, excluding .git ===
-    echo "Copying working directory..."
-    rsync -a --exclude='.git' ./ "$WORKING_COPY_DIR/"
+    # === Sync working copy excluding .git, engines/, and mame/ ===
+    echo "Syncing working directory..."
+    rsync -a --delete \
+    --exclude='.git' \
+    --exclude="$EXCLUDED_DIR1/" \
+    --exclude="$EXCLUDED_DIR2/" \
+    ./ "$WORKING_COPY_DIR/"
+    echo "Backup safely stored at: $BACKUP_DIR"
 
-    # === Remove older backups beyond MAX_BACKUPS ===
-    echo "Cleaning up old backups..."
-    ls -1dt "$BACKUP_ROOT"/backup_* 2>/dev/null | tail -n +$(($MAX_BACKUPS + 1)) | while read -r old; do
-    echo "Deleting $old"
-    rm -rf "$old"
-    done
-    echo "Update complete. Backup safely stored at: $BACKUP_DIR"
 fi
 #
 # BACKUP section ends
@@ -117,9 +115,7 @@ if [ -d "/opt/picochess" ]; then
     cd /opt/picochess
     # new forced backup ends
     # make sure pi is still owner of all files
-    cd /opt
     chown -R pi /opt/picochess
-    cd /opt/picochess    
 else
     echo "fetching picochess..."
     cd /opt
