@@ -17,6 +17,26 @@ else
     echo "Updating Picochess but not system"
 fi
 
+#
+# INSTALLING NEEDED SYSTEM LIBRARIES BEFORE BACKUP SECTION
+#
+echo " ------------------------- "
+echo "installing needed libraries"
+apt -y install git sox unzip wget libtcl8.6 telnet libglib2.0-dev
+apt -y install avahi-daemon avahi-discover libnss-mdns
+apt -y install vorbis-tools
+apt -y install python3 python3-pip
+apt -y install python3-dev
+apt -y install python3-venv
+apt -y install libffi-dev libssl-dev
+apt -y install tk tcl libtcl8.6
+# following line is for (building) and running leela-chess-zero
+apt -y install libopenblas-dev ninja-build meson
+# following line are to run mame (missing on lite images)
+apt -y install libsdl2-2.0-0 libsdl2-ttf-2.0-0 qt5ct
+# following needed for backup to work
+apt -y install rsync
+
 # BACKUP section starts
 ###############################################################################
 # Safe Auto-Updater for Git Repository
@@ -75,26 +95,9 @@ fi
 # BACKUP section ends
 #
 
-echo " ------------------------- "
-echo "installing needed libraries"
-apt -y install git sox unzip wget libtcl8.6 telnet libglib2.0-dev
-apt -y install avahi-daemon avahi-discover libnss-mdns
-apt -y install vorbis-tools
-apt -y install python3 python3-pip
-apt -y install python3-dev
-apt -y install python3-venv
-apt -y install libffi-dev libssl-dev
-apt -y install tk tcl libtcl8.6
-# following line is for (building) and running leela-chess-zero
-apt -y install libopenblas-dev ninja-build meson
-# following line are to run mame (missing on lite images)
-apt -y install libsdl2-2.0-0 libsdl2-ttf-2.0-0 qt5ct
-
 echo " ------- "
 if [ -d "/opt/picochess" ]; then
     echo "picochess already exists, updating code..."
-    cd /opt
-    chown -R pi /opt/picochess
     cd /opt/picochess
     # new forced backup starts
     # === Check current Git branch ===
@@ -113,6 +116,10 @@ if [ -d "/opt/picochess" ]; then
     git reset --hard "$REMOTE/$BRANCH"
     cd /opt/picochess
     # new forced backup ends
+    # make sure pi is still owner of all files
+    cd /opt
+    chown -R pi /opt/picochess
+    cd /opt/picochess    
 else
     echo "fetching picochess..."
     cd /opt
