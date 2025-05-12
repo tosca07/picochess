@@ -17,6 +17,64 @@ else
     echo "Updating Picochess but not system"
 fi
 
+# BACKUP section starts
+###############################################################################
+# Safe Auto-Updater for Git Repository
+# - Backs up working directory, including untracked files
+# - Keeps latest 2 backups, deletes older ones
+# - Only resets if current branch is 'main'
+# - Untracked files are preserved in working directory
+###############################################################################
+
+if [ -d "/opt/picochess" ]; then
+    echo "picochess already exists, creating BACKUP ..."
+
+    # === Configuration ===
+    REPO_DIR="/opt/picochess" # Path to Git repo
+    BRANCH="master"           # Expected working branch
+    REMOTE="origin"           # Remote to pull from
+    BACKUP_ROOT="/home/pi/pico_backups"  # Where backups will be stored
+    MAX_BACKUPS=2             # Number of recent backups to keep
+
+    # === Timestamped Backup Directory ===
+    TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
+    BACKUP_DIR="$BACKUP_ROOT/backup_$TIMESTAMP"
+    WORKING_COPY_DIR="$BACKUP_DIR/working_copy"
+    UNTRACKED_DIR="$BACKUP_DIR/untracked_files"
+
+    # Create required directories
+    mkdir -p "$WORKING_COPY_DIR" "$UNTRACKED_DIR"
+
+    echo "Creating backup in: $BACKUP_DIR"
+    cd "$REPO_DIR" || exit 1
+
+    # === Save Git diff of local changes ===
+    echo "Saving git diff..."
+    git diff > "$BACKUP_DIR/local_changes.diff"
+
+    # === Save untracked files into their own subdirectory ===
+    echo "Saving untracked files..."
+    git ls-files --others --exclude-standard | while read -r file; do
+    mkdir -p "$UNTRACKED_DIR/$(dirname "$file")"
+    cp -p "$file" "$UNTRACKED_DIR/$file"
+    done
+
+    # === Copy full working directory, excluding .git ===
+    echo "Copying working directory..."
+    rsync -a --exclude='.git' ./ "$WORKING_COPY_DIR/"
+
+    # === Remove older backups beyond MAX_BACKUPS ===
+    echo "Cleaning up old backups..."
+    ls -1dt "$BACKUP_ROOT"/backup_* 2>/dev/null | tail -n +$(($MAX_BACKUPS + 1)) | while read -r old; do
+    echo "Deleting $old"
+    rm -rf "$old"
+    done
+    echo "Update complete. Backup safely stored at: $BACKUP_DIR"
+fi
+#
+# BACKUP section ends
+#
+
 echo " ------------------------- "
 echo "installing needed libraries"
 apt -y install git sox unzip wget libtcl8.6 telnet libglib2.0-dev
@@ -38,7 +96,23 @@ if [ -d "/opt/picochess" ]; then
     cd /opt
     chown -R pi /opt/picochess
     cd /opt/picochess
-    sudo -u pi git pull
+    # new forced backup starts
+    # === Check current Git branch ===
+    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+    if [ "$CURRENT_BRANCH" != "$BRANCH" ]; then
+    echo "WARNING: You are on branch '$CURRENT_BRANCH', not '$BRANCH'."
+    echo "Skipping update to avoid interfering with work on another branch."
+    echo "Backup completed at: $BACKUP_DIR"
+    exit 0
+    fi
+
+    # === Fetch and reset to latest remote state ===
+    echo "Updating repository from $REMOTE/$BRANCH..."
+    git fetch "$REMOTE"
+    git reset --hard "$REMOTE/$BRANCH"
+    cd /opt/picochess
+    # new forced backup ends
 else
     echo "fetching picochess..."
     cd /opt
@@ -73,6 +147,40 @@ else
     cd /opt/picochess
     cp picochess.ini.example-web-$(uname -m) picochess.ini
     chown pi picochess.ini
+fi
+
+# in case we dont have any engines.ini or favorites.ini
+# copy in the default files - ini files should not be in repository
+if [ -f "/opt/picochess/engines/aarch64/engines.ini" ]; then
+    echo "aarch64 engines.ini already existed - no changes done"
+else
+    cd /opt/picochess
+    cp engines-example-aarch64.ini /opt/picochess/engines/aarch64/engines.ini
+    chown pi /opt/picochess/engines/aarch64/engines.ini
+fi
+
+if [ -f "/opt/picochess/engines/x86_64/engines.ini" ]; then
+    echo "x86_64 engines.ini already existed - no changes done"
+else
+    cd /opt/picochess
+    cp engines-example-x86_64.ini /opt/picochess/engines/x86_64/engines.ini
+    chown pi /opt/picochess/engines/x86_64/engines.ini
+fi
+
+if [ -f "/opt/picochess/engines/aarch64/favorites.ini" ]; then
+    echo "aarch64 favorites.ini already existed - no changes done"
+else
+    cd /opt/picochess
+    cp favorites-example-aarch64.ini /opt/picochess/engines/aarch64/favorites.ini
+    chown pi /opt/picochess/engines/aarch64/favorites.ini
+fi
+
+if [ -f "/opt/picochess/engines/x86_64/favorites.ini" ]; then
+    echo "x86_64 favorites.ini already existed - no changes done"
+else
+    cd /opt/picochess
+    cp favorites-example-x86_64.ini /opt/picochess/engines/x86_64/favorites.ini
+    chown pi /opt/picochess/engines/x86_64/favorites.ini
 fi
 
 echo " ------- "
@@ -116,3 +224,4 @@ echo "Other board types are also supported - see the picochess.ini file"
 echo " ------- "
 echo "In case of problems have a look in the log /opt/picochess/logs/picochess.log"
 echo "You can rerun this installation whenever you want to update your system"
+echo "Use the parameter pico if you want to skip system update"
