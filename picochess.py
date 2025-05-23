@@ -2379,15 +2379,12 @@ async def main() -> None:
             # send depth before score as score is assembling depth in receiver end
             if "depth" in info:
                 await Observable.fire(Event.NEW_DEPTH(depth=info.get("depth")))
-            if self.eng_plays():
-                turn = self.state.get_user_color()
-            else:
-                turn = self.state.game.turn
-            (move, score, mate) = PicoTutor.get_score(turn, info)
+            # ask for score from white's perspective
+            (move, score, mate) = PicoTutor.get_score(info)
             if send_pv and move != chess.Move.null():
                 self.state.pb_move = move  # backward compatibility
                 await Observable.fire(Event.NEW_PV(pv=[move]))
-            if score:
+            if score is not None:
                 await Observable.fire(Event.NEW_SCORE(score=score, mate=mate))
 
         async def expired_fen_timer(self):

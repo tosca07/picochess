@@ -527,11 +527,11 @@ class PgnDisplay(DisplayMsg):
                         nag = value["nag"]  # $N symbol for !!, ! etc
                         if nag != chess.pgn.NAG_NULL:
                             node.nags.add(nag)
-                        node.comment = self._get_picotutor_eval_comments(nag, value)
+                        node.comment = self._get_picotutor_eval_comments(nag, value, turn)
                     else:
                         logger.debug("skipped move %s-%s picotutor eval mismatch", pgn_move.uci(), user_move.uci())
 
-    def _get_picotutor_eval_comments(self, nag: int, value: dict) -> str:
+    def _get_picotutor_eval_comments(self, nag: int, value: dict, turn: chess.Color) -> str:
         """get comments found in picotutor evaluations value dict"""
         if nag != chess.pgn.NAG_NULL:
             comment = PicoTutor.nag_to_symbol(nag)  # back to !!, ! etc
@@ -546,7 +546,12 @@ class PgnDisplay(DisplayMsg):
             comment += " Mate in: " + str(value["mate"])
         else:
             if "score" in value:
-                comment += " Score: " + str(value["score"])
+                score_value = value["score"]
+                if turn == chess.WHITE:
+                    # always show score from white's perspective
+                    # as turn is AFTER move this is now Black perspective
+                    score_value = -score_value  # change to white's perspective
+                comment += " Score: " + str(score_value)
         if "CPL" in value:
             comment += " CPL: " + str(value["CPL"])
         if "deep_low_diff" in value:

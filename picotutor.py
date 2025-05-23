@@ -666,7 +666,7 @@ class PicoTutor:
                 if "pv" in info and "score" in info and "depth" in info:
                     # score_turn must be as BEFORE the move - so opposite
                     score_turn = chess.WHITE if self.board.turn == chess.BLACK else chess.BLACK
-                    move, score, mate = PicoTutor.get_score(score_turn, info)
+                    move, score, mate = PicoTutor.get_score(info, score_turn)
                     logger.debug("%s score %d mate in %d depth %d", move.uci(), score, mate, info["depth"])
                 if not long_version:
                     break
@@ -676,7 +676,7 @@ class PicoTutor:
                 if "pv" in info and "score" in info and "depth" in info:
                     # score_turn must be as BEFORE the move - so opposite
                     score_turn = chess.WHITE if self.board.turn == chess.BLACK else chess.BLACK
-                    move, score, mate = PicoTutor.get_score(score_turn, info)
+                    move, score, mate = PicoTutor.get_score(info, score_turn)
                     logger.debug("%s score %d mate in %d depth %d", move.uci(), score, mate, info["depth"])
                 if not long_version:
                     break
@@ -757,11 +757,13 @@ class PicoTutor:
         return tupel[2]
 
     @staticmethod
-    def get_score(turn: chess.Color, info: InfoDict) -> tuple:
-        """return tuple (move, score, mate) extracted from info"""
+    def get_score(info: InfoDict, turn: chess.Color = chess.WHITE) -> tuple:
+        """return tuple (move, score, mate) extracted from info
+        if no turn is given, it defaults to white
+        if no score is found, score is None"""
         move = info["pv"][0] if "pv" in info else chess.Move.null()
-        # @todo can we make score default None without crash in get_user_move_eval()
-        score = mate = 0
+        score = None
+        mate = 0
         if "score" in info:
             score_val = info["score"]
             m = score_val.pov(turn).mate()
@@ -785,8 +787,9 @@ class PicoTutor:
         while pv_key < len(info_list):
             info: InfoDict = info_list[pv_key]
             # score_turn must be as BEFORE the move - so opposite
+            # because turn is after the move being scored
             score_turn = chess.WHITE if turn == chess.BLACK else chess.BLACK
-            move, score, mate = PicoTutor.get_score(score_turn, info)
+            move, score, mate = PicoTutor.get_score(info, score_turn)
             # put an score: int here for sorting best moves
             moves.append((pv_key, move, score, mate))
             if score is not None:
@@ -987,7 +990,7 @@ class PicoTutor:
         # key to find evaluation later =(ply halfmove number: int, move: chess.Move)
         # not always unique if we have takeback sequence with other moves
         # should work since we evaluate all moves and remove if no evaluation
-        e_key = (self.board.ply(), current_move, self.board.turn)  # halfmove key AFTER move
+        e_key = (self.board.ply(), current_move, self.board.turn)  # ply, turn is AFTER current_move
         e_value = {}  # collect eval values for the move here
         e_value["nag"] = PicoTutor.symbol_to_nag(eval_string)
         try:
@@ -1003,7 +1006,7 @@ class PicoTutor:
             # special case, if inaccurate move store DS, also when approximated
             if best_deep_diff > c.INACCURACY_TH:
                 e_value["CPL"] = best_deep_diff  # lost centipawns
-                if current_pv is None:
+                if current_pv is not None:
                     e_value["score"] = current_score
                 self.evaluated_moves[e_key] = e_value  # ok with current_pv None (approx)
         elif current_pv is not None:
