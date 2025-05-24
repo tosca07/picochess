@@ -69,9 +69,7 @@ class PicoTalker(object):
         for part in sounds:
             voice_file = vpath + "/" + part
             if Path(voice_file).is_file():
-                #  sound = await self.get_or_load_sound(voice_file)
-                #  await asyncio.to_thread(sound.play)
-                #  sound.play()
+                # put in common queue in PicoTalkerDisplay to play one sound at a time
                 await self.sound_queue.put(voice_file)
                 result = True
             else:
@@ -169,7 +167,7 @@ class PicoTalkerDisplay(DisplayMsg):
 
         self.sound_cache = {}  # cache for voice files
         self.common_queue = asyncio.Queue()  # queue for sound_player
-        asyncio.create_task(self.sound_player())
+        asyncio.create_task(self.sound_player())  # background sound player
         if user_voice:
             logger.debug("creating user voice: [%s]", str(user_voice))
             self.set_user(PicoTalker(user_voice, self.speed_factor, self.common_queue))
@@ -187,15 +185,14 @@ class PicoTalkerDisplay(DisplayMsg):
         while True:
             voice_file = await self.common_queue.get()
             sound = await self.get_or_load_sound(voice_file)
-            #  await asyncio.to_thread(sound.play)
-            sound.play()
+            sound.play()  # returns immediately
             await asyncio.sleep(sound.get_length())  # wait until it's done
 
     async def get_or_load_sound(self, path):
         """Async function to load or get sound from cache"""
         if path not in self.sound_cache:
+            # loading sounds blocks, playing them does not, use thread here
             sound = await asyncio.to_thread(pygame.mixer.Sound, path)
-            #  sound = await pygame.mixer.Sound(path)
             self.sound_cache[path] = sound
         return self.sound_cache[path]
 
@@ -582,12 +579,10 @@ class PicoTalkerDisplay(DisplayMsg):
             ):
                 logger.debug("received message from msg_queue: %s", message)
             asyncio.create_task(self.process_picotalker_messages(message))
-            #  await self.process_picotalker_messages(message)
             self.msg_queue.task_done()
 
     async def process_picotalker_messages(self, message):
         """process Picotalker messages"""
-        await asyncio.sleep(0.05)  # reduce priority for talker
         previous_move = chess.Move.null()  # Ignore repeated broadcasts of a move
         last_pos_dir = ""
         if isinstance(message, Message.ENGINE_FAIL):
@@ -1044,7 +1039,7 @@ class PicoTalkerDisplay(DisplayMsg):
             if self.sample_beeper and self.sample_beeper_level > 1:
                 await self.talk(["button_click.ogg"], self.BEEPER)
         else:  # Default
-            await asyncio.sleep(0.1)  # balancing message queues
+            await asyncio.sleep(0.05)  # balancing message queues
 
     @staticmethod
     def say_last_move(game: chess.Board):
