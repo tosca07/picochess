@@ -19,13 +19,18 @@
 
 import logging
 from pathlib import Path
-from pydub import AudioSegment  # type: ignore
 import io
 from random import randint
 import os
 import asyncio
-import pygame  # type: ignore
+import sys  # type: ignore - needed for redirecting stdout/stderr
+import contextlib  # type: ignore - needed for redirecting stdout/stderr
 
+# Suppress pygame's hardcoded output to stdout/stderr
+with contextlib.redirect_stdout(io.StringIO()):
+    import pygame
+
+from pydub import AudioSegment  # type: ignore
 import chess  # type: ignore
 from utilities import DisplayMsg
 from dgt.api import Message
@@ -34,6 +39,7 @@ from dgt.util import GameResult, PlayMode, Voice, EBoard
 logger = logging.getLogger(__name__)
 # base directory for picochess - needed for pydub AudioSegment file loading
 # @todo: make one global constant for this basedir, its used in many places
+# here its used only when audio speed is not 1.0, so pydub can load the sound file
 BASE_DIR = "/opt/picochess/"
 
 
