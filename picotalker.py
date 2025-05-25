@@ -198,20 +198,20 @@ class PicoTalkerDisplay(DisplayMsg):
         key = (path, self.speed_factor)
         if key not in self.sound_cache:
             # loading sounds blocks, playing them does not, use thread here
-            sound = await asyncio.to_thread(self.load_and_transform, path, self.speed_factor)
+            sound = await asyncio.to_thread(self.load_and_transform, path)
             self.sound_cache[key] = sound
         return self.sound_cache[key]
 
-    def load_and_transform(self, path: str, speed: float):
+    def load_and_transform(self, path: str):
         """Load a sound file and change its playback speed if necessary."""
         seg = AudioSegment.from_file(BASE_DIR + path)
         if self.speed_factor != 1.0:
-            seg = self.change_playback_speed(seg, speed)
+            seg = self.change_playback_speed(seg)
         return self.audiosegment_to_pygame_sound(seg)
 
-    def change_playback_speed(self, sound: AudioSegment, speed: float):
+    def change_playback_speed(self, sound: AudioSegment):
         """use pydub to change the playback speed of a sound"""
-        new_frame_rate = int(sound.frame_rate * speed)
+        new_frame_rate = int(sound.frame_rate * self.speed_factor)
         return sound._spawn(sound.raw_data, overrides={"frame_rate": new_frame_rate}).set_frame_rate(sound.frame_rate)
 
     def audiosegment_to_pygame_sound(self, seg: AudioSegment):
