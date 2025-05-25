@@ -12,6 +12,7 @@ tornado==6.4.2
 configobj==5.0.9
 geopy==2.4.1
 astral==3.2
+pydub==0.25.1
 pygame==2.6.1
 pam==0.2.0
 six==1.16.0

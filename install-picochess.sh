@@ -36,6 +36,8 @@ apt -y install libopenblas-dev ninja-build meson
 apt -y install libsdl2-2.0-0 libsdl2-ttf-2.0-0 qt5ct
 # following needed for backup to work
 apt -y install rsync
+# following needed for pydub AudioSegment to work in PicoTalker
+apt -y install ffmpeg
 
 # BACKUP section starts
 ###############################################################################

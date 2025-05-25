@@ -19,6 +19,8 @@
 
 import logging
 from pathlib import Path
+from pydub import AudioSegment  # type: ignore
+import io
 from random import randint
 import os
 import asyncio
@@ -30,6 +32,9 @@ from dgt.api import Message
 from dgt.util import GameResult, PlayMode, Voice, EBoard
 
 logger = logging.getLogger(__name__)
+# base directory for picochess - needed for pydub AudioSegment file loading
+# @todo: make one global constant for this basedir, its used in many places
+BASE_DIR = "/opt/picochess/"
 
 
 class PicoTalker(object):
@@ -190,11 +195,32 @@ class PicoTalkerDisplay(DisplayMsg):
 
     async def get_or_load_sound(self, path):
         """Async function to load or get sound from cache"""
-        if path not in self.sound_cache:
+        key = (path, self.speed_factor)
+        if key not in self.sound_cache:
             # loading sounds blocks, playing them does not, use thread here
-            sound = await asyncio.to_thread(pygame.mixer.Sound, path)
-            self.sound_cache[path] = sound
-        return self.sound_cache[path]
+            sound = await asyncio.to_thread(self.load_and_transform, path, self.speed_factor)
+            self.sound_cache[key] = sound
+        return self.sound_cache[key]
+
+    def load_and_transform(self, path: str, speed: float):
+        """Load a sound file and change its playback speed if necessary."""
+        seg = AudioSegment.from_file(BASE_DIR + path)
+        if self.speed_factor != 1.0:
+            seg = self.change_playback_speed(seg, speed)
+        return self.audiosegment_to_pygame_sound(seg)
+
+    def change_playback_speed(self, sound: AudioSegment, speed: float):
+        """use pydub to change the playback speed of a sound"""
+        new_frame_rate = int(sound.frame_rate * speed)
+        return sound._spawn(sound.raw_data, overrides={"frame_rate": new_frame_rate}).set_frame_rate(sound.frame_rate)
+
+    def audiosegment_to_pygame_sound(self, seg: AudioSegment):
+        """Convert an AudioSegment to a pygame Sound object.
+        used to play pydub sounds in pygame, pydub is used to change playback speed."""
+        raw = io.BytesIO()
+        seg.export(raw, format="wav")
+        raw.seek(0)
+        return pygame.mixer.Sound(file=raw)
 
     def set_comment_factor(self, comment_factor: int):
         self.c_comment_factor = comment_factor
