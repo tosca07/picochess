@@ -12,14 +12,14 @@ Features
 About This Fork
 ===============
 This fork of Picochess focuses on:
-- Upgrading dependencies – Uses the latest Python with the latest chess, and Tornado libraries.
+- Upgrading dependencies – Uses the latest Python with the latest chess and Tornado libraries.
 - Asynchronous Architecture – Replaces threads with an async-based architecture for improved performance and scalability.
-- Keep the main program picochess.py as it was, rewrites are done on Web server, UciEngine, PicoTutor
+- Keep the main program picochess.py as it was, rewrites are done on Web server, UciEngine, PicoTutor, PicoTalker, etc
 
 Requirements
 ------------
 
-- Raspberry Pi 3, or Pi 4 (aarch64) or a Debian computer (x86_64)
+- Raspberry Pi 3, Pi 4, Pi 5 (aarch64) or a Debian computer (x86_64)
 - RaspiOS Bookworm (latest) 64bit recommended
 
 Quick Installation
@@ -69,7 +69,7 @@ If you have a Pi4 image from the picochess group you can copy the entire /opt/pi
 
 Installation with more detailed info
 ------------------------------------
-1. You need a Raspberry PI 4 (or 3) and a 32G SD card.
+1. You need a Raspberry PI 5, 4, or 3. You also need a 32G SD card.
 2. Use Raspberry Pi Imager to crete a PI operating system on your SD card as follows:
 3. Choose PI 4 and 64bit OS (I have not tested PI 3 yet, but feel free to test)
 4. Username is assumed to be pi which should be standard on the imager. You can make sure by editing options in the imager.
