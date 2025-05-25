@@ -204,11 +204,17 @@ class PicoTalkerDisplay(DisplayMsg):
 
     def load_and_transform(self, path: str):
         """Load a sound file and change its playback speed if necessary."""
+        if self.speed_factor == 1.0:
+            # no speed change needed, load directly, dont use pydub, ffmpeg, io
+            return pygame.mixer.Sound(path)  # only AudioSegment needs BASE_DIR
+        # use pydub and ffmpeg to load the sound file and change playback speed
         seg = AudioSegment.from_file(BASE_DIR + path)
-        if self.speed_factor != 1.0:
-            seg = self.change_playback_speed(seg)
+        seg = self.change_playback_speed(seg)
         return self.audiosegment_to_pygame_sound(seg)
 
+    # the following two member functions are used to change the playback speed of a sound
+    # it requires pydub and ffmpeg to be installed - only used if speed_factor != 1.0
+    # they are called from load_and_transform above
     def change_playback_speed(self, sound: AudioSegment):
         """use pydub to change the playback speed of a sound"""
         new_frame_rate = int(sound.frame_rate * self.speed_factor)
