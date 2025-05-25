@@ -77,7 +77,7 @@ Installation with more detailed info
 6. Add ssh support if you don't work locally on your Raspberry Pi with attached screen, keyboard and mouse.
 7. Write the image to the SD.
 8. Boot your PI with the SD card inserted. A standard image will reboot after first start, and the second time it starts you should be able to login as user pi.
-9. Using sudo raspi-config make changes to advanced options: select PulseAudio and X11. PulseAudio prevents lag in the picochess spoken voice.
+9. Using sudo raspi-config make changes to advanced options: select PulseAudio and X11. PulseAudio might prevents lags in the picochess spoken voice. Note: As of version 4.1.3 the dependency on the audio system might have disappeared as it now uses python pygame instead of sox to talk.
 10. Get this repo. First cd /opt then do sudo git clone. This should create your /opt/picochess folder. Alternative: Download the install-picochess.sh script and run it using sudo. See quick installation above.
 11. Run the install-picochess.sh script. The script will first do a system update which may run for a while depending on how old your installation is. Then it will do git clone if you dont have the repo, and git pull if you already have the repo in /opt/picochess.
 12. Reboot when install is done. When you login again the voice should say "picochess", "engine startup", "ok".
