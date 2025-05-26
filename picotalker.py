@@ -197,7 +197,7 @@ class PicoTalkerDisplay(DisplayMsg):
             voice_file = await self.common_queue.get()
             sound = await self.get_or_load_sound(voice_file)
             sound.play()  # returns immediately
-            await asyncio.sleep(sound.get_length())  # wait until it's done
+            await asyncio.sleep(sound.get_length() + 0.3)  # wait until it's done
 
     async def get_or_load_sound(self, path):
         """Async function to load or get sound from cache"""
