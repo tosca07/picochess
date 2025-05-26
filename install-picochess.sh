@@ -80,7 +80,7 @@ if [ -d "/opt/picochess" ]; then
     mkdir -p "$UNTRACKED_DIR/$(dirname "$file")"
     cp -p "$file" "$UNTRACKED_DIR/$file"
     done
-    
+
     # === Sync working copy excluding .git, engines/, and mame/ ===
     echo "Syncing working directory..."
     rsync -a --delete \
@@ -188,6 +188,17 @@ else
     cp favorites-example-x86_64.ini /opt/picochess/engines/x86_64/favorites.ini
     chown pi /opt/picochess/engines/x86_64/favorites.ini
 fi
+
+# initialize other ini files like voices.ini... etc
+# copy in the default files - ini files should not be in repository
+if [ -f "/opt/picochess/talker/voices/voices.ini" ]; then
+    echo "voices.ini already existed - no changes done"
+else
+    cd /opt/picochess
+    cp voices-example.ini /opt/picochess/talker/voices/voices.ini
+    chown pi /opt/picochess/talker/voices/voices.ini
+fi
+
 
 echo " ------- "
 echo "checking required python modules..."
