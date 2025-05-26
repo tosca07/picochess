@@ -96,6 +96,9 @@ obooksrv/obooksrv
 etc/dgtpicom
 etc/dgtpicom.so
 
+# ignore the talker voices.ini
+talker/voices/voices.ini
+
 # Pi engines aarch64
 #engines/aarch64/
 engines/aarch64/engines.ini
