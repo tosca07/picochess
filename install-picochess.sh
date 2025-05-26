@@ -58,8 +58,8 @@ if [ -d "/opt/picochess" ]; then
     BACKUP_DIR="/home/pi/pico_backups/current"  # backups stored
     WORKING_COPY_DIR="$BACKUP_DIR/working_copy"
     UNTRACKED_DIR="$BACKUP_DIR/untracked_files"
-    EXCLUDED_DIR1="engines"
-    EXCLUDED_DIR2="mame"
+    # Excluded directories like engines/ and mame/
+    # are hard coded below in two places to fix issue #63
 
     # Create required directories
     mkdir -p "$WORKING_COPY_DIR" "$UNTRACKED_DIR"
@@ -75,19 +75,20 @@ if [ -d "/opt/picochess" ]; then
     rm -rf "$UNTRACKED_DIR"/*
     git ls-files --others --exclude-standard | while read -r file; do
     case "$file" in
-        "$EXCLUDED_DIR1"/*|"$EXCLUDED_DIR2"/*) continue ;;
+        engines/*|mame/*) continue ;;
     esac
     mkdir -p "$UNTRACKED_DIR/$(dirname "$file")"
     cp -p "$file" "$UNTRACKED_DIR/$file"
     done
-
+    
     # === Sync working copy excluding .git, engines/, and mame/ ===
     echo "Syncing working directory..."
     rsync -a --delete \
-    --exclude='.git' \
-    --exclude="$EXCLUDED_DIR1/" \
-    --exclude="$EXCLUDED_DIR2/" \
-    ./ "$WORKING_COPY_DIR/"
+      --exclude='.git/' \
+      --exclude='./engines/' \
+      --exclude='./mame/' \
+      ./ "$WORKING_COPY_DIR/"
+
     echo "Backup safely stored at: $BACKUP_DIR"
 
 fi
