@@ -1463,7 +1463,9 @@ class DgtDisplay(DisplayMsg):
             self.dgtmenu.set_book(message.book_index)  # molli for emulation, online & pgn modes
 
         elif isinstance(message, Message.PICOTUTOR_MSG):
-            await DispatchDgt.fire(self.dgttranslate.text("C10_picotutor_msg", message.eval_str))
+            if self.play_move != chess.Move.null():
+                # issue #45 - we do not want eval display while user needs to perform computer move
+                await DispatchDgt.fire(self.dgttranslate.text("C10_picotutor_msg", message.eval_str))
             if message.eval_str == "POSOK" or message.eval_str == "ANALYSIS" and self.play_move == chess.Move.null():
                 # molli: sometime if you move the pieces too quickly a LED may still flash on the rev2
                 await self.force_leds_off()
