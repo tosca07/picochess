@@ -240,7 +240,7 @@ class PicochessState:
                 await DisplayMsg.show(
                     Message.CLOCK_START(turn=self.game.turn, tc_init=tc_init, devs={"ser", "i2c", "web"})
                 )
-                # removed sync sleep
+                await asyncio.sleep(0.5)
                 # @todo give some time to clock to really do it. Check this solution!
         else:
             logger.warning("wrong function call [start]! mode: %s", self.interaction_mode)
