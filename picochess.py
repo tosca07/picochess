@@ -2955,6 +2955,29 @@ async def main() -> None:
                 asyncio.create_task(self.process_main_events(event))
                 evt_queue.task_done()
 
+        async def pre_exit_or_reboot_cleanups(self):
+            """First immediate cleanups before exit or reboot"""
+            logger.debug("pre exit_or_reboot_cleanups")
+            if self.state.fen_timer_running:
+                self.state.stop_fen_timer()
+            # @todo are there other timers to stop here?
+            # as we wait 5 secs before exiting we only want to prevent timer actions
+            await self.stop_search()
+            await self.state.stop_clock()
+            await self.engine.quit()
+            if self.state.picotutor:
+                # close all the picotutor engines
+                await self.state.picotutor.exit_or_reboot_cleanups()
+            # @todo have a list of all other async tasks and clean them up here
+            # Or let the Event.REBOOT and Event.EXIT put None in queues to stop tasks
+
+        async def final_exit_or_reboot_cleanups(self):
+            """Last cleanups before exit or reboot"""
+            logger.debug("final exit_or_reboot_cleanups")
+            if self.pico_talker:
+                # close the sound system (this is why final is a separate call)
+                await self.pico_talker.exit_or_reboot_cleanups()
+
         async def process_main_events(self, event):
             """Consume event from evt_queue"""
             if not isinstance(event, Event.CLOCK_TIME):
@@ -4817,9 +4840,7 @@ async def main() -> None:
 
             elif isinstance(event, Event.REBOOT):
                 await self.get_rid_of_engine_move()
-                await self.stop_search()
-                await self.state.stop_clock()
-                await self.engine.quit()
+                await self.pre_exit_or_reboot_cleanups()
                 result = GameResult.ABORT
                 await DisplayMsg.show(
                     Message.GAME_ENDS(
@@ -4831,15 +4852,15 @@ async def main() -> None:
                     )
                 )
                 await DisplayMsg.show(Message.SYSTEM_REBOOT())
-                await asyncio.sleep(5)  # molli allow more time for commentary chat
+                await asyncio.sleep(2)  # molli allow more time (5) for commentary chat
+                await self.final_exit_or_reboot_cleanups()
+                await asyncio.sleep(3)
                 reboot(
                     self.args.dgtpi and self.uci_local_shell.get() is None, dev=event.dev
                 )  # @todo make independant of remote eng
 
             elif isinstance(event, Event.EXIT):
-                await self.stop_search()
-                await self.state.stop_clock()
-                await self.engine.quit()
+                await self.pre_exit_or_reboot_cleanups()
                 result = GameResult.ABORT
                 await DisplayMsg.show(
                     Message.GAME_ENDS(
@@ -4850,8 +4871,10 @@ async def main() -> None:
                         mode=self.state.interaction_mode,
                     )
                 )
-                #  await DisplayMsg.show(Message.SYSTEM_EXIT())
-                await asyncio.sleep(5)  # molli allow more time for commentary chat
+                # await DisplayMsg.show(Message.SYSTEM_EXIT())
+                await asyncio.sleep(2)  # molli allow more time (5) for commentary chat
+                await self.final_exit_or_reboot_cleanups()
+                await asyncio.sleep(3)
                 exit(self.args.dgtpi, dev=event.dev)  # @todo make independant of remote eng
 
             elif isinstance(event, Event.EMAIL_LOG):

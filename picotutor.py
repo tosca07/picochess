@@ -619,6 +619,18 @@ class PicoTutor:
         if self.obvious_engine:
             self.obvious_engine.stop()
 
+    async def exit_or_reboot_cleanups(self):
+        """close the tutor engines and cleanup"""
+        self.stop()  # stop engines if running
+        if self.best_engine:
+            if self.best_engine.loaded_ok():
+                await self.best_engine.quit()
+            self.best_engine = None
+        if self.obvious_engine:
+            if self.obvious_engine.loaded_ok():
+                await self.obvious_engine.quit()
+            self.obvious_engine = None
+
     async def _start_or_stop_as_needed(self):
         """start or stop analyser as needed"""
         # common logic for all of tutors functions to start or stop

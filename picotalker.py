@@ -47,11 +47,9 @@ class PicoTalker(object):
     """Handle the human speaking of events."""
 
     def __init__(self, localisation_id_voice, speed_factor: float, common_queue: asyncio.Queue):
-        pygame.mixer.init()
         self.voice_path = None
         self.speed_factor = 1.0
         self.set_speed_factor(speed_factor)
-        self.sound = None
         logger.debug("molli voice pfad calc.")
         try:
             (localisation_id, voice_name) = localisation_id_voice.split(":")
@@ -129,6 +127,12 @@ class PicoTalkerDisplay(DisplayMsg):
         :param computer_voice: The voice to use for the computer (eg. en:christina).
         """
         super(PicoTalkerDisplay, self).__init__(loop)
+        # init pygame sound stuff
+        pygame.mixer.init()  # keep all pygame.mixer here in PicoTalkerDisplay, not in PicoTalkers
+        self.sound_cache = {}  # cache for voice files
+        self.common_queue = asyncio.Queue()  # queue for sound_player
+        asyncio.create_task(self.sound_player())  # background sound player
+
         self.user_picotalker = None  # type: PicoTalker
         self.computer_picotalker = None  # type: PicoTalker
         self.beeper_picotalker = None  # type: PicoTalker
@@ -176,9 +180,6 @@ class PicoTalkerDisplay(DisplayMsg):
         self.sample_beeper = sample_beeper
         self.sample_beeper_level = sample_beeper_level
 
-        self.sound_cache = {}  # cache for voice files
-        self.common_queue = asyncio.Queue()  # queue for sound_player
-        asyncio.create_task(self.sound_player())  # background sound player
         if user_voice:
             logger.debug("creating user voice: [%s]", str(user_voice))
             self.set_user(PicoTalker(user_voice, self.speed_factor, self.common_queue))
@@ -190,14 +191,40 @@ class PicoTalkerDisplay(DisplayMsg):
             logger.debug("creating beeper sound: [%s]", str(beeper_sound))
             self.set_beeper(PicoTalker(beeper_sound, self.speed_factor, self.common_queue))
 
+    async def exit_or_reboot_cleanups(self):
+        """Clean up before exit or reboot."""
+        logger.debug("picotalker cleaning up sound cache and queues")
+        # First drain remaining unplayed sounds
+        while not self.common_queue.empty():
+            try:
+                self.common_queue.get_nowait()
+                self.common_queue.task_done()
+            except asyncio.QueueEmpty:
+                break
+        await self.common_queue.put(None)  # signal stop sound player
+        # calling main picochess is waiting after this, but...
+        # cannot clear cache before it finds None in the sound queue
+        await asyncio.sleep(0.1)  # give sound player time to process None
+        self.sound_cache.clear()  # clear sound cache
+        self.sound_cache = {}
+        pygame.mixer.stop()  # stop all sounds
+        pygame.mixer.quit()
+
     async def sound_player(self):
         """Common sound player to play one sound at a time from the sound queue
         Both user, computer and beeper talker will use this queue to play sounds."""
-        while True:
-            voice_file = await self.common_queue.get()
-            sound = await self.get_or_load_sound(voice_file)
-            sound.play()  # returns immediately
-            await asyncio.sleep(sound.get_length() + 0.3)  # wait until it's done
+        try:
+            while True:
+                voice_file = await self.common_queue.get()
+                if voice_file is None:
+                    # stop sound player
+                    logger.debug("picotalker sound player stopping")
+                    break  # exit the loop
+                sound = await self.get_or_load_sound(voice_file)
+                sound.play()  # returns immediately
+                await asyncio.sleep(sound.get_length() + 0.3)  # wait until it's done
+        except asyncio.CancelledError:
+            logger.debug("picotalker sound player cancelled")
 
     async def get_or_load_sound(self, path):
         """Async function to load or get sound from cache"""
