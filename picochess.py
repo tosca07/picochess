@@ -259,7 +259,7 @@ class PicochessState:
                 pass
             else:
                 await DisplayMsg.show(Message.CLOCK_STOP(devs={"ser", "i2c", "web"}))
-                # removed sync sleep
+                await asyncio.sleep(0.7)
                 # @todo give some time to clock to really do it. Check this solution!
         else:
             logger.warning("wrong function call [stop]! mode: %s", self.interaction_mode)
