@@ -189,8 +189,11 @@ class DgtIface(DisplayDgt):
         logger.info("[%s] dgt_queue ready", self.get_name())
         while True:
             message = await self.dgt_queue.get()
-            task = asyncio.create_task(self._process_message(message))
-            #res = await task # needed only for debug below
+            # issue #45 just process one message at a time - dont spawn task
+            # task = asyncio.create_task(self._process_message(message))
+            await self._process_message(message)
+            # res = await task # needed only for debug below
             self.dgt_queue.task_done()
-            #if not res:
+            await asyncio.sleep(0.05)  # balancing message queues
+            # if not res:
             #    logger.warning("DgtApi command %s failed result: %s", message, res)

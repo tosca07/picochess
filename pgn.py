@@ -733,9 +733,6 @@ class PgnDisplay(DisplayMsg):
                 # if we _save_and_email_pgn() here the side effect is that
                 # it stores unfinished games in games.pgn
 
-        else:
-            await asyncio.sleep(0.05)  # balancing message queues
-
     async def message_consumer(self):
         """PGN message consumer"""
         logger.info("msg_queue ready")
@@ -748,5 +745,8 @@ class PgnDisplay(DisplayMsg):
                 and not isinstance(message, Message.CLOCK_TIME)
             ):
                 logger.debug("received message from msg_queue: %s", message)
-            asyncio.create_task(self._process_message(message))
+            # issue #45 just process one message at a time - dont spawn task
+            # asyncio.create_task(self._process_message(message))
+            await self._process_message(message)
             self.msg_queue.task_done()
+            await asyncio.sleep(0.05)  # balancing message queues

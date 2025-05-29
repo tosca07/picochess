@@ -2952,8 +2952,11 @@ async def main() -> None:
             logger.info("evt_queue ready")
             while True:
                 event = await evt_queue.get()
+                # issue #45 still let main loop create tasks
+                # @todo check if this should not do create_task either
                 asyncio.create_task(self.process_main_events(event))
                 evt_queue.task_done()
+                await asyncio.sleep(0.05)  # balancing message queues
 
         async def pre_exit_or_reboot_cleanups(self):
             """First immediate cleanups before exit or reboot"""

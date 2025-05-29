@@ -643,8 +643,11 @@ class PicoTalkerDisplay(DisplayMsg):
                 and not isinstance(message, Message.CLOCK_TIME)
             ):
                 logger.debug("received message from msg_queue: %s", message)
-            asyncio.create_task(self.process_picotalker_messages(message))
+            # issue #45 just process one message at a time - dont spawn task
+            # asyncio.create_task(self.process_picotalker_messages(message))
+            await self.process_picotalker_messages(message)
             self.msg_queue.task_done()
+            await asyncio.sleep(0.05)  # balancing message queues
 
     async def process_picotalker_messages(self, message):
         """process Picotalker messages"""
@@ -1103,8 +1106,6 @@ class PicoTalkerDisplay(DisplayMsg):
         elif isinstance(message, Message.DGT_BUTTON):
             if self.sample_beeper and self.sample_beeper_level > 1:
                 await self.talk(["button_click.ogg"], self.BEEPER)
-        else:  # Default
-            await asyncio.sleep(0.05)  # balancing message queues
 
     @staticmethod
     def say_last_move(game: chess.Board):

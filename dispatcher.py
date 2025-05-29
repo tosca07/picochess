@@ -164,8 +164,11 @@ class Dispatcher(DispatchDgt):
             # Check if we have something to display
             msg = await dispatch_queue.get()
             logger.debug("received command from dispatch_queue: %s devs: %s", msg, ",".join(msg.devs))
-            asyncio.create_task(self.process_dispatch_message(msg))
+            # issue #45 just process one message at a time - dont spawn task
+            # asyncio.create_task(self.process_dispatch_message(msg))
+            await self.process_dispatch_message(msg)
             dispatch_queue.task_done()
+            await asyncio.sleep(0.05)  # balancing message queues
 
     async def process_dispatch_message(self, message):
         """Process the dispatch message"""

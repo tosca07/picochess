@@ -811,8 +811,6 @@ class WebDisplay(DisplayMsg):
             else:
                 WebDisplay.result_sav = ""
             # dont rebuild headers here, use existing one
-        else:  # Default
-            await asyncio.sleep(0.05)  # balancing message queues
 
     async def message_consumer(self):
         """Message task consumer for WebDisplay messages"""
@@ -825,5 +823,8 @@ class WebDisplay(DisplayMsg):
                 and not isinstance(message, Message.CLOCK_TIME)
             ):
                 logger.debug("received message from msg_queue: %s", message)
-            asyncio.create_task(self.task(message))
+            # issue #45 just process one message at a time - dont spawn task
+            # asyncio.create_task(self.task(message))
+            await self.task(message)
             self.msg_queue.task_done()
+            await asyncio.sleep(0.05)  # balancing message queues

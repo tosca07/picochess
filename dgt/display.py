@@ -1173,8 +1173,10 @@ class DgtDisplay(DisplayMsg):
             await self._process_time_control(message)
 
         elif isinstance(message, Message.OPENING_BOOK):
-            if not self.dgtmenu.get_confirm() or not message.show_ok:
-                await DispatchDgt.fire(message.book_text)
+            if self.play_move == chess.Move.null():
+                # issue #45 - skip if user has not made computer move on eboard
+                if not self.dgtmenu.get_confirm() or not message.show_ok:
+                    await DispatchDgt.fire(message.book_text)
 
         elif isinstance(message, Message.TAKE_BACK):
             self.take_back_move: chess.Move = chess.Move.null()
@@ -1257,17 +1259,25 @@ class DgtDisplay(DisplayMsg):
             await DispatchDgt.fire(message.play_mode_text)
 
         elif isinstance(message, Message.NEW_SCORE):
-            await self._process_new_score(message)
+            if self.play_move == chess.Move.null():
+                # issue #45 - skip if user has not made computer move on eboard
+                await self._process_new_score(message)
 
         elif isinstance(message, Message.BOOK_MOVE):
-            self.score = self.dgttranslate.text("N10_score", None)
-            await DispatchDgt.fire(self.dgttranslate.text("N10_bookmove"))
+            if self.play_move == chess.Move.null():
+                # issue #45 - skip if user has not made computer move on eboard
+                self.score = self.dgttranslate.text("N10_score", None)
+                await DispatchDgt.fire(self.dgttranslate.text("N10_bookmove"))
 
         elif isinstance(message, Message.NEW_PV):
-            await self._process_new_pv(message)
+            if self.play_move == chess.Move.null():
+                # issue #45 - skip if user has not made computer move on eboard
+                await self._process_new_pv(message)
 
         elif isinstance(message, Message.NEW_DEPTH):
-            self.depth = message.depth
+            if self.play_move == chess.Move.null():
+                # issue #45 - skip if user has not made computer move on eboard
+                self.depth = message.depth
 
         elif isinstance(message, Message.IP_INFO):
             self.dgtmenu.int_ip = message.info["int_ip"]
@@ -1407,21 +1417,23 @@ class DgtDisplay(DisplayMsg):
             await asyncio.sleep(1.5)
 
         elif isinstance(message, Message.SHOW_TEXT):
-            string_part = ""
-            if "K20_" in str(message.text_string):
-                await DispatchDgt.fire(self.dgttranslate.text(message.text_string))
-            elif message.text_string == "NO_ARTWORK":
-                await DispatchDgt.fire(self.dgttranslate.text("K20_no_artwork"))
-                await asyncio.sleep(2)
-            elif message.text_string == "NEW_POSITION":
-                await DispatchDgt.fire(self.dgttranslate.text("K20_newposition"))
-                await asyncio.sleep(1.5)
-            elif message.text_string == "NEW_POSITION_SCAN":
-                await asyncio.sleep(0.5)
-            else:
-                for string_part in self._convert_pico_string(message.text_string):
-                    await DispatchDgt.fire(self.dgttranslate.text("K20_default", string_part))
+            if self.play_move == chess.Move.null():
+                # issue #45 - skip if user has not made computer move on eboard
+                string_part = ""
+                if "K20_" in str(message.text_string):
+                    await DispatchDgt.fire(self.dgttranslate.text(message.text_string))
+                elif message.text_string == "NO_ARTWORK":
+                    await DispatchDgt.fire(self.dgttranslate.text("K20_no_artwork"))
+                    await asyncio.sleep(2)
+                elif message.text_string == "NEW_POSITION":
+                    await DispatchDgt.fire(self.dgttranslate.text("K20_newposition"))
                     await asyncio.sleep(1.5)
+                elif message.text_string == "NEW_POSITION_SCAN":
+                    await asyncio.sleep(0.5)
+                else:
+                    for string_part in self._convert_pico_string(message.text_string):
+                        await DispatchDgt.fire(self.dgttranslate.text("K20_default", string_part))
+                        await asyncio.sleep(1.5)
 
         elif isinstance(message, Message.SEEKING):
             await DispatchDgt.fire(self.dgttranslate.text("C10_seeking"))
@@ -1541,9 +1553,6 @@ class DgtDisplay(DisplayMsg):
         elif isinstance(message, Message.PROMOTION_DONE):
             await DispatchDgt.fire(Dgt.PROMOTION_DONE(uci_move=message.move.uci(), devs={"ser"}))
 
-        else:  # Default
-            await asyncio.sleep(0.05)  # balancing message queues
-
     async def message_consumer(self):
         """DgtDisplay message consumer"""
         logger.info("DgtDisplay msg_queue ready")
@@ -1556,5 +1565,8 @@ class DgtDisplay(DisplayMsg):
                 and not isinstance(message, Message.CLOCK_TIME)
             ):
                 logger.debug("received message from msg_queue: %s", message)
-            asyncio.create_task(self._process_message(message))
+            # issue #45 just process one message at a time - dont spawn task
+            # asyncio.create_task(self._process_message(message))
+            await self._process_message(message)
             self.msg_queue.task_done()
+            await asyncio.sleep(0.05)  # balancing message queues
