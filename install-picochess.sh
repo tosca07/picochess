@@ -41,6 +41,9 @@ apt -y install ffmpeg
 
 # for backward compatibility with old installations where git was uses as root
 # this is temporary and should be removed when testers have updated at least once
+echo " --------------------------------------------------- "
+echo "System updates done - Starting Picochess installation"
+echo " --------------------------------------------------- "
 if [ -d "/opt/picochess" ]; then
     chown -R pi:pi /opt/picochess
     sudo -u pi git config --global --add safe.directory /opt/picochess
@@ -56,6 +59,7 @@ fi
 ###############################################################################
 
 if [ -d "/opt/picochess" ]; then
+    echo " ------------------------------------------- "
     echo "picochess already exists, creating BACKUP ..."
 
     # === Configuration ===
