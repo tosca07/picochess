@@ -78,6 +78,8 @@ if [ -d "/opt/picochess" ]; then
     # === Save Git diff of local changes ===
     echo "Saving git diff..."
     sudo -u pi git diff > "$BACKUP_DIR/local_changes.diff"
+    # Fix ownership so pi can access/modify untracked files
+    chown -R pi:pi "$BACKUP_DIR/local_changes.diff"
 
     # === Save untracked files (excluding engines/ and mame/) ===
     echo "Backing up untracked files..."
@@ -93,6 +95,7 @@ if [ -d "/opt/picochess" ]; then
     chown -R pi:pi "$UNTRACKED_DIR"
 
     # === Sync working copy excluding .git, engines/, and mame/ ===
+    cd "$REPO_DIR"
     echo "Syncing working directory..."
     sudo -u pi rsync -a --delete \
       --exclude='.git/' \
@@ -134,8 +137,6 @@ if [ -d "/opt/picochess" ]; then
 else
     echo "fetching picochess..."
     cd /opt
-    mkdir picochess
-    chown pi:pi /opt/picochess
     sudo -u pi git clone https://github.com/JohanSjoblom/picochess
     chown -R pi:pi /opt/picochess
     cd picochess
@@ -156,7 +157,7 @@ if [ -d "/opt/picochess/venv" ]; then
     chgrp -R pi /opt/picochess/venv
 else
     echo "creating virtual Python env named venv"
-    sudo -u pi python3 -m venv venv    
+    sudo -u pi python3 -m venv /opt/picochess/venv
 fi
 
 if [ -f "/opt/picochess/picochess.ini" ]; then
