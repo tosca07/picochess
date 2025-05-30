@@ -125,8 +125,8 @@ if [ -d "/opt/picochess" ]; then
 
     # === Fetch and reset to latest remote state ===
     echo "Updating repository from $REMOTE/$BRANCH..."
-    sudo -u git fetch "$REMOTE"
-    sudo -u git reset --hard "$REMOTE/$BRANCH"
+    sudo -u pi git fetch "$REMOTE"
+    sudo -u pi git reset --hard "$REMOTE/$BRANCH"
     cd /opt/picochess
     # new forced backup ends
     # make sure pi is still owner of all files
