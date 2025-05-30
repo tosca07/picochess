@@ -39,6 +39,13 @@ apt -y install rsync
 # following needed for pydub AudioSegment to work in PicoTalker
 apt -y install ffmpeg
 
+# for backward compatibility with old installations where git was uses as root
+# this is temporary and should be removed when testers have updated at least once
+if [ -d "/opt/picochess" ]; then
+    chown -R pi:pi /opt/picochess
+    sudo -u pi git config --global --add safe.directory /opt/picochess
+fi
+
 # BACKUP section starts
 ###############################################################################
 # Fast Incremental Backup & Git Reset Script for /opt/picochess
@@ -63,34 +70,39 @@ if [ -d "/opt/picochess" ]; then
 
     # Create required directories
     mkdir -p "$WORKING_COPY_DIR" "$UNTRACKED_DIR"
+    # Ensure backup directory is writable by pi
+    chown -R pi:pi "$BACKUP_DIR"
     echo "Creating backup in: $BACKUP_DIR"
     cd "$REPO_DIR" || exit 1
 
     # === Save Git diff of local changes ===
     echo "Saving git diff..."
-    git diff > "$BACKUP_DIR/local_changes.diff"
+    sudo -u pi git diff > "$BACKUP_DIR/local_changes.diff"
 
     # === Save untracked files (excluding engines/ and mame/) ===
     echo "Backing up untracked files..."
     rm -rf "$UNTRACKED_DIR"/*
-    git ls-files --others --exclude-standard | while read -r file; do
+    sudo -u pi git ls-files --others --exclude-standard | while read -r file; do
     case "$file" in
         engines/*|mame/*) continue ;;
     esac
     mkdir -p "$UNTRACKED_DIR/$(dirname "$file")"
     cp -p "$file" "$UNTRACKED_DIR/$file"
     done
+    # Fix ownership so pi can access/modify untracked files
+    chown -R pi:pi "$UNTRACKED_DIR"
 
     # === Sync working copy excluding .git, engines/, and mame/ ===
     echo "Syncing working directory..."
-    rsync -a --delete \
+    sudo -u pi rsync -a --delete \
       --exclude='.git/' \
       --exclude='./engines/' \
       --exclude='./mame/' \
       ./ "$WORKING_COPY_DIR/"
 
+    # Ensure ones more that backup directory is writable by pi
+    chown -R pi:pi "$BACKUP_DIR"
     echo "Backup safely stored at: $BACKUP_DIR"
-
 fi
 #
 # BACKUP section ends
@@ -102,7 +114,7 @@ if [ -d "/opt/picochess" ]; then
     cd /opt/picochess
     # new forced backup starts
     # === Check current Git branch ===
-    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    CURRENT_BRANCH=$(sudo -u pi git rev-parse --abbrev-ref HEAD)
 
     if [ "$CURRENT_BRANCH" != "$BRANCH" ]; then
     echo "WARNING: You are on branch '$CURRENT_BRANCH', not '$BRANCH'."
@@ -113,25 +125,25 @@ if [ -d "/opt/picochess" ]; then
 
     # === Fetch and reset to latest remote state ===
     echo "Updating repository from $REMOTE/$BRANCH..."
-    git fetch "$REMOTE"
-    git reset --hard "$REMOTE/$BRANCH"
+    sudo -u git fetch "$REMOTE"
+    sudo -u git reset --hard "$REMOTE/$BRANCH"
     cd /opt/picochess
     # new forced backup ends
     # make sure pi is still owner of all files
-    chown -R pi /opt/picochess
+    chown -R pi:pi /opt/picochess
 else
     echo "fetching picochess..."
     cd /opt
     mkdir picochess
-    chown pi /opt/picochess
+    chown pi:pi /opt/picochess
     sudo -u pi git clone https://github.com/JohanSjoblom/picochess
-    chown -R pi /opt/picochess
+    chown -R pi:pi /opt/picochess
     cd picochess
 fi
 
 if [ -d "/opt/picochess/logs" ]; then
     echo "logs dir already exists - making sure pi is owner"
-    chown -R pi /opt/picochess/logs
+    chown -R pi:pi /opt/picochess/logs
 else
     echo "creating logs dir for pi user"
     sudo -u pi mkdir /opt/picochess/logs
