@@ -75,6 +75,7 @@ if [ -d "/opt/picochess" ]; then
     # Create required directories
     mkdir -p "$WORKING_COPY_DIR" "$UNTRACKED_DIR"
     # Ensure backup directory is writable by pi
+    chown pi:pi /home/pi/pico_backups
     chown -R pi:pi "$BACKUP_DIR"
     echo "Creating backup in: $BACKUP_DIR"
     cd "$REPO_DIR" || exit 1
