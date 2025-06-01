@@ -117,8 +117,8 @@ fi
 #
 
 echo " ------- "
-if [ -d "/opt/picochess" ]; then
-    echo "picochess already exists, updating code..."
+if [ -d "/opt/picochess/.git" ]; then
+    echo "picochess git repo already exists, updating code..."
     cd /opt/picochess
     # new forced backup starts
     # === Check current Git branch ===
@@ -140,12 +140,15 @@ if [ -d "/opt/picochess" ]; then
     # make sure pi is still owner of all files
     chown -R pi:pi /opt/picochess
 else
-    echo "fetching picochess..."
+    echo "no git repo found - fetching picochess..."
+    mkdir -p /opt/picochess
+    chown pi:pi /opt/picochess
     cd /opt
     sudo -u pi git clone https://github.com/JohanSjoblom/picochess
     chown -R pi:pi /opt/picochess
     cd picochess
 fi
+echo " ------- "
 
 if [ -d "/opt/picochess/logs" ]; then
     echo "logs dir already exists - making sure pi is owner"
