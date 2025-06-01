@@ -81,23 +81,28 @@ if [ -d "/opt/picochess" ]; then
     cd "$REPO_DIR" || exit 1
 
     # === Save Git diff of local changes ===
-    echo "Saving git diff..."
-    sudo -u pi git diff > "$BACKUP_DIR/local_changes.diff"
-    # Fix ownership so pi can access/modify untracked files
-    chown -R pi:pi "$BACKUP_DIR/local_changes.diff"
+    if [ -d "$REPO_DIR/.git" ]; then
+        echo "Saving git diff..."
+        sudo -u pi git diff > "$BACKUP_DIR/local_changes.diff"
+        # Fix ownership so pi can access/modify untracked files
+        chown -R pi:pi "$BACKUP_DIR/local_changes.diff"
 
-    # === Save untracked files (excluding engines/ and mame/) ===
-    echo "Backing up untracked files..."
-    rm -rf "$UNTRACKED_DIR"/*
-    sudo -u pi git ls-files --others --exclude-standard | while read -r file; do
-    case "$file" in
-        engines/*|mame/*) continue ;;
-    esac
-    mkdir -p "$UNTRACKED_DIR/$(dirname "$file")"
-    cp -p "$file" "$UNTRACKED_DIR/$file"
-    done
-    # Fix ownership so pi can access/modify untracked files
-    chown -R pi:pi "$UNTRACKED_DIR"
+        # === Save untracked files (excluding engines/ and mame/) ===
+        # Copy each untracked file, preserving directory structure, except engines/ and mame/
+        echo "Backing up untracked files..."
+        rm -rf "$UNTRACKED_DIR"/*
+        sudo -u pi git ls-files --others --exclude-standard | while read -r file; do
+        case "$file" in
+            engines/*|mame/*) continue ;;
+        esac
+        mkdir -p "$UNTRACKED_DIR/$(dirname "$file")"
+        cp -p "$file" "$UNTRACKED_DIR/$file"
+        done
+        # Fix ownership so pi can access/modify untracked files
+        chown -R pi:pi "$UNTRACKED_DIR"
+    else
+        echo "No Git repository found to backup. Doing only rsync of working directory."
+    fi
 
     # === Sync working copy excluding .git, engines/, and mame/ ===
     cd "$REPO_DIR"
