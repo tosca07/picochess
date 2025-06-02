@@ -2985,8 +2985,6 @@ async def main() -> None:
             if self.state.picotutor:
                 # close all the picotutor engines
                 await self.state.picotutor.exit_or_reboot_cleanups()
-            # stop the MainLoop by putting None in the main event queue
-            await Observable.fire(None)
 
         async def final_exit_or_reboot_cleanups(self):
             """Last cleanups before exit or reboot"""
@@ -2998,6 +2996,10 @@ async def main() -> None:
             # and a None has been placed in the main event queue to stop it
             for task in self.non_main_tasks:
                 task.cancel()
+            # as the final step stop the main loop task
+            # by putting None in the main event queue
+            logger.debug("final exit_or_reboot_cleanups done - stopping main evt_queue")
+            await Observable.fire(None)
 
         async def process_main_events(self, event):
             """Consume event from evt_queue"""
@@ -4829,10 +4831,8 @@ async def main() -> None:
                     await self.update_elo(result)
 
             elif isinstance(event, Event.SHUTDOWN):
-                await self.stop_search()
-                await self.state.stop_clock()
-                await self.engine.quit()
-
+                await self.get_rid_of_engine_move()
+                await self.pre_exit_or_reboot_cleanups()
                 try:
                     if self.uci_remote_shell:
                         if self.uci_remote_shell.get():
@@ -4856,8 +4856,10 @@ async def main() -> None:
                     )
                 )
                 await DisplayMsg.show(Message.SYSTEM_SHUTDOWN())
-                await asyncio.sleep(5)  # molli allow more time for commentary chat
+                # no messaging or events beyond this point
+                await asyncio.sleep(5)  # molli allow more time (5) for commentary chat
                 shutdown(self.args.dgtpi, dev=event.dev)  # @todo make independant of remote eng
+                await self.final_exit_or_reboot_cleanups()
 
             elif isinstance(event, Event.REBOOT):
                 await self.get_rid_of_engine_move()
@@ -4873,14 +4875,16 @@ async def main() -> None:
                     )
                 )
                 await DisplayMsg.show(Message.SYSTEM_REBOOT())
-                await asyncio.sleep(2)  # molli allow more time (5) for commentary chat
-                await self.final_exit_or_reboot_cleanups()
-                await asyncio.sleep(3)
+                # no messaging or events beyond this point
+                await asyncio.sleep(5)  # molli allow more time (5) for commentary chat
                 reboot(
                     self.args.dgtpi and self.uci_local_shell.get() is None, dev=event.dev
                 )  # @todo make independant of remote eng
+                await self.final_exit_or_reboot_cleanups()
 
             elif isinstance(event, Event.EXIT):
+                await self.get_rid_of_engine_move()
+                await self.pre_exit_or_reboot_cleanups()
                 result = GameResult.ABORT
                 await DisplayMsg.show(
                     Message.GAME_ENDS(
@@ -4892,12 +4896,10 @@ async def main() -> None:
                     )
                 )
                 # await DisplayMsg.show(Message.SYSTEM_EXIT())
-                await self.pre_exit_or_reboot_cleanups()
                 # no messaging or events beyond this point
-                await asyncio.sleep(2)  # molli allow more time (5) for commentary chat
-                await self.final_exit_or_reboot_cleanups()
-                await asyncio.sleep(3)
+                await asyncio.sleep(5)  # molli allow more time (5) for commentary chat
                 exit(self.args.dgtpi, dev=event.dev)  # @todo make independant of remote eng
+                await self.final_exit_or_reboot_cleanups()
 
             elif isinstance(event, Event.EMAIL_LOG):
                 email_logger = Emailer(email=self.args.email, mailgun_key=self.args.mailgun_key)
