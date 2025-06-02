@@ -4,7 +4,7 @@ After=multi-user.target
 Wants=obooksrv.service gamesdb.service
 
 [Service]
-TimeoutStopSec=10s
+TimeoutStopSec=30s
 Environment="DISPLAY=:0"
 Environment="XAUTHORITY=/home/pi/.Xauthority"
 Environment="XDG_RUNTIME_DIR=/run/user/1000"

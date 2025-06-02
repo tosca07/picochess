@@ -59,7 +59,8 @@ class Observable(object):
     @staticmethod
     async def fire(event):
         """Put an event on the Queue."""
-        await Observable._add_to_queue(copy.deepcopy(event))
+        event_copy = copy.deepcopy(event) if event is not None else None
+        await Observable._add_to_queue(event_copy)
 
     @staticmethod
     async def _add_to_queue(event):

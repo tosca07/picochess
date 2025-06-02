@@ -186,14 +186,17 @@ class DgtIface(DisplayDgt):
 
     async def dgt_consumer(self):
         """Message task consumer for WebVr messages"""
-        logger.info("[%s] dgt_queue ready", self.get_name())
-        while True:
-            message = await self.dgt_queue.get()
-            # issue #45 just process one message at a time - dont spawn task
-            # task = asyncio.create_task(self._process_message(message))
-            await self._process_message(message)
-            # res = await task # needed only for debug below
-            self.dgt_queue.task_done()
-            await asyncio.sleep(0.05)  # balancing message queues
-            # if not res:
-            #    logger.warning("DgtApi command %s failed result: %s", message, res)
+        logger.debug("[%s] dgt_queue ready", self.get_name())
+        try:
+            while True:
+                message = await self.dgt_queue.get()
+                # issue #45 just process one message at a time - dont spawn task
+                # task = asyncio.create_task(self._process_message(message))
+                await self._process_message(message)
+                # res = await task # needed only for debug below
+                self.dgt_queue.task_done()
+                await asyncio.sleep(0.05)  # balancing message queues
+                # if not res:
+                #    logger.warning("DgtApi command %s failed result: %s", message, res)
+        except asyncio.CancelledError:
+            logger.debug("[%s] dgt_queue cancelled", self.get_name())

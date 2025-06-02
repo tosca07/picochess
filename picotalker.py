@@ -209,6 +209,8 @@ class PicoTalkerDisplay(DisplayMsg):
         self.sound_cache = {}
         pygame.mixer.stop()  # stop all sounds
         pygame.mixer.quit()
+        # finally call quit that only exists in runtime - ignore linter error
+        pygame.quit()  # pylint: disable=E1101
 
     async def sound_player(self):
         """Common sound player to play one sound at a time from the sound queue
@@ -633,21 +635,24 @@ class PicoTalkerDisplay(DisplayMsg):
 
     async def message_consumer(self):
         """consume Picotalker messages"""
-        logger.info("picotalker msg_queue ready")
-        while True:
-            # Check if we have something to say
-            message = await self.msg_queue.get()
-            if (
-                not isinstance(message, Message.DGT_SERIAL_NR)
-                and not isinstance(message, Message.DGT_CLOCK_TIME)
-                and not isinstance(message, Message.CLOCK_TIME)
-            ):
-                logger.debug("received message from msg_queue: %s", message)
-            # issue #45 just process one message at a time - dont spawn task
-            # asyncio.create_task(self.process_picotalker_messages(message))
-            await self.process_picotalker_messages(message)
-            self.msg_queue.task_done()
-            await asyncio.sleep(0.05)  # balancing message queues
+        logger.debug("picotalker msg_queue ready")
+        try:
+            while True:
+                # Check if we have something to say
+                message = await self.msg_queue.get()
+                if (
+                    not isinstance(message, Message.DGT_SERIAL_NR)
+                    and not isinstance(message, Message.DGT_CLOCK_TIME)
+                    and not isinstance(message, Message.CLOCK_TIME)
+                ):
+                    logger.debug("received message from msg_queue: %s", message)
+                # issue #45 just process one message at a time - dont spawn task
+                # asyncio.create_task(self.process_picotalker_messages(message))
+                await self.process_picotalker_messages(message)
+                self.msg_queue.task_done()
+                await asyncio.sleep(0.05)  # balancing message queues
+        except asyncio.CancelledError:
+            logger.debug("picotalker msg_queue cancelled")
 
     async def process_picotalker_messages(self, message):
         """process Picotalker messages"""

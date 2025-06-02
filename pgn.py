@@ -735,18 +735,21 @@ class PgnDisplay(DisplayMsg):
 
     async def message_consumer(self):
         """PGN message consumer"""
-        logger.info("msg_queue ready")
-        while True:
-            # Check if we have something to display
-            message = await self.msg_queue.get()
-            if (
-                not isinstance(message, Message.DGT_SERIAL_NR)
-                and not isinstance(message, Message.DGT_CLOCK_TIME)
-                and not isinstance(message, Message.CLOCK_TIME)
-            ):
-                logger.debug("received message from msg_queue: %s", message)
-            # issue #45 just process one message at a time - dont spawn task
-            # asyncio.create_task(self._process_message(message))
-            await self._process_message(message)
-            self.msg_queue.task_done()
-            await asyncio.sleep(0.05)  # balancing message queues
+        logger.debug("PGN msg_queue ready")
+        try:
+            while True:
+                # Check if we have something to display
+                message = await self.msg_queue.get()
+                if (
+                    not isinstance(message, Message.DGT_SERIAL_NR)
+                    and not isinstance(message, Message.DGT_CLOCK_TIME)
+                    and not isinstance(message, Message.CLOCK_TIME)
+                ):
+                    logger.debug("received message from msg_queue: %s", message)
+                # issue #45 just process one message at a time - dont spawn task
+                # asyncio.create_task(self._process_message(message))
+                await self._process_message(message)
+                self.msg_queue.task_done()
+                await asyncio.sleep(0.05)  # balancing message queues
+        except asyncio.CancelledError:
+            logger.debug("PGN msg_queue cancelled")

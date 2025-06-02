@@ -61,73 +61,78 @@ class DgtPi(DgtIface):
         DisplayMsg.show_sync(Message.DGT_CLOCK_VERSION(main=2, sub=2, dev="i2c", text=None))
 
     async def process_incoming_clock_forever(self):
-        but = c_byte(0)
-        buttime = c_byte(0)
-        clktime = create_string_buffer(6)
-        counter = 0
-        logger.debug("incoming_clock ready")
-        while True:
-            with self.lib_lock:
-                # get button events
-                res = self.lib.dgtpicom_get_button_message(pointer(but), pointer(buttime))
-                if res > 0:
-                    ack3 = but.value
-                    if ack3 == 0x01:
-                        logger.debug("(i2c) clock button 0 pressed")
-                        DisplayMsg.show_sync(Message.DGT_BUTTON(button=0, dev="i2c"))
-                    if ack3 == 0x02:
-                        logger.debug("(i2c) clock button 1 pressed")
-                        DisplayMsg.show_sync(Message.DGT_BUTTON(button=1, dev="i2c"))
-                    if ack3 == 0x04:
-                        logger.debug("(i2c) clock button 2 pressed")
-                        DisplayMsg.show_sync(Message.DGT_BUTTON(button=2, dev="i2c"))
-                    if ack3 == 0x08:
-                        logger.debug("(i2c) clock button 3 pressed")
-                        DisplayMsg.show_sync(Message.DGT_BUTTON(button=3, dev="i2c"))
-                    if ack3 == 0x10:
-                        logger.debug("(i2c) clock button 4 pressed")
-                        DisplayMsg.show_sync(Message.DGT_BUTTON(button=4, dev="i2c"))
-                    if ack3 == 0x20:
-                        logger.debug("(i2c) clock button on/off pressed")
-                        self.lib.dgtpicom_configure()  # restart the clock - cause its OFF
-                        DisplayMsg.show_sync(Message.DGT_BUTTON(button=0x20, dev="i2c"))
-                    if ack3 == 0x11:
-                        logger.debug("(i2c) clock button 0+4 pressed")
-                        DisplayMsg.show_sync(Message.DGT_BUTTON(button=0x11, dev="i2c"))
-                    if ack3 == 0x40:
-                        logger.debug("(i2c) clock lever pressed > right side down")
-                        DisplayMsg.show_sync(Message.DGT_BUTTON(button=0x40, dev="i2c"))
-                    if ack3 == -0x40:
-                        logger.debug("(i2c) clock lever pressed > left side down")
-                        DisplayMsg.show_sync(Message.DGT_BUTTON(button=-0x40, dev="i2c"))
-                if res < 0:
-                    logger.warning("GetButtonMessage returned error %i", res)
+        try:
+            but = c_byte(0)
+            buttime = c_byte(0)
+            clktime = create_string_buffer(6)
+            counter = 0
+            logger.debug("incoming_clock ready")
+            while True:
+                with self.lib_lock:
+                    # get button events
+                    res = self.lib.dgtpicom_get_button_message(pointer(but), pointer(buttime))
+                    if res > 0:
+                        ack3 = but.value
+                        if ack3 == 0x01:
+                            logger.debug("(i2c) clock button 0 pressed")
+                            DisplayMsg.show_sync(Message.DGT_BUTTON(button=0, dev="i2c"))
+                        if ack3 == 0x02:
+                            logger.debug("(i2c) clock button 1 pressed")
+                            DisplayMsg.show_sync(Message.DGT_BUTTON(button=1, dev="i2c"))
+                        if ack3 == 0x04:
+                            logger.debug("(i2c) clock button 2 pressed")
+                            DisplayMsg.show_sync(Message.DGT_BUTTON(button=2, dev="i2c"))
+                        if ack3 == 0x08:
+                            logger.debug("(i2c) clock button 3 pressed")
+                            DisplayMsg.show_sync(Message.DGT_BUTTON(button=3, dev="i2c"))
+                        if ack3 == 0x10:
+                            logger.debug("(i2c) clock button 4 pressed")
+                            DisplayMsg.show_sync(Message.DGT_BUTTON(button=4, dev="i2c"))
+                        if ack3 == 0x20:
+                            logger.debug("(i2c) clock button on/off pressed")
+                            self.lib.dgtpicom_configure()  # restart the clock - cause its OFF
+                            DisplayMsg.show_sync(Message.DGT_BUTTON(button=0x20, dev="i2c"))
+                        if ack3 == 0x11:
+                            logger.debug("(i2c) clock button 0+4 pressed")
+                            DisplayMsg.show_sync(Message.DGT_BUTTON(button=0x11, dev="i2c"))
+                        if ack3 == 0x40:
+                            logger.debug("(i2c) clock lever pressed > right side down")
+                            DisplayMsg.show_sync(Message.DGT_BUTTON(button=0x40, dev="i2c"))
+                        if ack3 == -0x40:
+                            logger.debug("(i2c) clock lever pressed > left side down")
+                            DisplayMsg.show_sync(Message.DGT_BUTTON(button=-0x40, dev="i2c"))
+                    if res < 0:
+                        logger.warning("GetButtonMessage returned error %i", res)
 
-                # get time events
-                self.lib.dgtpicom_get_time(clktime)
+                    # get time events
+                    self.lib.dgtpicom_get_time(clktime)
 
-            times = list(clktime.raw)
-            counter = (counter + 1) % 10
-            if counter == 0:
-                if ModeInfo.get_clock_side() == "left":
-                    l_hms = times[:3]
-                    r_hms = times[3:]
-                else:
-                    l_hms = times[3:]
-                    r_hms = times[:3]
-                logger.debug("(i2c) clock new time received l:%s r:%s", l_hms, r_hms)
-                if self.in_settime:
-                    logger.debug("(i2c) clock still not finished set time, sending old time")
-                else:
-                    # DgtPi needs 2secs for a stopped clock to return the correct(!) time
-                    # we make it easy here and just set the time from the side counting down
-                    if self.side_running == ClockSide.LEFT:
-                        self.l_time = l_hms[0] * 3600 + l_hms[1] * 60 + l_hms[2]
-                    if self.side_running == ClockSide.RIGHT:
-                        self.r_time = r_hms[0] * 3600 + r_hms[1] * 60 + r_hms[2]
-                text = Message.DGT_CLOCK_TIME(time_left=self.l_time, time_right=self.r_time, connect=True, dev="i2c")
-                DisplayMsg.show_sync(text)
-            await asyncio.sleep(0.1)
+                times = list(clktime.raw)
+                counter = (counter + 1) % 10
+                if counter == 0:
+                    if ModeInfo.get_clock_side() == "left":
+                        l_hms = times[:3]
+                        r_hms = times[3:]
+                    else:
+                        l_hms = times[3:]
+                        r_hms = times[:3]
+                    logger.debug("(i2c) clock new time received l:%s r:%s", l_hms, r_hms)
+                    if self.in_settime:
+                        logger.debug("(i2c) clock still not finished set time, sending old time")
+                    else:
+                        # DgtPi needs 2secs for a stopped clock to return the correct(!) time
+                        # we make it easy here and just set the time from the side counting down
+                        if self.side_running == ClockSide.LEFT:
+                            self.l_time = l_hms[0] * 3600 + l_hms[1] * 60 + l_hms[2]
+                        if self.side_running == ClockSide.RIGHT:
+                            self.r_time = r_hms[0] * 3600 + r_hms[1] * 60 + r_hms[2]
+                    text = Message.DGT_CLOCK_TIME(
+                        time_left=self.l_time, time_right=self.r_time, connect=True, dev="i2c"
+                    )
+                    DisplayMsg.show_sync(text)
+                await asyncio.sleep(0.1)
+        except asyncio.CancelledError:
+            logger.debug("incoming_clock cancelled")
 
     def _run_configure(self):
         res = self.lib.dgtpicom_configure()

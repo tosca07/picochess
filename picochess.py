@@ -699,9 +699,13 @@ async def main() -> None:
     state.tc_init_last = state.time_control.get_parameters()
     time_text.beep = False
 
+    # collect all tasks for later cancellation at exit, shutdown, or reboot
+    # except the main_loop task which we terminate by sending a None into the async queue
+    non_main_tasks: Set[asyncio.Task] = set()
+
     # The class dgtDisplay fires Event (Observable) & DispatchDgt (Dispatcher)
     my_dgt_display = DgtDisplay(state.dgttranslate, state.dgtmenu, state.time_control, main_loop)
-    asyncio.create_task(my_dgt_display.message_consumer())
+    non_main_tasks.add(asyncio.create_task(my_dgt_display.message_consumer()))
     my_dgt_display.start_once_per_second_timer()
     # @todo optimise to start this timer only when playmode is needing it?
 
@@ -738,7 +742,7 @@ async def main() -> None:
         main_loop,
     )
 
-    asyncio.create_task(pico_talker.message_consumer())
+    non_main_tasks.add(asyncio.create_task(pico_talker.message_consumer()))
 
     # Launch web server
     if args.web_server_port:
@@ -747,10 +751,10 @@ async def main() -> None:
         # moved starting WebDisplayt and WebVr here so that they are in same main loop
         logger.info("initializing message queues")
         my_web_display = WebDisplay(shared, main_loop)
-        asyncio.create_task(my_web_display.message_consumer())
+        non_main_tasks.add(asyncio.create_task(my_web_display.message_consumer()))
         my_web_vr = WebVr(shared, dgtboard, main_loop)
         await my_web_vr.initialize()
-        asyncio.create_task(my_web_vr.dgt_consumer())
+        non_main_tasks.add(asyncio.create_task(my_web_vr.dgt_consumer()))
         logger.info("message queues ready - starting web server")
         dgtdispatcher.register("web")
         theme: str = calc_theme(args.theme, state.set_location)
@@ -774,17 +778,17 @@ async def main() -> None:
         if args.dgtpi:
             my_dgtpi = DgtPi(dgtboard, main_loop)
             dgtdispatcher.register("i2c")
-            asyncio.create_task(my_dgtpi.dgt_consumer())
-            asyncio.create_task(my_dgtpi.process_incoming_clock_forever())
+            non_main_tasks.add(asyncio.create_task(my_dgtpi.dgt_consumer()))
+            non_main_tasks.add(asyncio.create_task(my_dgtpi.process_incoming_clock_forever()))
         else:
             logger.debug("(ser) starting the board connection")
             dgtboard.run()  # a clock can only be online together with the board, so we must start it infront
         my_dgthw = DgtHw(dgtboard, main_loop)
         dgtdispatcher.register("ser")
-        asyncio.create_task(my_dgthw.dgt_consumer())
+        non_main_tasks.add(asyncio.create_task(my_dgthw.dgt_consumer()))
 
     # The class Dispatcher sends DgtApi messages at the correct (delayed) time out
-    asyncio.create_task(dgtdispatcher.dispatch_consumer())
+    non_main_tasks.add(asyncio.create_task(dgtdispatcher.dispatch_consumer()))
 
     # Save to PGN
     emailer = Emailer(email=args.email, mailgun_key=args.mailgun_key)
@@ -799,7 +803,7 @@ async def main() -> None:
     )
 
     my_pgn_display = PgnDisplay("games" + os.sep + args.pgn_file, emailer, shared, main_loop)
-    asyncio.create_task(my_pgn_display.message_consumer())
+    non_main_tasks.add(asyncio.create_task(my_pgn_display.message_consumer()))
 
     # Update
     if args.enable_update:
@@ -826,6 +830,7 @@ async def main() -> None:
             loop: asyncio.AbstractEventLoop,
             args,
             shared: dict,
+            non_main_tasks: Set[asyncio.Task],
         ):
             self.loop = loop
             self._task = None  # placeholder for message consumer task
@@ -848,6 +853,7 @@ async def main() -> None:
                 FLOAT_MIN_BACKGROUND_TIME, self._pv_score_depth_analyser, loop=self.loop
             )
             self.shared = shared
+            self.non_main_tasks = non_main_tasks
             ###########################################
 
             # try the given engine first and if that fails the first from "engines.ini" then exit
@@ -2949,14 +2955,22 @@ async def main() -> None:
 
         async def event_consumer(self):
             """Event consumer for main"""
-            logger.info("evt_queue ready")
-            while True:
-                event = await evt_queue.get()
-                # issue #45 still let main loop create tasks
-                # @todo check if this should not do create_task either
-                asyncio.create_task(self.process_main_events(event))
-                evt_queue.task_done()
-                await asyncio.sleep(0.05)  # balancing message queues
+            logger.debug("evt_queue ready")
+            try:
+                while True:
+                    event = await evt_queue.get()
+                    if event is None:
+                        # this is the signal to stop the main loop
+                        logger.debug("evt_queue received None, stopping main loop")
+                        break
+                    # issue #45 still let main loop create tasks
+                    # @todo check if this should not do create_task either
+                    # create_task should make program more responsive to user tasks
+                    asyncio.create_task(self.process_main_events(event))
+                    evt_queue.task_done()
+                    await asyncio.sleep(0.05)  # balancing message queues
+            except asyncio.CancelledError:
+                logger.debug("evt_queue cancelled")
 
         async def pre_exit_or_reboot_cleanups(self):
             """First immediate cleanups before exit or reboot"""
@@ -2971,8 +2985,8 @@ async def main() -> None:
             if self.state.picotutor:
                 # close all the picotutor engines
                 await self.state.picotutor.exit_or_reboot_cleanups()
-            # @todo have a list of all other async tasks and clean them up here
-            # Or let the Event.REBOOT and Event.EXIT put None in queues to stop tasks
+            # stop the MainLoop by putting None in the main event queue
+            await Observable.fire(None)
 
         async def final_exit_or_reboot_cleanups(self):
             """Last cleanups before exit or reboot"""
@@ -2980,6 +2994,10 @@ async def main() -> None:
             if self.pico_talker:
                 # close the sound system (this is why final is a separate call)
                 await self.pico_talker.exit_or_reboot_cleanups()
+            # cancel all non-main tasks, this task will stop itself
+            # and a None has been placed in the main event queue to stop it
+            for task in self.non_main_tasks:
+                task.cancel()
 
         async def process_main_events(self, event):
             """Consume event from evt_queue"""
@@ -4863,7 +4881,6 @@ async def main() -> None:
                 )  # @todo make independant of remote eng
 
             elif isinstance(event, Event.EXIT):
-                await self.pre_exit_or_reboot_cleanups()
                 result = GameResult.ABORT
                 await DisplayMsg.show(
                     Message.GAME_ENDS(
@@ -4875,6 +4892,8 @@ async def main() -> None:
                     )
                 )
                 # await DisplayMsg.show(Message.SYSTEM_EXIT())
+                await self.pre_exit_or_reboot_cleanups()
+                # no messaging or events beyond this point
                 await asyncio.sleep(2)  # molli allow more time (5) for commentary chat
                 await self.final_exit_or_reboot_cleanups()
                 await asyncio.sleep(3)
@@ -4942,12 +4961,16 @@ async def main() -> None:
         main_loop,
         args,
         shared,
+        non_main_tasks,
     )
 
     await my_main.initialise(time_text)
     main_task = main_loop.create_task(my_main.event_consumer())  # start main message loop
-    await asyncio.gather(main_task)
-    await asyncio.Event().wait()  # wait forever
+    all_tasks = non_main_tasks
+    all_tasks.add(main_task)
+    await asyncio.gather(*all_tasks)  # wait until all tasks are done
+    logger.debug("all tasks done, exiting main loop and picochess program")
+    # await asyncio.Event().wait()  # wait forever
 
 
 if __name__ == "__main__":

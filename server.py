@@ -814,17 +814,20 @@ class WebDisplay(DisplayMsg):
 
     async def message_consumer(self):
         """Message task consumer for WebDisplay messages"""
-        logger.info("msg_queue ready")
-        while True:
-            message = await self.msg_queue.get()
-            if (
-                not isinstance(message, Message.DGT_SERIAL_NR)
-                and not isinstance(message, Message.DGT_CLOCK_TIME)
-                and not isinstance(message, Message.CLOCK_TIME)
-            ):
-                logger.debug("received message from msg_queue: %s", message)
-            # issue #45 just process one message at a time - dont spawn task
-            # asyncio.create_task(self.task(message))
-            await self.task(message)
-            self.msg_queue.task_done()
-            await asyncio.sleep(0.05)  # balancing message queues
+        logger.debug("WebDisplay msg_queue ready")
+        try:
+            while True:
+                message = await self.msg_queue.get()
+                if (
+                    not isinstance(message, Message.DGT_SERIAL_NR)
+                    and not isinstance(message, Message.DGT_CLOCK_TIME)
+                    and not isinstance(message, Message.CLOCK_TIME)
+                ):
+                    logger.debug("received message from msg_queue: %s", message)
+                # issue #45 just process one message at a time - dont spawn task
+                # asyncio.create_task(self.task(message))
+                await self.task(message)
+                self.msg_queue.task_done()
+                await asyncio.sleep(0.05)  # balancing message queues
+        except asyncio.CancelledError:
+            logger.debug("WebDisplay msg_queue cancelled")
