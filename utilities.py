@@ -302,7 +302,7 @@ def shutdown(dgtpi: bool, dev: str):
         os.system("sudo shutdown -h now")
 
 
-def exit(dgtpi: bool, dev: str):
+def exit_pico(dgtpi: bool, dev: str):
     """exit picochess."""
     logging.debug("exit picochess requested by (%s)", dev)
 
@@ -314,10 +314,12 @@ def exit(dgtpi: bool, dev: str):
         dgt_functions.dgtpicom_off(1)
         os.system("sudo pkill -f chromium")
         os.system("sudo systemctl stop dgpi")
-        os.system("sudo systemctl stop picochess")
-    else:
+    elif platform.machine() != "x86_64":
+        # on Debian Linux laptops we dont want to stop chromium
+        # on Pi systems we have kiosk mode, so we kill chromium
+        # @todo should perhaps have a check for kiosk mode here
         os.system("sudo pkill -f chromium")
-        os.system("sudo systemctl stop picochess")
+    # no need to stop picochess, all async will be stopped by MainLoop
 
 
 def reboot(dgtpi: bool, dev: str):

@@ -207,8 +207,9 @@ class PicoTalkerDisplay(DisplayMsg):
         await asyncio.sleep(0.1)  # give sound player time to process None
         self.sound_cache.clear()  # clear sound cache
         self.sound_cache = {}
-        pygame.mixer.stop()  # stop all sounds
-        pygame.mixer.quit()
+        if pygame.mixer.get_init():  # prevent mixer not initialized error in shutdown
+            pygame.mixer.stop()  # stop all sounds
+            pygame.mixer.quit()  # clean up mixer subsystem
         # finally call quit that only exists in runtime - ignore linter error
         pygame.quit()  # pylint: disable=E1101
 

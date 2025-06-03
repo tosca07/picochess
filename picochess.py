@@ -22,6 +22,8 @@
 
 
 import sys
+import signal
+import time
 import os
 import subprocess
 import copy
@@ -57,7 +59,7 @@ from utilities import (
     get_opening_books,
     shutdown,
     reboot,
-    exit,
+    exit_pico,
     checkout_tag,
 )
 from utilities import (
@@ -880,6 +882,10 @@ async def main() -> None:
             self.state.searchmoves = AlternativeMover()
             self.state.artwork_in_use = False
             self.always_run_tutor = self.args.coach_analyser if self.args.coach_analyser else False
+
+            # Register signal handlers for kill signal
+            signal.signal(signal.SIGTERM, self.exit_sigterm)
+            signal.signal(signal.SIGINT, self.exit_sigterm)
 
         async def initialise(self, time_text):
             """Due to use of async some initialisation is moved here"""
@@ -4857,7 +4863,7 @@ async def main() -> None:
                 )
                 await DisplayMsg.show(Message.SYSTEM_SHUTDOWN())
                 # no messaging or events beyond this point
-                await asyncio.sleep(5)  # molli allow more time (5) for commentary chat
+                await asyncio.sleep(3)  # molli allow more time (5) for commentary chat
                 shutdown(self.args.dgtpi, dev=event.dev)  # @todo make independant of remote eng
                 await self.final_exit_or_reboot_cleanups()
 
@@ -4876,7 +4882,7 @@ async def main() -> None:
                 )
                 await DisplayMsg.show(Message.SYSTEM_REBOOT())
                 # no messaging or events beyond this point
-                await asyncio.sleep(5)  # molli allow more time (5) for commentary chat
+                await asyncio.sleep(3)  # molli allow more time (5) for commentary chat
                 reboot(
                     self.args.dgtpi and self.uci_local_shell.get() is None, dev=event.dev
                 )  # @todo make independant of remote eng
@@ -4897,8 +4903,8 @@ async def main() -> None:
                 )
                 # await DisplayMsg.show(Message.SYSTEM_EXIT())
                 # no messaging or events beyond this point
-                await asyncio.sleep(5)  # molli allow more time (5) for commentary chat
-                exit(self.args.dgtpi, dev=event.dev)  # @todo make independant of remote eng
+                await asyncio.sleep(3)  # molli allow more time (5) for commentary chat
+                exit_pico(self.args.dgtpi, dev=event.dev)  # @todo make independant of remote eng
                 await self.final_exit_or_reboot_cleanups()
 
             elif isinstance(event, Event.EMAIL_LOG):
@@ -4948,6 +4954,21 @@ async def main() -> None:
             else:  # Default
                 logger.info("event not handled : [%s]", event)
                 await asyncio.sleep(0.05)  # balance message queues
+
+        def exit_sigterm(self, signum, frame):
+            """A handler function to register for systemctl stop signal"""
+            logger.debug("Received kill signal, shutting down")
+            asyncio.create_task(self._exit_async())
+
+        async def _exit_async(self):
+            """Async function to handle systemctl stop signal"""
+            logger.debug("Shutting down all async tasks")
+            try:
+                await self.pre_exit_or_reboot_cleanups()
+                await self.final_exit_or_reboot_cleanups()
+            except Exception as e:
+                logger.error("Error during shutdown: %s", e)
+                sys.exit(-1)  # force exit on error
 
     my_main = MainLoop(
         own_user,
