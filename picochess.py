@@ -1182,9 +1182,8 @@ async def main() -> None:
                     t_best_move,
                     t_best_score,
                     t_best_mate,
-                    t_pv_best_move,
                     t_alt_best_moves,
-                ) = self.state.picotutor.get_pos_analysis()
+                ) = await self.state.picotutor.get_pos_analysis()
 
                 tutor_str = "POS" + str(t_best_score)
                 msg = Message.PICOTUTOR_MSG(eval_str=tutor_str, score=t_best_score)
@@ -1519,7 +1518,7 @@ async def main() -> None:
                     and not self.state.position_mode
                     and not self.state.automatic_takeback
                 ):
-                    self.call_pico_coach()
+                    await self.call_pico_coach()
                     self.state.coach_triggered = False
                 elif self.state.position_mode:
                     self.state.position_mode = False
@@ -4628,7 +4627,7 @@ async def main() -> None:
 
                 if self.state.dgtmenu.get_picocoach() != PicoCoach.COACH_OFF and event.picocoach == 2:
                     # call pico coach in case it was already set to on
-                    self.call_pico_coach()
+                    await self.call_pico_coach()
 
             elif isinstance(event, Event.PICOEXPLORER):
                 await self.state.picotutor.set_status(

@@ -485,7 +485,7 @@ class PicoTutor:
         if self.analyse_both_sides or self.board.turn != self.user_color:
             # we are analysing both sides or user just made a move, evaluate move
             try:
-                await self.eval_legal_moves()  # take snapshot of current evaluation
+                await self.eval_legal_moves(self.board.turn)  # take snapshot of current evaluation
                 self.eval_user_move(i_uci_move)  # determine & save evaluation of user move
             except IndexError:
                 logger.debug("program internal error - no move pushed before evaluation attempt")
@@ -494,7 +494,7 @@ class PicoTutor:
             try:
                 if self.always_run_tutor:
                     # @todo this is intermediate solution for #49, we evaluate engine moves
-                    await self.eval_legal_moves()  # take snapshot of current evaluation
+                    await self.eval_legal_moves(self.board.turn)  # take snapshot of current evaluation
                     self.eval_user_move(i_uci_move)  # determine & save evaluation of user move
                 else:
                     self._eval_engine_move(i_uci_move)  # add "dummy" engine move to history
@@ -809,8 +809,10 @@ class PicoTutor:
             pv_key = pv_key + 1
         return best_score
 
-    async def eval_legal_moves(self):
-        """Update analysis information from engine analysis snapshot"""
+    async def eval_legal_moves(self, turn: chess.Color, analysed_move_already_done: bool = True):
+        """Update analysis information from engine analysis snapshot
+        parameter analysed_move_already_done is True if self.board already has a move
+        for the side to be analysed"""
         # @todo check if this can throw exceptions
         if not (self.coach_on or self.watcher_on):
             return
@@ -819,33 +821,33 @@ class PicoTutor:
         self.alt_best_moves = {color: [] for color in [chess.WHITE, chess.BLACK]}
         # eval_pv_list below will build new lists
         board_before_usermove: chess.Board = self.board.copy()
-        try:
-            #  for some strange reason the following line shows E1101
-            board_before_usermove.pop()  # we ask for analysis done before user move
-        except ValueError:
-            logger.debug("can not evaluate empty board 1st move")
-            return
+        if analysed_move_already_done:
+            # this is the normal situation, the move to be analysed done on board
+            # board fen will not match analysis board unless we pop it
+            try:
+                #  for some strange reason the following line shows E1101
+                board_before_usermove.pop()  # we ask for analysis done before user move
+            except IndexError:
+                logger.debug("can not evaluate empty board 1st move")
+                return
+        # else situation is for get_pos_analysis() where no move is done yet
         obvious_result = await self.obvious_engine.get_analysis(board_before_usermove)
-        self.obvious_info[self.board.turn] = obvious_result.get("info")
+        self.obvious_info[turn] = obvious_result.get("info")
         best_result = await self.best_engine.get_analysis(board_before_usermove)
-        self.best_info[self.board.turn] = best_result.get("info")
-        if self.best_info[self.board.turn]:
-            best_score = PicoTutor._eval_pv_list(
-                self.board.turn, self.best_info[self.board.turn], self.best_moves[self.board.turn]
-            )
-            if self.best_moves[self.board.turn]:
-                self.best_moves[self.board.turn].sort(key=self.sort_score, reverse=True)
+        self.best_info[turn] = best_result.get("info")
+        if self.best_info[turn]:
+            best_score = PicoTutor._eval_pv_list(turn, self.best_info[turn], self.best_moves[turn])
+            if self.best_moves[turn]:
+                self.best_moves[turn].sort(key=self.sort_score, reverse=True)
                 # collect possible good alternative moves
-                for pv_key, move, score, mate in self.best_moves[self.board.turn]:
+                for pv_key, move, score, mate in self.best_moves[turn]:
                     if move:
                         diff = abs(best_score - score)
                         if diff <= c.ALTERNATIVE_TH:
-                            self.alt_best_moves[self.board.turn].append(move)
-        if self.obvious_info[self.board.turn]:
-            PicoTutor._eval_pv_list(
-                self.board.turn, self.obvious_info[self.board.turn], self.obvious_moves[self.board.turn]
-            )
-            self.obvious_moves[self.board.turn].sort(key=self.sort_score, reverse=True)
+                            self.alt_best_moves[turn].append(move)
+        if self.obvious_info[turn]:
+            PicoTutor._eval_pv_list(turn, self.obvious_info[turn], self.obvious_moves[turn])
+            self.obvious_moves[turn].sort(key=self.sort_score, reverse=True)
         self.log_pv_lists()  # debug only
 
     async def get_analysis(self) -> dict:
@@ -1205,38 +1207,24 @@ class PicoTutor:
         # not sending self.pv_best_move as its not used?
         return self.hint_move[self.board.turn], self.pv_user_move[self.board.turn]
 
-    def get_pos_analysis(self):
+    async def get_pos_analysis(self):
         if not (self.coach_on or self.watcher_on):
             return
         # calculate material / position / mobility / development / threats / best move / best score
         # call a picotalker method with these information
         mate = 0
         score = 0
+        # self.log_sync_info()  # normally commented out
 
-        try:
-            self.eval_legal_moves()  # @todo - why do we need to call this?
-            best_move = self.best_info[self.board.turn][0]["pv"][0]
-        except IndexError:
-            best_move = ""
-
-        try:
-            best_score = self.best_info[self.board.turn][0]["score"]
-        except IndexError:
-            best_score = 0
-
-        if best_score.cp:
-            score = best_score.cp / 100
-        if best_score.mate:
-            mate = best_score.mate
-
-        try:
-            pv_best_move = self.best_info[self.board.turn][0]["pv"]
-        except IndexError:
-            pv_best_move = []
-
-        if mate > 0:
-            score = 99999
-        elif mate < 0:
-            score = -99999
-
-        return best_move, score, mate, pv_best_move, self.alt_best_moves[self.board.turn]
+        # in this get_pos_analysis there is no user move to pop, send opposite turn and False
+        turn: chess.Color = chess.WHITE if self.board.turn == chess.BLACK else chess.BLACK
+        await self.eval_legal_moves(turn, False)  # take snapshot of analysis before user move
+        info: InfoDict = self.best_info[turn][0] if self.best_info[turn] else None
+        if not info:
+            logger.debug("no best info in get_pos_analysis for turn %s", turn)
+            return
+        (best_move, score, mate) = PicoTutor.get_score(info)
+        # main pitotutor expects pawns, not centipawns
+        if score is not None:
+            score = score / 100.0
+        return best_move, score, mate, self.alt_best_moves[turn]
