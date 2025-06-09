@@ -471,7 +471,11 @@ class PicoTutor:
         """inform picotutor that a board move was made
         returns False if tutor board is out of sync
         and caller must set_position again"""
-        self.op.append(self.board.san(i_uci_move))  # for opening matching
+        try:
+            self.op.append(self.board.san(i_uci_move))  # for opening matching
+        except AssertionError as e:
+            logger.debug("picotutor board not in sync - move %s not legal on tutor board", e)
+            return False
         self.board.push(i_uci_move)  # now boards should be in sync, check!
         if game.fen() != self.board.fen():
             logger.debug("picotutor board not in sync when pushing move %s", i_uci_move.uci())
