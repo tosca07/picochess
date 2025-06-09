@@ -737,7 +737,7 @@ class UciEngine(object):
         """Engine waiting."""
         return True  # should not be needed any more
 
-    async def newgame(self, game: Board):
+    async def newgame(self, game: Board, send_ucinewgame: bool = True):
         """Engine sometimes need this to setup internal values.
         parameter game will not change"""
         self.analyser.newgame()  # chess lib signals ucinewgame in next call to engine
@@ -746,6 +746,12 @@ class UciEngine(object):
         # @todo we could wait for ping() isready here - but it could break pgn_engine logic
         # do not self.engine.send_line("ucinewgame"), see read_pgn_file in picochess.py
         # it will confuse the engine when switching between playing/non-playing modes
+        # but: issue #72 at least mame engines need ucinewgame to be sent
+        # we force it here and to avoid breaking read_pgn_file I added a default parameter
+        if send_ucinewgame:
+            # all calls except read_pgn_file newgame do this
+            logger.debug("sending ucinewgame to engine")
+            self.engine.send_line("ucinewgame")  # force ucinewgame to engine
 
     def set_mode(self, ponder: bool = True):
         """Set engine ponder mode for a playing engine"""

@@ -2684,7 +2684,8 @@ async def main() -> None:
             if l_move and l_stop_at_halfmove != 0:
                 self.state.game.pop()
 
-            await self.engine.newgame(self.state.game.copy())
+            # issue #72 - newgame sends a ucinewgame unless stopped
+            await self.engine.newgame(self.state.game.copy(), send_ucinewgame=False)
 
             # switch temporarly picotutor off
             self.state.flag_picotutor = False
