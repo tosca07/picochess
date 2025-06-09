@@ -3182,7 +3182,8 @@ async def main() -> None:
                         )
                         await self.engine.open_engine()
                     await self.engine.startup(old_options, self.state.rating)
-                    await self.engine.newgame(self.state.game.copy())
+                    # issue #72 - avoid problems by not sending newgame to new engine
+                    await self.engine.newgame(self.state.game.copy(), send_ucinewgame=False)
                     if not self.engine.loaded_ok():
                         logger.error("no engines started")
                         await DisplayMsg.show(Message.ENGINE_FAIL())
@@ -3264,7 +3265,8 @@ async def main() -> None:
                     self.state.game = chess.Board()
                     self.state.game.turn = chess.WHITE
                     self.state.play_mode = PlayMode.USER_WHITE
-                    await self.engine.newgame(self.state.game.copy())
+                    # issue #72 - avoid problems by not sending newgame to new engine
+                    await self.engine.newgame(self.state.game.copy(), send_ucinewgame=False)
                     self.state.done_computer_fen = None
                     self.state.done_move = self.state.pb_move = chess.Move.null()
                     self.state.searchmoves.reset()
@@ -3277,7 +3279,8 @@ async def main() -> None:
                     msg = Message.START_NEW_GAME(game=self.state.game.copy(), newgame=real_new_game)
                     await DisplayMsg.show(msg)
                 else:
-                    await self.engine.newgame(self.state.game.copy())
+                    # issue #72 - avoid problems by not sending newgame to new engine
+                    await self.engine.newgame(self.state.game.copy(), send_ucinewgame=False)
 
                 await self.engine_mode()
 
