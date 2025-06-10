@@ -23,8 +23,10 @@ import io
 from random import randint
 import os
 import asyncio
-import sys  # type: ignore - needed for redirecting stdout/stderr
+
+# import sys  # type: ignore - needed for redirecting stdout/stderr
 import contextlib  # type: ignore - needed for redirecting stdout/stderr
+import subprocess
 
 # Suppress pygame's hardcoded output to stdout/stderr
 with contextlib.redirect_stdout(io.StringIO()):
@@ -67,16 +69,15 @@ class PicoTalker(object):
         """Set the speed voice factor."""
         self.speed_factor = speed_factor
 
-    async def talk(self, sounds):
-        """Speak out the sound part"""
+    async def talk(self, sounds) -> bool:
+        """Speak out the sound part - return True if at least one voice file found"""
         if not self.voice_path:
             logger.debug("picotalker turned off")
             return False
 
-        vpath = self.voice_path
         result = False
         for part in sounds:
-            voice_file = vpath + "/" + part
+            voice_file = self.voice_path + "/" + part
             if Path(voice_file).is_file():
                 # put in common queue in PicoTalkerDisplay to play one sound at a time
                 await self.sound_queue.put(voice_file)
@@ -223,11 +224,26 @@ class PicoTalkerDisplay(DisplayMsg):
                     # stop sound player
                     logger.debug("picotalker sound player stopping")
                     break  # exit the loop
-                sound = await self.get_or_load_sound(voice_file)
-                sound.play()  # returns immediately
-                await asyncio.sleep(sound.get_length() + 0.3)  # wait until it's done
+                # self.pico3_sound_player(voice_file)  # blocking play
+                await asyncio.to_thread(self.pico3_sound_player, voice_file)
+                # issue #77 tmp commenting out Pico4 sound playing
+                # sound = await self.get_or_load_sound(voice_file)
+                # sound.play()  # returns immediately
+                # await asyncio.sleep(sound.get_length() + 0.3)  # wait until it's done
         except asyncio.CancelledError:
             logger.debug("picotalker sound player cancelled")
+
+    def pico3_sound_player(self, voice_file) -> bool:
+        """Speak out the sound part by using sox play.
+        return True if sound was played, False if not."""
+        result = False
+        command = ["play", voice_file, "tempo", str(self.speed_factor)]
+        try:  # use blocking call
+            subprocess.call(command, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            result = True
+        except OSError as os_exc:
+            logger.warning("OSError: %s => turn voice OFF", os_exc)
+        return result
 
     async def get_or_load_sound(self, path):
         """Async function to load or get sound from cache"""
