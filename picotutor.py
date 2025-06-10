@@ -777,7 +777,10 @@ class PicoTutor:
         """return tuple (move, score, mate) extracted from info
         if no turn is given, it defaults to white
         if no score is found, score is None"""
-        move = info["pv"][0] if "pv" in info else chess.Move.null()
+        if "pv" in info:
+            move = info["pv"][0] if info["pv"] else chess.Move.null()
+        else:
+            move = chess.Move.null()
         score = None
         mate = 0
         if "score" in info:
