@@ -809,10 +809,11 @@ class PicoTutor:
             # because turn is after the move being scored
             score_turn = chess.WHITE if turn == chess.BLACK else chess.BLACK
             move, score, mate = PicoTutor.get_score(info, score_turn)
-            # put an score: int here for sorting best moves
-            moves.append((pv_key, move, score, mate))
-            if score is not None:
-                best_score = max(best_score, score)
+            if move != chess.Move.null():
+                moves.append((pv_key, move, score, mate))
+                # put an score: int here for sorting best moves
+                if score is not None:
+                    best_score = max(best_score, score)
             pv_key = pv_key + 1
         return best_score
 
@@ -854,7 +855,8 @@ class PicoTutor:
                             self.alt_best_moves[turn].append(move)
         if self.obvious_info[turn]:
             PicoTutor._eval_pv_list(turn, self.obvious_info[turn], self.obvious_moves[turn])
-            self.obvious_moves[turn].sort(key=self.sort_score, reverse=True)
+            if self.obvious_moves[turn]:
+                self.obvious_moves[turn].sort(key=self.sort_score, reverse=True)
         self.log_pv_lists()  # debug only
 
     async def get_analysis(self) -> dict:
