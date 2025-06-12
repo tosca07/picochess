@@ -46,6 +46,7 @@ class DgtDisplay(DisplayMsg):
         self.last_pos_start = True
 
         self.drawresign_fen = None
+        self.have_seen_a_fen: bool = False  # issue #76 - avoid reboot/restart/exit looping
         self.show_move_or_value = 0
         self.leds_are_on = False
 
@@ -533,6 +534,7 @@ class DgtDisplay(DisplayMsg):
         logger.debug("DGT-Fen [%s]", fen)
         if fen == self.dgtmenu.get_dgt_fen():
             logger.debug("ignore same fen")
+            self.have_seen_a_fen = True
             return
         self.dgtmenu.set_dgt_fen(fen)
         self.drawresign_fen = self._drawresign()
@@ -664,10 +666,18 @@ class DgtDisplay(DisplayMsg):
             )
         elif fen in shutdown_map:
             logger.debug("map: shutdown")
-            await self._power_off()
+            if self.have_seen_a_fen:
+                await self._power_off()
+            else:
+                logger.debug("map: shutdown ignored on first fen seen")
+                await DisplayMsg.show(Message.WRONG_FEN())
         elif fen in reboot_map:
             logger.debug("map: reboot")
-            await self._reboot()
+            if self.have_seen_a_fen:
+                await self._reboot()
+            else:
+                logger.debug("map: reboot ignored on first fen seen")
+                await DisplayMsg.show(Message.WRONG_FEN())
         elif self.drawresign_fen in drawresign_map:
             if not self._inside_main_menu():
                 logger.debug("map: drawresign")
@@ -698,6 +708,7 @@ class DgtDisplay(DisplayMsg):
                     await DispatchDgt.fire(self.dgttranslate.text("Y10_error960"))
             else:
                 await Observable.fire(Event.FEN(fen=fen))
+        self.have_seen_a_fen = True  # remember that we have seen a fen for issue #76
 
     async def _process_engine_ready(self, message):
         for index in range(0, len(self.dgtmenu.installed_engines)):
