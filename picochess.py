@@ -2981,7 +2981,10 @@ async def main() -> None:
         async def pre_exit_or_reboot_cleanups(self):
             """First immediate cleanups before exit or reboot"""
             logger.debug("pre exit_or_reboot_cleanups")
-            # issue 76 - if I self.state.stop_fen_timer() set pieces msg will not be heard
+            if self.state.fen_timer_running:
+                self.state.stop_fen_timer()
+            # @todo are there other timers to stop here?
+            # as we wait 5 secs before exiting we only want to prevent timer actions
             await self.stop_search()
             await self.state.stop_clock()
             await self.engine.quit()
@@ -4863,7 +4866,7 @@ async def main() -> None:
                 )
                 await DisplayMsg.show(Message.SYSTEM_SHUTDOWN())
                 # no messaging or events beyond this point
-                await asyncio.sleep(5)  # molli allow more time (5) for commentary chat
+                await asyncio.sleep(3)  # molli allow more time (5) for commentary chat
                 shutdown(self.args.dgtpi, dev=event.dev)  # @todo make independant of remote eng
                 await self.final_exit_or_reboot_cleanups()
 
@@ -4882,7 +4885,7 @@ async def main() -> None:
                 )
                 await DisplayMsg.show(Message.SYSTEM_REBOOT())
                 # no messaging or events beyond this point
-                await asyncio.sleep(5)  # molli allow more time (5) for commentary chat
+                await asyncio.sleep(3)  # molli allow more time (5) for commentary chat
                 reboot(
                     self.args.dgtpi and self.uci_local_shell.get() is None, dev=event.dev
                 )  # @todo make independant of remote eng
@@ -4903,7 +4906,7 @@ async def main() -> None:
                 )
                 # await DisplayMsg.show(Message.SYSTEM_EXIT())
                 # no messaging or events beyond this point
-                await asyncio.sleep(5)  # molli allow more time (5) for commentary chat
+                await asyncio.sleep(3)  # molli allow more time (5) for commentary chat
                 exit_pico(self.args.dgtpi, dev=event.dev)  # @todo make independant of remote eng
                 await self.final_exit_or_reboot_cleanups()
 
