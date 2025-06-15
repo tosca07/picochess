@@ -641,11 +641,14 @@ class UciEngine(object):
     ) -> None:
         """Go engine.
         parameter game will not change, it is deep copied"""
-        async with self.engine_lock:
-            limit: Limit = self.get_engine_limit(time_dict)
-            await self.analyser.play_move(
-                game, limit=limit, ponder=self.pondering, result_queue=result_queue, root_moves=root_moves
-            )
+        if self.engine:
+            async with self.engine_lock:
+                limit: Limit = self.get_engine_limit(time_dict)
+                await self.analyser.play_move(
+                    game, limit=limit, ponder=self.pondering, result_queue=result_queue, root_moves=root_moves
+                )
+        else:
+            logger.error("go called but no engine loaded")
 
     async def start_analysis(self, game: chess.Board, limit: Limit | None = None, multipv: int | None = None) -> bool:
         """start analyser - returns True if if it was already running
@@ -740,18 +743,24 @@ class UciEngine(object):
     async def newgame(self, game: Board, send_ucinewgame: bool = True):
         """Engine sometimes need this to setup internal values.
         parameter game will not change"""
-        self.analyser.newgame()  # chess lib signals ucinewgame in next call to engine
-        await self.analyser.update_game(game)  # both these lines causes analyser to stop nicely
-        await asyncio.sleep(0.3)  # wait for analyser to stop
-        # @todo we could wait for ping() isready here - but it could break pgn_engine logic
-        # do not self.engine.send_line("ucinewgame"), see read_pgn_file in picochess.py
-        # it will confuse the engine when switching between playing/non-playing modes
-        # but: issue #72 at least mame engines need ucinewgame to be sent
-        # we force it here and to avoid breaking read_pgn_file I added a default parameter
-        if send_ucinewgame:
-            # all calls except read_pgn_file newgame do this
-            logger.debug("sending ucinewgame to engine")
-            self.engine.send_line("ucinewgame")  # force ucinewgame to engine
+        if self.engine:
+            async with self.engine_lock:
+                # as seen in issue #78 need to prevent simultaneous newgame and start analysis
+                self.analyser.newgame()  # chess lib signals ucinewgame in next call to engine
+                await self.analyser.update_game(game)  # both these lines causes analyser to stop nicely
+                await asyncio.sleep(0.3)  # wait for analyser to stop
+                # @todo we could wait for ping() isready here - but it could break pgn_engine logic
+                # do not self.engine.send_line("ucinewgame"), see read_pgn_file in picochess.py
+                # it will confuse the engine when switching between playing/non-playing modes
+                # but: issue #72 at least mame engines need ucinewgame to be sent
+                # we force it here and to avoid breaking read_pgn_file I added a default parameter
+                # due to errors with readyok response crash issue #78 restrict to mame
+                if self.is_mame and send_ucinewgame:
+                    # most calls except read_pgn_file newgame, and load new engine
+                    logger.debug("sending ucinewgame to engine")
+                    self.engine.send_line("ucinewgame")  # force ucinewgame to engine
+        else:
+            logger.error("newgame requested but no engine loaded")
 
     def set_mode(self, ponder: bool = True):
         """Set engine ponder mode for a playing engine"""
