@@ -2426,11 +2426,11 @@ async def main() -> None:
                     l_pgn_file_name = "last_game.pgn"
                     await self.read_pgn_file(l_pgn_file_name)
 
-                elif False:
+                # elif False:
                     # issue #78 - this causes crash if user analyses on DGT eboard
                     #             and picochess misses one fen message (one fen skipped)
                     #             Temporary solution - avoid this elif and analyse this code
-                    # elif self.state.interaction_mode == Mode.PONDER and self.state.flag_flexible_ponder:
+                elif self.state.interaction_mode == Mode.PONDER and self.state.flag_flexible_ponder:
                     if (not self.state.newgame_happened) or self.state.flag_startup:
                         # molli: no error in analysis(ponder) mode => start new game with current fen
                         # and try to keep same player to play (white or black) but check
@@ -2448,8 +2448,8 @@ async def main() -> None:
                         bit_board.set_fen(bit_board.fen())
                         if bit_board.is_valid():
                             self.state.game = chess.Board(bit_board.fen())
-                            await self.stop_search_and_clock()
-                            await self.engine.newgame(self.state.game.copy())
+                            # await self.stop_search_and_clock()
+                            await self.engine.newgame(self.state.game.copy(), False)
                             self.state.done_computer_fen = None
                             self.state.done_move = self.state.pb_move = chess.Move.null()
                             self.state.searchmoves.reset()
@@ -2458,19 +2458,19 @@ async def main() -> None:
                             self.state.legal_fens_after_cmove = []
                             self.state.last_legal_fens = []
                             await DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION"))
-                            await self.set_wait_state(
-                                Message.START_NEW_GAME(game=self.state.game.copy(), newgame=False)
-                            )
-                            await self.stop_search_and_clock()
-                            await self.analyse()
+                            await asyncio.sleep(0.5)
+                            msg = Message.START_NEW_GAME(game=self.state.game.copy(), newgame=True)
+                            await DisplayMsg.show(msg)
+                            # await self.stop_search_and_clock()
+                            # await self.analyse()
                         else:
                             # ask python-chess to correct the castling string
                             bit_board = chess.Board(fen2)
                             bit_board.set_fen(bit_board.fen())
                             if bit_board.is_valid():
                                 self.state.game = chess.Board(bit_board.fen())
-                                await self.stop_search_and_clock()
-                                await self.engine.newgame(self.state.game.copy())
+                                # await self.stop_search_and_clock()
+                                await self.engine.newgame(self.state.game.copy(), False)
                                 self.state.done_computer_fen = None
                                 self.state.done_move = self.state.pb_move = chess.Move.null()
                                 self.state.searchmoves.reset()
@@ -2479,11 +2479,11 @@ async def main() -> None:
                                 self.state.legal_fens_after_cmove = []
                                 self.state.last_legal_fens = []
                                 await DisplayMsg.show(Message.SHOW_TEXT(text_string="NEW_POSITION"))
-                                await self.set_wait_state(
-                                    Message.START_NEW_GAME(game=self.state.game.copy(), newgame=False)
-                                )
-                                await self.stop_search_and_clock()
-                                await self.analyse()
+                                await asyncio.sleep(0.5)
+                                msg = Message.START_NEW_GAME(game=self.state.game.copy(), newgame=True)
+                                await DisplayMsg.show(msg)
+                                # await self.stop_search_and_clock()
+                                # await self.analyse()
                             else:
                                 logger.info("wrong fen %s for 4 secs", self.state.error_fen)
                                 await DisplayMsg.show(Message.WRONG_FEN())
