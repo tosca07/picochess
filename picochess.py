@@ -2426,7 +2426,11 @@ async def main() -> None:
                     l_pgn_file_name = "last_game.pgn"
                     await self.read_pgn_file(l_pgn_file_name)
 
-                elif self.state.interaction_mode == Mode.PONDER and self.state.flag_flexible_ponder:
+                elif False:
+                    # issue #78 - this causes crash if user analyses on DGT eboard
+                    #             and picochess misses one fen message (one fen skipped)
+                    #             Temporary solution - avoid this elif and analyse this code
+                    # elif self.state.interaction_mode == Mode.PONDER and self.state.flag_flexible_ponder:
                     if (not self.state.newgame_happened) or self.state.flag_startup:
                         # molli: no error in analysis(ponder) mode => start new game with current fen
                         # and try to keep same player to play (white or black) but check
