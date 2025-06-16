@@ -25,12 +25,13 @@ import copy
 import configparser
 import subprocess
 import asyncio
+import time
+from ctypes import cdll, c_int
 
 from subprocess import Popen, PIPE
 
 from dgt.translate import DgtTranslate
 from dgt.api import Dgt
-from ctypes import cdll
 
 from configobj import ConfigObj, ConfigObjError, DuplicateError  # type: ignore
 
@@ -295,8 +296,12 @@ def shutdown(dgtpi: bool, dev: str):
     if platform.system() == "Windows":
         os.system("shutdown /s")
     elif dgtpi:
-        dgt_functions = cdll.LoadLibrary("etc/aarch64/dgtpicom.so")
+        logging.debug("shutting down dgtpi system")
+        dgt_functions = cdll.LoadLibrary("etc/dgtpicom.so")
         dgt_functions.dgtpicom_off(1)
+        dgt_functions.dgtpicom_off.argtypes = [c_int]
+        dgt_functions.dgtpicom_off.restype = c_int
+        time.sleep(0.2)  # wait for dgtpicom to finish
         os.system("sudo shutdown -h now")
     else:
         os.system("sudo shutdown -h now")
