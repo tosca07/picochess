@@ -298,9 +298,10 @@ def shutdown(dgtpi: bool, dev: str):
     elif dgtpi:
         logging.debug("shutting down dgtpi system")
         dgt_functions = cdll.LoadLibrary("etc/dgtpicom.so")
-        dgt_functions.dgtpicom_off(1)
         dgt_functions.dgtpicom_off.argtypes = [c_int]
         dgt_functions.dgtpicom_off.restype = c_int
+        result = dgt_functions.dgtpicom_off(1)
+        logging.debug("dgtpicom_off returned %s", result)
         time.sleep(0.2)  # wait for dgtpicom to finish
         os.system("sudo shutdown -h now")
     else:
