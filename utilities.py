@@ -295,7 +295,7 @@ def shutdown(dgtpi: bool, dev: str):
     if platform.system() == "Windows":
         os.system("shutdown /s")
     elif dgtpi:
-        dgt_functions = cdll.LoadLibrary("etc/dgtpicom.so")
+        dgt_functions = cdll.LoadLibrary("etc/aarch64/dgtpicom.so")
         dgt_functions.dgtpicom_off(1)
         os.system("sudo shutdown -h now")
     else:
