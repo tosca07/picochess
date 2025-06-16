@@ -12,8 +12,8 @@ cp etc/dgtpi.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable dgtpi.service
 
-echo "giving communication rights so that hardwired clock can be used"
-setcap 'cap_net_bind_service,cap_sys_rawio,cap_dac_override+eip' /usr/bin/python3.11
+echo "no setcap rights used in this script, they are all in install-dgtpi-clock.sh"
+echo "setcap not needed as no system update done here"
 
 echo " ------- "
 echo "DGTPi clock installation complete. Please reboot"

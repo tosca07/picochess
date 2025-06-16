@@ -254,8 +254,9 @@ echo " ------- "
 echo "after each system update we need to rerun the cap_net rights"
 echo "giving bluetooth rights so that communication works to DGT board etc"
 setcap 'cap_net_raw,cap_net_admin+eip' /opt/picochess/venv/lib/python3.11/site-packages/bluepy/bluepy-helper
-echo "giving rights to python to use port 80 and to shutdown and reboot"
-setcap 'cap_sys_boot,cap_net_bind_service+eip' $(readlink -f $(which python3))
+
+echo "giving rights to python to use port 80, reboot/shutdown, and access serial devices"
+setcap 'cap_sys_boot,cap_net_bind_service,cap_sys_rawio,cap_dac_override+eip' $(readlink -f $(which python3))
 
 echo " ------- "
 echo "Picochess installation complete. Please reboot"
