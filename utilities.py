@@ -298,16 +298,16 @@ def shutdown(dgtpi: bool, dev: str):
     elif dgtpi:
         logging.debug("shutting down dgtpi system")
         dgt_functions = cdll.LoadLibrary("etc/dgtpicom.so")
-        time.sleep(0.3)  # wait before calling dgtpicom_off
         dgt_functions.dgtpicom_off.argtypes = [c_int]
         dgt_functions.dgtpicom_off.restype = c_int
         result = dgt_functions.dgtpicom_off(1)
         logging.debug("dgtpicom_off returned %s", result)
         if result != 0:
-            time.sleep(0.3)  # wait and try again
+            logging.debug("dgtpicom_off failed during shutdown, resetting the dgtpi clock")
+            dgt_functions.dgtpicom_stop()
+            dgt_functions.lib.dgtpicom_init()
             result = dgt_functions.dgtpicom_off(1)
             logging.debug("dgtpicom_off 2nd try returned %s", result)
-        time.sleep(0.3)  # wait before calling shutdown
         os.system("sudo shutdown -h now")
     else:
         os.system("sudo shutdown -h now")
