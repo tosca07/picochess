@@ -296,22 +296,44 @@ def shutdown(dgtpi: bool, dev: str):
     if platform.system() == "Windows":
         os.system("shutdown /s")
     elif dgtpi:
-        logging.debug("shutting down dgtpi system")
-        dgt_functions = cdll.LoadLibrary("etc/dgtpicom.so")
-        dgt_functions.dgtpicom_off.argtypes = [c_int]
-        dgt_functions.dgtpicom_off.restype = c_int
-        result = dgt_functions.dgtpicom_off(1)
-        logging.debug("dgtpicom_off returned %s", result)
-        if result != 0:
-            logging.debug("dgtpicom_off failed during shutdown, resetting the dgtpi clock")
-            dgt_functions.dgtpicom_stop()
-            dgt_functions.lib.dgtpicom_init()
-            result = dgt_functions.dgtpicom_off(1)
-            logging.debug("dgtpicom_off 2nd try returned %s", result)
+        shutdown_dgtpi()
         os.system("sudo shutdown -h now")
     else:
         os.system("sudo shutdown -h now")
 
+def shutdown_dgtpi():
+    """Shutdown and close communication to DGTPI, clearing the clock screen."""
+    logging.debug("shutting down dgtpi system")
+    try:
+        dgt_functions = cdll.LoadLibrary("etc/dgtpicom.so")
+
+        # Set function prototypes
+        dgt_functions.dgtpicom_init.restype = c_int
+        dgt_functions.dgtpicom_configure.restype = c_int
+        dgt_functions.dgtpicom_off.argtypes = [c_int]
+        dgt_functions.dgtpicom_off.restype = c_int
+        dgt_functions.dgtpicom_stop.restype = None
+
+        # Init and configure
+        if dgt_functions.dgtpicom_init() < 0:
+            logging.debug("dgtpicom_init failed in shutdown")
+        if dgt_functions.dgtpicom_configure() < 0:
+            logging.debug("dgtpicom_configure may have failed in shutdown")
+
+        time.sleep(0.2)  # allow clock to settle
+        max_retries = 3
+        for attempt in range(max_retries):
+            result = dgt_functions.dgtpicom_off(1)
+            if result == 0:
+                logging.debug("dgtpicom succesfully closed on attempt %d", attempt + 1)
+                break
+            else:
+                logging.debug("dgtpicom_off attempt %d failed with return code %s", attempt + 1, result)
+            time.sleep(0.2)
+        dgt_functions.dgtpicom_stop()
+        time.sleep(0.2)
+    except Exception as e:
+        logging.error("Exception during shutdown_dgtpi: %s", e)
 
 def exit_pico(dgtpi: bool, dev: str):
     """exit picochess."""
@@ -321,10 +343,9 @@ def exit_pico(dgtpi: bool, dev: str):
         os.system("sudo pkill -f chromium")
         os.system("sudo systemctl stop picochess")
     elif dgtpi:
-        dgt_functions = cdll.LoadLibrary("etc/dgtpicom.so")
-        dgt_functions.dgtpicom_off(1)
+        shutdown_dgtpi()
         os.system("sudo pkill -f chromium")
-        os.system("sudo systemctl stop dgpi")
+        os.system("sudo systemctl stop dgtpi")
     elif platform.machine() != "x86_64":
         # on Debian Linux laptops we dont want to stop chromium
         # on Pi systems we have kiosk mode, so we kill chromium
