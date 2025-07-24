@@ -174,6 +174,7 @@ class PicochessState:
         self.flag_last_engine_emu = False
         self.flag_last_engine_online = False
         self.flag_last_engine_pgn = False
+        self.flag_last_pico_timectrl = False ## molli: pico_node etc. for lc0
         self.flag_picotutor = True
         self.flag_pgn_game_over = False
         self.flag_premove = False
@@ -451,11 +452,8 @@ def log_pgn(state: PicochessState):
 
 
 def read_pgn_info():
-    return read_pgn_info_from_file("/opt/picochess/engines/aarch64/extra/pgn_game_info.txt")
-
-
-def read_pgn_info_from_file(pgn_info_path):
     info = {}
+    pgn_info_path = "/opt/picochess/engines/aarch64/extra/pgn_game_info.txt"
     try:
         with open(pgn_info_path) as info_file:
             for line in info_file:
@@ -648,48 +646,51 @@ def main() -> None:
         state.stop_clock()
         DisplayMsg.show(Message.EXIT_MENU())
 
-    def set_emulation_tctrl(state: PicochessState):
-        logger.debug("molli: set_emulation_tctrl")
-        if emulation_mode():
+    def set_add_timecontrol(state: PicochessState):
+        logger.debug("molli: set_add_timecontrol")
+        pico_depth = 0
+        pico_node = 0
+        pico_tctrl_str = ""
+
+        state.stop_clock()
+        state.time_control.stop_internal(log=False)
+
+        uci_options = engine.get_pgn_options()
+        pico_tctrl_str = ""
+
+        try:
+            if "PicoTimeControl" in uci_options:
+                pico_tctrl_str = str(uci_options["PicoTimeControl"])
+        except IndexError:
+            pico_tctrl_str = ""
+
+        try:
+            if "PicoDepth" in uci_options:
+                pico_depth = int(uci_options["PicoDepth"])
+        except IndexError:
             pico_depth = 0
+
+        try:
+            if "PicoNode" in uci_options:
+                pico_node = int(uci_options["PicoNode"])
+        except IndexError:
             pico_node = 0
-            pico_tctrl_str = ""
 
-            state.stop_clock()
-            state.time_control.stop_internal(log=False)
-
-            uci_options = engine.get_pgn_options()
-            pico_tctrl_str = ""
-
-            try:
-                if "PicoTimeControl" in uci_options:
-                    pico_tctrl_str = str(uci_options["PicoTimeControl"])
-            except IndexError:
-                pico_tctrl_str = ""
-
-            try:
-                if "PicoDepth" in uci_options:
-                    pico_depth = int(uci_options["PicoDepth"])
-            except IndexError:
-                pico_depth = 0
-
-            try:
-                if "PicoNode" in uci_options:
-                    pico_node = int(uci_options["PicoNode"])
-            except IndexError:
-                pico_node = 0
-
-            if pico_tctrl_str:
-                logger.debug("molli: set_emulation_tctrl input %s", pico_tctrl_str)
-                state.time_control, time_text = state.transfer_time(
-                    pico_tctrl_str.split(), depth=pico_depth, node=pico_node
-                )
-                tc_init = state.time_control.get_parameters()
-                text = state.dgttranslate.text("N00_oktime")
-                Observable.fire(
-                    Event.SET_TIME_CONTROL(tc_init=tc_init, time_text=text, show_ok=True)
-                )
-                state.stop_fen_timer()
+        if pico_tctrl_str or pico_depth or pico_node:
+            logger.debug("molli: set_add_timecontrol input %s", pico_tctrl_str)
+            state.flag_last_pico_timectrl = True
+            state.tc_init_last = state.time_control.get_parameters()
+            state.time_control, time_text = state.transfer_time(
+                pico_tctrl_str.split(), depth=pico_depth, node=pico_node
+            )
+            tc_init = state.time_control.get_parameters()
+            text = state.dgttranslate.text("N00_oktime")
+            Observable.fire(
+                Event.SET_TIME_CONTROL(tc_init=tc_init, time_text=text, show_ok=True)
+            )
+            state.stop_fen_timer()
+        else:
+            state.flag_last_pico_timectrl = False
 
     def set_fen_from_pgn(pgn_fen, state: PicochessState):
         bit_board = chess.Board(pgn_fen)
@@ -2623,6 +2624,9 @@ def main() -> None:
         engine.newgame(state.game.copy())
 
     DisplayMsg.show(Message.PICOCOMMENT(picocomment="ok"))
+    
+    ## molli: additional time control options via uci (like nodes for lc0)
+    set_add_timecontrol(state)
 
     state.comment_file = get_comment_file()
     state.picotutor = PicoTutor(
@@ -2995,7 +2999,7 @@ def main() -> None:
                 else:
                     # molli restore last saved timecontrol
                     if (
-                        (state.flag_last_engine_pgn or state.flag_last_engine_emu)
+                        (state.flag_last_engine_pgn or state.flag_last_engine_emu or state.flag_last_pico_timectrl)
                         and state.tc_init_last is not None
                         and not online_mode()
                         and not emulation_mode()
@@ -3010,6 +3014,7 @@ def main() -> None:
                         )
                         state.stop_clock()
                         DisplayMsg.show(Message.EXIT_MENU())
+                    
                     state.flag_last_engine_pgn = False
                     state.flag_last_engine_emu = False
                     state.tc_init_last = None
@@ -3019,8 +3024,8 @@ def main() -> None:
                 )  # for picotutor game comments like Boris & Sargon
                 state.picotutor.init_comments(state.comment_file)
 
-                if emulation_mode():
-                    set_emulation_tctrl(state)
+                ## molli: additional time control options via uci (like nodes for lc0)
+                set_add_timecontrol(state)
 
                 if pgn_mode():
                     pgn_fen = ""
@@ -4294,7 +4299,7 @@ def main() -> None:
                     state.flag_picotutor = True
                 else:
                     state.flag_picotutor = False
-
+                    
                 DisplayMsg.show(Message.PICOWATCHER(picowatcher=event.picowatcher))
 
             elif isinstance(event, Event.PICOCOACH):
@@ -4348,7 +4353,7 @@ def main() -> None:
                         state.flag_picotutor = True
                     else:
                         state.flag_picotutor = False
-
+    
                 DisplayMsg.show(Message.PICOEXPLORER(picoexplorer=event.picoexplorer))
 
             elif isinstance(event, Event.RSPEED):
@@ -4588,7 +4593,7 @@ def main() -> None:
                 reboot(
                     args.dgtpi and uci_local_shell.get() is None, dev=event.dev
                 )  # @todo make independant of remote eng
-
+                
             elif isinstance(event, Event.EXIT):
                 stop_search()
                 state.stop_clock()
@@ -4602,7 +4607,7 @@ def main() -> None:
                         game=state.game.copy(),
                     )
                 )
-                # DisplayMsg.show(Message.SYSTEM_EXIT())
+                ##DisplayMsg.show(Message.SYSTEM_EXIT())
                 time.sleep(5)  # molli allow more time for commentary chat
                 exit(
                     args.dgtpi, dev=event.dev

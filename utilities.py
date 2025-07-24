@@ -32,7 +32,7 @@ from subprocess import Popen, PIPE
 
 from dgt.translate import DgtTranslate
 from dgt.api import Dgt
-from ctypes import cdll
+from ctypes import cdll, c_int
 
 from configobj import ConfigObj, ConfigObjError, DuplicateError  # type: ignore
 
@@ -236,44 +236,75 @@ def update_picochess(dgtpi: bool, auto_reboot: bool, dgttranslate: DgtTranslate)
 
 def shutdown(dgtpi: bool, dev: str):
     """Shutdown picochess."""
-    logging.debug('shutting down system requested by (%s)', dev)
+    logging.debug("shutting down system requested by (%s)", dev)
 
-    time.sleep(5)  # give some time to send out the pgn file or speak the event
-    if platform.system() == 'Windows':
-        os.system('shutdown /s')
+    if platform.system() == "Windows":
+        os.system("shutdown /s")
     elif dgtpi:
-        dgt_functions = cdll.LoadLibrary('etc/dgtpicom.so')
-        dgt_functions.dgtpicom_off(1)
-        os.system('sudo shutdown -h now')
-        time.sleep(5)
+        shutdown_dgtpi()
+        os.system("sudo shutdown -h now")
     else:
-        os.system('sudo shutdown -h now')
+        os.system("sudo shutdown -h now")
 
+def shutdown_dgtpi():
+    """Shutdown and close communication to DGTPI, clearing the clock screen."""
+    logging.debug("shutting down dgtpi system")
+    try:
+        dgt_functions = cdll.LoadLibrary("etc/dgtpicom.so")
+
+        # Set function prototypes
+        dgt_functions.dgtpicom_init.restype = c_int
+        dgt_functions.dgtpicom_configure.restype = c_int
+        dgt_functions.dgtpicom_off.argtypes = [c_int]
+        dgt_functions.dgtpicom_off.restype = c_int
+        dgt_functions.dgtpicom_stop.restype = None
+
+        # Init and configure
+        if dgt_functions.dgtpicom_init() < 0:
+            logging.debug("dgtpicom_init failed in shutdown")
+        if dgt_functions.dgtpicom_configure() < 0:
+            logging.debug("dgtpicom_configure may have failed in shutdown")
+
+        time.sleep(0.2)  # allow clock to settle
+        max_retries = 3
+        for attempt in range(max_retries):
+            result = dgt_functions.dgtpicom_off(1)
+            if result == 0:
+                logging.debug("dgtpicom succesfully closed on attempt %d", attempt + 1)
+                break
+            else:
+                logging.debug("dgtpicom_off attempt %d failed with return code %s", attempt + 1, result)
+            time.sleep(0.2)
+        dgt_functions.dgtpicom_stop()
+        time.sleep(0.2)
+    except Exception as e:
+        logging.error("Exception during shutdown_dgtpi: %s", e)
 
 def exit(dgtpi: bool, dev: str):
     """exit picochess."""
-    logging.debug('exit picochess requested by (%s)', dev)
+    logging.debug("exit picochess requested by (%s)", dev)
 
-    time.sleep(5)  # give some time to send out the pgn file or speak the event
-    if platform.system() == 'Windows':
-        os.system('sudo pkill -f chromium')
-        os.system('sudo systemctl stop picochess')
+    if platform.system() == "Windows":
+        os.system("sudo pkill -f chromium")
+        os.system("sudo systemctl stop picochess")
     elif dgtpi:
-        dgt_functions = cdll.LoadLibrary('etc/dgtpicom.so')
-        dgt_functions.dgtpicom_off(1)
-        os.system('sudo pkill -f chromium')
-        os.system('sudo systemctl stop dgpi')
-        os.system('sudo systemctl stop picochess')
-        time.sleep(5)
+        shutdown_dgtpi()
+        os.system("sudo pkill -f chromium")
+        os.system("sudo systemctl stop dgtpi")
+    elif platform.machine() != "x86_64":
+        # on Debian Linux laptops we dont want to stop chromium
+        # on Pi systems we have kiosk mode, so we kill chromium
+        # @todo should perhaps have a check for kiosk mode here
+        os.system("sudo pkill -f chromium")
+        os.system("sudo systemctl stop picochess")
     else:
-        os.system('sudo pkill -f chromium')
-        os.system('sudo systemctl stop picochess')
+        os.system("sudo pkill -f chromium")
 
 
 def reboot(dgtpi: bool, dev: str):
     """Reboot picochess."""
     logging.debug('rebooting system requested by (%s)', dev)
-
+    
     time.sleep(5)  # give some time to send out the pgn file or speak the event
     if platform.system() == 'Windows':
         os.system('shutdown /r')
