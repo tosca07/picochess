@@ -2642,9 +2642,7 @@ def main() -> None:
 
     if emulation_mode():
         state.flag_last_engine_emu = True
-        time_control_l, time_text_l = state.transfer_time(state.pico_time.split(), depth=0, node=0)
-        state.tc_init_last = time_control_l.get_parameters()
-
+        
     if pgn_mode():
         ModeInfo.set_pgn_mode(mode=True)
         state.flag_last_engine_pgn = True
@@ -3023,40 +3021,41 @@ def main() -> None:
                     write_picochess_ini("engine-level", state.engine_level)
 
                 if pgn_mode():
-                    if not state.flag_last_engine_pgn:
-                        state.tc_init_last = state.time_control.get_parameters()
+                   ## if not state.flag_last_engine_pgn:
+                        ##state.tc_init_last = state.time_control.get_parameters()
 
                     det_pgn_guess_tctrl(state)
-
                     state.flag_last_engine_pgn = True
-                elif emulation_mode():
-                    if not state.flag_last_engine_emu:
-                        state.tc_init_last = state.time_control.get_parameters()
+                else:
+                    state.flag_last_engine_pgn = False
+                    
+                if emulation_mode():
+                    ##if not state.flag_last_engine_emu:
+                    ##state.tc_init_last = state.time_control.get_parameters()
                     state.flag_last_engine_emu = True
                 else:
-                    # molli restore last saved timecontrol
-                    if (
-                        (state.flag_last_engine_pgn or state.flag_last_engine_emu or state.flag_last_pico_timectrl)
-                        and state.tc_init_last is not None
-                        and not online_mode()
-                        and not emulation_mode()
-                        and not pgn_mode()
-                        and not check_pico_par(state)
-                    ):
-                        logger.debug("lc0: Reset of last_init_tctrl")
-                        logger.debug("lc0: tc_init_last:= %s", state.tc_init_last)
-                        state.stop_clock()
-                        text = state.dgttranslate.text("N00_oktime")
-                        Observable.fire(
-                            Event.SET_TIME_CONTROL(
-                                tc_init=state.tc_init_last, time_text=text, show_ok=True
-                            )
-                        )
-                        state.stop_clock()
-                        DisplayMsg.show(Message.EXIT_MENU())
-                    
-                    state.flag_last_engine_pgn = False
                     state.flag_last_engine_emu = False
+                
+                # molli restore last saved timecontrol
+                if (
+                    (state.flag_last_engine_pgn or state.flag_last_engine_emu or state.flag_last_pico_timectrl)
+                    and state.tc_init_last is not None
+                    and not online_mode()
+                    and not emulation_mode()
+                    and not pgn_mode()
+                    and not check_pico_par(state)
+                ):
+                    logger.debug("lc0: Reset of last_init_tctrl")
+                    logger.debug("lc0: tc_init_last:= %s", state.tc_init_last)
+                    state.stop_clock()
+                    text = state.dgttranslate.text("N00_oktime")
+                    Observable.fire(
+                        Event.SET_TIME_CONTROL(
+                            tc_init=state.tc_init_last, time_text=text, show_ok=True
+                        )
+                    )
+                    state.stop_clock()
+                    DisplayMsg.show(Message.EXIT_MENU())
 
                 state.comment_file = (
                     get_comment_file()
