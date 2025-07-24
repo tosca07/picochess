@@ -212,6 +212,7 @@ class PicochessState:
         self.last_error_fen = ""
         self.artwork_in_use = False
         self.delay_fen_error = 4
+        self.pico_time = ""
 
     @property
     def picotutor(self) -> PicoTutor:
@@ -645,9 +646,33 @@ def main() -> None:
         Observable.fire(Event.SET_TIME_CONTROL(tc_init=tc_init, time_text=text, show_ok=True))
         state.stop_clock()
         DisplayMsg.show(Message.EXIT_MENU())
+        
+    def check_pico_par(state: PicochessState):
+        pico_par = False
+        uci_options = engine.get_pgn_options()
+        
+        try:
+            if "PicoTimeControl" in uci_options:
+                pico_par = True
+        except IndexError:
+            pico_par = False
+
+        try:
+            if "PicoDepth" in uci_options:
+                pico_par = True
+        except IndexError:
+            pico_par = False
+
+        try:
+            if "PicoNode" in uci_options:
+                pico_par = True
+        except IndexError:
+            pico_par = False
+            
+        return pico_par
 
     def set_add_timecontrol(state: PicochessState):
-        logger.debug("molli: set_add_timecontrol")
+        logger.debug("lc0: set_add_timecontrol start")
         pico_depth = 0
         pico_node = 0
         pico_tctrl_str = ""
@@ -677,12 +702,24 @@ def main() -> None:
             pico_node = 0
 
         if pico_tctrl_str or pico_depth or pico_node:
-            logger.debug("molli: set_add_timecontrol input %s", pico_tctrl_str)
-            state.flag_last_pico_timectrl = True
-            state.tc_init_last = state.time_control.get_parameters()
-            state.time_control, time_text = state.transfer_time(
-                pico_tctrl_str.split(), depth=pico_depth, node=pico_node
+            logger.debug(
+                "molli: set_add_timecontrol input tctrl=%s node=%s depth=%s",
+                pico_tctrl_str, pico_node, pico_depth
             )
+            if state.flag_startup or state.flag_last_pico_timectrl:
+                logger.debug("lc0: keep current last tctrl")
+                ##time_control_l, time_text_l = state.transfer_time(state.pico_time.split(), depth=0, node=0)
+                ##state.tc_init_last = state.time_control.get_parameters()
+                logger.debug("lc0: tc_init_last= %s", state.tc_init_last)
+            else:
+                logger.debug("molli: setcurrent tcrtl as last tcrl")
+                state.tc_init_last = state.time_control.get_parameters()
+                logger.debug("lc0: tc_init_last= %s", state.tc_init_last)
+                
+            state.time_control, time_text = state.transfer_time(
+                pico_tctrl_str.split(), depth=pico_depth, node=pico_node)
+
+            state.flag_last_pico_timectrl = True
             tc_init = state.time_control.get_parameters()
             text = state.dgttranslate.text("N00_oktime")
             Observable.fire(
@@ -691,6 +728,7 @@ def main() -> None:
             state.stop_fen_timer()
         else:
             state.flag_last_pico_timectrl = False
+        logger.debug("lc0: set_add_timecontrol end")
 
     def set_fen_from_pgn(pgn_fen, state: PicochessState):
         bit_board = chess.Board(pgn_fen)
@@ -2602,11 +2640,11 @@ def main() -> None:
     update_elo_display(state)
 
     # set timecontrol restore data set for normal engines after leaving emulation mode
-    pico_time = args.def_timectrl
+    state.pico_time = args.def_timectrl
 
     if emulation_mode():
         state.flag_last_engine_emu = True
-        time_control_l, time_text_l = state.transfer_time(pico_time.split(), depth=0, node=0)
+        time_control_l, time_text_l = state.transfer_time(state.pico_time.split(), depth=0, node=0)
         state.tc_init_last = time_control_l.get_parameters()
 
     if pgn_mode():
@@ -2626,6 +2664,7 @@ def main() -> None:
     DisplayMsg.show(Message.PICOCOMMENT(picocomment="ok"))
     
     ## molli: additional time control options via uci (like nodes for lc0)
+    logger.debug("lc0: set_add_timecontrol after startup")
     set_add_timecontrol(state)
 
     state.comment_file = get_comment_file()
@@ -3004,7 +3043,10 @@ def main() -> None:
                         and not online_mode()
                         and not emulation_mode()
                         and not pgn_mode()
+                        and not check_pico_par(state)
                     ):
+                        logger.debug("lc0: Reset of last_init_tctrl")
+                        logger.debug("lc0: tc_init_last:= %s", state.tc_init_last)
                         state.stop_clock()
                         text = state.dgttranslate.text("N00_oktime")
                         Observable.fire(
@@ -3017,7 +3059,6 @@ def main() -> None:
                     
                     state.flag_last_engine_pgn = False
                     state.flag_last_engine_emu = False
-                    state.tc_init_last = None
 
                 state.comment_file = (
                     get_comment_file()
@@ -3025,6 +3066,7 @@ def main() -> None:
                 state.picotutor.init_comments(state.comment_file)
 
                 ## molli: additional time control options via uci (like nodes for lc0)
+                logger.debug("lc0: Aufruf set add_timecontrol Nach neuer engine")
                 set_add_timecontrol(state)
 
                 if pgn_mode():
@@ -3070,7 +3112,7 @@ def main() -> None:
                     Observable.fire(Event.NEW_GAME(pos960=pos960))
                 else:
                     ModeInfo.set_pgn_mode(mode=False)
-
+              
                 update_elo_display(state)
 
             elif isinstance(event, Event.SETUP_POSITION):
