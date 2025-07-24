@@ -708,8 +708,6 @@ def main() -> None:
             )
             if state.flag_startup or state.flag_last_pico_timectrl:
                 logger.debug("lc0: keep current last tctrl")
-                ##time_control_l, time_text_l = state.transfer_time(state.pico_time.split(), depth=0, node=0)
-                ##state.tc_init_last = state.time_control.get_parameters()
                 logger.debug("lc0: tc_init_last= %s", state.tc_init_last)
             else:
                 logger.debug("molli: setcurrent tcrtl as last tcrl")
