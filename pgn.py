@@ -26,7 +26,6 @@ import mimetypes
 import requests
 import chess  # type: ignore
 import chess.pgn  # type: ignore
-import subprocess
 
 from email import encoders
 from email.mime.multipart import MIMEMultipart
