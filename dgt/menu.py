@@ -629,24 +629,24 @@ class DgtMenu(object):
             TimeControl(TimeMode.FISCHER, blitz=90, fischer=30, moves_to_go=40, blitz2=60),
         ]
         self.tc_depths = [
-            TimeControl(TimeMode.FIXED, fixed=900, depth=1),
-            TimeControl(TimeMode.FIXED, fixed=900, depth=2),
-            TimeControl(TimeMode.FIXED, fixed=900, depth=3),
-            TimeControl(TimeMode.FIXED, fixed=900, depth=4),
-            TimeControl(TimeMode.FIXED, fixed=900, depth=10),
-            TimeControl(TimeMode.FIXED, fixed=900, depth=15),
-            TimeControl(TimeMode.FIXED, fixed=900, depth=20),
-            TimeControl(TimeMode.FIXED, fixed=900, depth=25),
+            TimeControl(TimeMode.FIXED, fixed=671, depth=1),
+            TimeControl(TimeMode.FIXED, fixed=671, depth=2),
+            TimeControl(TimeMode.FIXED, fixed=671, depth=3),
+            TimeControl(TimeMode.FIXED, fixed=671, depth=4),
+            TimeControl(TimeMode.FIXED, fixed=671, depth=10),
+            TimeControl(TimeMode.FIXED, fixed=671, depth=15),
+            TimeControl(TimeMode.FIXED, fixed=671, depth=20),
+            TimeControl(TimeMode.FIXED, fixed=671, depth=25),
         ]
         self.tc_nodes = [
-            TimeControl(TimeMode.FIXED, fixed=900, node=1),
-            TimeControl(TimeMode.FIXED, fixed=900, node=5),
-            TimeControl(TimeMode.FIXED, fixed=900, node=10),
-            TimeControl(TimeMode.FIXED, fixed=900, node=25),
-            TimeControl(TimeMode.FIXED, fixed=900, node=50),
-            TimeControl(TimeMode.FIXED, fixed=900, node=100),
-            TimeControl(TimeMode.FIXED, fixed=900, node=250),
-            TimeControl(TimeMode.FIXED, fixed=900, node=500),
+            TimeControl(TimeMode.FIXED, fixed=671, node=1),
+            TimeControl(TimeMode.FIXED, fixed=671, node=5),
+            TimeControl(TimeMode.FIXED, fixed=671, node=10),
+            TimeControl(TimeMode.FIXED, fixed=671, node=25),
+            TimeControl(TimeMode.FIXED, fixed=671, node=50),
+            TimeControl(TimeMode.FIXED, fixed=671, node=100),
+            TimeControl(TimeMode.FIXED, fixed=671, node=250),
+            TimeControl(TimeMode.FIXED, fixed=671, node=500),
         ]
 
         # setup the result vars for api (dgtdisplay)
@@ -1542,7 +1542,7 @@ class DgtMenu(object):
         self.state = MenuState.SYS_POWER_RESTART
         text = self.dgttranslate.text(self.menu_system_power.value)
         return text
-
+        
     def enter_sys_power_exit_menu(self):
         """Set the menu state."""
         self.state = MenuState.SYS_POWER_EXIT
@@ -2869,7 +2869,7 @@ class DgtMenu(object):
         elif self.state == MenuState.SYS_POWER_RESTART:
             text = self.dgttranslate.text("B10_power_restart_menu")
             self._fire_event(Event.REBOOT(dev="menu"))
-
+            
         elif self.state == MenuState.SYS_POWER_EXIT:
             text = self.dgttranslate.text("B10_power_exit_menu")
             self._fire_event(Event.EXIT(dev="menu"))
@@ -3610,7 +3610,7 @@ class DgtMenu(object):
             self.state = MenuState.SYS_POWER_EXIT
             self.menu_system_power = PowerLoop.prev(self.menu_system_power)
             text = self.dgttranslate.text(self.menu_system_power.value)
-
+            
         elif self.state == MenuState.SYS_POWER_EXIT:
             self.state = MenuState.SYS_POWER_SHUT_DOWN
             self.menu_system_power = PowerLoop.prev(self.menu_system_power)
@@ -4273,7 +4273,7 @@ class DgtMenu(object):
             self.state = MenuState.SYS_POWER_SHUT_DOWN
             self.menu_system_power = PowerLoop.next(self.menu_system_power)
             text = self.dgttranslate.text(self.menu_system_power.value)
-
+            
         elif self.state == MenuState.SYS_POWER_EXIT:
             self.state = MenuState.SYS_POWER_RESTART
             self.menu_system_power = PowerLoop.next(self.menu_system_power)
