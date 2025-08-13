@@ -84,7 +84,7 @@ class Configuration:
             "--node",
             type=int,
             default=0,
-            choices=range(0, 99),
+            choices=range(0, 1000),
             help="search nodes per move for the engine",
         )
         self.parser.add_argument(
