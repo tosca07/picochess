@@ -677,9 +677,6 @@ def main() -> None:
         pico_node = 0
         pico_tctrl_str = ""
 
-        state.stop_clock()
-        state.time_control.stop_internal(log=False)
-
         uci_options = engine.get_pgn_options()
         pico_tctrl_str = ""
 
@@ -701,29 +698,45 @@ def main() -> None:
         except IndexError:
             pico_node = 0
 
-        if pico_tctrl_str or pico_depth or pico_node:
+        if pico_tctrl_str:
             logger.debug(
-                "molli: set_add_timecontrol input tctrl=%s node=%s depth=%s",
-                pico_tctrl_str, pico_node, pico_depth
+                "molli: set_add_timecontrol input tctrl=%s", pico_tctrl_str
             )
+            state.stop_clock()
+            state.time_control.stop_internal(log=False)
             if state.flag_startup or state.flag_last_pico_timectrl:
                 logger.debug("lc0: keep current last tctrl")
                 logger.debug("lc0: tc_init_last= %s", state.tc_init_last)
             else:
                 logger.debug("molli: setcurrent tcrtl as last tcrl")
+                state.time_control.reset()
                 state.tc_init_last = state.time_control.get_parameters()
                 logger.debug("lc0: tc_init_last= %s", state.tc_init_last)
                 
+            state.flag_last_pico_timectrl = True
             state.time_control, time_text = state.transfer_time(
                 pico_tctrl_str.split(), depth=pico_depth, node=pico_node)
-
-            state.flag_last_pico_timectrl = True
-            tc_init = state.time_control.get_parameters()
-            text = state.dgttranslate.text("N00_oktime")
-            Observable.fire(
-                Event.SET_TIME_CONTROL(tc_init=tc_init, time_text=text, show_ok=True)
+                
+            state.start_clock()
+            state.stop_clock()
+            state.time_control.reset()
+            
+        elif pico_depth or pico_node:
+            logger.debug(
+                "molli: set_add_timecontrol  node=%s depth=%s", pico_node, pico_depth
             )
-            state.stop_fen_timer()
+            if state.flag_startup or not state.flag_last_pico_timectrl:
+                logger.debug("lc0: keep current last tctrl")
+                logger.debug("lc0: tc_init_last= %s", state.tc_init_last)
+                state.flag_last_pico_timectrl = True
+            else:
+                logger.debug("molli: setcurrent tcrtl as last tctrl")
+                state.time_control.reset()
+                state.tc_init_last = state.time_control.get_parameters()
+                logger.debug("lc0: tc_init_last= %s", state.tc_init_last)
+                state.flag_last_pico_timectrl = True
+            state.time_control.node = pico_node
+            state.time_control.depth = pico_depth
         else:
             state.flag_last_pico_timectrl = False
         logger.debug("lc0: set_add_timecontrol end")
@@ -2413,6 +2426,7 @@ def main() -> None:
     state.time_control, time_text = state.transfer_time(
         args.time.split(), depth=args.depth, node=args.node
     )
+    
     state.tc_init_last = state.time_control.get_parameters()
     time_text.beep = False
 
@@ -3037,16 +3051,18 @@ def main() -> None:
                     state.flag_last_engine_emu = False
                 
                 # molli restore last saved timecontrol
+                logger.debug("molli: Check Restore of last_init_tctrl pgn= %s emu= %s last_pico= %s",
+                    state.flag_last_engine_pgn, state.flag_last_engine_emu, state.flag_last_pico_timectrl)
                 if (
                     (state.flag_last_engine_pgn or state.flag_last_engine_emu or state.flag_last_pico_timectrl)
-                    and state.tc_init_last is not None
+                    and state.tc_init_last
                     and not online_mode()
                     and not emulation_mode()
                     and not pgn_mode()
                     and not check_pico_par(state)
                 ):
-                    logger.debug("lc0: Reset of last_init_tctrl")
-                    logger.debug("lc0: tc_init_last:= %s", state.tc_init_last)
+                    logger.debug("Restore of last_init_tctrl")
+                    logger.debug("tc_init_last:= %s", state.tc_init_last)
                     state.stop_clock()
                     text = state.dgttranslate.text("N00_oktime")
                     Observable.fire(
@@ -3054,8 +3070,8 @@ def main() -> None:
                             tc_init=state.tc_init_last, time_text=text, show_ok=True
                         )
                     )
-                    state.stop_clock()
                     DisplayMsg.show(Message.EXIT_MENU())
+                    state.flag_last_pico_timectrl = False
 
                 state.comment_file = (
                     get_comment_file()
@@ -3110,6 +3126,7 @@ def main() -> None:
                 else:
                     ModeInfo.set_pgn_mode(mode=False)
               
+                start_fen_timer(state)
                 update_elo_display(state)
 
             elif isinstance(event, Event.SETUP_POSITION):
@@ -4477,8 +4494,10 @@ def main() -> None:
             elif isinstance(event, Event.SET_TIME_CONTROL):
                 state.time_control.stop_internal(log=False)
                 tc_init = event.tc_init
-
                 state.time_control = TimeControl(**tc_init)
+                
+                write_picochess_ini("node", "{:d}".format(0))
+                write_picochess_ini("depth", "{:d}".format(0))
 
                 if not pgn_mode() and not online_mode():
                     if tc_init["moves_to_go"] > 0:
@@ -4508,21 +4527,23 @@ def main() -> None:
                     elif state.time_control.mode == TimeMode.FIXED:
                         write_picochess_ini("time", "{:d}".format(tc_init["fixed"]))
 
-                    if state.time_control.depth > 0:
-                        write_picochess_ini("depth", "{:d}".format(tc_init["depth"]))
-                    else:
-                        write_picochess_ini("depth", "{:d}".format(0))
+                        if state.time_control.depth > 0 and state.time_control.move_time == 671:
+                            write_picochess_ini("depth", "{:d}".format(tc_init["depth"]))
+                        else:
+                            write_picochess_ini("depth", "{:d}".format(0))
 
-                    if state.time_control.node > 0:
-                        write_picochess_ini("node", "{:d}".format(tc_init["node"]))
-                    else:
-                        write_picochess_ini("node", "{:d}".format(0))
+                        if state.time_control.node > 0 and state.time_control.move_time == 671:
+                            write_picochess_ini("node", "{:d}".format(tc_init["node"]))
+                        else:
+                            write_picochess_ini("node", "{:d}".format(0))
 
                 text = Message.TIME_CONTROL(
                     time_text=event.time_text, show_ok=event.show_ok, tc_init=tc_init
                 )
                 DisplayMsg.show(text)
                 state.stop_fen_timer()
+                state.flag_last_pico_timectrl = False
+                state.tc_init_last = state.time_control.get_parameters()
 
             elif isinstance(event, Event.CLOCK_TIME):
                 if dgtdispatcher.is_prio_device(
