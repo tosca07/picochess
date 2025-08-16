@@ -703,20 +703,11 @@ def main() -> None:
                 "molli: set_add_timecontrol input tctrl=%s", pico_tctrl_str
             )
             state.stop_clock()
-            state.time_control.stop_internal(log=False)
-            if state.flag_startup or state.flag_last_pico_timectrl:
-                logger.debug("lc0: keep current last tctrl")
-                logger.debug("lc0: tc_init_last= %s", state.tc_init_last)
-            else:
-                logger.debug("molli: setcurrent tcrtl as last tcrl")
-                state.time_control.reset()
-                state.tc_init_last = state.time_control.get_parameters()
-                logger.debug("lc0: tc_init_last= %s", state.tc_init_last)
-                
             state.flag_last_pico_timectrl = True
+                          
             state.time_control, time_text = state.transfer_time(
                 pico_tctrl_str.split(), depth=pico_depth, node=pico_node)
-                
+    
             state.start_clock()
             state.stop_clock()
             state.time_control.reset()
@@ -725,21 +716,13 @@ def main() -> None:
             logger.debug(
                 "molli: set_add_timecontrol  node=%s depth=%s", pico_node, pico_depth
             )
-            if state.flag_startup or not state.flag_last_pico_timectrl:
-                logger.debug("lc0: keep current last tctrl")
-                logger.debug("lc0: tc_init_last= %s", state.tc_init_last)
-                state.flag_last_pico_timectrl = True
-            else:
-                logger.debug("molli: setcurrent tcrtl as last tctrl")
-                state.time_control.reset()
-                state.tc_init_last = state.time_control.get_parameters()
-                logger.debug("lc0: tc_init_last= %s", state.tc_init_last)
-                state.flag_last_pico_timectrl = True
-            state.time_control.node = pico_node
-            state.time_control.depth = pico_depth
+            state.stop_clock()
+            state.flag_last_pico_timectrl = True
+            state.time_control.uci_depth = pico_depth
+            state.time_control.uci_node = pico_node
         else:
             state.flag_last_pico_timectrl = False
-        logger.debug("lc0: set_add_timecontrol end")
+        logger.debug("lc0: _timecontrol end")
 
     def set_fen_from_pgn(pgn_fen, state: PicochessState):
         bit_board = chess.Board(pgn_fen)
@@ -3063,13 +3046,20 @@ def main() -> None:
                 ):
                     logger.debug("Restore of last_init_tctrl")
                     logger.debug("tc_init_last:= %s", state.tc_init_last)
-                    state.stop_clock()
-                    text = state.dgttranslate.text("N00_oktime")
-                    Observable.fire(
-                        Event.SET_TIME_CONTROL(
-                            tc_init=state.tc_init_last, time_text=text, show_ok=True
+                    
+                    if state.flag_last_pico_timectrl and (state.time_control.uci_depth > 0 or state.time_control.uci_node > 0):
+                    # uci depth/node must be reset when not set manual
+                        state.stop_clock()
+                        state.time_control.uci_depth = 0
+                        state.time_control.uci_node = 0
+                    else:
+                        state.stop_clock()
+                        text = state.dgttranslate.text("N00_oktime")
+                        Observable.fire(
+                            Event.SET_TIME_CONTROL(
+                                tc_init=state.tc_init_last, time_text=text, show_ok=True
+                            )
                         )
-                    )
                     DisplayMsg.show(Message.EXIT_MENU())
                     state.flag_last_pico_timectrl = False
 
@@ -4493,6 +4483,7 @@ def main() -> None:
 
             elif isinstance(event, Event.SET_TIME_CONTROL):
                 state.time_control.stop_internal(log=False)
+                
                 tc_init = event.tc_init
                 state.time_control = TimeControl(**tc_init)
                 
@@ -4543,7 +4534,6 @@ def main() -> None:
                 DisplayMsg.show(text)
                 state.stop_fen_timer()
                 state.flag_last_pico_timectrl = False
-                state.tc_init_last = state.time_control.get_parameters()
 
             elif isinstance(event, Event.CLOCK_TIME):
                 if dgtdispatcher.is_prio_device(

@@ -46,6 +46,8 @@ class TimeControl(object):
         self.game_time2 = blitz2
         self.depth = depth
         self.node = node
+        self.uci_node = 0
+        self.uci_depth = 0
         self.internal_time = internal_time
 
         if depth > 0:
@@ -296,8 +298,12 @@ class TimeControl(object):
         uci_dict = {}
         if self.depth > 0:
             uci_dict['depth'] = str(self.depth)
+        elif self.uci_depth > 0:
+            uci_dict['depth'] = str(self.uci_depth)
         elif self.node > 0:
             uci_dict['nodes'] = str(self.node)
+        elif self.uci_node > 0:
+            uci_dict['nodes'] = str(self.uci_node)
         elif self.mode in (TimeMode.BLITZ, TimeMode.FISCHER):
             uci_dict['wtime'] = str(int(self.internal_time[chess.WHITE] * 1000))
             uci_dict['btime'] = str(int(self.internal_time[chess.BLACK] * 1000))
