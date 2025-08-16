@@ -39,7 +39,7 @@ from configobj import ConfigObj, ConfigObjError, DuplicateError  # type: ignore
 from typing import Optional
 
 # picochess version
-version = '3.3'
+version = '3.4'
 
 evt_queue: queue.Queue = queue.Queue()
 dispatch_queue: queue.Queue = queue.Queue()

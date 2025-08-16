@@ -296,14 +296,15 @@ class TimeControl(object):
     def uci(self):
         """Return remaining time for both players in an UCI dict."""
         uci_dict = {}
-        if self.depth > 0:
-            uci_dict['depth'] = str(self.depth)
-        elif self.uci_depth > 0:
+        if self.uci_depth > 0:
             uci_dict['depth'] = str(self.uci_depth)
-        elif self.node > 0:
-            uci_dict['nodes'] = str(self.node)
         elif self.uci_node > 0:
             uci_dict['nodes'] = str(self.uci_node)
+        elif self.depth > 0:
+            uci_dict['depth'] = str(self.depth)
+        elif self.node > 0:
+            uci_dict['nodes'] = str(self.node)
+            
         elif self.mode in (TimeMode.BLITZ, TimeMode.FISCHER):
             uci_dict['wtime'] = str(int(self.internal_time[chess.WHITE] * 1000))
             uci_dict['btime'] = str(int(self.internal_time[chess.BLACK] * 1000))
