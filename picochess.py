@@ -1612,6 +1612,7 @@ async def main() -> None:
                             self.state.best_move_posted = False
                         await self.state.picotutor.pop_last_move(self.state.game)
                         # just to be sure set fen pos.
+                        # @todo - check valid here - dont reset position if valid
                         await self.state.picotutor.set_position(self.state.game)
                         if self.state.play_mode == PlayMode.USER_BLACK:
                             await self.state.picotutor.set_user_color(chess.BLACK, not self.eng_plays())
@@ -1683,25 +1684,11 @@ async def main() -> None:
                 and not self.state.takeback_active
             ):
                 legal_moves = list(self.state.game.legal_moves)
-                computer_move = self.state.done_move
                 self.state.done_move = legal_moves[legal_fens_pico.index(fen)]
-                self.state.best_move_posted = False
-                self.state.best_move_displayed = None
-                if computer_move:
-                    await DisplayMsg.show(
-                        Message.COMPUTER_MOVE(
-                            move=computer_move,
-                            ponder=False,
-                            game=self.state.game.copy(),
-                            wait=False,
-                            is_user_move=False,
-                        )
-                    )
-                    await asyncio.sleep(3)
                 await DisplayMsg.show(
                     Message.ALTERNATIVE_MOVE(game=self.state.game.copy(), play_mode=self.state.play_mode)
                 )
-                await asyncio.sleep(3)
+                await asyncio.sleep(1.5)
                 if self.state.done_move:
                     await DisplayMsg.show(
                         Message.COMPUTER_MOVE(
@@ -1713,25 +1700,32 @@ async def main() -> None:
                         )
                     )
                     await asyncio.sleep(1.5)
-
                 await DisplayMsg.show(Message.COMPUTER_MOVE_DONE())
                 logger.info("user did a move for pico")
+                if self.state.best_move_posted and self.picotutor_mode():
+                    # issue 86 - user force alt direct move for pico - pop comp move
+                    valid = await self.state.picotutor.pop_last_move(self.state.game)
+                else:
+                    valid = True
+                # if valid is True tutor board and game are in sync (no comp move)
+                # now proceed and push the forced direct alt move to both
+                self.state.best_move_posted = False
+                self.state.best_move_displayed = None
                 self.state.game.push(self.state.done_move)
-                self.state.done_computer_fen = None
-                self.state.done_move = chess.Move.null()
-                game_end = self.state.check_game_state()
-                valid = True
                 if self.picotutor_mode():
-                    valid = await self.state.picotutor.is_same_board(self.state.game)
+                    if valid:
+                        valid = await self.state.picotutor.push_move(self.state.done_move, self.state.game)
                     if valid and self.always_run_tutor:
-                        self.state.picotutor.get_user_move_eval()  # eval engine move
+                        self.state.picotutor.get_user_move_eval()  # eval engine forced move
                     if not valid:
                         await self.state.picotutor.set_position(self.state.game)
                         if self.state.play_mode == PlayMode.USER_BLACK:
                             await self.state.picotutor.set_user_color(chess.BLACK, not self.eng_plays())
                         else:
                             await self.state.picotutor.set_user_color(chess.WHITE, not self.eng_plays())
-
+                self.state.done_computer_fen = None
+                self.state.done_move = chess.Move.null()
+                game_end = self.state.check_game_state()
                 if game_end:
                     self.state.legal_fens = []
                     self.state.legal_fens_after_cmove = []
@@ -2427,9 +2421,9 @@ async def main() -> None:
                     await self.read_pgn_file(l_pgn_file_name)
 
                 # elif False:
-                    # issue #78 - this causes crash if user analyses on DGT eboard
-                    #             and picochess misses one fen message (one fen skipped)
-                    #             Temporary solution - avoid this elif and analyse this code
+                # issue #78 - this causes crash if user analyses on DGT eboard
+                #             and picochess misses one fen message (one fen skipped)
+                #             Temporary solution - avoid this elif and analyse this code
                 elif self.state.interaction_mode == Mode.PONDER and self.state.flag_flexible_ponder:
                     if (not self.state.newgame_happened) or self.state.flag_startup:
                         # molli: no error in analysis(ponder) mode => start new game with current fen
