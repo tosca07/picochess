@@ -569,11 +569,9 @@ class DgtDisplay(DisplayMsg, threading.Thread):
         if bit_board.chess960_pos(ignore_castling=True):
             logger.debug("flipping the board - B infront")
             self.dgtmenu.set_position_reverse_flipboard(True)
-            print("reverse_flipboard!")
 
         if self.dgtmenu.get_flip_board() and raw:  # Flip the board if needed
             fen = fen[::-1]
-            print("inverted fen!")
 
         logger.debug("DGT-Fen [%s]", fen)
         if fen == self.dgtmenu.get_dgt_fen():
@@ -998,10 +996,7 @@ class DgtDisplay(DisplayMsg, threading.Thread):
 
         if timectrl.mode != TimeMode.FIXED and int(timectrl.moves_to_go_orig) > 0:
             l_timemode = TimeMode.TOURN
-        elif int(timectrl.depth) > 0:
-            l_timemode = TimeMode.DEPTH
-        elif int(timectrl.node) > 0:
-            l_timemode = TimeMode.NODE
+        
         else:
             l_timemode = timectrl.mode
 
