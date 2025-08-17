@@ -163,14 +163,14 @@ class PicochessState:
 
     def __init__(self, loop: asyncio.AbstractEventLoop):
         self.automatic_takeback = False
-        self.best_move_displayed = None
-        self.best_move_posted = False
+        self.best_move_displayed = None  # temporary copy of done_computer_fen? should be cleaned out
+        self.best_move_posted = False  # True when "extra" computer move already posted to Picotutor
         self.book_in_use = ""
         self.comment_file = ""
         self.dgtmenu = None
         self.dgttranslate = None
-        self.done_computer_fen = None
-        self.done_move = chess.Move.null()
+        self.done_computer_fen = None  # FEN of last done computer move when not yet pushed to game board
+        self.done_move = chess.Move.null()  # last done move by computer, not yet pushed to game board
         self.engine_file = ""
         self.engine_text = None
         self.engine_level = ""
