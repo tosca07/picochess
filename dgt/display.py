@@ -996,7 +996,10 @@ class DgtDisplay(DisplayMsg, threading.Thread):
 
         if timectrl.mode != TimeMode.FIXED and int(timectrl.moves_to_go_orig) > 0:
             l_timemode = TimeMode.TOURN
-        
+        elif int(timectrl.depth) > 0:
+            l_timemode = TimeMode.DEPTH
+        elif int(timectrl.node) > 0:
+            l_timemode = TimeMode.NODE
         else:
             l_timemode = timectrl.mode
 
