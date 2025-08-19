@@ -1,5 +1,4 @@
 [DEFAULT]
-Hash = 192
 WeightsFile = /opt/picochess/engines/aarch64/792013-192x15.txt
 SyzygyPath = /opt/picochess/tablebases/syzygy
 Backend = blas
