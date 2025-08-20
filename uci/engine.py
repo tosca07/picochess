@@ -506,7 +506,7 @@ class UciEngine(object):
 
     def get_options(self):
         """Get engine options."""
-        return self.options
+        return self.engine.options
 
     def get_pgn_options(self):
         """Get options."""
@@ -516,10 +516,19 @@ class UciEngine(object):
         """Set OptionName with value."""
         self.options[name] = value
 
+    def filter_options(self, wanted: dict, allowed: dict) -> dict:
+        """
+        Return a new dict containing only the keys from `wanted`
+        that are present in `allowed`.
+        """
+        return {k: v for k, v in wanted.items() if k in allowed}
+
     async def send(self):
         """Send options to engine."""
         try:
-            await self.engine.configure(self.options)
+            # issue 85 - remove options not allowed by engine before sending
+            options = self.filter_options(self.options, self.engine.options)
+            await self.engine.configure(options)
             try:
                 await self.engine.ping()  # send isready and wait for answer
             except CancelledError:
