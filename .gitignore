@@ -99,16 +99,6 @@ etc/dgtpicom.so
 # ignore the talker voices.ini
 talker/voices/voices.ini
 
-# Pi engines aarch64
-engines/aarch64/
-engines/aarch64/engines.ini
-engines/aarch64/favorites.ini
-engines/x86_64/engines.ini
-engines/x86_64/favorites.ini
-!engines/aarch64/a-stockf
-!engines/aarch64/a-stockf.uci
-!engines/aarch64/lc0v0311
-!engines/aarch64/lc0v0311.uci
-!engines/aarch64/LD2.pb.gz
-!engines/aarch64/NNUE/StockfishNN
-!engines/aarch64/NNUE/StockfishNN.uci
+# ignore engines - let user manage them
+engines/aarch64
+engines/x86_64
