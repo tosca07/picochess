@@ -1,0 +1,21 @@
+[DEFAULT]
+WeightsFile = /opt/picochess/engines/aarch64/792013-192x15.txt
+SyzygyPath = /opt/picochess/tablebases/syzygy
+Backend = blas
+MinibatchSize = 16
+CPuct = 1.745000
+MaxPrefetch = 0
+SmartPruningFactor = 5 
+MaxCollisionVisits = 1
+
+[1 Core]
+Threads = 1
+
+[2 Cores]
+Threads = 2
+
+[3 Cores]
+Threads = 3
+
+[4 Cores]
+Threads = 4
