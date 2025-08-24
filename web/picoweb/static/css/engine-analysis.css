@@ -1,0 +1,332 @@
+/* Mejoras para el motor de análisis */
+
+/* Contenedor principal del análisis - hereda estilo del tema */
+#pv_output {
+    background-color: transparent !important;
+    border-radius: 6px;
+    padding: 6px;
+    margin-top: 5px;
+}
+
+/* Forzar tema en TODOS los elementos del análisis */
+#pv_output,
+#pv_output *,
+#pv_output div,
+#pv_output div[id^="pv_"],
+#pv_output .list-group,
+#pv_output .list-group-item,
+#pv_output .gameMoves,
+#pv_output .analysis-line-compact,
+#pv_output .analysis-line-compact *,
+#pv_output .continuation-moves {
+    background-color: transparent !important;
+    color: inherit !important;
+}
+
+/* Asegurar que hereda del contenedor padre */
+#pv_output .list-group-item {
+    background-color: transparent !important;
+    color: inherit !important;
+    border: 1px solid rgba(var(--bs-border-color-rgb, 233, 236, 239), 0.5) !important;
+}
+
+/* Cada línea de análisis - MÁS COMPACTA */
+#pv_output .list-group-item {
+    background-color: transparent !important;
+    color: inherit !important;
+    border: 1px solid rgba(128, 128, 128, 0.3);
+    border-radius: 4px;
+    margin-bottom: 3px;
+    padding: 6px 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    transition: all 0.2s ease;
+    min-height: auto;
+}
+
+#pv_output .list-group-item:hover {
+    background-color: rgba(0, 123, 255, 0.1) !important;
+    border-color: #007bff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+#pv_output .list-group-item:hover * {
+    background-color: transparent !important;
+}
+
+/* NUEVA ESTRUCTURA: Una sola línea compacta */
+.analysis-line-compact {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    flex-wrap: nowrap;
+    width: 100%;
+    font-size: 0.9rem;
+    line-height: 1.3;
+}
+
+/* Botón de copiar */
+.list-group-item-heading .btn {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-right: 10px;
+}
+
+/* Puntuación compacta */
+.score-display {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 1rem;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+    box-shadow: 0 1px 3px rgba(0,123,255,0.3);
+    min-width: 50px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+/* Puntuación positiva (ventaja blancas) */
+.score-positive {
+    background: linear-gradient(135deg, #28a745, #1e7e34);
+    box-shadow: 0 2px 4px rgba(40,167,69,0.3);
+}
+
+/* Puntuación negativa (ventaja negras) */
+.score-negative {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    box-shadow: 0 2px 4px rgba(220,53,69,0.3);
+}
+
+/* Puntuación de mate */
+.score-mate {
+    background: linear-gradient(135deg, #fd7e14, #e55100);
+    box-shadow: 0 2px 4px rgba(253,126,20,0.3);
+    animation: pulse-mate 2s infinite;
+}
+
+@keyframes pulse-mate {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* Profundidad compacta */
+.depth-display {
+    background: #6c757d;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    order: 3;
+}
+
+/* Movimientos de continuación - más discretos */
+.continuation-moves {
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-weight: normal;
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    order: 2;
+}
+
+/* Movimientos en la variación */
+.pv-moves {
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
+}
+
+/* Primer movimiento destacado - MÁS COMPACTO */
+.first-move {
+    background: #fff3cd;
+    color: #856404;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    border: 1px solid #ffc107;
+    font-size: 1.1em;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 2px rgba(255,193,7,0.2);
+    display: inline-block;
+    margin: 0 2px;
+    flex-shrink: 0;
+}
+
+/* Números de jugada */
+.move-number {
+    color: #6c757d;
+    font-weight: normal;
+    margin-right: 4px;
+}
+
+/* Contenedor de múltiples líneas */
+.multi-pv-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Indicador de línea múltiple */
+.pv-line-indicator {
+    position: absolute;
+    left: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 60%;
+    border-radius: 2px;
+}
+
+.pv-line-1 { background: #007bff; }
+.pv-line-2 { background: #28a745; }
+.pv-line-3 { background: #ffc107; }
+.pv-line-4 { background: #dc3545; }
+.pv-line-5 { background: #6f42c1; }
+
+/* Controles del motor - MÁS COMPACTOS */
+#engineMultiPVStatus {
+    background: #e9ecef;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    color: #495057;
+    border: 1px solid #ced4da;
+    font-size: 0.85rem;
+}
+
+/* Botones de análisis */
+#analyzeBtn {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    border: none;
+    color: white;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+#analyzeBtn:hover {
+    background: linear-gradient(135deg, #20c997, #28a745);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(40,167,69,0.3);
+}
+
+#analyzeBtn.analyzing {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    animation: pulse-analyzing 1.5s infinite;
+}
+
+@keyframes pulse-analyzing {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Botones más/menos */
+#analyzePlus, #analyzeMinus {
+    background: #6c757d;
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 2px;
+    transition: all 0.3s ease;
+}
+
+#analyzePlus:hover, #analyzeMinus:hover {
+    background: #5a6268;
+    transform: scale(1.1);
+}
+
+/* Estilos adicionales para la nueva estructura */
+.move-number {
+    color: #6c757d;
+    font-weight: normal;
+    font-size: 0.8rem;
+}
+
+.pv-moves {
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+    .analysis-line-compact {
+        font-size: 0.8rem;
+        gap: 4px;
+    }
+    
+    .score-display {
+        font-size: 0.9rem;
+        padding: 2px 6px;
+        min-width: 45px;
+    }
+    
+    .first-move {
+        font-size: 1rem;
+        padding: 1px 4px;
+    }
+    
+    .continuation-moves {
+        font-size: 0.75rem;
+    }
+    
+    .depth-display {
+        font-size: 0.7rem;
+        padding: 1px 4px;
+    }
+    
+    #pv_output .list-group-item {
+        padding: 4px 6px;
+        margin-bottom: 2px;
+    }
+}
+
+
+
+/* Excepciones para elementos con colores específicos - mantener sus fondos distintivos */
+#pv_output .score-display {
+    background: linear-gradient(135deg, #007bff, #0056b3) !important;
+    color: white !important;
+}
+
+#pv_output .score-positive {
+    background: linear-gradient(135deg, #28a745, #1e7e34) !important;
+    color: white !important;
+}
+
+#pv_output .score-negative {
+    background: linear-gradient(135deg, #dc3545, #c82333) !important;
+    color: white !important;
+}
+
+#pv_output .score-mate {
+    background: linear-gradient(135deg, #fd7e14, #e55100) !important;
+    color: white !important;
+}
+
+#pv_output .first-move {
+    background: #fff3cd !important;
+    color: #856404 !important;
+    border-color: #ffc107 !important;
+}
+
+#pv_output .depth-display {
+    background: #6c757d !important;
+    color: white !important;
+}
+
+/* Tema oscuro */
+@media (prefers-color-scheme: dark) {
+    .continuation-moves {
+        color: #adb5bd;
+    }
+}
