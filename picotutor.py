@@ -159,12 +159,12 @@ class PicoTutor:
         # not yet been changed to async --> causes changes in main
         # set_status might later be changed that require this engine
         if not self.best_engine:
-            options = {"MultiPV": c.VALID_ROOT_MOVES, "Contempt": 0, "Threads": c.NUM_THREADS}
+            options = {"Contempt": 0, "Threads": c.NUM_THREADS}
             self.best_engine = await self._load_engine(options, "best picotutor")
             if self.best_engine is None:
                 logger.debug("best engine loading failed in Picotutor")
         if not self.obvious_engine:
-            options = {"MultiPV": c.VALID_ROOT_MOVES, "Contempt": 0, "Threads": c.LOW_NUM_THREADS}
+            options = {"Contempt": 0, "Threads": c.LOW_NUM_THREADS}
             self.obvious_engine = await self._load_engine(options, "obvious picotutor")
             if self.obvious_engine is None:
                 logger.debug("obvious engine loading failed in Picotutor")
@@ -857,7 +857,7 @@ class PicoTutor:
             PicoTutor._eval_pv_list(turn, self.obvious_info[turn], self.obvious_moves[turn])
             if self.obvious_moves[turn]:
                 self.obvious_moves[turn].sort(key=self.sort_score, reverse=True)
-        self.log_pv_lists()  # debug only
+        self.log_pv_lists()  # debug only - for long debugging use True
 
     async def get_analysis(self) -> dict:
         """get analysis info from engine - returns dict with info and fen
