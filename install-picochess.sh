@@ -30,8 +30,10 @@ apt -y install python3-dev
 apt -y install python3-venv
 apt -y install libffi-dev libssl-dev
 apt -y install tk tcl libtcl8.6
-# following line is for (building) and running leela-chess-zero
+# following lines are for (building) and running leela-chess-zero
 apt -y install libopenblas-dev ninja-build meson
+# added more tools for building lc0 0.32
+apt -y install build-essential cmake protobuf-compiler
 # following line are to run mame (missing on lite images)
 apt -y install libsdl2-2.0-0 libsdl2-ttf-2.0-0 qt5ct
 # following needed for backup to work
