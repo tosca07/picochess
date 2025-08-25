@@ -1497,6 +1497,12 @@ function goToDGTFen() {
             highlightBoard(data.move, data.play);
             addArrow(data.move, data.play);
         }
+        else {
+            data.fen = START_FEN
+            updateDGTPosition(data);
+            highlightBoard(data.move, data.play);
+            addArrow(data.move, data.play);
+        }
     }).fail(function (jqXHR, textStatus) {
         dgtClockStatusEl.html(textStatus);
     });
