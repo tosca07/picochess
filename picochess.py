@@ -4762,15 +4762,16 @@ async def main() -> None:
                     elif self.state.time_control.mode == TimeMode.FIXED:
                         write_picochess_ini("time", "{:d}".format(tc_init["fixed"]))
 
-                    if self.state.time_control.depth > 0:
-                        write_picochess_ini("depth", "{:d}".format(tc_init["depth"]))
-                    else:
-                        write_picochess_ini("depth", "{:d}".format(0))
+                        # issue 87 - copied new solution from Tosca repo
+                        if self.state.time_control.depth > 0 and state.time_control.move_time == 671:
+                            write_picochess_ini("depth", "{:d}".format(tc_init["depth"]))
+                        else:
+                            write_picochess_ini("depth", "{:d}".format(0))
 
-                    if self.state.time_control.node > 0:
-                        write_picochess_ini("node", "{:d}".format(tc_init["node"]))
-                    else:
-                        write_picochess_ini("node", "{:d}".format(0))
+                        if self.state.time_control.node > 0 and state.time_control.move_time == 671:
+                            write_picochess_ini("node", "{:d}".format(tc_init["node"]))
+                        else:
+                            write_picochess_ini("node", "{:d}".format(0))
 
                 text = Message.TIME_CONTROL(time_text=event.time_text, show_ok=event.show_ok, tc_init=tc_init)
                 await DisplayMsg.show(text)
