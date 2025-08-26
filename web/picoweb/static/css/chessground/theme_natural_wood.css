@@ -1,0 +1,103 @@
+/*
+ * Tema Madera Natural - Simulación realista de tablero de ajedrez de madera
+ */
+
+/* Contenedor principal del tablero */
+.natural-wood .cg-board-wrap {
+  background-image: url('images/board/wood.svg');
+  background-size: 100% 100%;
+}
+
+/* Efecto de veta de madera en el marco */
+.natural-wood .cg-board-wrap::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent 0px,
+    rgba(139, 69, 19, 0.1) 1px,
+    transparent 2px,
+    transparent 12px
+  );
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+/* Casillas claras - Madera clara */
+.natural-wood .cg-board square.light {
+  background-color: #F5DEB3;
+}
+
+/* Casillas oscuras - Madera oscura */
+.natural-wood .cg-board square.dark {
+  background-color: #A0522D;
+}
+
+
+
+/* Casillas seleccionadas */
+.natural-wood .cg-board square.selected {
+  background-color: rgba(255, 215, 0, 0.5) !important;
+}
+
+/* Casillas de destino válido */
+.natural-wood .cg-board square.move-dest {
+  background: radial-gradient(rgba(20, 85, 30, 0.5) 22%, #208530 0, rgba(0, 0, 0, 0.3) 0, rgba(0, 0, 0, 0) 0);
+}
+
+/* Última jugada */
+.natural-wood .cg-board square.last-move {
+  background-color: rgba(155, 199, 0, 0.41);
+}
+
+/* Casilla en jaque */
+.natural-wood .cg-board square.check {
+  background: radial-gradient(ellipse at center, rgba(255, 0, 0, 1) 0%, rgba(231, 0, 0, 1) 25%, rgba(169, 0, 0, 0) 89%, rgba(158, 0, 0, 0) 100%);
+}
+
+
+
+/* Piezas blancas con set Merida */
+.natural-wood .cg-board piece.pawn.white {
+  background-image: url('images/pieces/merida/wP.svg');
+}
+.natural-wood .cg-board piece.bishop.white {
+  background-image: url('images/pieces/merida/wB.svg');
+}
+.natural-wood .cg-board piece.knight.white {
+  background-image: url('images/pieces/merida/wN.svg');
+}
+.natural-wood .cg-board piece.rook.white {
+  background-image: url('images/pieces/merida/wR.svg');
+}
+.natural-wood .cg-board piece.queen.white {
+  background-image: url('images/pieces/merida/wQ.svg');
+}
+.natural-wood .cg-board piece.king.white {
+  background-image: url('images/pieces/merida/wK.svg');
+}
+
+/* Piezas negras con set Merida */
+.natural-wood .cg-board piece.pawn.black {
+  background-image: url('images/pieces/merida/bP.svg');
+}
+.natural-wood .cg-board piece.bishop.black {
+  background-image: url('images/pieces/merida/bB.svg');
+}
+.natural-wood .cg-board piece.knight.black {
+  background-image: url('images/pieces/merida/bN.svg');
+}
+.natural-wood .cg-board piece.rook.black {
+  background-image: url('images/pieces/merida/bR.svg');
+}
+.natural-wood .cg-board piece.queen.black {
+  background-image: url('images/pieces/merida/bQ.svg');
+}
+.natural-wood .cg-board piece.king.black {
+  background-image: url('images/pieces/merida/bK.svg');
+}
+
