@@ -644,16 +644,15 @@ class UciEngine(object):
             remaining_moves=moves,
         )
         # issue #87 set Node and Depth restrictions for go
-        # time_dict has highest prio - uci options are in self.options
-        # its assumed that Pico V3 gives time_dict highest prio
-        if "node" in time_dict and int(time_dict["node"]) > 0:
-            use_time.nodes = int(time_dict["node"])
-        elif "PicoNode" in self.options:
+        # Selected engine options have priority over time_dict
+        if "PicoNode" in self.options:
             use_time.nodes = int(self.options["PicoNode"])
-        if "depth" in time_dict and int(time_dict["depth"]) > 0:
-            use_time.depth = int(time_dict["depth"])
-        elif "PicoDepth" in self.options:
+        elif "node" in time_dict and int(time_dict["node"]) > 0:
+            use_time.nodes = int(time_dict["node"])
+        if "PicoDepth" in self.options:
             use_time.depth = int(self.options["PicoDepth"])
+        elif "depth" in time_dict and int(time_dict["depth"]) > 0:
+            use_time.depth = int(time_dict["depth"])
         return use_time
 
     async def go(

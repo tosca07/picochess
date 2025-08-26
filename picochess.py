@@ -4762,13 +4762,14 @@ async def main() -> None:
                     elif self.state.time_control.mode == TimeMode.FIXED:
                         write_picochess_ini("time", "{:d}".format(tc_init["fixed"]))
 
-                        # issue 87 - copied new solution from Tosca repo
-                        if self.state.time_control.depth > 0 and state.time_control.move_time == 671:
+                        # issue 87 - store depth and node only if were read from ini file
+                        # 671 (11 minutes 11 seconds) is used as a flag for depth/node read from ini
+                        if self.state.time_control.depth > 0 and self.state.time_control.move_time == 671:
                             write_picochess_ini("depth", "{:d}".format(tc_init["depth"]))
                         else:
                             write_picochess_ini("depth", "{:d}".format(0))
 
-                        if self.state.time_control.node > 0 and state.time_control.move_time == 671:
+                        if self.state.time_control.node > 0 and self.state.time_control.move_time == 671:
                             write_picochess_ini("node", "{:d}".format(tc_init["node"]))
                         else:
                             write_picochess_ini("node", "{:d}".format(0))
