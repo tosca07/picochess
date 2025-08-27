@@ -643,17 +643,22 @@ class UciEngine(object):
             black_inc=black_inc,
             remaining_moves=moves,
         )
-        # issue #87 set Node and Depth restrictions for go
-        # Selected engine options have priority over time_dict
-        if "PicoNode" in self.options:
-            use_time.nodes = int(self.options["PicoNode"])
-        elif "node" in time_dict and int(time_dict["node"]) > 0:
-            use_time.nodes = int(time_dict["node"])
-        if "PicoDepth" in self.options:
-            use_time.depth = int(self.options["PicoDepth"])
-        elif "depth" in time_dict and int(time_dict["depth"]) > 0:
-            use_time.depth = int(time_dict["depth"])
         return use_time
+
+    def add_engine_uci_restrictions(self, time_dict: dict, limit: Limit):
+        """add possible engine restrictions PicoDepth and PicoNode from uci options
+        - ini file or user set values can be in input parameter time_dict
+        - Result: add nodes and depth to the input parameter limit"""
+        # issue #87 set Node and Depth restrictions for go
+        # engine uci options in self.options have priority over time_dict
+        if "PicoNode" in self.options:
+            limit.nodes = int(self.options["PicoNode"])
+        elif "node" in time_dict and int(time_dict["node"]) > 0:
+            limit.nodes = int(time_dict["node"])
+        if "PicoDepth" in self.options:
+            limit.depth = int(self.options["PicoDepth"])
+        elif "depth" in time_dict and int(time_dict["depth"]) > 0:
+            limit.depth = int(time_dict["depth"])
 
     async def go(
         self, time_dict: dict, game: Board, result_queue: asyncio.Queue, root_moves: Optional[Iterable[chess.Move]]
@@ -663,6 +668,7 @@ class UciEngine(object):
         if self.engine:
             async with self.engine_lock:
                 limit: Limit = self.get_engine_limit(time_dict)
+                self.add_engine_uci_restrictions(time_dict, limit)
                 await self.analyser.play_move(
                     game, limit=limit, ponder=self.pondering, result_queue=result_queue, root_moves=root_moves
                 )

@@ -4763,7 +4763,7 @@ async def main() -> None:
                         write_picochess_ini("time", "{:d}".format(tc_init["fixed"]))
 
                         # issue 87 - store depth and node only if were read from ini file
-                        # 671 (11 minutes 11 seconds) is used as a flag for depth/node read from ini
+                        # 671 (11 minutes 11 seconds) is a flag for user set depth/node in ini/menu
                         if self.state.time_control.depth > 0 and self.state.time_control.move_time == 671:
                             write_picochess_ini("depth", "{:d}".format(tc_init["depth"]))
                         else:
