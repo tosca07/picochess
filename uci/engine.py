@@ -33,7 +33,6 @@ from chess import Board  # type: ignore
 from uci.rating import Rating, Result
 from utilities import write_picochess_ini
 
-FLOAT_MAX_ENGINE_TIME = 1.0  # engine fallback thinking time
 FLOAT_ANALYSIS_WAIT = 0.1  # save CPU in ContinuousAnalysis
 
 UCI_ELO = "UCI_Elo"
@@ -603,7 +602,7 @@ class UciEngine(object):
         self.engine.send_line("stop")
 
     def get_engine_limit(self, time_dict: dict) -> Limit:
-        """convert time_dict to engine Limit for engine thinking"""
+        """convert time_dict to engine Limit for engine go command"""
         max_time = None
         try:
             logger.debug("molli: timedict: %s", str(time_dict))
@@ -618,8 +617,8 @@ class UciEngine(object):
                 white_t = None
                 max_time = float(time_dict["movetime"]) / 1000.0
             else:
-                white_t = FLOAT_MAX_ENGINE_TIME  # fallback
-                logger.warning("engine using fallback time for white")
+                white_t = None
+                logger.debug("not sending white time to engine")
             if "btime" in time_dict:
                 black_t = float(time_dict["btime"]) / 1000.0
             elif "movetime" in time_dict:
@@ -627,13 +626,13 @@ class UciEngine(object):
                 black_t = None
                 max_time = float(time_dict["movetime"]) / 1000.0
             else:
-                black_t = FLOAT_MAX_ENGINE_TIME  # fallback
-                logger.warning("engine using fallback time for black")
+                black_t = None
+                logger.warning("not sending black time to engine")
             white_inc = float(time_dict["winc"]) / 1000.0 if "winc" in time_dict else None
             black_inc = float(time_dict["binc"]) / 1000.0 if "binc" in time_dict else None
-        except ValueError:
-            logger.warning("wrong thinking times sent to engine, using fallback")
-            white_t = black_t = FLOAT_MAX_ENGINE_TIME
+        except ValueError as e:
+            logger.warning("wrong time control values %s", e)
+            white_t = black_t = None
             white_inc = black_inc = 0
         use_time = Limit(
             time=max_time,
