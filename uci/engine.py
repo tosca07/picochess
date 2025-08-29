@@ -653,15 +653,11 @@ class UciEngine(object):
         # Node/Depth is a pair - take both from same priority source
         # this guarantees that we dont mix ini and uci file settings
         if "PicoNode" in self.options or "PicoDepth" in self.options:
-            if "PicoDepth" in self.options:
+            if "PicoDepth" in self.options and int(self.options["PicoDepth"]) > 0:
                 limit.depth = int(self.options["PicoDepth"])
-            else:
-                limit.depth = None
             # its allowed to send both uci Depth and Node to engine
-            if "PicoNode" in self.options:
+            if "PicoNode" in self.options and int(self.options["PicoNode"]) > 0:
                 limit.nodes = int(self.options["PicoNode"])
-            else:
-                limit.nodes = None
         else:
             if "depth" in time_dict and int(time_dict["depth"]) > 0:
                 limit.depth = int(time_dict["depth"])
