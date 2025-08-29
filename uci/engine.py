@@ -644,20 +644,39 @@ class UciEngine(object):
         )
         return use_time
 
-    def add_engine_uci_restrictions(self, time_dict: dict, limit: Limit):
+    def get_engine_uci_options(self, time_dict: dict, limit: Limit):
         """add possible engine restrictions PicoDepth and PicoNode from uci options
         - ini file or user set values can be in input parameter time_dict
         - Result: add nodes and depth to the input parameter limit"""
         # issue #87 set Node and Depth restrictions for go
         # engine uci options in self.options have priority over time_dict
-        if "PicoNode" in self.options:
-            limit.nodes = int(self.options["PicoNode"])
-        elif "node" in time_dict and int(time_dict["node"]) > 0:
-            limit.nodes = int(time_dict["node"])
-        if "PicoDepth" in self.options:
-            limit.depth = int(self.options["PicoDepth"])
-        elif "depth" in time_dict and int(time_dict["depth"]) > 0:
-            limit.depth = int(time_dict["depth"])
+        # Node/Depth is a pair - take both from same priority source
+        # this guarantees that we dont mix ini and uci file settings
+        if "PicoNode" in self.options or "PicoDepth" in self.options:
+            if "PicoDepth" in self.options:
+                limit.depth = int(self.options["PicoDepth"])
+            else:
+                limit.depth = None
+            # its allowed to send both uci Depth and Node to engine
+            if "PicoNode" in self.options:
+                limit.nodes = int(self.options["PicoNode"])
+            else:
+                limit.nodes = None
+        else:
+            if "depth" in time_dict and int(time_dict["depth"]) > 0:
+                limit.depth = int(time_dict["depth"])
+            # picochess will not send both, but prepare for future
+            # not doing elif here like picochess - just if
+            if "node" in time_dict and int(time_dict["node"]) > 0:
+                limit.nodes = int(time_dict["node"])
+
+    def drop_engine_uci_option(self, option: str):
+        """drop an engine uci dummy option from self.options"""
+        # user can override PicoDepth/PicoNode by dropping uci option
+        # see priorities in get_engine_uci_opitons above
+        if option in self.options:
+            del self.options[option]
+        logger.debug("user dropped dummyengine uci option %s", option)
 
     async def go(
         self, time_dict: dict, game: Board, result_queue: asyncio.Queue, root_moves: Optional[Iterable[chess.Move]]
@@ -666,8 +685,8 @@ class UciEngine(object):
         parameter game will not change, it is deep copied"""
         if self.engine:
             async with self.engine_lock:
-                limit: Limit = self.get_engine_limit(time_dict)
-                self.add_engine_uci_restrictions(time_dict, limit)
+                limit: Limit = self.get_engine_limit(time_dict)  # time restrictions
+                self.get_engine_uci_options(time_dict, limit)  # possibly restrict Node/Depth
                 await self.analyser.play_move(
                     game, limit=limit, ponder=self.pondering, result_queue=result_queue, root_moves=root_moves
                 )

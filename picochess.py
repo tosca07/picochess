@@ -30,7 +30,6 @@ import copy
 import gc
 import logging
 from logging.handlers import RotatingFileHandler
-import time
 import math
 from typing import Any, List, Optional, Set, Tuple
 import asyncio
@@ -4761,19 +4760,16 @@ async def main() -> None:
                         write_picochess_ini("time", "{:d} {:d}".format(tc_init["blitz"], tc_init["fischer"]))
                     elif self.state.time_control.mode == TimeMode.FIXED:
                         write_picochess_ini("time", "{:d}".format(tc_init["fixed"]))
-
-                        # issue 87 - store depth and node only if were read from ini file
-                        # 671 (11 minutes 11 seconds) is a flag for user set depth/node in ini/menu
-                        if self.state.time_control.depth > 0 and self.state.time_control.move_time == 671:
+                        # issue 87 - store user override depth/node if flag set
+                        # New user choice overrides possibly loaded engine dummy uci options
+                        # Node/Depth is a pair - drop both from uci and write both to ini
+                        # this guarantees that we dont mix ini and uci file settings
+                        # 671 (11 minutes 11 seconds) is the flag
+                        if self.state.time_control.move_time == 671:
+                            self.engine.drop_engine_uci_option("PicoDepth")  # user override
                             write_picochess_ini("depth", "{:d}".format(tc_init["depth"]))
-                        else:
-                            write_picochess_ini("depth", "{:d}".format(0))
-
-                        if self.state.time_control.node > 0 and self.state.time_control.move_time == 671:
+                            self.engine.drop_engine_uci_option("PicoNode")  # user overrides
                             write_picochess_ini("node", "{:d}".format(tc_init["node"]))
-                        else:
-                            write_picochess_ini("node", "{:d}".format(0))
-
                 text = Message.TIME_CONTROL(time_text=event.time_text, show_ok=event.show_ok, tc_init=tc_init)
                 await DisplayMsg.show(text)
                 self.state.stop_fen_timer()
