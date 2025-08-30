@@ -40,7 +40,7 @@ from typing import Optional
 from pathlib import Path
 
 # picochess version
-version = "4.1.3"
+version = "4.1.4"
 
 logger = logging.getLogger(__name__)
 
@@ -301,6 +301,7 @@ def shutdown(dgtpi: bool, dev: str):
     else:
         os.system("sudo shutdown -h now")
 
+
 def shutdown_dgtpi():
     """Shutdown and close communication to DGTPI, clearing the clock screen."""
     logging.debug("shutting down dgtpi system")
@@ -334,6 +335,7 @@ def shutdown_dgtpi():
         time.sleep(0.2)
     except Exception as e:
         logging.error("Exception during shutdown_dgtpi: %s", e)
+
 
 def exit_pico(dgtpi: bool, dev: str):
     """exit picochess."""
