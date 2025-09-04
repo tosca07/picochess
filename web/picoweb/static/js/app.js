@@ -1230,9 +1230,9 @@ function formatEngineOutput(line) {
         var token = tokens[score_index];
         var score = '?';
         if (token === 'mate') {
-            score = '#' + token + tokens[score_index + 1];
+            score = '#' + tokens[score_index + 1];
         }
-        else {
+        else if (tokens[score_index + 1]) {
             score = (tokens[score_index + 1] / 100.0).toFixed(2);
             if (analysis_game.turn() === 'b') {
                 score *= -1;
@@ -1248,6 +1248,9 @@ function formatEngineOutput(line) {
         var pv_index = tokens.indexOf('pv') + 1;
 
         var pv_out = tokens.slice(pv_index);
+////////////////////////////////////////////////////////////////////////////////////////
+        var MAX_PV_MOVES = 8;                        // *** Limita PV max 8 movimientos.
+        pv_out = pv_out.slice(0, MAX_PV_MOVES);
         var first_move = pv_out[0];
         for (var i = 0; i < pv_out.length; i++) {
             var from = pv_out[i].slice(0, 2);
@@ -1271,23 +1274,53 @@ function formatEngineOutput(line) {
             turn_sep = '..';
         }
 
+// Determinar clase de puntuacion
+        var scoreClass = 'score-display';
+        var numericScore = parseFloat(score);
+        if (String(score).includes('#')) {
+            scoreClass += ' score-mate';
+        } else if (numericScore > 0) {
+            scoreClass += ' score-positive';
+        } else if (numericScore < 0) {
+            scoreClass += ' score-negative';
+        }
+
         output = '<div class="list-group-item">';
+        output += '<div class="analysis-line-compact">';
+        
+// Puntuacion (siempre en relacion al blanco)
         if (score !== null) {
-            output += '<h4 class="list-group-item-heading" id="pv_' + multipv + '_score">';
-            output += '<button id="import_pv_' + multipv + '" style="margin-top: 0px;" class="btn btn-info btn-xs" onclick="importPv(multipv)" data-placement="auto"><i class="fa fa-copy"></i><span>&nbsp;Copy</span></button>';
-            output += '<span style="font-size: 1.8vw; margin-left: 1vw;">' + score + '/' + depth + '</span>';
-            output += '</h4>';
+            output += '<span class="' + scoreClass + '">' + score + '</span>';
         }
-        output += '<p class="list-group-item-text">' + turn_sep;
-        for (i = 0; i < history.length; ++i) {
-            if ((start_move_num + i) % 2 === 1) {
-                output += Math.floor((start_move_num + i + 1) / 2) + ". ";
+        
+// Primer movimiento destacado
+        if (history.length > 0) {
+            var firstMoveText = '';
+            if ((start_move_num) % 2 === 1) {
+                firstMoveText += Math.floor((start_move_num + 1) / 2) + '. ';
+            } else {
+                firstMoveText += Math.floor((start_move_num + 1) / 2) + '... ';
             }
-            if (history[i]) {
-                output += figurinizeMove(history[i]) + " ";
-            }
+            firstMoveText += figurinizeMove(history[0]);
+            output += '<span class="first-move">' + firstMoveText + '</span>';
         }
-        output += '</p></div>';
+        
+// Continuacion de la linea (mas discreta)
+        if (history.length > 1) {
+            var continuationText = '';
+            for (i = 1; i < history.length; ++i) {
+                if ((start_move_num + i) % 2 === 1) {
+                    continuationText += Math.floor((start_move_num + i + 1) / 2) + '. ';
+                }
+                continuationText += figurinizeMove(history[i]) + ' ';
+            }
+            output += '<span class="continuation-moves">' + continuationText.trim() + '</span>';
+        }
+        
+// Profundidad al final
+        output += '<span class="depth-display">d' + depth + '</span>';
+        
+        output += '</div></div>';
 
         analysis_game = null;
         return { line: output, pv_index: multipv };
@@ -1296,6 +1329,7 @@ function formatEngineOutput(line) {
         return line;
     }
 }
+////////////////////////////////////////////////////////////////////////////////////////
 
 function multiPvIncrease() {
     if (window.stockfish) {

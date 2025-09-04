@@ -179,15 +179,15 @@ div.dataTables_wrapper div.dataTables_length select {
 }
 
 .scroll_obooklist {
-    height: 168px;
+    height: 400px;
 }
 
 #GameTable_wrapper {
- min-height: 168px;
+ min-height: 400px;
 }
 
 .scroll_engine {
-    height: 168px;
+    height: 400px;
     overflow: auto;
     padding-right: 12px;
     margin-left: 0px;
