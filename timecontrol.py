@@ -123,7 +123,7 @@ class TimeControl(object):
             self.clock_time[chess.WHITE] = self.clock_time[chess.BLACK] = self.game_time * 60
 
         elif self.mode == TimeMode.FISCHER:
-            self.clock_time[chess.WHITE] = self.clock_time[chess.BLACK] = self.game_time * 60
+            self.clock_time[chess.WHITE] = self.clock_time[chess.BLACK] = self.game_time * 60 + self.fisch_inc
 
         elif self.mode == TimeMode.FIXED:
             self.clock_time[chess.WHITE] = self.clock_time[chess.BLACK] = self.move_time
