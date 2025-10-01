@@ -1512,22 +1512,24 @@ def main() -> None:
             )
 
     def update_elo_display(state):
-        DisplayMsg.show(Message.SYSTEM_INFO(info={"rspeed": state.dgtmenu.get_engine_rspeed()}))
-        if engine.is_adaptive:
-            DisplayMsg.show(
-                Message.SYSTEM_INFO(
-                    info={"user_elo": int(state.rating.rating), "engine_elo": engine.engine_rating}
+        if emulation_mode():
+            DisplayMsg.show(Message.SYSTEM_INFO(info={"rspeed": state.dgtmenu.get_engine_rspeed()}))
+        if state.interaction_mode in (Mode.NORMAL, Mode.BRAIN, Mode.TRAINING):
+            if engine.is_adaptive:
+                DisplayMsg.show(
+                    Message.SYSTEM_INFO(
+                        info={"user_elo": int(state.rating.rating), "engine_elo": engine.engine_rating}
+                    )
                 )
-            )
-        elif engine.engine_rating > 0:
-            user_elo = args.pgn_elo
-            if state.rating is not None:
-                user_elo = str(int(state.rating.rating))
-            DisplayMsg.show(
-                Message.SYSTEM_INFO(
-                    info={"user_elo": user_elo, "engine_elo": engine.engine_rating}
+            elif engine.engine_rating > 0:
+                user_elo = args.pgn_elo
+                if state.rating is not None:
+                    user_elo = str(int(state.rating.rating))
+                DisplayMsg.show(
+                    Message.SYSTEM_INFO(
+                        info={"user_elo": user_elo, "engine_elo": engine.engine_rating}
+                    )
                 )
-            )
 
     def process_fen(fen: str, state: PicochessState):
         """Process given fen like doMove, undoMove, takebackPosition, handleSliding."""

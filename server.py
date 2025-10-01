@@ -435,6 +435,7 @@ class WebDisplay(DisplayMsg, threading.Thread):
     level_text_sav = ""
     level_name_sav = ""
     engine_elo_sav = ""
+    user_elo_sav = ""
     result_sav = ""
     engine_name = "Picochess"
 
@@ -690,6 +691,9 @@ class WebDisplay(DisplayMsg, threading.Thread):
                 if self.shared["system_info"]["engine_elo"] != "":
                     WebDisplay.engine_elo_sav = self.shared["system_info"]["engine_elo"]
                 self.shared["system_info"]["engine_elo"] = "?"
+                if self.shared["system_info"]["user_elo"] != "":
+                    WebDisplay.user_elo_sav = self.shared["system_info"]["user_elo"]
+                self.shared["system_info"]["user_elo"] = "?"
                 if self.shared["game_info"]["level_text"] != "":
                     WebDisplay.level_text_sav = self.shared["game_info"]["level_text"]
                 if self.shared["game_info"]["level_name"] != "":
@@ -705,6 +709,8 @@ class WebDisplay(DisplayMsg, threading.Thread):
                 ]
                 if WebDisplay.engine_elo_sav != "":
                     self.shared["system_info"]["engine_elo"] = WebDisplay.engine_elo_sav
+                if WebDisplay.user_elo_sav != "":
+                    self.shared["system_info"]["user_elo"] = WebDisplay.user_elo_sav
                 if WebDisplay.level_text_sav != "":
                     self.shared["game_info"]["level_text"] = WebDisplay.level_text_sav
                 if WebDisplay.level_name_sav != "":
