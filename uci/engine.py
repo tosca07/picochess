@@ -21,6 +21,7 @@ import logging
 import configparser
 import spur  # type: ignore
 import paramiko
+import time
 
 from subprocess import DEVNULL
 from dgt.api import Event
@@ -213,13 +214,14 @@ class UciEngine(object):
 
     def quit(self):
         """Quit engine."""
-        if self.engine.quit():  # Ask nicely
-            if self.engine.terminate():  # If you won't go nicely....
-                if self.is_mame:
-                    os.system("sudo pkill -9 -f mess")
-                else:
+        if not self.is_mame:
+            if self.engine.quit():  # Ask nicely
+                if self.engine.terminate():  # If you won't go nicely....
                     if self.engine.kill():  # Right that does it!
                         return False
+            return True
+        os.system("sudo pkill -9 -f mess")  # RR - MAME sometimes refuses to exit
+        time.sleep(1)
         return True
 
     def uci(self):
