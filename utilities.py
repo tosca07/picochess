@@ -423,13 +423,41 @@ def write_picochess_ini(key: str, value):
         logging.exception(conf_exc)
 
 
-def get_engine_mame_par(engine_rspeed: float, engine_rsound=False) -> str:
+def is_wayland_session() -> bool:
+    return os.environ.get("XDG_SESSION_TYPE") == "wayland" or bool(os.environ.get("WAYLAND_DISPLAY"))
+
+
+_WINDOW_COMMANDS = {
+    "toggle_fullscreen": "xdotool keydown alt key F11; sleep 0.2; xdotool keyup alt",
+    "switch_window": "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt",
+    "switch_window_toggle_fullscreen": (
+        "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt; "
+        "sleep 0.2; xdotool keydown alt key F11; sleep 0.2; xdotool keyup alt"
+    ),
+}
+
+
+def get_window_command(action: str) -> Optional[str]:
+    if is_wayland_session():
+        logger.info("Wayland session detected; skipping window action '%s'", action)
+        return None
+    cmd = _WINDOW_COMMANDS.get(action)
+    if cmd is None:
+        logger.warning("Unknown window action '%s'", action)
+    return cmd
+
+
+def get_engine_mame_par(engine_rspeed: float, engine_rsound=False, engine_rwindow: Optional[bool] = None) -> str:
     if engine_rspeed < 0.01:
         engine_mame_par = "-nothrottle"
     else:
         engine_mame_par = "-speed " + str(engine_rspeed)
     if not engine_rsound:
         engine_mame_par = engine_mame_par + " -sound none"
+    if engine_rwindow is True:
+        engine_mame_par = engine_mame_par + " -window"
+    elif engine_rwindow is False:
+        engine_mame_par = engine_mame_par + " -nowindow"
     return engine_mame_par
 
 

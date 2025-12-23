@@ -26,7 +26,7 @@ from typing import Dict, List, Set
 from pgn import ModeInfo
 import chess  # type: ignore
 from timecontrol import TimeControl
-from utilities import Observable, DispatchDgt, get_tags, version, write_picochess_ini
+from utilities import Observable, DispatchDgt, get_tags, version, write_picochess_ini, get_window_command
 from dgt.util import (
     TimeMode,
     TimeModeLoop,
@@ -2750,16 +2750,17 @@ class DgtMenu(object):
             self.menu_engine_retrosettings = EngineRetroSettings.RETROWINDOW
             self.res_engine_rwindow = not self.res_engine_rwindow
             if ModeInfo.get_emulation_mode():
-                cmd = "xdotool keydown alt key Tab; sleep 0.2; xdotool keyup alt; sleep 0.2; xdotool keydown alt key F11; sleep 0.2 xdotool keyup alt"
+                cmd = get_window_command("switch_window_toggle_fullscreen")
                 if self.get_engine_rdisplay():
                     write_picochess_ini("rwindow", self.res_engine_rwindow)
-                    subprocess.run(
-                        cmd,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        universal_newlines=True,
-                        shell=True,
-                    )
+                    if cmd:
+                        subprocess.run(
+                            cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            universal_newlines=True,
+                            shell=True,
+                        )
             text = await self._fire_dispatchdgt(self.dgttranslate.text("B10_ok"))
             await self._fire_event(Event.PICOCOMMENT(picocomment="ok"))
 
