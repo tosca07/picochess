@@ -2138,10 +2138,6 @@ async def main() -> None:
                             if self.state.no_guess_black > self.state.max_guess_black:
                                 await self.get_next_pgn_move()
 
-                if self.state.game.board_fen() == chess.STARTING_BOARD_FEN:
-                    pos960 = 518
-                    await Observable.fire(Event.NEW_GAME(pos960=pos960))
-
         async def get_next_pgn_move(self):
             log_pgn(self.state)
             await asyncio.sleep(0.5)
